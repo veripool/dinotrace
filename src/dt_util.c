@@ -760,13 +760,16 @@ void    print_sig_info (sig_ptr)
 	}
     }
 
-void    debug_signal_integrity (sig_ptr, list_name, del)
+void    debug_signal_integrity (trace, sig_ptr, list_name, del)
+    TRACE	*trace;
     SIGNAL	*sig_ptr;
     char	*list_name;
     Boolean	del;
 {
     SIGNAL_LW	*cptr;
     DTime	last_time;
+    int		nsigstart, nsig;
+    Boolean	hitstart;
 
     if (!sig_ptr) return;
 
@@ -774,7 +777,17 @@ void    debug_signal_integrity (sig_ptr, list_name, del)
 	printf ("%s, Backward pointer should be NULL on signal %s\n", list_name, sig_ptr->signame);
 	}
 
-    for (; sig_ptr && sig_ptr->forward; sig_ptr=sig_ptr->forward) {
+    nsig = 0; nsigstart = -1;
+    hitstart = FALSE;
+    for (; sig_ptr; sig_ptr=sig_ptr->forward) {
+	/* Number of signals check */
+	nsig++;
+	if (!hitstart) {
+	    nsigstart++;
+	    if (!del && sig_ptr == trace->dispsig) hitstart=TRUE;
+	}
+
+	/* flags */
 	if (sig_ptr->deleted != del) {
 	    printf ("%s, Bad deleted flag on %s!\n", list_name, sig_ptr->signame);
 	    }
@@ -783,6 +796,7 @@ void    debug_signal_integrity (sig_ptr, list_name, del)
 	    printf ("%s, Bad backward link on signal %s\n", list_name, sig_ptr->signame);
 	    }
 
+	/* Change data */
 	last_time = -1;
 	for (cptr = (SIGNAL_LW *)sig_ptr->bptr; cptr->sttime.time != EOT; cptr += sig_ptr->lws) {
 	    if ( cptr->sttime.time == last_time ) {
@@ -796,8 +810,20 @@ void    debug_signal_integrity (sig_ptr, list_name, del)
 	if (last_time != sig_ptr->trace->end_time) {
 	    printf ("%s, Doesn't end at right time, signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
 	    }
-	}
     }
+
+    if (!del) {
+	if (nsig != trace->numsig) {
+	    printf ("%s, Numsigs is wrong, %d!=%d\n", list_name, nsig, trace->numsig);
+	}
+	if (!hitstart) {
+	    printf ("%s, Never found display starting point\n", list_name);
+	}
+	if (nsigstart != trace->numsigstart) {
+	    printf ("%s, Numsigstart is wrong, %d!=%d\n", list_name, nsigstart, trace->numsigstart);
+        }
+    }
+}
 
 void    debug_integrity_check_cb (w,trace,cb)
     Widget		w;
@@ -806,10 +832,10 @@ void    debug_integrity_check_cb (w,trace,cb)
 {
     SIGNAL	*sig_ptr;
 
-    debug_signal_integrity (global->delsig, "Deleted Signals", TRUE);
+    debug_signal_integrity (NULL, global->delsig, "Deleted Signals", TRUE);
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	debug_signal_integrity (trace->firstsig, trace->filename, FALSE);
+	debug_signal_integrity (trace, trace->firstsig, trace->filename, FALSE);
 	}
     }
 

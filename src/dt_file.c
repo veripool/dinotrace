@@ -67,7 +67,7 @@ void free_data (trace)
 
     if (DTPRINT_ENTRY) printf ("In free_data - trace=%d\n",trace);
 
-    if (!trace->loaded) return;
+    if (!trace || !trace->loaded) return;
     trace->loaded = 0;
 
     /* free any deleted signals */
@@ -77,7 +77,6 @@ void free_data (trace)
     for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	sig_free (trace, trace_ptr->firstsig, TRUE, TRUE);
 	}
-
     /* free signal data and each signal structure */
     sig_free (trace, trace->firstsig, FALSE, TRUE);
     trace->firstsig = NULL;

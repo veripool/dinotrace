@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V7.3a"
+#define DTVERSION	"Dinotrace V7.3b"
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
@@ -446,6 +446,8 @@ typedef struct st_signal {
 
     Boolean		srch_ena;	/* Searching is enabled */
     Boolean		deleted;	/* Signal is deleted */
+    Boolean		deleted_preserve; /* Preserve the deletion of this signal (not deleted because constant) */
+    Boolean		preserve_done;	/* Preservation process has moved this signal to new link structure */
 
     int			type;		/* Type of signal, STATE_B32, _B64, etc */
     SIGNALSTATE		*decode;	/* Pointer to decode information, NULL if none */

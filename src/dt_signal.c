@@ -315,6 +315,7 @@ void	sig_delete (trace, sig_ptr)
     if (sig_ptr) {
 	remove_signal_from_queue (trace, sig_ptr);
 	sig_ptr->deleted = TRUE;
+	sig_ptr->deleted_preserve = TRUE;
 	add_signal_to_queue (trace, sig_ptr, ADD_LAST, &global->delsig);
 	}
     }
@@ -498,6 +499,7 @@ void    sig_delete_selected (constant_flag)
 	trace = siglst_ptr->trace;
 	if  ( constant_flag || sig_is_constant (trace, sig_ptr)) {
 	    sig_delete (trace, sig_ptr);
+	    if (constant_flag) sig_ptr->deleted_preserve = FALSE;	/* Don't preserve constant deletions, recalc */
 	    }
 	}
 
@@ -1448,14 +1450,15 @@ void sig_cross_preserve (trace)
 
     /* Save the current trace into a new preserved place */
     assert (global->preserved_trace==NULL);
-    global->preserved_trace = XtNew (TRACE);
-    memcpy (global->preserved_trace, trace, sizeof (TRACE));
-    
+
     if (! global->save_ordering) {
 	/* Will be freed by sig_free call later inside trace reading */
 	return;
     }
 
+    global->preserved_trace = XtNew (TRACE);
+    memcpy (global->preserved_trace, trace, sizeof (TRACE));
+    
     /* Deleted signals */
     for (sig_ptr = global->delsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	if (sig_ptr->trace == trace) {
@@ -1572,10 +1575,12 @@ void sig_cross_restore (trace)
 	if (DTPRINT_PRESERVE) printf ("Preserve: Match done\n");
 
 	/* Deleted signals */
+	if (DTPRINT_PRESERVE) printf ("Preserve: Deleting signals\n");
 	for (old_sig_ptr = global->delsig; old_sig_ptr; old_sig_ptr = old_sig_ptr->forward) {
 	    if (old_sig_ptr->trace == global->preserved_trace) {
 		/* Signal was deleted in preserved trace, so delete new one too */
-		if (NULL != (new_sig_ptr = old_sig_ptr->new_trace_sig)) {
+		new_sig_ptr = old_sig_ptr->new_trace_sig;
+		if (old_sig_ptr->deleted_preserve && (NULL != new_sig_ptr)) {
 		    if (DTPRINT_PRESERVE) printf ("Preserve: Please delete %s\n", old_sig_ptr->signame);
 		    sig_delete (trace, new_sig_ptr);
 		}
@@ -1583,6 +1588,7 @@ void sig_cross_restore (trace)
 	}
 
 	/* Other signals */
+	if (DTPRINT_PRESERVE) printf ("Preserve: Copy/move to other\n");
 	for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	    for (old_sig_ptr = trace_ptr->firstsig; old_sig_ptr; old_sig_ptr = old_sig_ptr->forward) {
 		
@@ -1610,7 +1616,7 @@ if (DTPRINT_PRESERVE && global->preserved_trace->firstsig) printf ("Preserve: %d
 	/* Zero new_forward_sigs in prep of making new list */
 	for (new_sig_ptr = trace->firstsig; new_sig_ptr; new_sig_ptr = new_sig_ptr->forward) {
 	    new_sig_ptr->new_forward_sig = NULL;
-	    new_sig_ptr->deleted = FALSE;		/* Temp flag to indicate has been moved to new link structure */
+	    new_sig_ptr->preserve_done = FALSE;		/* Temp flag to indicate has been moved to new link structure */
 	}
 
 	/* Our trace, reestablish signal ordering and copying */
@@ -1629,7 +1635,7 @@ if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 		/* Copy or moved from other, cheat by just relinking into new structure */
 		if (DTPRINT_PRESERVE) printf ("Preserve: Please cp/mv-to-new %s\n", old_sig_ptr->signame);
 		new_sig_ptr = old_sig_ptr;
-		new_sig_ptr->deleted = TRUE;
+		new_sig_ptr->preserve_done = TRUE;
 		*back_sig_pptr = new_sig_ptr;
 		back_sig_pptr = &(new_sig_ptr->new_forward_sig);
 		/* Next OLD */
@@ -1638,10 +1644,10 @@ if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 	    }
 	    else {	/* In same trace */
 		new_sig_ptr = old_sig_ptr->new_trace_sig;
-		if (new_sig_ptr && !(new_sig_ptr->deleted)) {
+		if (new_sig_ptr && !(new_sig_ptr->preserve_done)) {
 		    if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 		    /* Has equivelent */
-		    new_sig_ptr->deleted = TRUE;
+		    new_sig_ptr->preserve_done = TRUE;
 		    *back_sig_pptr = new_sig_ptr;
 		    back_sig_pptr = &(new_sig_ptr->new_forward_sig);
 		}
@@ -1657,15 +1663,15 @@ if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 	*back_sig_pptr = NULL;		/* Final link */
 
 	/* Insert any new signals that don't have links */
+	if (DTPRINT_PRESERVE) printf ("Preserve: Inserting leftovers\n");
 	old_sig_ptr = newlist_firstsig;			/* This will trash old list, kill heads now */
 	back_sig_pptr = &(newlist_firstsig);
-if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 	for (new_sig_ptr = trace->firstsig; new_sig_ptr; new_sig_ptr = new_sig_ptr->forward) {
-	    if (DTPRINT_PRESERVE) printf ("Preserve: %d new %s del%d lk %s nxt %s \n", __LINE__, new_sig_ptr->signame, new_sig_ptr->deleted,
+	    if (DTPRINT_PRESERVE) printf ("Preserve: %d new %s del%d lk %s nxt %s \n", __LINE__, new_sig_ptr->signame, new_sig_ptr->preserve_done,
 					  DeNullSignal(new_sig_ptr->new_forward_sig),  DeNullSignal(new_sig_ptr->forward) );
-	    if (! new_sig_ptr->deleted) {
+	    if (! new_sig_ptr->preserve_done) {
 		/* TRUE insertion into list */
-		new_sig_ptr->deleted = TRUE;
+		new_sig_ptr->preserve_done = TRUE;
 		new_sig_ptr->new_forward_sig = *back_sig_pptr;
 		*back_sig_pptr = new_sig_ptr;
 	    }
@@ -1680,13 +1686,12 @@ if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 	old_sig_ptr = NULL;
 	for (new_sig_ptr = newlist_firstsig; new_sig_ptr; new_sig_ptr = new_sig_ptr->new_forward_sig) {
 	    trace->numsig++;
-	    new_sig_ptr->deleted = FALSE;	/* Stole this flag above, reset it */
+	    new_sig_ptr->deleted = FALSE;
 	    new_sig_ptr->forward = new_sig_ptr->new_forward_sig;
 	    new_sig_ptr->backward = old_sig_ptr;
 	    old_sig_ptr = new_sig_ptr;
 	}
 
-if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 	/* Restore scrolling position */
 	if (global->preserved_trace->dispsig && global->preserved_trace->dispsig->new_trace_sig) {
 	    trace->dispsig = global->preserved_trace->dispsig->new_trace_sig;
