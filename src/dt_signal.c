@@ -1935,6 +1935,7 @@ static void sig_hash_name (
     )
 {
     Signal_t *sig_ptr;
+    Signal_t **change_pptr;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	uint_t hashval = 0;
 	char *tp = sig_ptr->signame;
@@ -1942,9 +1943,15 @@ static void sig_hash_name (
 	hashval = hashval % hashsize;
 	sig_ptr->signame_hash = hashval;
 	if (hash) {
-	    sig_ptr->verilog_next = hash[hashval];  /* Overloaded for hash chain */
-	    hash[hashval] = sig_ptr;
+	    change_pptr = &hash[hashval];
+	    /* Add to the end of the hash list so that signals w/ identical name will retain ordering */
+	    /* Verilog_next is overloaded for hash chain */
+	    while (*change_pptr) { change_pptr = &((*change_pptr)->verilog_next); }
+	    *change_pptr = sig_ptr;
 	}
+	/* Clear link in prep for next operation */
+	sig_ptr->new_trace_sig = NULL;
+	sig_ptr->preserve_match = 0;
     }
 }
 
@@ -1966,13 +1973,13 @@ static void sig_cross_sigmatch (
     hashsize = new_trace->numsig*2;
     hash = (Signal_t**)XtCalloc(hashsize, (unsigned) sizeof(Signal_t *));
 
-    sig_hash_name (new_trace, hashsize, hash);
+    sig_hash_name (new_trace, hashsize, hash);	/* Also sets new_trace_sig = NULL */
     sig_hash_name (old_trace, hashsize, NULL);
 
     /* Look at each old signal */
     for (old_sig_ptr = old_trace->firstsig; old_sig_ptr; old_sig_ptr = old_sig_ptr->forward) {
 	/* See if have new signal in hash bucket */
-	old_sig_ptr->new_trace_sig = NULL;
+	Boolean_t next_loop = 0;
 	for (new_sig_ptr = hash[old_sig_ptr->signame_hash];
 	     new_sig_ptr; new_sig_ptr = new_sig_ptr->verilog_next) {
 	    char *os = old_sig_ptr->signame;
@@ -1981,13 +1988,18 @@ static void sig_cross_sigmatch (
 	      old_sig_ptr, old_sig_ptr->signame, new_sig_ptr, new_sig_ptr->signame);*/
 	    /* Do our own strcmp; much faster */
 	    while (*os && *os++ == *ns++);
-	    if (*os == '\0' && *ns == '\0') {
+	    if (*os == '\0' && *ns == '\0'
+		&& !new_sig_ptr->preserve_match) {
 		/* Match */
+		if (DTPRINT_FILE) printf ("Matched %s %d %p == %s %d %p\n",
+					  old_sig_ptr->signame, old_sig_ptr->file_pos, old_sig_ptr,
+					  new_sig_ptr->signame, new_sig_ptr->file_pos, new_sig_ptr);
 		old_sig_ptr->new_trace_sig = new_sig_ptr;
+		new_sig_ptr->preserve_match = 1;  /* So duplicate sig names work ok */
 		/* Save color, etc */
 		new_sig_ptr->color = old_sig_ptr->color;
 		new_sig_ptr->search = old_sig_ptr->search;
-		/*printf ("Matched %s == %s\n", old_sig_ptr->signame, new_sig_ptr->signame);*/
+		break;  /* On to next old signal */
 	    }
 	}
     }
