@@ -239,4 +239,4 @@ dist: $(DISTDEP) maintainer-copy
 
 maintainer-dist: dist tag
 	cp *.gz ~/backpack
-	mv *.gz ~/src/kits
+	cp *.gz ~/src/kits
