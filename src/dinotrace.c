@@ -280,14 +280,14 @@ char	*help_message ()
     static char msg[2000];
 
     sprintf (msg,
-	     "%s\nDistributed %s\n\
+	     "%s\n\nDistributed %s\n\
 Configured %s for %s\n\
 \n\
 Written by Wilson Snyder\n\
 <wsnyder@ultranet.com> or <wsnyder@iname.com>\n\
 \n\
-Copyright 1993,1994,1995,1996,1997 by Digital Equipment Corporation.\n\
 Copyright 1998 by Wilson Snyder\n\
+Copyright 1993,1994,1995,1996,1997 by Digital Equipment Corporation.\n\
 This software is covered by the GNU Public License,\n\
 and is WITHOUT ANY WARRANTY.\n\
 \n\
