@@ -224,8 +224,8 @@ int	config_read_int (line, out)
 *	pattern matching from GNU (see wildmat.c)
 **********************************************************************/
 
-/* Double procedures, both inlined, unrolls loop much better */
-int wildmati(s, p)
+/* Triple procedures, all inlined, unrolls loop much better */
+int wildmatii(s, p)
     register unsigned char	*s;	/* Buffer */
     register unsigned char	*p;	/* Pattern */
 {
@@ -239,6 +239,29 @@ int wildmati(s, p)
 	    /* Trailing star matches everything. */
 	    if (!*++p) return (TRUE);
 	    while (wildmat(s, p) == FALSE)
+		if (*++s == '\0')
+		    return(FALSE);
+	    return(TRUE);
+	    }
+	}
+    return(*s == '\0');
+    }
+#pragma inline (wildmatii)
+
+int wildmati(s, p)
+    register unsigned char	*s;	/* Buffer */
+    register unsigned char	*p;	/* Pattern */
+{
+    for ( ; *p; s++, p++) {
+	if (*p!='*') {
+	    /* df is magic conversion to lower case */
+	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
+		return(FALSE);
+	    }
+	else {
+	    /* Trailing star matches everything. */
+	    if (!*++p) return (TRUE);
+	    while (wildmatii(s, p) == FALSE)
 		if (*++s == '\0')
 		    return(FALSE);
 	    return(TRUE);
@@ -296,10 +319,21 @@ void	add_signal_state (trace, info)
     SIGNALSTATE *new;
     int t;
 
-    new = XtNew (SIGNALSTATE);
-    memcpy ((void *)new, (void *)info, sizeof(SIGNALSTATE));
-    new->next = global->signalstate_head;
-    global->signalstate_head = new;
+    for (new = global->signalstate_head; new ; new=new->next) {
+      if (!strcmp (new->signame, info->signame)) break;
+    }
+    if (! new) {
+      /* Not found, add & relink */
+      new = XtNew (SIGNALSTATE);
+      memcpy ((void *)new, (void *)info, sizeof(SIGNALSTATE));
+      new->next = global->signalstate_head;
+      global->signalstate_head = new;
+    }
+    else {
+      /* Found, overwrite old */
+      info->next = new->next;	/* Don't loose the link */
+      memcpy ((void *)new, (void *)info, sizeof(SIGNALSTATE));
+    }
 
     /*printf ("Signal '%s' Assigned States:\n", new->signame);*/
     for (t=0; t<MAXSTATENAMES; t++) {
