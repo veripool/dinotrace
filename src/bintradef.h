@@ -1,3 +1,4 @@
+#ifdef VMS
 /*
 	Created 22-FEB-1988 13:36:39 by VAX-11 SDL V3.0-2
 	Source:  1-MAY-1986 17:22:48 DSU$:[GIRAMMA.PUBLIC]BINTRADEF.SDL;1
@@ -480,3 +481,4 @@ byte:		3	     2		  1		0
 /*
 	number of bits required for class and type code
 */
+#endif /* VMS */
