@@ -327,7 +327,7 @@ void help_trace_cb (w,trace,cb)
 	sprintf (msg2, "File Creation Date: %s\n", date_string (trace->filestat.st_mtime));
 	strcat (msg, msg2);
 
-	sprintf (msg2, "\nTimes stored to nearest: %s\n", time_units_to_string (global->time_precision));
+	sprintf (msg2, "\nTimes stored to nearest: %s\n", time_units_to_string (global->time_precision, TRUE));
 	strcat (msg, msg2);
 	}
 

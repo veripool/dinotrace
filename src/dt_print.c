@@ -381,7 +381,7 @@ void    ps_print_internal (trace)
     fputs (dinopost,psfile);
     
     /* Grab units */
-    timeunits = time_units_to_string (trace->timerep);
+    timeunits = time_units_to_string (trace->timerep, FALSE);
 
     /* output the page scaling and rf time */
     fprintf (psfile,"\n%d %d %d %d %d %d PAGESCALE\n",

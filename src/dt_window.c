@@ -315,7 +315,7 @@ void new_res (trace)
 	/* change res button's value */
 	time_to_string (trace, timestrg, (int)(RES_SCALE/global->res), TRUE);
 	sprintf (string,"Res=%s %s", timestrg,
-		 time_units_to_string (trace->timerep));
+		 time_units_to_string (trace->timerep, FALSE));
 	XtSetArg (arglist[0],XmNlabelString,XmStringCreateSimple (string));
 	XtSetValues (trace->command.reschg_but,arglist,1);
 	}
