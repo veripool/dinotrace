@@ -50,6 +50,9 @@ static char	scopes[MAXSCOPES][MAXSIGLEN];
 static int	scope_level;
 static DTime	time_divisor, time_scale;
 
+static char	*verilog_line_storage;
+static int	verilog_line_length;
+
 static SIGNAL	*last_sig_ptr;		/* last signal read in */
 
 /* Pointer to array of signals sorted by pos. (Special hash table) */
@@ -77,7 +80,6 @@ void	verilog_read_till_end (line, readfp)
     FILE	*readfp;
 {
     char *tp;
-    char new_line[1000];
 
     while (1) {
 	while (*line) {
@@ -90,8 +92,8 @@ void	verilog_read_till_end (line, readfp)
 		}
 	    }
 
-	fgets (new_line, 1000, readfp);
-	line = new_line;
+	fgets_dynamic (&verilog_line_storage, &verilog_line_length, readfp);
+	line = verilog_line_storage;
 	if (feof (readfp)) return;
 	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
 	/* if (DTPRINT_FILE) printf ("line='%s'\n",line); */
@@ -104,12 +106,10 @@ void	verilog_read_timescale (trace, line, readfp)
     char	*line;
     FILE	*readfp;
 {
-    char new_line[1000];
-   
     while (isspace (*line)) line++;
     if (!*line) {
-	fgets (new_line, 1000, readfp);
-	line = new_line;
+	fgets_dynamic (&verilog_line_storage, &verilog_line_length, readfp);
+	line = verilog_line_storage;
 	verilog_line_num++;
 	if (feof (readfp)) return;
 	}
@@ -162,7 +162,7 @@ void	verilog_process_var (trace, line)
     char	*cmd, *code;
     int		bits;
     SIGNAL	*new_sig_ptr;
-    char	signame[1000];
+    char	signame[10000];
     int		t, len;
 
     /* Skip <vartype> */
@@ -411,7 +411,6 @@ void	verilog_read_data (trace, readfp)
     FILE	*readfp;
 {
     char	*value_strg, *line, *code;
-    char	new_line [1000], extend_line[1000];
     unsigned int	time;
     int		first_data=TRUE;
     int		got_data=FALSE;
@@ -426,9 +425,9 @@ void	verilog_read_data (trace, readfp)
     time = 0;
 
     while (1) {
-	fgets (new_line, 1000, readfp);
+	fgets_dynamic (&verilog_line_storage, &verilog_line_length, readfp);
 	verilog_line_num++;
-	line = new_line;
+	line = verilog_line_storage;
 	if (feof(readfp)) break;
 	/*if (verilog_line_num % 5000 == 0) printf ("Line %d\n", verilog_line_num);*/
 	if (DTPRINT_FILE) {
@@ -591,17 +590,20 @@ void	verilog_read_data (trace, readfp)
 			    /* This is rare, so not fast */
 			    /* 1's extend as 0's */
 			    register char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
+			    char *line_copy;
+			    
+			    line_copy = strdup(value_strg);
 			
-			    line = extend_line;
+			    line = value_strg;
 			    while (len>0) {
 				*line++ = extend_char;
 				len--;
 				}
 			    *line++ = '\0';
 			    
-			    strcat (extend_line, value_strg);	/* tack on the original value */
+			    strcat (line, line_copy);	/* tack on the original value */
 			    /*if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", value_strg, extend_line);*/
-			    value_strg = extend_line;
+			    XtFree (line_copy);
 			    }
 	
 			/* Store the file information */
@@ -633,12 +635,15 @@ void	verilog_process_lines (trace, readfp)
 {
     char	*cmd, *tp;
     char	*line;
-    char	line_stor[1000];
+    int		line_length;
+
+    line = NULL;
+    verilog_line_length = 0;
 
     while (!feof (readfp)) {
 	/* Read line & kill EOL at end */
-	fgets (line_stor, 1000, readfp);
-	line = line_stor;
+	fgets_dynamic (&verilog_line_storage, &verilog_line_length, readfp);
+	line = verilog_line_storage;
 	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
 	verilog_line_num++;
 
@@ -701,6 +706,9 @@ void	verilog_process_lines (trace, readfp)
 	    dino_error_ack (trace,message);
 	    }
 	}
+
+    verilog_line_length = 0;
+    XtFree (verilog_line_storage);
     }
 
 void verilog_read (trace, read_fd)
