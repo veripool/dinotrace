@@ -670,8 +670,10 @@ void fil_make_busses (
 	    if (sig_ptr->bits>1) {
 		/* Is a unnamed bus */
 		if (not_tempest) {
-		    sig_ptr->msb_index = sig_ptr->bits - 1;
-		    sig_ptr->lsb_index = 0;
+ 		    if(!(sig_ptr->msb_index || sig_ptr->lsb_index)) {
+			sig_ptr->msb_index = sig_ptr->bits - 1;
+			sig_ptr->lsb_index = 0;
+		    }
 		}
 		else {
 		    sig_ptr->msb_index = sig_ptr->bit_index;

@@ -255,6 +255,7 @@ static void	verilog_process_var (
     char	*cmd;
     Boolean_t	is_real;
     int		bits;
+    int		msb = 0, lsb = 0;
     Signal	*new_sig_ptr;
     char	signame[10000];
     int		t, len;
@@ -268,10 +269,25 @@ static void	verilog_process_var (
     cmd = verilog_gettok();
     bits = atoi (cmd);
 
-    /* Read <identifier_code>  (uses chars 33-126 = '!' - '~') */
-    cmd = verilog_gettok();
-    strcpy (code, cmd);
-    
+    /* read next token */
+    /* if token == ":", msb and lsb are given */
+    if(!strcmp(cmd, ":")) {
+	msb = bits;
+
+	/* Read lsb */
+	cmd = verilog_gettok();
+	lsb = atoi (cmd);
+ 
+	bits = msb - lsb + 1;
+ 
+	/* Read <identifier_code>  (uses chars 33-126 = '!' - '~') */
+	cmd = verilog_gettok();
+	strcpy (code, cmd);
+    }
+    else { /* must have been identifier */
+	strcpy(code, cmd);
+    }
+      
     /* Signal name begins with the present scope */
     signame[0] = '\0';
     for (t=0; t<scope_level; t++) {
@@ -296,8 +312,8 @@ static void	verilog_process_var (
 
     new_sig_ptr->file_pos = VERILOG_ID_TO_POS(code);
     new_sig_ptr->bits = bits;
-    new_sig_ptr->msb_index = 0;
-    new_sig_ptr->lsb_index = 0;
+    new_sig_ptr->msb_index = msb;
+    new_sig_ptr->lsb_index = lsb;
 
     new_sig_ptr->file_type.flags = 0;
     new_sig_ptr->file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
