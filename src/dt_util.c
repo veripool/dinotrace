@@ -169,6 +169,7 @@ void    update_scrollbar (w,value,inc,min,max,size)
 	XtSetArg (arglist[0], XmNsensitive, TRUE);
 	}
 
+    if (inc < 1) inc=1;
     if (size < 1) size=1;
     if (value > (max - size)) value = max - size;
     if (value < min) value = min;
