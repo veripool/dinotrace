@@ -443,8 +443,9 @@ void    remove_all_events (
     remove_event (ButtonPressMask, sig_delete_ev);
     remove_event (ButtonPressMask, sig_highlight_ev);
     remove_event (ButtonPressMask, sig_radix_ev);
+    remove_event (ButtonPressMask, sig_waveform_ev);
     
-    /* remove all possible events due to nvalue options */ 
+    /* remove all possible events due to value options */ 
     remove_event (ButtonPressMask, val_examine_ev);
     remove_event (ButtonPressMask, val_highlight_ev);
     
