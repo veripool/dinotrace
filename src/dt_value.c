@@ -494,7 +494,11 @@ Boolean_t  val_equal (
     const Value_t	*vptrb)
 {
     return ((vptra->siglw.stbits.state == vptrb->siglw.stbits.state)
-	    && ((   (vptra->siglw.stbits.state == STATE_B32)
+	    && (( (  vptra->siglw.stbits.state == STATE_0)
+		  | (vptra->siglw.stbits.state == STATE_1)
+		  | (vptra->siglw.stbits.state == STATE_U)
+		  | (vptra->siglw.stbits.state == STATE_Z))
+		|| ((vptra->siglw.stbits.state == STATE_B32)
 		    & (vptra->number[0] == vptrb->number[0]))
 		|| ((vptra->siglw.stbits.state == STATE_B128)
 		    & (vptra->number[0] == vptrb->number[0])
