@@ -209,6 +209,15 @@ void cus_dialog_cb (
 							   "cursor_state",arglist,5);
 	DManageChild (trace->custom.cursor_state, trace, MC_NOKEYS);
 	
+	/* Create prefix button */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Show common signal prefix"));
+	XtSetArg (arglist[1], XmNx, 10);
+	XtSetArg (arglist[2], XmNshadowThickness, 1);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNtopWidget, dmanage_last );
+	trace->custom.prefixes = XmCreateToggleButton (trace->custom.dialog,"refreshing",arglist,5);
+	DManageChild (trace->custom.prefixes, trace, MC_NOKEYS);
+	
 	/* Create refresh button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Manual Refreshing"));
 	XtSetArg (arglist[1], XmNx, 10);
@@ -258,6 +267,7 @@ void cus_dialog_cb (
     XmToggleButtonSetState (trace->custom.cursor_state, global->cursor_vis, TRUE);
     XmToggleButtonSetState (trace->custom.click_to_edge, global->click_to_edge, TRUE);
     XmToggleButtonSetState (trace->custom.refreshing, global->redraw_manually, TRUE);
+    XmToggleButtonSetState (trace->custom.refreshing, global->prefix_enable, TRUE);
     
     /* Do it */
     DManageChild (trace->custom.dialog, trace, MC_NOKEYS);
@@ -307,6 +317,7 @@ void	cus_ok_cb (
     global->cursor_vis = XmToggleButtonGetState (trace->custom.cursor_state);
     global->click_to_edge = XmToggleButtonGetState (trace->custom.click_to_edge);
     global->redraw_manually = XmToggleButtonGetState (trace->custom.refreshing);
+    global->prefix_enable = XmToggleButtonGetState (trace->custom.prefixes);
 
     if (XmToggleButtonGetState (trace->custom.rfwid)) {
 	if (!global->sigrf) global->sigrf = SIG_RF;

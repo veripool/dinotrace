@@ -354,6 +354,7 @@ typedef struct {
     Widget cursor_state;
     Widget click_to_edge;
     Widget refreshing;
+    Widget prefixes;
     OkApplyWidgets_t okapply;
 } CustomWidgets_t;
 
@@ -871,7 +872,9 @@ typedef struct {
     uint_t		namepos;	/* Position of first visible character based on xstart */
     uint_t		namepos_hier;	/* Maximum hiearchy width in chars */
     uint_t		namepos_base;	/* Maximum basename width in chars */
+    uint_t		namepos_prefix; /* Maximum characters in prefix hieararchy */
     uint_t		namepos_visible;/* Visible size of names in chars */
+    Boolean_t		prefix_enable;  /* Show entire prefix on screen */
     DTime_t		click_time;	/* time clicked on for res_zoom_click */
     Grid_t		*click_grid;	/* grid being set by grid_align */
 

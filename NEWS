@@ -15,6 +15,12 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	grid_resolution and grid_align.  Time_goto, resolution and cursor_add
 	were already correct.
 
+**	If a common prefix is present on every signal being displayed,
+	then that prefix is no longer drawn, though it is still kept inside
+	Dinotrace.  Drawing prefixes may be reenabled with a button in the
+	Configure window, and with the draw_prefix configuration switch.
+	[Dominik Strasser]
+
 ****	Fixed tempest files which start with phase b. [Steve Hoover]
 
 ****	Worked around a LessTif core dump when print menu appears.

@@ -234,8 +234,8 @@ Intel Corporation, and Maker Communications.
 The people who have contributed code or other major functionality are
 Allen Gallotta, Steve Hoover, Nathan Hughes, and Craig Ziegler.
 
-The people who have provided ideas and feedback for Dinotrace include
-Edward Arthur, Sally Barry, Josh Belkin, Yifat Ben-Shachar, Lee
+Some of the people who have provided ideas and feedback for Dinotrace
+include Edward Arthur, Sally Barry, Josh Belkin, Yifat Ben-Shachar, Lee
 Bradshaw, Rachel Berman, Sass Berman, Mike Blake, Serge Bogdanov, Ronen
 Boneh, Gregg Bouchard, Bill Bruce, Lauren Carlson, Paul Chan, David
 Chen, Derrick Dacosta, Erik Debriae, Paul Dormitzer, Duane Galbi, Allen
@@ -244,8 +244,8 @@ Horan, Steve Hoover, Nathan Hughes, Tom Hunt, Tracey Jones, Mike Kagen,
 Dan Katz, Sol Katzman, Steve Kolecki, Steve Lang, Charlie Lind, Dan
 Lussier, Ben Marshall, Bob McNamara, John Murphy, Aki Niimura, Lisa
 Noack, Mitch Norcross, Michael Quadri, Reinhard Schumann, Simcha, Jai
-Singh, Dean Sovie, Julie Staraitis, Bob Walsh, Paul Wasson, Steve
-Wilson, Bob Yodlowski, and Craig Ziegler.
+Singh, Dean Sovie, Julie Staraitis, Dominik Strasser, Bob Walsh, Paul
+Wasson, Steve Wilson, Bob Yodlowski, and Craig Ziegler.
 
 @c ======================================================================
 @node Invoking Dinotrace, Screen Description, History, Top
@@ -737,6 +737,13 @@ edge within that distance, the cursor is added right where the cursor is.
 @cindex Rise-fall time
 
 The @widget{Rise/Fall Time} slider controls how fast signals transition.
+
+@cindex Signal, Prefix, Drawing
+@cindex Prefix, Drawing
+
+Thw @widget{Draw Prefix} enables displaying the entire signal name,
+instead of the default where a prefix common to every signal in the
+design is not shown.
 
 @cindex Refreshing, Mode
 @cindex Manual Refreshing
@@ -1348,6 +1355,7 @@ is ignored in all but state names.  The commands are:
 * grid_color::                  
 * refreshing::                  
 * refresh::                     
+* draw_prefix::                 
 * annotate::                    
 * resolution::                  
 * save_enables::                
@@ -1497,7 +1505,7 @@ refreshed, so for example clicking on the display is relative to the
 @pindex exceed
 @prog{eXcursion} or @prog{exceed}.
 
-@node refresh, annotate, refreshing, Configuration Commands
+@node refresh, draw_prefix, refreshing, Configuration Commands
 @subsection refresh
 @findex refresh
 @cindex Refreshing, Doing
@@ -1507,7 +1515,18 @@ Refresh the screen, even if in manual refresh mode.  When a @file{.dino}
 file is being read, the screen will not be refreshed until the entire file
 is completely read, unless a @config{refresh} command is used.
 
-@node annotate, resolution, refresh, Configuration Commands
+@node draw_prefix, annotate, refresh, Configuration Commands
+@subsection 
+@findex draw_prefix
+@cindex Signal, Prefix, Drawing
+@cindex Prefix, Drawing
+@config{draw_prefix}
+
+By default, a prefix common to every signal in the design is not shown
+in the main window.  With this setting, the signal name will be shown in
+it's entirety.
+
+@node annotate, resolution, draw_prefix, Configuration Commands
 @subsection annotate
 @findex annotate
 @cindex Annotation

@@ -117,7 +117,7 @@
 /**********************************************************************/
 
 /* See the ascii map to have this make sense */
-#define issigchr(ch)  ( ((ch)>' ') && ((ch)!='=') && ((ch)!='\"') )
+#define issigchr(ch)  ( ((ch)>' ') && ((ch)!='=') && ((ch)!='\"')  && ((ch)!='\'') )
 
 #define isstatechr(ch)  ( ((ch)>' ') && ((ch)!=',') && ((ch)!='=') && ((ch)!='{') && ((ch)!='}') && ((ch)!='\"') && ((ch)!='\'') )
 
@@ -850,6 +850,13 @@ static void	config_process_line_internal (
 		global->click_to_edge = value;
 	    }
 	}
+	else if (!strcmp(cmd, "DRAW_PREFIX")) {
+	    value = global->prefix_enable;
+	    line += config_read_on_off (trace, line, &value);
+	    if (value >= 0) {
+		global->prefix_enable = value;
+	    }
+	}
 	else if (!strcmp(cmd, "REFRESHING")) {
 	    if (toupper(line[0])=='A')
 		global->redraw_manually = FALSE;
@@ -1427,6 +1434,7 @@ void config_write_file (
 	    /*fprintf (writefp, "%sprint\t\t%x\n", c, DTPRINT?DTPRINT:"OFF"); prints too much on reread*/
 	}
 	fprintf (writefp, "%srefreshing\t%s\n", c, global->redraw_manually?"MANUAL":"AUTO");
+	fprintf (writefp, "%sdraw_prefix\t%s\n", c, global->prefix_enable?"ON":"OFF");
 	fprintf (writefp, "%ssave_enables\t%s\n", c, global->save_enables?"ON":"OFF");
 	fprintf (writefp, "%ssave_ordering\t%s\n", c, global->save_ordering?"ON":"OFF");
 	fprintf (writefp, "%ssave_duplicates\t%s\n", c, global->save_duplicates?"ON":"OFF");

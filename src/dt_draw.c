@@ -659,12 +659,21 @@ static void draw_trace_signame (
     char *basename;
     Dimension m_sig_width = XTextWidth (global->signal_font,"m",1);
     int truncchars;
+    int prefix_chars = 0;
+    char *showname;
+
+    showname = sig_ptr->signame;
+    if (!global->prefix_enable) {
+	prefix_chars = MIN(global->namepos_prefix, strlen(sig_ptr->signame));
+	if (prefix_chars) prefix_chars--;	/* Include a hiearchy sep */
+	showname += prefix_chars;
+    }
 
     basename = sig_basename (trace, sig_ptr);
 
     /* calculate the location to draw the signal name and draw it */
     x1 = global->xstart - XSTART_MARGIN	/* rightmost character position */
-	- m_sig_width * strlen (sig_ptr->signame)  /* fit in whole signal */
+	- m_sig_width * strlen (showname)  /* fit in whole signal */
 	- m_sig_width * (global->namepos_base - strlen (basename)) /* extra chars to align basename */
 	+ m_sig_width * global->namepos;	/* Scroll position */
     truncchars = global->namepos - (global->namepos_base - strlen (basename));
@@ -673,9 +682,9 @@ static void draw_trace_signame (
     /*printf ("m_sig_width %d  npos %d nbase %d nhier %d nvis %d x1 %d tc %d\n", m_sig_width, global->namepos,
       global->namepos_base, global->namepos_hier, global->namepos_visible, x1, truncchars);*/
 
-    XDrawString (global->display, trace->pixmap, trace->gc, x1, y,
-		 sig_ptr->signame,
-		 strlen (sig_ptr->signame) - truncchars);
+	XDrawString (global->display, trace->pixmap, trace->gc, x1, y,
+		     showname,
+		     strlen (showname) - truncchars);
 }
 
 void	draw_update_sigstart ()
@@ -687,6 +696,7 @@ void	draw_update_sigstart ()
     Dimension widest_hier;
     Dimension widest_base;
     Dimension xstart_sig, xstart_base;
+    char *prefix;
     char *basename;
     Dimension smallest_width;
     Dimension m_sig_width = XTextWidth (global->signal_font,"m",1);
@@ -702,24 +712,37 @@ void	draw_update_sigstart ()
     /* Calculate xstart from longest signal name */
     widest_hier = 0;
     widest_base = 0;
+    prefix = NULL;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	for (sig_ptr = (Signal_t *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    basename = sig_basename (trace, sig_ptr);
- 	    /* if (DTPRINT) printf ("Signal = '%s'  xstart=%d\n",t1,widest_sig); */
 	    widest_hier = MAX(widest_hier, (strlen (sig_ptr->signame) - strlen(basename)));
 	    widest_base = MAX(widest_base, (strlen (basename)));
+	    if (!prefix) {
+		prefix = strdup(sig_ptr->signame);
+		prefix[strlen(prefix) - strlen(basename)] = '\0';
+	    }
+	    else {
+		char *ap = sig_ptr->signame, *bp = prefix;
+		while (*ap++==*bp++) {}
+		bp--;
+		*bp = '\0';
+	    }
+ 	    if (DTPRINT) printf ("Signal = '%s'  hier=%d base=%d prefix=%s\n",sig_ptr->signame,widest_hier, widest_base, prefix);
 	}
 	    
 	/* Don't waste more then 1/3 the screen area on signame */
 	xstart_sig = XMARGIN + MIN (m_sig_width * (widest_hier+widest_base), (smallest_width/3)) + XSTART_MARGIN;
 	xstart_base = XMARGIN + m_sig_width * widest_base + XSTART_MARGIN;
 	global->xstart = MAX (xstart_sig, xstart_base);
-
-	/* Remember position of text */
-	global->namepos_hier = widest_hier;
-	global->namepos_base = widest_base;
-	global->namepos_visible = (global->xstart - XSTART_MARGIN) / m_sig_width;
     }
+    /* Remember position of text */
+    global->namepos_hier = widest_hier;
+    global->namepos_base = widest_base;
+    global->namepos_prefix = prefix ? strlen(prefix) : 0;
+    global->namepos_visible = (global->xstart - XSTART_MARGIN) / m_sig_width;
+
+    DFree (prefix);
 }
 
 
