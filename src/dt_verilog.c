@@ -65,13 +65,14 @@ static int verilog_line_num=0;
 static char *current_file="";
 
 /* Stack of scopes, 0=top level.  Grows up to MAXSCOPES */
-#define MAXSCOPES 20
+#define MAXSCOPES 100
 static char	scopes[MAXSCOPES][MAXSIGLEN];
 static int	scope_level;
 static DTime_t	time_divisor, time_scale;
 
-static char	*verilog_line_storage;
-static uint_t	verilog_line_length;
+static int	verilog_fd;
+static char	*verilog_text = NULL;
+static Boolean_t verilog_eof;
 
 static Signal	*last_sig_ptr;		/* last signal read in */
 
@@ -100,46 +101,126 @@ static Signal	**signal_update_array_last_pptr;
 #define VERILOG_POS_TO_SIG(_pos_) \
     (((_pos_)<signal_by_pos_max)?signal_by_pos[(_pos_)]:0)
 
-static void	verilog_read_till_end (
-    char	*line,
-    FILE	*readfp)
+/**********************************************************************/
+
+#define FGETS_SIZE_INC	10	/* Characters to increase length by (set small for testing) */
+
+static void	verilog_gets_init (int read_fd)
 {
-    char *tp;
+    verilog_fd = read_fd;
+    verilog_line_num=1;
+    verilog_text = NULL;
+    verilog_eof = 0;
+}
 
-    while (1) {
-	while (*line) {
-	    while (*line && *line!='$') line++;
-	    if (*line) {
-		if (!strncmp (line, "$end", 4)) {
-		    return;
-		}
-		else line++;
-	    }
+#define VERILOG_ISSPACE(ch) ((ch)<=32)	/* Fast and very dirty */
+static char *verilog_gettok ()
+{
+    static int buf_length = 0;
+    static char *buf_ptr = NULL;
+    static int buf_valid = 0;
+    char *cp;
+    int status;
+
+    if (verilog_text==NULL) {
+	/* Init */
+	if (buf_length==0) {
+	    /* First init */
+	    fgets_dynamic_extend (&buf_ptr, &buf_length, FGETS_SIZE_INC);
 	}
+	buf_valid = 0;
+	verilog_text = buf_ptr;
+	verilog_text[0] = '\0';
+    }
 
-	fgets_dynamic (&verilog_line_storage, &verilog_line_length, readfp);
-	line = verilog_line_storage;
-	if (feof (readfp)) return;
-	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
-	/* if (DTPRINT_FILE) printf ("line='%s'\n",line); */
-	verilog_line_num++;
+    /* Advance text pointer to EOL + 1 */
+    while (*verilog_text) verilog_text++;
+    verilog_text++;
+    while (1) {
+	/*int chrs = (buf_ptr + buf_length - verilog_text);
+	  printf ("Buf %p %d  Txt %p %d rem %d\n", buf_ptr, buf_length, verilog_text, buf_valid, chrs);*/
+	    
+	/* Skip any additional spaces */
+	while (VERILOG_ISSPACE(*verilog_text) && verilog_text < (buf_ptr + buf_valid)) {
+	    if (*verilog_text == '\n') verilog_line_num++;
+	    verilog_text++;
+	}
+	/* Is there a space or newline after this? */
+	cp = verilog_text;
+	while (cp < (buf_ptr + buf_valid)) {
+	    if (!VERILOG_ISSPACE(*cp)) { cp++; continue;}
+	    /* Done! */
+	    /* Convert newline to null & return */
+	    *cp = '\0';
+	    if (*verilog_text == '\n') verilog_line_num++;
+	    if (DTPRINT_FILE) printf ("Got line '%s'\n", verilog_text);
+	    return (verilog_text);
+	}
+	if (verilog_text == buf_ptr) {
+	    if (verilog_eof) {
+		if (DTPRINT_FILE) printf ("EOF\n");
+		buf_ptr[0] = '\0';
+		return (buf_ptr);
+	    }
+	    /* Started at buffer beginning, no spaces, so increase buffer, read new space */
+	    fgets_dynamic_extend (&buf_ptr, &buf_length, buf_length + FGETS_SIZE_INC);
+	    verilog_text = buf_ptr;
+	}
+	else {
+	    /* Move stuff at end of buffer to beginning */
+	    int mov_cnt = (buf_ptr + buf_valid - verilog_text);
+	    if (mov_cnt>0) {
+		char *cp;
+		char *sp;
+		/* Can't memcpy... may not allow overlap */
+		buf_valid = mov_cnt;
+		for (sp = verilog_text, cp = buf_ptr; mov_cnt--; ) {
+		    *cp++ = *sp++;
+		}
+	    }
+	    else buf_valid = 0;
+	    verilog_text = buf_ptr;
+	}
+	status = read (verilog_fd, buf_ptr+buf_valid, buf_length-buf_valid);
+	/*printf ("Read init %p %d/%d ptr %p ch %d got %d\n", buf_ptr, buf_length, buf_valid, buf_ptr+buf_valid, buf_length-buf_valid, status);
+	  printf ("Buf = %s\n", buf_ptr);*/
+	if (status > 0) buf_valid += status;
+	else {
+	    verilog_eof = 1;
+	    *(buf_ptr+buf_valid) = '\n';	/* We alloc +1, so this won't trash anything if full buffer */
+	}
+	continue;
+    }
+    return (NULL); /* True return case is above */
+}
+
+static void	verilog_read_till_end ()
+{
+    char *line;
+    while (!verilog_eof) {
+	line = verilog_gettok();
+	if (!strncmp (line, "$end", 4)) {
+	    return;
+	}
+    }
+}
+
+static void	verilog_read_till_eol ()
+{
+    char *line;
+    while (!verilog_eof) {
+	line = verilog_gettok();
+	/*printf ("Skipped '%s'\n", line);*/
+	if (!strncmp (line, "$end", 4)) {
+	    return;
+	}
     }
 }
 
 static void	verilog_read_timescale (
-    Trace	*trace,
-    char	*line,
-    FILE	*readfp)
+    Trace	*trace)
 {
-    while (isspace (*line)) line++;
-    if (!*line) {
-	fgets_dynamic (&verilog_line_storage, &verilog_line_length, readfp);
-	line = verilog_line_storage;
-	verilog_line_num++;
-	if (feof (readfp)) return;
-    }
-
-    while (isspace (*line)) line++;
+    char *line = verilog_gettok();
     time_scale = atol (line);
     while (isdigit (*line)) line++;
     switch (*line) {
@@ -163,42 +244,32 @@ static void	verilog_read_timescale (
     if (time_scale == 0) time_scale = 1;
     if (DTPRINT_FILE) printf ("timescale=%d\n",time_scale);
 
-    verilog_read_till_end (line, readfp);
+    verilog_read_till_end ();
 }
-
-#define verilog_skip_parameter(_line_) \
-    while (isspace(*_line_)) _line_++; \
-    while (*_line_ && !isspace(*_line_)) _line_++; \
-    while (isspace(*_line_)) _line_++
-
-#define verilog_read_parameter(_line_, cmd) \
-   {\
-	while (isspace(*_line_)) _line_++; \
-	cmd=_line_; \
-	while (*_line_ && !isspace(*_line_)) _line_++; \
-	if (*_line_) *_line_++ = '\0'; \
-					   }
 
 static void	verilog_process_var (
     /* Process a VAR statement (read a signal) */
-    Trace	*trace,
-    char	*line)
+    Trace	*trace)
 {
-    char	*type, *cmd, *code;
+    char	*cmd;
+    Boolean_t	is_real;
     int		bits;
     Signal	*new_sig_ptr;
     char	signame[10000];
     int		t, len;
+    char	code[10];
 
     /* Read <vartype> */
-    verilog_read_parameter (line, type);
+    cmd = verilog_gettok();
+    is_real = (!strcmp(cmd,"real"));
 	
     /* Read <size> */
-    verilog_read_parameter (line, cmd);
+    cmd = verilog_gettok();
     bits = atoi (cmd);
 
     /* Read <identifier_code>  (uses chars 33-126 = '!' - '~') */
-    verilog_read_parameter (line, code);
+    cmd = verilog_gettok();
+    strcpy (code, cmd);
     
     /* Signal name begins with the present scope */
     signame[0] = '\0';
@@ -208,9 +279,9 @@ static void	verilog_process_var (
     }
     
     /* Read <reference> */
-    verilog_read_parameter (line, cmd);
+    cmd = verilog_gettok();
     strcat (signame, cmd);
-    verilog_read_parameter (line, cmd);
+    cmd = verilog_gettok();
     if (*cmd != '$' && strcmp(cmd, "[-1]")) strcat (signame, cmd);
     
     /* Allocate new signal structure */
@@ -218,7 +289,7 @@ static void	verilog_process_var (
     new_sig_ptr->trace = trace;
     new_sig_ptr->dfile = &(trace->dfile);
     new_sig_ptr->radix = global->radixs[0];
-    if (!strncmp (type, "real", 4)) {
+    if (is_real) {
 	new_sig_ptr->radix = global->radixs[RADIX_REAL];
     }
 
@@ -230,7 +301,7 @@ static void	verilog_process_var (
     new_sig_ptr->file_type.flags = 0;
     new_sig_ptr->file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
 
-    /*if (DTPRINT_FILE) printf ("var %s %s/%d %s %s\n", type, cmd,bits, code, signame);*/
+    if (DTPRINT_FILE) printf ("var %s %s/%d %s %s\n", is_real?"real":"reg/wire", cmd,bits, code, signame);
 
     val_zero (&(new_sig_ptr->file_value));
 
@@ -564,8 +635,7 @@ static void	verilog_enter_busses (
 }
 
 static void	verilog_read_data (
-    Trace	*trace,
-    FILE	*readfp)
+    Trace	*trace)
 {
     char	*value_strg, *line, *code;
     DTime_t	time;
@@ -575,26 +645,20 @@ static void	verilog_read_data (
     Value_t	value;
     Signal	*sig_ptr;
     int		pos;
-    int		state;
+    int		state = STATE_Z;
     char	*scratchline;
+    char	*scratchline2;
+    double	dnum; 
 
     if (DTPRINT_ENTRY) printf ("In verilog_read_data\n");
 
     time = 0;
     scratchline = (char *)XtMalloc(100+verilog_max_bits);
-    /* Make sure we have space for longest line (will realloc if miss guess... that's ok */
-    fgets_dynamic_extend (&verilog_line_storage, &verilog_line_length, verilog_max_bits+100);
+    scratchline2 = (char *)XtMalloc(100+verilog_max_bits);
     
-    while (1) {
-	fgets_dynamic (&verilog_line_storage, &verilog_line_length, readfp);
-	verilog_line_num++;
-	line = verilog_line_storage;
-	if (feof(readfp)) break;
-	/*if (verilog_line_num % 5000 == 0) printf ("Line %d\n", verilog_line_num);*/
-	if (DTPRINT_FILE) {
-	    line[strlen(line)-1]= '\0';
-	    printf ("line='%s'\n",line);
-	}
+    while (!verilog_eof) {
+	line = verilog_gettok();
+	if (verilog_eof) return;
 
 	switch (*line++) {
 	    /* Single bits are most common */
@@ -614,7 +678,7 @@ static void	verilog_read_data (
 	  common:
 	    got_data = TRUE;
 
-	    verilog_read_parameter (line, code);
+	    code = line;
 	    pos = VERILOG_ID_TO_POS(code);
 	    sig_ptr = VERILOG_POS_TO_SIG(pos);
 	    if (sig_ptr) {
@@ -639,8 +703,10 @@ static void	verilog_read_data (
 	case 'b':
 	    got_data = TRUE;
 
-	    verilog_read_parameter (line, value_strg);
-	    verilog_read_parameter (line, code);
+	    value_strg = line;
+	    strcpy (scratchline2, line);
+	    value_strg = scratchline2;
+	    code = verilog_gettok();
 	    pos = VERILOG_ID_TO_POS(code);
 	    sig_ptr = VERILOG_POS_TO_SIG(pos);
 	    if (sig_ptr) {
@@ -718,12 +784,11 @@ static void	verilog_read_data (
 	    break;
 
 	case 'r':	/* Real number */
-	    verilog_read_parameter (line, value_strg);
-	    verilog_read_parameter (line, code);
+	    dnum = atof (line);
+	    code = verilog_gettok();
 	    pos = VERILOG_ID_TO_POS(code);
 	    sig_ptr = VERILOG_POS_TO_SIG(pos);
 	    if (sig_ptr && sig_ptr->bits == 64) {
-		double dnum = atof (value_strg);
 		val_zero (&value);
 		if (dnum==0) value.siglw.stbits.state = STATE_0;
 		else {
@@ -739,7 +804,10 @@ static void	verilog_read_data (
 	    /* Things to ignore, uncommon */
 	case '\n':
 	case '$':	/* Command, $end, $dump, etc (ignore) */
+	    break;
+
 	case 'D':	/* 'Done' from vpd2vcd */
+	    verilog_read_till_eol();
 	    break;
 
 	default:
@@ -751,60 +819,45 @@ static void	verilog_read_data (
     /* May be left overs from the last line */
     verilog_enter_busses (trace, first_data, time);
 
+    DFree (scratchline2);
     DFree (scratchline);
 }
 
 static void	verilog_process_lines (
-    Trace	*trace,
-    FILE	*readfp)
+    Trace	*trace)
 {
-    char	*cmd, *tp;
-    char	*line;
+    char	*cmd;
 
-    line = NULL;
-    verilog_line_length = 0;
-
-    while (!feof (readfp)) {
+    while (!verilog_eof) {
 	/* Read line & kill EOL at end */
-	fgets_dynamic (&verilog_line_storage, &verilog_line_length, readfp);
-	line = verilog_line_storage;
-	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
-	verilog_line_num++;
+	cmd = verilog_gettok ();
 
-	/* if (DTPRINT_FILE) printf ("line='%s'\n",line); */
+	if (cmd[0] != '$') continue;
+	cmd++;
 
-	/* Find first command */
-	while (*line && *line!='$') line++;
-	if (!*line) continue;
-	
-	/* extract command */
-	line++;
-	verilog_read_parameter (line, cmd);
-	
 	/* Note that these are in most frequent first ordering */
 	if (!strcmp(cmd, "end")) {
 	}
 	else if (!strcmp(cmd, "var")) {
-	    verilog_process_var (trace, line);
+	    verilog_process_var (trace);
 	}
 	else if (!strcmp(cmd, "upscope")) {
 	    if (scope_level > 0) scope_level--;
 	}
 	else if (!strcmp(cmd, "scope")) {
 	    /* Skip <scopetype> = module, task, function, begin, fork */
-	    verilog_skip_parameter (line);
+	    verilog_gettok();
 	    
 	    /* Null terminate <identifier> */
-	    verilog_read_parameter (line, cmd);
+	    cmd = verilog_gettok();
 	    
 	    if (scope_level < MAXSCOPES) {
 		strcpy (scopes[scope_level], cmd);
-		/* if (DTPRINT_FILE) printf ("added scope, %d='%s'\n", scope_level, scopes[scope_level]); */
+		if (DTPRINT_FILE) printf ("added scope, %d='%s'\n", scope_level, scopes[scope_level]);
 		scope_level++;
 	    }
 	    else {
 		if (DTPRINT_FILE) printf ("%%E, Too many scope levels on verilog line %d\n", verilog_line_num);
-		
 		sprintf (message, "Too many scope levels on line %d of %s\n",
 			 verilog_line_num, current_file);
 		dino_error_ack (trace,message);
@@ -813,17 +866,14 @@ static void	verilog_process_lines (
 	else if (!strcmp (cmd, "date")
 		 || !strcmp (cmd, "version")
 		 || !strcmp (cmd, "comment")) {
-	    verilog_read_till_end (line, readfp);
+	    verilog_read_till_end ();
 	}
 	else if (!strcmp(cmd, "timescale")) {
-	    verilog_read_timescale (trace, line, readfp);
+	    verilog_read_timescale (trace);
 	}
 	else if (!strcmp (cmd, "enddefinitions")) {
 	    verilog_process_definitions (trace);
-	    verilog_read_data (trace, readfp);
-	}
-	else if (!strcmp(cmd, "Done")) {
-	    /* vpd2vcd crap */
+	    verilog_read_data (trace);
 	}
 	else {
 	    if (DTPRINT_FILE) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, verilog_line_num);
@@ -833,34 +883,23 @@ static void	verilog_process_lines (
 	    dino_error_ack (trace,message);
 	}
     }
-
-    verilog_line_length = 0;
-    XtFree (verilog_line_storage);
 }
 
 void verilog_read (
     Trace	*trace,
     int		read_fd)
 {
-    FILE	*readfp;
-
     time_divisor = time_units_to_multiplier (global->time_precision);
     time_scale = time_divisor;
-
-    /* Make file into descriptor */
-    readfp = fdopen (read_fd, "r");
-    if (!readfp) {
-	return;
-    }
 
     /* Signal description data */
     last_sig_ptr = NULL;
     trace->firstsig = NULL;
     signal_by_pos = NULL;
 
-    verilog_line_num=0;
     current_file = trace->dfile.filename;
-    verilog_process_lines (trace, readfp);
+    verilog_gets_init (read_fd);
+    verilog_process_lines (trace);
 
     /* Free up */
     DFree (signal_by_pos);

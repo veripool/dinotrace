@@ -97,7 +97,7 @@ char *events[40] = {"","", "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelea
 void version(), usage();
 
 int    main (
-    uint_t	argc,
+    int		argc,
     char	**argv)
 {
     uint_t	i;

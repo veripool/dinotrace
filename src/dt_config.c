@@ -126,7 +126,6 @@
 
 /* File locals */
 static Boolean_t config_report_errors;
-static Boolean_t config_format_only;
 static char *config_file="";
 static int config_line_num=0;
 static Boolean_t config_reading_socket;

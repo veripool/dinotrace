@@ -324,6 +324,8 @@ extern void	sig_delete_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	sig_radix_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	sig_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	sig_highlight_cb (Widget w);
+extern void	sig_highlight_keep_cb (Widget w);
+extern void	sig_highlight_clear_cb (Widget w);
 extern void	sig_select_cb (Widget w);
 extern void	sig_cancel_cb (Widget w);
 extern void	sig_search_cb (Widget w);
@@ -389,6 +391,7 @@ extern void	help_trace_cb (Widget w);
 extern void	help_doc_cb (Widget w);
 
 /* dt_util routines */
+extern void	print_cptr (Value_t *value_ptr);
 extern void	strcpy_overlap (char *d, char *s);
 extern void	fgets_dynamic_extend (char **line_pptr, uint_t *length_ptr, uint_t newlen);
 extern void	fgets_dynamic (char **line_pptr, uint_t *length_ptr, FILE *readfp);

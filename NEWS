@@ -7,6 +7,15 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.0e  07/1999
+
+** Enhancements:
+
+**	Signal Clear Highlight allows for unhighlighting all signals.
+
+**	Signal Keep Highlight allows for deleting unhighlighted signals.
+
+
 * Changes in Dinotrace 9.0d  11/30/98
 
 ** Enhancements:

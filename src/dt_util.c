@@ -254,7 +254,7 @@ int strcasecmp(const char *a, const char *b)
 }
 #endif
 
-#define FGETS_SIZE_INC	1024	/* Characters to increase length by */
+#define FGETS_SIZE_INC	10240	/* Characters to increase length by (set small for testing) */
 
 void fgets_dynamic_extend (
     /* dynamically extend storage */
@@ -263,12 +263,12 @@ void fgets_dynamic_extend (
     uint_t newlen)
 {
     if (*length_ptr == 0) {
-	*length_ptr = newlen + 1;
-	*line_pptr = XtMalloc (*length_ptr);
+	*length_ptr = newlen;
+	*line_pptr = XtMalloc (*length_ptr + 1);
     }
     if (*length_ptr < newlen) {
-	*length_ptr = newlen + 1;
-	*line_pptr = XtRealloc (*line_pptr, *length_ptr);
+	*length_ptr = newlen;
+	*line_pptr = XtRealloc (*line_pptr, *length_ptr + 1);
     }
 }
 void fgets_dynamic (
@@ -372,8 +372,8 @@ void    update_scrollbar (
     int		max,
     int		size)
 {
-    if (DTPRINT_ENTRY) printf ("In update_scrollbar - %d %d %d %d %d\n",
-			value, inc, min, max, size);
+    if (DTPRINT_ENTRY) printf ("In update_scrollbar - Val %d Inc %d mn %d MX %d sz %d\n",
+			       value, inc, min, max, size);
 
     if (min >= max) {
 	XtSetArg (arglist[0], XmNsensitive, FALSE);
@@ -384,11 +384,10 @@ void    update_scrollbar (
     }
 
     if (inc < 1) inc=1;
+    if (size > (max - min)) size = max - min;
     if (size < 1) size=1;
     if (value > (max - size)) value = max - size;
     if (value < min) value = min;
-
-    if (size > (max - min)) size = max - min;
 
     XtSetArg (arglist[1], XmNvalue, value);
     XtSetArg (arglist[2], XmNincrement, inc);

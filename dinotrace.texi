@@ -20,8 +20,8 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set VERSION 9.0d
-@set UPDATED November 1998
+@set VERSION 9.0e
+@set UPDATED July 1999
 @set ID @value{VERSION}
 @c All functions use these for searching ease
 @macro dmenu{f}
@@ -904,6 +904,8 @@ Selecting @dmenu{Cursor Cancel}, or pressing @kbd{@key{esc}} will stop
 * Signal Radix::                
 * Signal Search...::            
 * Signal Select...::            
+* Signal Clear Highlight::      
+* Signal Keep Highlight::       
 * Signal Cancel::               
 @end menu
 
@@ -995,7 +997,7 @@ matters when matching signal names.
 The @widget{Enable} button enables the search, and shows the color to be
 used for highlighting when the signal is found.
 
-@node Signal Select..., Signal Cancel, Signal Search..., Signal Menu
+@node Signal Select..., Signal Clear Highlight, Signal Search..., Signal Menu
 @subsection Signal Select...
 @cindex Signal Select...
 @cindex Selecting, Signal
@@ -1022,7 +1024,27 @@ the selected signals and place them at the bottom of the trace.  The
 former uses the entire signal name, while the latter sorts by the
 basename, ignoring the hierarchy portion of the signal name.
 
-@node Signal Cancel,  , Signal Select..., Signal Menu
+@node Signal Clear Highlight, Signal Keep Highlight, Signal Select..., Signal Menu
+@subsection Clear Highlight
+@cindex Clear Highlight
+@cindex Highlighting, Signals
+@cindex Signals, Highlighting
+
+Selecting @dmenu{Signal Clear Highlight} will remove all highlighting
+from signals.
+
+@node Signal Keep Highlight, Signal Cancel, Signal Clear Highlight, Signal Menu
+@subsection Keep Highlight
+@cindex Keep Highlight
+@cindex Deleting, Signals
+@cindex Signals, Deleting
+
+Selecting @dmenu{Signal Keep Highlighted} will delete signals from the
+trace which are not highlighted.  This allows signals to be highlighed
+that match a given pattern using @widget{Signal Select...}, then all
+others deleted using this selection.
+
+@node Signal Cancel,  , Signal Keep Highlight, Signal Menu
 @subsection Signal Cancel
 @cindex Signal Cancel
 

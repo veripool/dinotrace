@@ -308,8 +308,9 @@ void	cus_ok_cb (
     global->click_to_edge = XmToggleButtonGetState (trace->custom.click_to_edge);
     global->redraw_manually = XmToggleButtonGetState (trace->custom.refreshing);
 
-    if (XmToggleButtonGetState (trace->custom.rfwid))
+    if (XmToggleButtonGetState (trace->custom.rfwid)) {
 	if (!global->sigrf) global->sigrf = SIG_RF;
+    }
     else global->sigrf = 0;
 
     XtSetArg (arglist[0], XmNmenuHistory, &clicked);

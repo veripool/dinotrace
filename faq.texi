@@ -74,7 +74,8 @@ This is described in the @file{COPYING} distributed with Dinotrace.
 Code created before 1998 was Copyrighted by Digital Equipment
 Corporation.  Their Copyright also disclaims any warranties, and
 disallows reproduction for sale.  Observing the GNU Copyleft should also
-cover this Copyright.
+cover this Copyright for any software distributed not for a fee.  (The
+water is murky if embeding Dinotrace.)
 
 @c --------------------
 @section Where should I report bugs and other problems with Dinotrace?
@@ -99,7 +100,7 @@ available at the Veripool.
 @section Will Dinotrace work with Windows NT?
 
 Yes, though it may not have the look and feel you expect.  (Where expect
-is defined my Microsoft, not Unix.)  Some consider that a feature.
+is defined by Microsoft, not Unix.)  Some consider that a feature.
 
 Read the installation instructions on the Website.  You'll need cygwin,
 X11R6, and a X11 server, like Exceed or Excursion.

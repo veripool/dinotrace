@@ -319,7 +319,7 @@ typedef struct {
     Widget	pdmenubutton[11];
     Widget	pdsep[10];
     Widget	pdentry[22];
-    Widget	pdentrybutton[72];
+    Widget	pdentrybutton[74];
     Widget	pdsubbutton[4+(MAX_SRCH+2)*5+RADIX_MAX_MENU];
     Widget	menu_close;	/* Pointer to menu_close widget */
     uint_t	sig_highlight_pds;

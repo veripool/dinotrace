@@ -863,6 +863,8 @@ Trace *create_trace (
     dm_menu_subentry_radixs (trace, sig_radix_cb);
     dm_menu_entry (trace, 	"Search...",	'S', "<Key>F:", "f/C-f", sig_search_cb);
     dm_menu_entry (trace, 	"Select...",	'e',	NULL, NULL,	sig_select_cb);
+    dm_menu_entry (trace, 	"Clear Highlight",'i',	NULL, NULL,	sig_highlight_clear_cb);
+    dm_menu_entry (trace, 	"Keep Highlighted",'K',	NULL, NULL,	sig_highlight_keep_cb);
     dm_menu_entry (trace, 	"Cancel", 	'l',	"!<Key>Escape:", "esc",	cancel_all_events_cb);
 
     dm_menu_title (trace, "Value", 'V');
@@ -995,7 +997,8 @@ Trace *create_trace (
     XtSetArg (arglist[5], XmNrightWidget, trace->hscroll);
     XtSetArg (arglist[6], XmNheight, 18);
     XtSetArg (arglist[7], XmNprocessingDirection, XmMAX_ON_LEFT);
-    trace->command.namescroll = XmCreateScrollBar ( trace->command.form, "namescroll", arglist, 8);
+    XtSetArg (arglist[8], XmNwidth, 18);
+    trace->command.namescroll = XmCreateScrollBar ( trace->command.form, "namescroll", arglist, 9);
     DAddCallback (trace->command.namescroll, XmNvalueChangedCallback, win_namescroll_change_cb, trace);
     DAddCallback (trace->command.namescroll, XmNdragCallback,  win_namescroll_change_cb, trace);
     DManageChild (trace->command.namescroll, trace, MC_GLOBALKEYS);

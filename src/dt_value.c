@@ -1685,12 +1685,12 @@ void    val_annotate_do_cb (
 		    csr_num++;
 
 		    /* Note grabs value to right of cursor */
-		    while ( (CPTR_TIME(cptr) <= csr_ptr->time)
-			   && (CPTR_TIME(cptr) != EOT)) {
+		    while ( (CPTR_TIME(cptr) < csr_ptr->time)
+			    && (CPTR_TIME(cptr) != EOT)) {
 			cptr = CPTR_NEXT(cptr);
 		    }
 		    if ( (CPTR_TIME(cptr) > csr_ptr->time)
-			&& ( cptr > sig_ptr->bptr)) {
+			 && ( cptr > sig_ptr->bptr)) {
 			cptr = CPTR_PREV(cptr);
 		    }
 

@@ -1,0 +1,11 @@
+*.html
+*.info
+*.log
+configure
+dinotrace.txt
+config.cache
+config.status
+INSTALL
+FAQ
+Makefile
+dinotrace

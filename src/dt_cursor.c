@@ -405,6 +405,9 @@ char *cur_examine_string (
     case CONFIG:
 	strcat (strg, "Placed by .dino file or Emacs\n");
 	break;
+    case SIMVIEW:
+	strcat (strg, "Placed by simview\n");
+	break;
     case SEARCHOLD:
 	break;
     }

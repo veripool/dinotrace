@@ -94,8 +94,8 @@ Dinotrace uses the GNU @code{autoconf} program.
 
 If you are using one of a handful of supported systems, look in the
 @file{bin} directory for the appropriate executable.  If it exists, and
-runs, put it into your search path.  That's it.  You also may want to do
-a install on the lisp directory.
+runs, put it into your search path.  You will also need Motif or
+LessTif, and also may want to do a install on the lisp directory.
 
 @node Basic Installation, Compilers and Options, Trivial Installation, Unix Installation
 @subsection Basic Installation

@@ -300,16 +300,9 @@ Signal *sig_wildmat_signame (
     return (NULL);
 }
 
-void	sig_wildmat_select (
-    /* Create list of selected signals */
-    Trace	  	*trace,		/* NULL= do all traces */
-    const char		*pattern)
+void	sig_wildmat_clear (void)
 {
-    Signal		*sig_ptr;
-    SignalList_t		*siglst_ptr;
-    Boolean_t		trace_list;
-    
-    trace_list = (trace == NULL);
+    SignalList_t *siglst_ptr;
 
     /* Erase existing selections */
     while (global->select_head) {
@@ -317,18 +310,56 @@ void	sig_wildmat_select (
 	global->select_head = global->select_head->forward;
 	DFree (siglst_ptr);
     }
+    
+}
+
+void	sig_wildmat_add (Trace *trace, Signal *sig_ptr)
+{
+    SignalList_t *siglst_ptr;
+
+    /* printf ("Selected: %s\n", sig_ptr->signame); */
+    siglst_ptr = XtNew (SignalList_t);
+    siglst_ptr->trace = trace;
+    siglst_ptr->signal = sig_ptr;
+    siglst_ptr->forward = global->select_head;
+    global->select_head = siglst_ptr;
+}
+
+void	sig_wildmat_select (
+    /* Create list of selected signals */
+    Trace	  	*trace,		/* NULL= do all traces */
+    const char		*pattern)
+{
+    Signal		*sig_ptr;
+    Boolean_t		trace_list;
+    
+    trace_list = (trace == NULL);
+
+    sig_wildmat_clear();
 
     if (trace_list) trace = global->deleted_trace_head;
     for (; trace; trace = (trace_list ? trace->next_trace : NULL)) {
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    if (wildmat (sig_ptr->signame, pattern)) {
 		/* printf ("Selected: %s\n", sig_ptr->signame); */
-		siglst_ptr = XtNew (SignalList_t);
-		siglst_ptr->trace = trace;
-		siglst_ptr->signal = sig_ptr;
-		siglst_ptr->forward = global->select_head;
-		global->select_head = siglst_ptr;
+		sig_wildmat_add (trace, sig_ptr);
 	    }
+	}
+    }
+}
+
+void	sig_wildmat_select_color (
+    /* Create list of signals that are not highlighed */
+    Trace	  	*trace,
+    int			color)
+{
+    Signal		*sig_ptr;
+    
+    sig_wildmat_clear();
+
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	if (sig_ptr->color == color) {
+	    sig_wildmat_add (trace, sig_ptr);
 	}
     }
 }
@@ -927,6 +958,26 @@ void    sig_highlight_cb (
     remove_all_events (trace);
     set_cursor (DC_SIG_HIGHLIGHT);
     add_event (ButtonPressMask, sig_highlight_ev);
+}
+
+void    sig_highlight_clear_cb (
+    Widget	w)
+{
+    Trace *trace = widget_to_trace(w);
+    if (DTPRINT_ENTRY) printf ("In sig_highlight_clear_cb - trace=%p\n",trace);
+
+    sig_wildmat_select (NULL, "*");
+    sig_highlight_selected (0);
+}
+
+void    sig_highlight_keep_cb (
+    Widget	w)
+{
+    Trace *trace = widget_to_trace(w);
+    if (DTPRINT_ENTRY) printf ("In sig_highlight_keep_cb - trace=%p\n",trace);
+    
+    sig_wildmat_select_color (trace, 0);
+    sig_delete_selected (TRUE, TRUE);
 }
 
 void    sig_search_cb (
@@ -1719,7 +1770,6 @@ void	sig_sel_sort (
     Boolean_t	usebasename)
 {
     Signal	*sig_ptr;
-    char *name, *cp;
     int i;
     int nel = 0;
     if (DTPRINT_ENTRY) printf ("In sig_sel_sort - trace=%p\n",trace);

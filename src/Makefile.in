@@ -42,7 +42,7 @@ CC = @CC@
 LINK = @CC@
 
 CFLAGS = -I. @CFLAGS@ @X_CFLAGS@
-#CFLAGS = -I. -O2 -DDEBUG -g -Wall -I/usr/openwin/include
+#CFLAGS = -I. -O2 -DDEBUG -g -Wall -Wno-implicit-int -Wno-char-subscripts -I/usr/openwin/include
 CPPFLAGS = @CPPFLAGS@
 DEFS = @DEFS@
 LDFLAGS = @LDFLAGS@
