@@ -416,10 +416,10 @@ void	verilog_read_data (trace, readfp)
     FILE	*readfp;
 {
     char	*value_strg, *line, *code;
-    unsigned int	time;
-    int		first_data=TRUE;
-    int		got_data=FALSE;
-    int		got_time=FALSE;
+    DTime	time;
+    Boolean	first_data=TRUE;
+    Boolean	got_data=FALSE;
+    Boolean	got_time=FALSE;
     VALUE	value;
     SIGNAL	*sig_ptr;
     int		pos;
@@ -646,7 +646,6 @@ void	verilog_process_lines (trace, readfp)
 {
     char	*cmd, *tp;
     char	*line;
-    int		line_length;
 
     line = NULL;
     verilog_line_length = 0;
@@ -727,7 +726,6 @@ void verilog_read (trace, read_fd)
     int		read_fd;
 {
     FILE	*readfp;
-    char	*tp;
 
     time_divisor = time_units_to_multiplier (global->time_precision);
     time_scale = time_divisor;
