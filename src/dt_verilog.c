@@ -194,8 +194,7 @@ void	verilog_process_var (trace, line)
     }
 
     /* Allocate new signal structure */
-    new_sig_ptr = XtNew (SIGNAL);
-    memset (new_sig_ptr, 0, sizeof (SIGNAL));
+    new_sig_ptr = DNewCalloc (SIGNAL);
     new_sig_ptr->trace = trace;
     new_sig_ptr->file_pos = VERILOG_ID_TO_POS(code);
     new_sig_ptr->bits = bits - 1;

@@ -146,8 +146,7 @@ void socket_accept_cb (XtPointer usr,
 	}
 
     /* Create buffer */
-    client = XtNew (CLIENT);
-    memset (client, 0, sizeof (CLIENT));
+    client = DNewCalloc (CLIENT);
     client->cmdptr = client->command;
     sprintf (client->name, "%s %d",
 	     inet_ntoa(sa_client.sin_addr.s_addr),

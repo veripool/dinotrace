@@ -69,7 +69,7 @@ void cur_add (ctime, color, type)
     
     if (DTPRINT_ENTRY) printf ("In cur_add - time=%d\n",ctime);
     
-    new_csr_ptr = (CURSOR *)XtMalloc (sizeof (CURSOR));
+    new_csr_ptr = DNewCalloc (CURSOR);
     new_csr_ptr->time = ctime;
     new_csr_ptr->color = color;
     new_csr_ptr->type = type;

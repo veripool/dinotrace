@@ -446,8 +446,7 @@ void decsim_read_binary (trace, read_fd)
 
 		/**** TYPE: Node format data ****/
 	      case tra$k_nfd:
-		sig_ptr = (SIGNAL *)XtMalloc (sizeof (SIGNAL));
-		memset (sig_ptr, 0, sizeof (SIGNAL));
+		sig_ptr = DNewCalloc (SIGNAL);
 		sig_ptr->trace = trace;
 		sig_ptr->file_pos = buf->TRA$L_BITPOS;
 		/* if (DTPRINT_FILE) printf ("Reading signal format data, ptr=%d\n", sig_ptr); */
@@ -636,8 +635,7 @@ void tempest_read (trace, read_fd)
 	     ** Initialize all pointers and other stuff in the signal
 	     ** description block
 	     */
-	    sig_ptr = (SIGNAL *)XtMalloc (sizeof(SIGNAL));
-	    memset (sig_ptr, 0, sizeof (SIGNAL));
+	    sig_ptr = DNewCalloc (SIGNAL);
 	    sig_ptr->trace = trace;
 	    sig_ptr->forward = NULL;
 	    if (trace->firstsig==NULL) {
