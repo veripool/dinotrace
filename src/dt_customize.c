@@ -314,7 +314,8 @@ void	cus_restore_cb (w,trace,cb)
     if (DTPRINT_ENTRY) printf ("in cus_restore_cb trace=%d\n",trace);
     
     /* do the default thing */
-    config_restore_defaults (trace);
+    config_trace_defaults (trace);
+    config_global_defaults (trace);
     
     /* redraw the display */
     draw_all_needed ();

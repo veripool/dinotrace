@@ -32,6 +32,7 @@ static char rcsid[] = "$Id$";
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
@@ -201,6 +202,8 @@ void trace_close_cb (w,trace,cb)
 
     if (DTPRINT_ENTRY) printf ("In trace_close - trace=%d\n",trace);
 
+    assert (trace!=global->deleted_trace_head);
+
     /* clear the screen */
     XClearWindow (global->display, trace->wind);
     /* Nail the child */
@@ -213,7 +216,7 @@ void trace_close_cb (w,trace,cb)
     /* relink pointers to ignore this trace */
     if (trace == global->trace_head)
 	global->trace_head = trace->next_trace;
-    for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
+    for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	if (trace_ptr->next_trace == trace) trace_ptr->next_trace = trace->next_trace;
 	}
 
@@ -281,17 +284,16 @@ void init_globals ()
 
     if (DTPRINT_ENTRY) printf ("in init_globals\n");
 
-    global = XtNew (GLOBAL);
-    memset (global, 0, sizeof (GLOBAL));
+    global = DNewCalloc (GLOBAL);
     global->trace_head = NULL;
     global->directory[0] = '\0';
     global->res = RES_SCALE/ (float)(250);
     global->res_default = TRUE;
 
     global->preserved_trace = NULL;
-    global->delsig = NULL;
     global->selected_sig = NULL;
     global->cursor_head = NULL;
+    global->signalstate_head = NULL;
     global->xstart = 200;
     global->time = 0;
     global->time_precision = TIMEREP_NS;
@@ -411,14 +413,34 @@ void create_globals (argc, argv, sync)
 
 TRACE *malloc_trace ()
     /* Allocate a trace structure and return it */
+    /* This should NOT do any windowing initialization */
 {
     TRACE	*trace;
     
     /*** alloc space for trace to display state block ***/
-    trace = (TRACE *)XtMalloc ( sizeof(TRACE) );
-    memset (trace, 0, sizeof (TRACE));
+    trace = DNewCalloc (TRACE);
     trace->next_trace = global->trace_head;
     global->trace_head = trace;
+    if (global->deleted_trace_head) global->deleted_trace_head->next_trace = global->trace_head;
+
+    /* Initialize Various Parameters */
+    trace->firstsig = NULL;
+    trace->dispsig = NULL;
+    trace->custom.customize = NULL;
+    trace->signal.add = NULL;
+    trace->signal.search = NULL;
+    trace->value.search = NULL;
+    trace->prntscr.customize = NULL;
+    trace->prompt_popup = NULL;
+    trace->annotate.dialog = NULL;
+    trace->fileselect.dialog = NULL;
+    trace->filename[0] = '\0';
+    trace->loaded = FALSE;
+    trace->numsig = 0;
+    trace->numsigvis = 0;
+    trace->numsigstart = 0;
+    trace->busrep = HBUS;
+    trace->ystart = 40;
 
     return (trace);
     }
@@ -870,31 +892,8 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtManageChild (trace->main);
     XtRealizeWidget (trace->toplevel);
     
-    ps_reset (NULL, trace, NULL);
-
-    /* Initialize Various Parameters */
-    trace->firstsig = NULL;
-    trace->dispsig = NULL;
+    /* Display parameters */
     trace->wind = XtWindow (trace->work);
-    trace->custom.customize = NULL;
-    trace->signal.add = NULL;
-    trace->signal.search = NULL;
-    trace->value.search = NULL;
-    trace->prntscr.customize = NULL;
-    trace->prompt_popup = NULL;
-    trace->annotate.dialog = NULL;
-    trace->fileselect.dialog = NULL;
-    trace->filename[0] = '\0';
-    trace->loaded = 0;
-    trace->numsig = 0;
-    trace->numsigvis = 0;
-    trace->numsigstart = 0;
-    trace->busrep = HBUS;
-    trace->ystart = 40;
-    
-    trace->signalstate_head = NULL;
-    config_restore_defaults (trace);
-    
     trace->gc = XCreateGC (global->display, trace->wind, 0, NULL);
 
     /* Choose fonts */
@@ -904,6 +903,10 @@ TRACE *create_trace (xs,ys,xp,yp)
 
     XSetFont (global->display, trace->gc, global->signal_font->fid);
 
+    ps_reset (NULL, trace, NULL);
+
+    config_trace_defaults (trace);
+    
     new_res (trace, global->res);
 
     set_cursor (trace, DC_NORMAL);

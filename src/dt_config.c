@@ -281,7 +281,7 @@ SIGNALSTATE	*find_signal_state (trace, name)
 {
     register SIGNALSTATE *sig;
 
-    for (sig=trace->signalstate_head; sig; sig=sig->next) {
+    for (sig=global->signalstate_head; sig; sig=sig->next) {
 	/* printf ("'%s'\t'%s'\n", name, sig->signame); */
 	if (wildmat(name, sig->signame))
 	    return (sig);
@@ -296,10 +296,10 @@ void	add_signal_state (trace, info)
     SIGNALSTATE *new;
     int t;
 
-    new = (SIGNALSTATE *)(XtMalloc (sizeof(SIGNALSTATE)));
+    new = XtNew (SIGNALSTATE);
     memcpy ((void *)new, (void *)info, sizeof(SIGNALSTATE));
-    new->next = trace->signalstate_head;
-    trace->signalstate_head = new;
+    new->next = global->signalstate_head;
+    global->signalstate_head = new;
 
     /*printf ("Signal '%s' Assigned States:\n", new->signame);*/
     for (t=0; t<MAXSTATENAMES; t++) {
@@ -315,13 +315,13 @@ void	free_signal_states (trace)
 {
     SIGNALSTATE *sstate_ptr, *last_ptr;
 
-    sstate_ptr = trace->signalstate_head;
+    sstate_ptr = global->signalstate_head;
     while (sstate_ptr) {
 	last_ptr = sstate_ptr->next;
 	DFree (sstate_ptr);
 	sstate_ptr = last_ptr;
 	}
-    trace->signalstate_head = NULL;
+    global->signalstate_head = NULL;
     }
 
 void	print_signal_states (w,trace)
@@ -331,7 +331,7 @@ void	print_signal_states (w,trace)
     SIGNALSTATE *sstate_ptr;
     int i;
 
-    sstate_ptr = trace->signalstate_head;
+    sstate_ptr = global->signalstate_head;
     while (sstate_ptr) {
 	printf("Signal %s, %d states:\n",sstate_ptr->signame, sstate_ptr->numstates);
 	for (i=0; i<MAXSTATENAMES; i++)
@@ -1137,9 +1137,10 @@ void config_read_defaults (trace, report_errors)
 	}
 
     /* Apply the statenames */
-    update_signal_states (trace);
+    val_states_update ();
     val_update_search ();
     sig_update_search ();
+    grid_calc_autos (trace);
 
     if (DTPRINT_ENTRY) printf ("Exit config_read_defaults\n");
     }
@@ -1202,7 +1203,7 @@ void config_write_file (filename)
     /*time & position*/
 
     fprintf (writefp, "\n! ** TRACE FLAGS **\n");
-    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+    for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
 	    fprintf (writefp, "!set_trace\t%s\n", trace->filename);
 	    fprintf (writefp, "file_format\t%s\n", filetypes[trace->fileformat].name);
@@ -1234,17 +1235,15 @@ void config_write_file (filename)
     cur_print (writefp);
     
     fprintf (writefp, "\n! ** TRACE INFORMATION **\n");
-    for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	if (trace->loaded) {
-	    fprintf (writefp, "!set_trace %s\n", trace->filename);
-	    /* Save signal colors */
-	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-		if (sig_ptr->color && !sig_ptr->search) {
-		    fprintf (writefp, "signal_highlight %d %s\n", sig_ptr->color, sig_ptr->signame);
-		    }
-		}
+    for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
+	fprintf (writefp, "!set_trace %s\n", trace->filename);
+	/* Save signal colors */
+	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	    if (sig_ptr->color && !sig_ptr->search) {
+		fprintf (writefp, "signal_highlight %d %s\n", sig_ptr->color, sig_ptr->signame);
 	    }
 	}
+    }
 
     fclose (writefp);
     }
@@ -1272,17 +1271,9 @@ void config_write_cb (w,trace,cb)
 *	config_restore_defaults
 **********************************************************************/
 
-void config_restore_defaults(trace)
+void config_trace_defaults(trace)
     TRACE	*trace;
 {
-    if (trace->signalstate_head != NULL)
-	free_signal_states (trace);
-    
-    grid_reset_cb (NULL, trace, NULL);
-
-    global->pageinc = FPAGE;
-    global->save_ordering = TRUE;
-
     trace->sighgt = 20;	/* was 25 */
     trace->cursor_vis = TRUE;
     trace->sigrf = SIG_RF;
@@ -1290,5 +1281,19 @@ void config_restore_defaults(trace)
     trace->vector_seperator = '<';
     trace->vector_endseperator = '>';
 
-    update_signal_states (trace);
+    grid_reset_cb (NULL, trace, NULL);
     }
+
+
+void config_global_defaults(trace)
+    TRACE	*trace;
+{
+    free_signal_states (trace);
+    val_states_update ();
+    draw_update_sigstart ();
+    
+    global->pageinc = FPAGE;
+    global->save_ordering = TRUE;
+    }
+
+

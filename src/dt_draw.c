@@ -660,7 +660,7 @@ void draw_trace (trace)
     } /* End of DRAW */
 
 
-void	update_globals ()
+void	draw_update_sigstart ()
 {
     TRACE *trace;
     SIGNAL *sig_ptr;
@@ -672,18 +672,16 @@ void	update_globals ()
     /* Calculate xstart from longest signal name */
     xstarttemp=XSTART_MIN;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	if (trace->loaded) {
-	    for (sig_ptr = (SIGNAL *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-		t1=sig_ptr->signame;
-		if (strncmp (t1, "%NET.",5)==0) t1+=5;
-		/* if (DTPRINT) printf ("Signal = '%s'  xstart=%d\n",t1,xstarttemp); */
-		if (xstarttemp < XTextWidth (global->signal_font,t1,strlen (t1)))
-		    xstarttemp = XTextWidth (global->signal_font,t1,strlen (t1));
-		}
-	    }
+	for (sig_ptr = (SIGNAL *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	    t1=sig_ptr->signame;
+	    if (strncmp (t1, "%NET.",5)==0) t1+=5;
+	    /* if (DTPRINT) printf ("Signal = '%s'  xstart=%d\n",t1,xstarttemp); */
+	    if (xstarttemp < XTextWidth (global->signal_font,t1,strlen (t1)))
+		xstarttemp = XTextWidth (global->signal_font,t1,strlen (t1));
 	}
     global->xstart = xstarttemp + XSTART_MARGIN;
     }
+}
 
 
 void draw_perform ()
@@ -789,6 +787,8 @@ void	draw_vscroll (trace)
 
     if (DTPRINT_ENTRY) printf ("In draw_vscroll\n");
 
+    if (!trace->loaded || !trace->numsig) return;
+
     /* initial the y colors for drawing */
     xmin = ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_x;
     xmax = xmin + ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_width;
@@ -809,8 +809,6 @@ void	draw_vscroll (trace)
 		   xmin, ymin, xmax - xmin, slider_ymin - ymin);
     XFillRectangle (global->display, XtWindow (trace->vscroll), trace->gc,
 		   xmin, slider_ymax, xmax - xmin, ymax - slider_ymax);
-
-    if (!trace->loaded || !trace->numsig) return;
 
     yscale =
 	(float)((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_height	/* sc height */

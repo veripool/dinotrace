@@ -70,11 +70,8 @@ void free_data (trace)
     if (!trace || !trace->loaded) return;
     trace->loaded = 0;
 
-    /* free any deleted signals */
-    sig_free (trace, global->delsig, TRUE, TRUE);
-
     /* free any added signals in other traces from this trace */
-    for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
+    for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	sig_free (trace, trace_ptr->firstsig, TRUE, TRUE);
 	}
     /* free signal data and each signal structure */
@@ -773,38 +770,14 @@ void read_trace_end (trace)
     config_read_defaults (trace, FALSE);
 
     /* Apply the statenames */
-    update_signal_states (trace);
+    val_states_update ();
     val_update_search ();
     sig_update_search ();
+    grid_calc_autos (trace);
+    draw_update_sigstart ();
 
     if (DTPRINT_FILE) printf ("read_trace_end: Done\n");
     }
-
-
-void	update_signal_states (trace)
-    TRACE	*trace;
-{
-    SIGNAL	*sig_ptr;
-
-    if (DTPRINT_ENTRY) printf ("In update_signal_states\n");
-
-    /* don't do anything if no file is loaded */
-    if (!trace->loaded) return;
-
-    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	if (NULL != (sig_ptr->decode = find_signal_state (trace, sig_ptr->signame))) {
-	    /* if (DTPRINT_FILE) printf ("Signal %s is patterned\n",sig_ptr->signame); */
-	    }
-	/* else if (DTPRINT_FILE) printf ("Signal %s  no pattern\n",sig_ptr->signame); */
-	}
-
-    /* Update grids */
-    grid_calc_autos (trace);
-
-    /* Update global information */
-    update_globals ();
-    }
-
 
 /****************************** DECSIM ASCII ******************************/
 
@@ -856,8 +829,7 @@ void decsim_read_ascii_header (trace, header_start, data_begin_ptr, sig_start_po
     /* Make a signal structure for each signal */
     trace->firstsig = NULL;
     for ( col=sig_start_pos; col < sig_end_pos; col++) {
-	sig_ptr = (SIGNAL *)XtMalloc (sizeof (SIGNAL));
-	memset (sig_ptr, 0, sizeof (SIGNAL));
+	sig_ptr = DNewCalloc (SIGNAL);
 
 	/* initialize all the pointers that aren't NULL */
 	if (trace->firstsig==NULL) {

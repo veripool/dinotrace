@@ -570,16 +570,14 @@ typedef struct st_trace {
 
     DTime		start_time;	/* Time of beginning of trace */
     DTime		end_time;	/* Time of ending of trace */
-
-    SIGNALSTATE		*signalstate_head;	/* Head of signal state information */
     } TRACE;
 
 /* Global information */
 typedef struct {
-    TRACE		*trace_head;	/* Pointer to first trace */
+    TRACE		*trace_head;	/* Pointer to first trace, set deleted_trace->next too  */
     TRACE		*preserved_trace;	/* Pointer to old trace when reading in new one */
+    TRACE		*deleted_trace_head;	/* Pointer to trace with deleted signals, which then links to teace_head */
 
-    SIGNAL	 	*delsig;       	/* Linked list of deleted signals */
     SIGNAL		*selected_sig;	/* Selected signal to move or add */
     TRACE		*selected_trace; /* Selected signal's trace */
     SIGNAL_LIST		*select_head;	/* Pointer to selected signal list head */
@@ -589,6 +587,8 @@ typedef struct {
     VALSEARCH		val_srch[MAX_SRCH];	/* Value search information */
 
     SIGSEARCH		sig_srch[MAX_SRCH];	/* Signal search information */
+
+    SIGNALSTATE		*signalstate_head;	/* Head of signal state information */
 
     XtAppContext	appcontext;	/* X App context */
     Display		*display;	/* X display pointer */

@@ -75,6 +75,9 @@
 /* Avoid binding error messages on XtFree, NOTE ALSO clears the pointer! */
 #define DFree(ptr) { XtFree((char *)ptr); ptr = NULL; }
 
+/* Xt provides a nice XtNew, but a XtNewCalloc is nice too (clear storage) */
+#define DNewCalloc(type) ((type *) XtCalloc(1, (unsigned) sizeof(type)))
+
 /* Useful for debugging messages */
 #define DeNull(_str_) ( ((_str_)==NULL) ? "NULL" : (_str_) )
 #define DeNullSignal(_sig_) ( ((_sig_)==NULL) ? "NULLPTR" : (DeNull((_sig_)->signame) ) )
@@ -156,7 +159,8 @@ extern void
     print_signal_states(),
     config_read_defaults (),
     config_read_file (), upcase_string(),
-    config_restore_defaults (TRACE *),
+    config_trace_defaults (TRACE *),
+    config_global_defaults (TRACE *),
     config_parse_geometry (char *, GEOMETRY *);
 extern SIGNALSTATE *find_signal_state (TRACE *, char *);
 extern int	wildmat ();
@@ -199,6 +203,7 @@ extern void
     val_search_cb(), val_search_ok_cb(), val_search_apply_cb(),
     val_highlight_cb(), val_highlight_ev(),
     val_update_search();
+extern void val_states_update();
     
 /* dt_printscreen routines */
 extern void
@@ -217,7 +222,7 @@ extern void
     read_make_busses(),
     fil_string_to_value(),
     decsim_read_ascii(), 
-    read_trace_end(), help_cb(), help_trace_cb(), update_signal_states();
+    read_trace_end(), help_cb(), help_trace_cb();
 extern void fgets_dynamic ();
 #ifndef fil_add_cptr
 extern void fil_add_cptr();
@@ -282,7 +287,7 @@ extern void	socket_create();
 
 /* dt_draw */
 extern void
-    update_globals(),
+    draw_update_sigstart(),
     draw_perform(),
     draw();
 

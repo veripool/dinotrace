@@ -68,15 +68,13 @@ void sig_free (trace, sig_ptr, select, recursive)
     /* loop and free signal data and each signal structure */
     while (sig_ptr) {
 	if (!select || sig_ptr->trace == trace) {
-	    /* Check head pointers */
-	    for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
+	    /* Check head pointers, Including deleted */
+	    for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 		if ( sig_ptr == trace_ptr->dispsig )
 		    trace_ptr->dispsig = sig_ptr->forward;
 		if ( sig_ptr == trace_ptr->firstsig )
 		    trace_ptr->firstsig = sig_ptr->forward;
 		}
-	    if ( sig_ptr == global->delsig )
-		global->delsig = sig_ptr->forward;
 
 	    /* free the signal data */
 	    del_sig_ptr = sig_ptr;
@@ -132,20 +130,15 @@ void    remove_signal_from_queue (trace, sig_ptr)
     if ( sig_ptr == trace->firstsig ) {
 	trace->firstsig = sig_ptr->forward;
 	}
-    /* if the signal is the deleted signal, change it */
-    if ( sig_ptr == global->delsig ) {
-	global->delsig = sig_ptr->forward;
-	}
 
-    if (!sig_ptr->deleted) trace->numsig--;
+    trace->numsig--;
     }
 
 #define ADD_LAST ((SIGNAL *)(-1))
-void    add_signal_to_queue (trace,sig_ptr,loc_sig_ptr,top_pptr)
+void    add_signal_to_queue (trace,sig_ptr,loc_sig_ptr)
     TRACE	*trace;
     SIGNAL	*sig_ptr;	/* Signal to add */
     SIGNAL	*loc_sig_ptr;	/* Pointer to signal ahead of one to add, NULL=1st, ADD_LAST=last */
-    SIGNAL	**top_pptr;	/* Pointer to where top of list is stored */
 {
     SIGNAL	*next_sig_ptr, *prev_sig_ptr;
     
@@ -159,17 +152,17 @@ void    add_signal_to_queue (trace,sig_ptr,loc_sig_ptr,top_pptr)
 
     /* Insert into first position? */
     if (loc_sig_ptr == NULL) {
-	next_sig_ptr = *top_pptr;
-	*top_pptr = sig_ptr;
+	next_sig_ptr = trace->firstsig;
+	trace->firstsig = sig_ptr;
 	prev_sig_ptr = (next_sig_ptr)? next_sig_ptr->backward : NULL;
 	}
     else if (loc_sig_ptr == ADD_LAST) {
 	prev_sig_ptr = NULL;
-	for (next_sig_ptr = *top_pptr; next_sig_ptr; next_sig_ptr = next_sig_ptr->forward) {
+	for (next_sig_ptr = trace->firstsig; next_sig_ptr; next_sig_ptr = next_sig_ptr->forward) {
 	    prev_sig_ptr = next_sig_ptr;
 	    }
 	if (!prev_sig_ptr) {
-	    *top_pptr = sig_ptr;
+	    trace->firstsig = sig_ptr;
 	    }
 	}
     else {
@@ -179,6 +172,7 @@ void    add_signal_to_queue (trace,sig_ptr,loc_sig_ptr,top_pptr)
 
     sig_ptr->forward = next_sig_ptr;
     sig_ptr->backward = prev_sig_ptr;
+    trace->numsig++;
     /* restore signal next in list */
     if (next_sig_ptr) {
 	next_sig_ptr->backward = sig_ptr;
@@ -197,10 +191,6 @@ void    add_signal_to_queue (trace,sig_ptr,loc_sig_ptr,top_pptr)
     if ( next_sig_ptr && ( next_sig_ptr == trace->firstsig )) {
 	trace->firstsig = sig_ptr;
 	}
-    /* if the signal is the deleted signal, change it */
-    if ( next_sig_ptr && ( next_sig_ptr == global->delsig )) {
-	global->delsig = sig_ptr;
-	}
     /* if no display sig, but is regular first sig, make the display sig */
     if ( trace->firstsig && !trace->dispsig) {
 	trace->dispsig = trace->firstsig;
@@ -217,7 +207,7 @@ SIGNAL *replicate_signal (trace, sig_ptr)
     if (DTPRINT_ENTRY) printf ("In replicate_signal - trace=%d\n",trace);
     
     /* Create new structure */
-    new_sig_ptr = (SIGNAL *)XtMalloc (sizeof (SIGNAL));
+    new_sig_ptr = XtNew (SIGNAL);
 
     /* Copy data */
     memcpy (new_sig_ptr, sig_ptr, sizeof (SIGNAL));
@@ -279,7 +269,7 @@ void	sig_wildmat_select (trace, pattern)
 	DFree (siglst_ptr);
 	}
 
-    if (trace_list) trace = global->trace_head;
+    if (trace_list) trace = global->deleted_trace_head;
     for (; trace; trace = (trace_list ? trace->next_trace : NULL)) {
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    if (wildmat (sig_ptr->signame, pattern)) {
@@ -291,33 +281,6 @@ void	sig_wildmat_select (trace, pattern)
 		global->select_head = siglst_ptr;
 		}
 	    }
-	}
-
-    if (trace_list) {
-	for (sig_ptr = global->delsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    if (wildmat (sig_ptr->signame, pattern)) {
-		/* printf ("Selected (DEL): %s\n", sig_ptr->signame); */
-		siglst_ptr = XtNew (SIGNAL_LIST);
-		siglst_ptr->trace = sig_ptr->trace;
-		siglst_ptr->signal = sig_ptr;
-		siglst_ptr->forward = global->select_head;
-		global->select_head = siglst_ptr;
-		}
-	    }
-	}
-    }
-
-void	sig_delete (trace, sig_ptr, preserve)
-    TRACE	*trace;
-    SIGNAL	*sig_ptr;	/* Signal to remove */
-    Boolean	preserve;	/* TRUE if should preserve deletion on rereading */
-    /* Delete the given signal */
-{
-    if (sig_ptr) {
-	remove_signal_from_queue (trace, sig_ptr);
-	sig_ptr->deleted = TRUE;
-	sig_ptr->deleted_preserve = preserve;
-	add_signal_to_queue (trace, sig_ptr, ADD_LAST, &global->delsig);
 	}
     }
 
@@ -331,22 +294,29 @@ void	sig_move (old_trace, sig_ptr, new_trace, after_sig_ptr)
     if (sig_ptr) {
 	remove_signal_from_queue (old_trace, sig_ptr);
 	sig_ptr->deleted = FALSE;
-	add_signal_to_queue (new_trace, sig_ptr, after_sig_ptr, &new_trace->firstsig);
-	new_trace->numsig++;
+	add_signal_to_queue (new_trace, sig_ptr, after_sig_ptr);
 	}
     
 #if 0
     printf ("Adding %s\n", sig_ptr->signame);
-    sig_ptr = global->delsig;
-    while (sig_ptr) {
-	printf (" %s\n",sig_ptr->signame);
-	sig_ptr = sig_ptr->forward;
-	}
 
     printf ("Post\n");
     debug_integrity_check_cb (NULL, NULL, NULL);
     printf ("Done\n");
 #endif
+    }
+
+void	sig_delete (trace, sig_ptr, preserve)
+    TRACE	*trace;
+    SIGNAL	*sig_ptr;	/* Signal to remove */
+    Boolean	preserve;	/* TRUE if should preserve deletion on rereading */
+    /* Delete the given signal */
+{
+    if (sig_ptr) {
+	sig_move (trace, sig_ptr, global->deleted_trace_head, ADD_LAST);
+	sig_ptr->deleted = TRUE;
+	sig_ptr->deleted_preserve = preserve;
+	}
     }
 
 void	sig_copy (old_trace, sig_ptr, new_trace, after_sig_ptr)
@@ -364,8 +334,7 @@ void	sig_copy (old_trace, sig_ptr, new_trace, after_sig_ptr)
 	else {
 	    new_sig_ptr = replicate_signal (old_trace, sig_ptr);
 	    sig_ptr->deleted = FALSE;
-	    add_signal_to_queue (new_trace, new_sig_ptr, after_sig_ptr, &new_trace->firstsig);
-	    new_trace->numsig++;
+	    add_signal_to_queue (new_trace, new_sig_ptr, after_sig_ptr);
 	    }
 	}
     }
@@ -378,10 +347,8 @@ void	sig_update_search ()
 
     if (DTPRINT_ENTRY) printf ("In sig_update_search\n");
 
-    /* Search every trace for the signals */
-    for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	if (!trace->loaded) continue;
-
+    /* Search every trace for the signals, including deleted */
+    for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	/* See what signals match the search and highlight as appropriate */
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    if (sig_ptr->color && sig_ptr->search) {
@@ -482,7 +449,7 @@ void    sig_copy_selected (new_trace, after_pattern)
 	sig_copy (old_trace, sig_ptr, new_trace, after_sig_ptr);
 	}
 
-    update_globals();	/* Get xstart to be correct */
+    draw_update_sigstart();	/* Get xstart to be correct */
     draw_all_needed ();
     }
 
@@ -592,12 +559,12 @@ void    sig_add_cb (w,trace,cb)
     /* loop thru signals on deleted queue and add to list */
     list_wid = XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_LIST);
     XmListDeleteAllItems (list_wid);
-    for (sig_ptr = global->delsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+    for (sig_ptr = global->deleted_trace_head->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	XmListAddItem (list_wid, sig_ptr->xsigname, 0);
 	}
 
     /* if there are signals deleted make OK button active */
-    XtSetArg (arglist[0], XmNsensitive, (global->delsig != NULL)?TRUE:FALSE);
+    XtSetArg (arglist[0], XmNsensitive, (global->deleted_trace_head->firstsig != NULL)?TRUE:FALSE);
     XtSetValues (XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_OK_BUTTON), arglist, 1);
 
     /* manage the popup on the screen */
@@ -613,10 +580,10 @@ void    sig_add_sel_cb (w,trace,cb)
     
     if (DTPRINT_ENTRY) printf ("In sig_add_sel_cb - trace=%d\n",trace);
     
-    if ( global->delsig == NULL ) return;
+    if ( global->deleted_trace_head->firstsig == NULL ) return;
 
     /* save the deleted signal selected number */
-    for (sig_ptr = global->delsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+    for (sig_ptr = global->deleted_trace_head->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	if (XmStringCompare (cb->value, sig_ptr->xsigname)) break;
 	}
     
@@ -889,12 +856,12 @@ void    sig_add_ev (w,trace,ev)
     /* remove signal from list box */
     XmListDeleteItem (XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_LIST),
 		      global->selected_sig->xsigname );
-    if (global->delsig == NULL) {
+    if (global->deleted_trace_head->firstsig == NULL) {
 	XtSetArg (arglist[0], XmNsensitive, FALSE);
 	XtSetValues (XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_OK_BUTTON), arglist, 1);
 	}
     
-    sig_move (trace, global->selected_sig, trace, sig_ptr);
+    sig_move (global->deleted_trace_head, global->selected_sig, trace, sig_ptr);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -903,7 +870,7 @@ void    sig_add_ev (w,trace,ev)
     XtUnmanageChild ( trace->signal.add );
     XtManageChild ( trace->signal.add );
     
-    update_globals();	/* Get xstart to be correct */
+    draw_update_sigstart();	/* Get xstart to be correct */
     draw_all_needed ();
     }
 
@@ -949,7 +916,7 @@ void    sig_move_ev (w,trace,ev)
 	set_cursor (trace, DC_SIG_MOVE_1);
 	}
     
-    update_globals();	/* Get xstart to be correct */
+    draw_update_sigstart();	/* Get xstart to be correct */
     draw_all_needed ();
     }
 
@@ -987,7 +954,7 @@ void    sig_copy_ev (w,trace,ev)
 	set_cursor (trace, DC_SIG_COPY_1);
 	}
     
-    update_globals();	/* Get xstart to be correct */
+    draw_update_sigstart();	/* Get xstart to be correct */
     draw_all_needed ();
     }
 
@@ -1289,7 +1256,7 @@ void    sig_sel_pattern_cb (w,trace,cb)
 
     /* loop thru signals on deleted queue and add to list */
     pattern = XmTextGetString (trace->select.add_pat);
-    sig_sel_update_pattern (trace->select.add_sigs, global->delsig, pattern,
+    sig_sel_update_pattern (trace->select.add_sigs, global->deleted_trace_head->firstsig, pattern,
 			    &(trace->select.add_strings), &(trace->select.add_signals),
 			    &(trace->select.add_size));
 
@@ -1305,7 +1272,7 @@ void    sig_sel_ok_cb (w,trace,cb)
     TRACE			*trace;
     XmAnyCallbackStruct		*cb;
 {
-    update_globals();	/* Get xstart to be correct */
+    draw_update_sigstart();	/* Get xstart to be correct */
     draw_all_needed ();
     }
 
@@ -1336,7 +1303,7 @@ void    sig_sel_add_all_cb (w,trace,cb)
 	if (!sig_ptr) break;
 
 	/* Add it */
-	sig_move (trace, sig_ptr, trace, ADD_LAST);
+	sig_move (global->deleted_trace_head, sig_ptr, trace, ADD_LAST);
 	}
     sig_sel_pattern_cb (NULL, trace, NULL);
     }
@@ -1400,7 +1367,7 @@ void    sig_sel_add_list_cb (w,trace,cb)
 	/*if (DTPRINT) printf ("Pos %d sig '%s'\n", i, sig_ptr->signame);*/
 
 	/* Add it */
-	sig_move (trace, sig_ptr, trace, ADD_LAST);
+	sig_move (global->deleted_trace_head, sig_ptr, trace, ADD_LAST);
 	}
     sig_sel_pattern_cb (NULL, trace, NULL);
     }
@@ -1464,22 +1431,8 @@ void sig_cross_preserve (trace)
     global->preserved_trace = XtNew (TRACE);
     memcpy (global->preserved_trace, trace, sizeof (TRACE));
     
-    /* Deleted signals */
-    for (sig_ptr = global->delsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	if (sig_ptr->trace == trace) {
-	    /* free the signal data to save memory */
-	    /* NOTE DFree also clears the pointer, this is needed here! */
-	    DFree (sig_ptr->bptr);
-	    DFree (sig_ptr->xsigname);
-
-	    /* change to point to the new preserved structure */
-	    sig_ptr->trace = global->preserved_trace;
-	    sig_ptr->new_trace_sig = NULL;
-	}
-    }
-
-    /* Other signals */
-    for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
+    /* Other signals, AND deleted signals */
+    for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	for (sig_ptr = trace_ptr->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 
 	    if (sig_ptr->trace == trace) {
@@ -1573,16 +1526,16 @@ void sig_cross_restore (trace)
 	/* Preserve colors, etc */
 
 	/* Establish links */
-	sig_cross_sigmatch (trace, global->delsig);
+	sig_cross_sigmatch (trace, global->deleted_trace_head->firstsig);
 	sig_cross_sigmatch (trace, global->preserved_trace->firstsig);
-	for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
+	for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	    sig_cross_sigmatch (trace, trace_ptr->firstsig);
 	}
 	if (DTPRINT_PRESERVE) printf ("Preserve: Match done\n");
 
 	/* Deleted signals */
 	if (DTPRINT_PRESERVE) printf ("Preserve: Deleting signals\n");
-	for (old_sig_ptr = global->delsig; old_sig_ptr; old_sig_ptr = old_sig_ptr->forward) {
+	for (old_sig_ptr = global->deleted_trace_head->firstsig; old_sig_ptr; old_sig_ptr = old_sig_ptr->forward) {
 	    if (old_sig_ptr->trace == global->preserved_trace) {
 		/* Signal was deleted in preserved trace, so delete new one too */
 		new_sig_ptr = old_sig_ptr->new_trace_sig;
@@ -1861,8 +1814,7 @@ void sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr)
     fil_add_cptr (new_sig_ptr, &new_value, FALSE);
     new_sig_ptr->cptr = new_sig_ptr->bptr;
 
-    add_signal_to_queue (trace, new_sig_ptr, base_sig_ptr, &trace->dispsig);
-    trace->numsig++;
+    add_signal_to_queue (trace, new_sig_ptr, base_sig_ptr);
 
     /*if (DTPRINT_FILE) {
 	print_sig_info (new_sig_ptr);

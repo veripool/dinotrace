@@ -327,14 +327,11 @@ void new_time (trace)
         global->time = trace->start_time;
 	}
 
-    /* Update beginning of all traces */
-    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+    /* Update beginning of all traces, DELETED TOO */
+    for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	new_time_sigs (trace->firstsig);
 	}
 
-    /* Update deleted traces in case one gets added */
-    new_time_sigs (global->delsig);
-    
     /* Update windows */
     draw_all_needed ();
     }
@@ -837,10 +834,9 @@ void    debug_integrity_check_cb (w,trace,cb)
     TRACE	       	*trace;
     XmAnyCallbackStruct	*cb;
 {
-    debug_signal_integrity (NULL, global->delsig, "Deleted Signals", TRUE);
-
-    for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	debug_signal_integrity (trace, trace->firstsig, trace->filename, FALSE);
+    for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
+	debug_signal_integrity (trace, trace->firstsig, trace->filename, 
+				(trace==global->deleted_trace_head));
 	}
     }
 

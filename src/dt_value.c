@@ -153,10 +153,7 @@ void	val_update_search ()
 	}
 
     /* Search every trace for the value, mark the signal if it has it to speed up displaying */
-    for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	/* don't do anything if no file is loaded */
-	if (!trace->loaded) continue;
-	
+    for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    if (sig_ptr->lws == 1) {
 		/* Single bit signal, don't search for values */
@@ -220,6 +217,25 @@ void	val_update_search ()
     /* Delete all old cursors */
     cur_delete_of_type (SEARCHOLD);
     }
+
+/****************************** STATES ******************************/
+
+void	val_states_update ()
+{
+    TRACE	*trace;
+    SIGNAL	*sig_ptr;
+
+    if (DTPRINT_ENTRY) printf ("In update_signal_states\n");
+
+     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
+	 for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	     if (NULL != (sig_ptr->decode = find_signal_state (trace, sig_ptr->signame))) {
+		 /* if (DTPRINT_FILE) printf ("Signal %s is patterned\n",sig_ptr->signame); */
+	     }
+	 }
+    }
+}
+
 
 /****************************** MENU OPTIONS ******************************/
 
