@@ -626,7 +626,7 @@ Selecting @dmenu{Trace Open...} shrinks the current window in half, and
 opens another Dinotrace window, linked in time to the original.  The two
 traces will then pan together and share cursors, etc.  Multiple window
 support is intended for traces that have the same time lengths.
-@xref{open_geometry} for how to change the default window sizes, such as
+See @ref{open_geometry} for how to change the default window sizes, such as
 to not shrink the original window when opening.
 
 @node Trace Close, Trace Clear, Trace Open..., Trace Menu
@@ -710,7 +710,7 @@ Selecting @dmenu{Trace Exit} will exit Dinotrace.
 @cindex Customize Change...
 
 Selecting @dmenu{Customize Change} pops up a requester that allows the
-configuration to be customized.  @xref{Customization Files} for
+configuration to be customized.  See @ref{Customization Files} for
 permanent configuration, and additional options that are not selectable
 here.
 
@@ -768,7 +768,7 @@ the screen.
 @cindex Grid, Customization
 
 Selecting @dmenu{Customize Grid} pops up a requester that allows the
-configuration to be customized.  @xref{Customization Files} for
+configuration to be customized.  See @ref{Customization Files} for
 permanent configuration.  Note that the lowest numbered grid that is
 visible is used for moving one increment, stepping cursors forward and
 back, and for counting cycles.
@@ -838,7 +838,7 @@ files.
 Selecting @dmenu{Cursor Add}, or pressing @kbd{c}, then clicking
 @kbd{@key{MB1}} will insert cursors at the clicked on times.  The
 @dmenu{Next} color button, or pressing @kbd{C} will select the next
-color down in the menu from the last color selected.  @xref{cursor_add}
+color down in the menu from the last color selected.  See @ref{cursor_add}
 for the equivalent configuration file command.
 
 @node Cursor Highlight, Cursor Move, Cursor Add, Cursor Menu
@@ -931,7 +931,7 @@ Selecting @dmenu{Cursor Cancel}, or pressing @kbd{@key{esc}} will stop
 
 Selecting @dmenu{Signal Add} will pop up a popup allowing a signal to be
 selected then added at the point where @kbd{@key{MB1}} is clicked.
-@xref{signal_add} for the equivalent configuration file command.
+See @ref{signal_add} for the equivalent configuration file command.
 
 @node Signal Highlight, Signal Move, Signal Add..., Signal Menu
 @subsection Signal Highlight
@@ -942,7 +942,7 @@ selected then added at the point where @kbd{@key{MB1}} is clicked.
 
 Selecting @dmenu{Signal Highlight}, or pressing @kbd{s}, then clicking
 @kbd{@key{MB1}} on signals changes the color of those signals.
-@xref{signal_highlight} for the equivalent configuration file command.
+See @ref{signal_highlight} for the equivalent configuration file command.
 
 @node Signal Move, Signal Copy, Signal Highlight, Signal Menu
 @subsection Signal Move
@@ -952,7 +952,7 @@ Selecting @dmenu{Signal Highlight}, or pressing @kbd{s}, then clicking
 Selecting @dmenu{Signal Move} then clicking @kbd{@key{MB1}} on a signal
 and clicking @kbd{@key{MB1}} again on a new position moves a signal.
 Signals may be moved between traces, but closing a trace eliminates all
-signals that were originally from that trace.  @xref{signal_move} for
+signals that were originally from that trace.  See @ref{signal_move} for
 the equivalent configuration file command.
 
 @node Signal Copy, Signal Delete, Signal Move, Signal Menu
@@ -963,7 +963,7 @@ the equivalent configuration file command.
 Selecting @dmenu{Signal Copy} then clicking @kbd{@key{MB1}} on a signal
 and clicking @kbd{@key{MB1}} again on a new position copies a signal.
 Signals may be copied between traces, but closing a trace eliminates all
-signals that were originally from that trace.  @xref{signal_copy} for
+signals that were originally from that trace.  See @ref{signal_copy} for
 the equivalent configuration file command.
 
 
@@ -974,7 +974,7 @@ the equivalent configuration file command.
 
 Selecting @dmenu{Signal Delete} then clicking @kbd{@key{MB1}} on signals
 deletes those signals.  @dmenu{Signal Select} may be used to recover the
-deleted signals.  @xref{signal_delete} for the equivalent configuration
+deleted signals.  See @ref{signal_delete} for the equivalent configuration
 file command.
 
 @node Signal Radix, Signal Waveform, Signal Delete, Signal Menu
@@ -986,7 +986,7 @@ Selecting @dmenu{Signal Radix} then clicking @kbd{@key{MB1}} on signals
 changes the radix of the signals to the one selected.  Note that the
 @code{real} radix is detected for Verilog automatically, and changing
 other non-real signals to a real format probably won't display the
-values you wish.  @xref{signal_radix} for the equivalent configuration
+values you wish.  See @ref{signal_radix} for the equivalent configuration
 file command.
 
 @node Signal Waveform, Signal Search..., Signal Radix, Signal Menu
@@ -996,7 +996,7 @@ file command.
 
 Selecting @dmenu{Signal Waveform} then clicking @kbd{@key{MB1}} on
 signals changes the signal to be displayed as either analog or digital.
-@xref{signal_waveform} for the equivalent configuration file command.
+See @ref{signal_waveform} for the equivalent configuration file command.
 
 @node Signal Search..., Signal Select..., Signal Waveform, Signal Menu
 @subsection Signal Search...
@@ -1110,7 +1110,7 @@ User cursors are those placed using the @dmenu{Cursor Add} menu.
 Automatic cursors are from searching for values or cursors placed by
 @file{.dino} files.
 
-See @xref{Dinotrace and Emacs}
+See @ref{Dinotrace and Emacs}
 
 @node Value Annotate, Value Highlight, Value Annotate..., Value Menu
 @subsection Value Annotate
@@ -1118,7 +1118,7 @@ See @xref{Dinotrace and Emacs}
 @kindex a
 
 Selecting @dmenu{Value Annotate}, or pressing @kbd{a} annotates code
-using the last Annotate... settings.  @xref{annotate} for the equivalent
+using the last Annotate... settings.  See @ref{annotate} for the equivalent
 configuration file command.
 
 @node Value Highlight, Value Examine, Value Annotate, Value Menu
@@ -1132,7 +1132,7 @@ Selecting @dmenu{Value Highlight}, or pressing @kbd{v}, then clicking
 @kbd{@key{MB1}} on a value loads that value into one of the 9 search
 values, and highlights it where it occurs in the trace.  The search
 value can then be seen and modified with the @dmenu{Value Search} popup.
-@xref{value_highlight} for the equivalent configuration file command.
+See @ref{value_highlight} for the equivalent configuration file command.
 
 @node Value Examine, Value Search..., Value Highlight, Value Menu
 @subsection Value Examine
@@ -1157,7 +1157,7 @@ Selecting @dmenu{Value Search...} allows specification of 9 values to be
 searched for in the trace.  Each value is entered into a text widget and
 one or two toggle buttons to the left are activated.  The @dmenu{Value
 Highlight} menu can be used to load a search automatically.
-@xref{value_highlight} for the equivalent configuration file command.
+See @ref{value_highlight} for the equivalent configuration file command.
 
 The @widget{Highlight value} button will make anywhere that the value
 appears in a trace to be printed using the color of the toggle button.
@@ -2342,7 +2342,7 @@ your search path.  It was distributed with VCS, and requires a key to
 operate; contact your simulation vendor for details.
 
 Dinotrace will convert the format to a standard VCD file using a pipe.
-Thus all of the notes above for the @xref{Verilog Value Change Dumps}
+Thus all of the notes above for the @ref{Verilog Value Change Dumps}
 also apply to this format.
 
 @menu
@@ -2396,7 +2396,7 @@ set trace/radix=2/vector/header/exact/logname=name
 	clock, signal1, signal2, signal3
 @end example
 
-For information, see @xref{Making Decsim Binary Traces}.
+For information, see @ref{Making Decsim Binary Traces}.
 
 @node ASCII Trace Format,  , Making Decsim ASCII Traces, ASCII Traces
 @subsection ASCII Trace Format
