@@ -78,7 +78,7 @@
 #if HAVE_FCNTL_H
 # include <fcntl.h>
 #endif
-#if HAVE_SYS_TIME
+#if HAVE_SYS_TIME_H
 # include <sys/time.h>
 #endif
 #include <time.h>

@@ -69,6 +69,16 @@
 #define HAVE_STRCASECMP 0
 
 /**********************************************************************/
+/**** Protos */
+
+/* Set define if we have prototype for: gethostname */
+#ifdef  _LINUX_C_LIB_VERSION	/* Linux has it */
+#define HAVE_GETHOSTNAME_PROTO 1
+#else
+#define HAVE_GETHOSTNAME_PROTO 0
+#endif
+
+/**********************************************************************/
 /**** Headers */
 /* Set define if we have header: <fcntl.h> */
 #define HAVE_FCNTL_H 0
@@ -80,7 +90,10 @@
 #define HAVE_UNISTD_H 0
 
 /* Set define if we have header: <sys/time.h> */
-#define HAVE_SYS_TIME 0
+#define HAVE_SYS_TIME_H 0
+
+/* Set define if we have header: <sys/un.h> */
+#define HAVE_SYS_UN_H 1
 
 /**********************************************************************/
 /**** System Information */

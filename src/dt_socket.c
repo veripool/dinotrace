@@ -64,7 +64,11 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/param.h>
+
+#if HAVE_SYS_UN_H
 #include <sys/un.h>
+#endif
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
@@ -86,7 +90,9 @@ typedef struct st_client {
     char	command[MAXCMDLEN];	/* Command being formed */
 } Client_t;
 
+#if !HAVE_GETHOSTNAME_PROTO
 extern int gethostname (char *name, int namelen);
+#endif
 
 /*** MAIN ********************************************************************/
 
