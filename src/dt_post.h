@@ -1,5 +1,61 @@
+/* $Id$ */
+/******************************************************************************
+ * dt_post.h --- postscript header 
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
-char dinopost[] = "% $Id$\n\
+char dt_post[] = "% $Id$\n\
 % Contact snyder@segsrv.hlo.dec.com with any problems with this document\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\

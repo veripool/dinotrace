@@ -1,32 +1,61 @@
-/******************************************************************************
- *
- * Filename:
- *     Dinotrace.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V4.0
- *
- * Author:
- *     Allen Gallotta
- *
- * Abstract:
- *     This module contains the main routine that initializes Dinotrace and
- *	sets up the environment.
- *
- * Modification History:
- *     AAG	 5-Jul-89	Original Version
- *     AAG	22-Aug-90	Base Level V4.1
- *     AAG	 6-Nov-90	Added screen option
- *     AAG	20-Nov-90	Added support for siz, pos, and res options
- *     AAG	29-Apr-91	Use X11 for Ultrix support
- *     AAG	 9-Jul-91	Added trace format support
- *
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dinotrace.c --- main routine and documentation
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
+#include <config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,13 +69,17 @@ static char rcsid[] = "$Id$";
 #include <X11/Xutil.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
+#if HAVE_COMPILE_DATE_H
 #include "compile_date.h"
+#else
+#define COMPILE_DATE_STRG "Unknown"
+#endif
 
 Boolean		DTDEBUG=FALSE;		/* Debugging mode */
 int		DTPRINT=0;		/* Information printing mode */
 int		DebugTemp=0;		/* Temp value for trying things */
-int		file_format=FF_DECSIM;	/* Type of trace to support */
+int		file_format=FF_VERILOG;	/* Type of trace to support */
 char		message[1000];		/* generic string for messages */
 XGCValues	xgcv;
 Arg		arglist[20];
@@ -59,11 +92,11 @@ struct st_filetypes filetypes[FF_NUMFORMATS] = {
     { 1, "Verilog",		"DMP",	"*.dmp*"	},
     { 0, "DECSIM Binary",	"TRA",	"*.tra*"	},
     { 0, "DECSIM Ascii",	"TRA",	"*.tra*"	},
-    };
+};
 
-int    main (argc, argv)
-    unsigned int	argc;
-    char		**argv;
+int    main (
+    unsigned int	argc,
+    char		**argv)
 {
     int		i;
     Boolean	sync = FALSE;
@@ -80,48 +113,36 @@ int    main (argc, argv)
 	if (argv[i][0]!='-') {
 	    /* Filename */
 	    i++;
-	    }
+	}
 	else {
 	    /* Switch */
 	    if ( !strcmp (argv[i], "-debug") ) {
 		DTDEBUG = TRUE;
-		}
+	    }
 	    else if ( !strcmp (argv[i], "-print") ) {
 		if ((i+1)<argc && isdigit(argv[i+1][0])) {
 		    shift;
 		    sscanf (argv[i], "%x", & DTPRINT );
-		    }
-		else DTPRINT = -1;
 		}
+		else DTPRINT = -1;
+	    }
 	    else if ( !strcmp (argv[i], "-tempest") ) {
 		file_format = FF_TEMPEST;
-		}
+	    }
 	    else if ( !strcmp (argv[i], "-decsim")
 		     || !strcmp (argv[i], "-decsim_z") ) {
 		file_format = FF_DECSIM;
-		}
+	    }
 	    else if ( !strcmp (argv[i], "-verilog") ) {
 		file_format = FF_VERILOG;
-		}
+	    }
 	    else if ( !strcmp (argv[i], "-sync") ) {
 		sync = TRUE;
-		}
+	    }
 	    else if ( !strcmp (argv[i], "-geometry") && (i+1)<argc ) {
 		shift;
 		config_parse_geometry (argv[i], & (global->start_geometry));
-		}
-	    else if ( !strcmp (argv[i], "-siz") && (i+2)<argc ) {
-		shift;
-		sscanf (argv[i], "%hd", & (global->start_geometry.width) );
-		shift;
-		sscanf (argv[i], "%hd", & (global->start_geometry.height) );
-		}
-	    else if ( !strcmp (argv[i], "-pos") && (i+2)<argc ) {
-		shift;
-		sscanf (argv[i], "%hd", & (global->start_geometry.x) );
-		shift;
-		sscanf (argv[i], "%hd", & (global->start_geometry.y) );
-		}
+	    }
 	    else if ( !strcmp (argv[i], "-res") && (i+1)<argc ) {
 		float res;
 		
@@ -129,7 +150,7 @@ int    main (argc, argv)
 		sscanf (argv[i],"%f",&res);
 		global->res = RES_SCALE/ (float)res;
 		global->res_default = FALSE;
-		}
+	    }
 	    else if ( !strcmp (argv[i], "-noconfig") ) {
 		int cfg_num;
 		for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
@@ -149,10 +170,10 @@ int    main (argc, argv)
 		printf ("\tConfig:\t-noconfig\tSkip reading global config files.\n");
 		printf ("\tX-11:\t-geometry XxY+x+y  Specify starting geometry.\n\n");
 		exit (-1);
-		}
-	    shift;
 	    }
+	    shift;
 	}
+    }
     
     /* quick structure portability check */
 #ifndef lint	/* constant in conditional context */
@@ -160,7 +181,7 @@ int    main (argc, argv)
 	|| (sizeof (VALUE) != 5*sizeof (unsigned int))) {
 	printf ("%%E, Internal structure portability problem %d!=%d!=%d/4.\n",
 		sizeof (SIGNAL_LW), sizeof (unsigned int), sizeof (VALUE));
-	}
+    }
 
     /* FAILS on MIPS Ultrix, so don't rely on this:
     if ((1<<32) != 0) {
@@ -187,13 +208,13 @@ int    main (argc, argv)
 			  global->start_geometry.x, global->start_geometry.y);
     
     /* expiration check */
-#ifdef EXPIRATION
+#if EXPIRATION
     if ((COMPILE_DATE + (EXPIRATION)) < time (NULL)) {
 	XSync (global->display,0);
 	dino_information_ack (trace, "This version of DinoTrace has expired.\n\
 Please install a newer version.\n\
 See the Help menu for more information.");
-	}
+    }
 #endif
 
     draw_all_needed ();
@@ -204,15 +225,15 @@ See the Help menu for more information.");
 	if ( argv[i][0] && argv[i][0] != '-' ) {
 	    if (! opened_a_file) {
 		opened_a_file = TRUE;
-		}
+	    }
 	    else {
 		trace = trace_create_split_window (trace);
-		}
+	    }
 	    XSync (global->display,0);
 	    strcpy (trace->filename, argv[i]);
 	    fil_read_cb (trace);
-	    }
 	}
+    }
 
     /* loop forever */
     /*This code ~= XtAppMainLoop (global->appcontext);*/
@@ -222,12 +243,12 @@ See the Help menu for more information.");
 	if (global->redraw_needed && !XtAppPending (global->appcontext)
 	    && (!global->redraw_manually || (global->redraw_needed & GRD_MANUAL))) {
 	    draw_perform();
-	    }
+	}
 
 	XtAppNextEvent (global->appcontext, &event);
 	XtDispatchEvent (&event);
-	}
     }
+}
 
 char	*help_message ()
     {
@@ -258,24 +279,7 @@ For configuration information, Dinotrace reads in order:\n\
      %sCURRENT_TRACE_NAME.dino\n",
 	     DTVERSION,
 	     COMPILE_DATE_STRG,
-#ifdef VMS
-#ifdef __alpha
-	     "VMS Alpha",
-#else
-	     "VMS VAX",
-#endif /* __alpha */
-#else /* not VMS */
-#ifdef __alpha
-	     "OSF Alpha",
-#else
-#ifdef __mips
-	     "Ultrix MIPS",
-#else
-	     "Unknown OS",
-#endif /* __mips */
-#endif /* __alpha */
-#endif /* VMS */
-
+	     HOST,
 #ifdef VMS
 	     "DINODISK:",
 	     "DINODISK:",
@@ -294,7 +298,7 @@ For configuration information, Dinotrace reads in order:\n\
 	     );
 
     return (msg);
-    }
+}
 
 
 

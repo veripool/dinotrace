@@ -1,28 +1,59 @@
+static char rcsid[] = "$Id$";
 /******************************************************************************
+ * dt_config.c --- configuration file reading
  *
- * Filename:
- *     dt_config.c
+ * This file is part of Dinotrace.  
  *
- * Subsystem:
- *     Dinotrace
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
  *
- * Version:
- *     Dinotrace V5.0
- *
- * Author:
- *     Wilson Snyder
- *
- * Abstract:
- *
- * Modification History:
- *     WPS	 5-Jan-93	Original Version
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
  *
  ******************************************************************************
  *
- *	%		Comment
- *	!		Comment
- *	#		Eventual preprocessor (#INCLUDE at least)
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
  *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ ******************************************************************************
 ! Undocumented:
 !	debug		ON | OFF
 !	print		<number> | ON | OFF
@@ -58,7 +89,7 @@
 !	start_geometry	<width>x<height>+<xoffset>+<yoffset>
 ! Modification of traces:
 !	signal_delete	<signal_pattern>
-!	signal_delete_constant	<signal_pattern>
+!	signal_delete_constant	<signal_pattern> [-IGNOREXZ]
 !	signal_add	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
 !	signal_copy	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
 !	signal_move	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
@@ -72,10 +103,9 @@
 !	resolution	<res>
 !	refresh
 !	annotate
- *	
- */
-static char rcsid[] = "$Id$";
+ *****************************************************************************/
 
+#include <config.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -90,7 +120,10 @@ static char rcsid[] = "$Id$";
 # include <math.h> /* removed for Ultrix support... */
 #endif
 
-#ifdef __osf__
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+#if HAVE_FCNTL_H
 # include <sys/fcntl.h>
 #endif
 
@@ -98,7 +131,7 @@ static char rcsid[] = "$Id$";
 #include <Xm/Xm.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
 
 /* See the ascii map to have this make sense */
 #define issigchr(ch)  ( ((ch)>' ') && ((ch)!='=') && ((ch)!='\"') && ((ch)!='\'') )
@@ -118,16 +151,10 @@ static Boolean config_reading_socket;
 *	READING FUNCTIONS
 **********************************************************************/
 
-void upcase_string (tp)
-    char *tp;
-{
-    for (;*tp;tp++) *tp = toupper (*tp);
-    }
-
-void config_get_line(line, len, readfp)
-    char *line;
-    int len;
-    FILE *readfp;
+void config_get_line (
+    char *line,
+    int len,
+    FILE *readfp)
 {
     char *tp;
 
@@ -135,11 +162,11 @@ void config_get_line(line, len, readfp)
     fgets (line, len, readfp);
     if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
     config_line_num++;
-    }
+}
 
-int	config_read_signal (line, out)
-    char *line;
-    char *out;
+int	config_read_signal (
+    char *line,
+    char *out)
 {
     char *tp;
     int outlen=0;
@@ -147,12 +174,12 @@ int	config_read_signal (line, out)
     while (*line && !issigchr(*line)) {
 	line++;
 	outlen++;
-	}
+    }
 
     if (!*line) {
 	out[0]='\0';
 	return(outlen);
-	}
+    }
 
     /* extract signal */
     strncpy(out, line, MAXSIGLEN);
@@ -161,12 +188,12 @@ int	config_read_signal (line, out)
     *tp='\0';
 
     return (strlen(out)+outlen);
-    }
+}
 
-int	config_read_state (line, out, statenum_ptr)
-    char *line;
-    char *out;
-    int *statenum_ptr;
+int	config_read_state (
+    char *line,
+    char *out,
+    int *statenum_ptr)
 {
     char *tp;
     int outlen=0;
@@ -174,12 +201,12 @@ int	config_read_state (line, out, statenum_ptr)
     while (*line && isstatesep(*line)) {
 	line++;
 	outlen++;
-	}
+    }
 
     if (!*line) {
 	out[0]='\0';
 	return(outlen);
-	}
+    }
 
     for (tp=line; *tp && isdigit(*tp); tp++) ;
     if (*tp++ == '=') {
@@ -187,7 +214,7 @@ int	config_read_state (line, out, statenum_ptr)
 	*statenum_ptr = atoi (line);
 	outlen += (tp - line);
 	line = tp;
-	}
+    }
 
     /* extract state */
     strncpy(out, line, MAXVALUELEN);
@@ -196,33 +223,33 @@ int	config_read_state (line, out, statenum_ptr)
     *tp='\0';
 
     return (strlen(out)+outlen);
-    }
+}
 
-int	config_read_int (line, out)
-    char *line;
-    int *out;
+int	config_read_int (
+    char *line,
+    int *out)
 {
     int outlen=0;
 
     while (*line && !isalnum(*line) && *line!='-') {
 	line++;
 	outlen++;
-	}
+    }
 
     if (!*line) {
 	*out=0;
 	return(outlen);
-	}
+    }
 
     /* extract command */
     *out = atoi(line);
     while (*line && isdigit(*line)) {
 	line++;
 	outlen++;
-	}
+    }
 
     return (outlen);
-    }
+}
 
 
 /**********************************************************************
@@ -230,16 +257,16 @@ int	config_read_int (line, out)
 **********************************************************************/
 
 /* Triple procedures, all inlined, unrolls loop much better */
-int wildmatii(s, p)
-    register unsigned char	*s;	/* Buffer */
-    register unsigned char	*p;	/* Pattern */
+int wildmatii(
+    register unsigned char	*s,	/* Buffer */
+    register unsigned char	*p)	/* Pattern */
 {
     for ( ; *p; s++, p++) {
 	if (*p!='*') {
 	    /* df is magic conversion to lower case */
 	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
 		return(FALSE);
-	    }
+	}
 	else {
 	    /* Trailing star matches everything. */
 	    if (!*++p) return (TRUE);
@@ -247,22 +274,22 @@ int wildmatii(s, p)
 		if (*++s == '\0')
 		    return(FALSE);
 	    return(TRUE);
-	    }
 	}
-    return(*s == '\0');
     }
+    return(*s == '\0');
+}
 #pragma inline (wildmatii)
 
-int wildmati(s, p)
-    register unsigned char	*s;	/* Buffer */
-    register unsigned char	*p;	/* Pattern */
+int wildmati(
+    register unsigned char	*s,	/* Buffer */
+    register unsigned char	*p)	/* Pattern */
 {
     for ( ; *p; s++, p++) {
 	if (*p!='*') {
 	    /* df is magic conversion to lower case */
 	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
 		return(FALSE);
-	    }
+	}
 	else {
 	    /* Trailing star matches everything. */
 	    if (!*++p) return (TRUE);
@@ -270,22 +297,22 @@ int wildmati(s, p)
 		if (*++s == '\0')
 		    return(FALSE);
 	    return(TRUE);
-	    }
 	}
-    return(*s == '\0');
     }
+    return(*s == '\0');
+}
 #pragma inline (wildmati)
 
-int wildmat(s, p)
-    register unsigned char	*s;	/* Buffer */
-    register unsigned char	*p;	/* Pattern */
+int wildmat(
+    register unsigned char	*s,	/* Buffer */
+    register unsigned char	*p)	/* Pattern */
 {
     for ( ; *p; s++, p++) {
 	if (*p!='*') {
 	    /* df is magic conversion to lower case */
 	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
 		return(FALSE);
-	    }
+	}
 	else {
 	    /* Trailing star matches everything. */
 	    if (!*++p) return (TRUE);
@@ -293,19 +320,19 @@ int wildmat(s, p)
 		if (*++s == '\0')
 		    return(FALSE);
 	    return(TRUE);
-	    }
 	}
-    return(*s == '\0');
     }
+    return(*s == '\0');
+}
 #pragma inline (wildmat)
 
 /**********************************************************************
 *	SUPPORT FUNCTIONS
 **********************************************************************/
 
-SIGNALSTATE	*find_signal_state (trace, name)
-    TRACE	*trace;
-    char *name;
+SIGNALSTATE	*find_signal_state (
+    TRACE	*trace,
+    char *name)
 {
     register SIGNALSTATE *sig;
 
@@ -313,13 +340,13 @@ SIGNALSTATE	*find_signal_state (trace, name)
 	/* printf ("'%s'\t'%s'\n", name, sig->signame); */
 	if (wildmat(name, sig->signame))
 	    return (sig);
-	}
-    return (NULL);
     }
+    return (NULL);
+}
 
-void	add_signal_state (trace, info)
-    TRACE	*trace;
-    SIGNALSTATE *info;
+void	add_signal_state (
+    TRACE	*trace,
+    SIGNALSTATE *info)
 {
     SIGNALSTATE *new;
     int t;
@@ -346,9 +373,9 @@ void	add_signal_state (trace, info)
 	if (new->statename[t][0] != '\0') {
 	    new->numstates = t+1;
 	    /*printf ("State %d = '%s'\n", t, new->statename[t]);*/
-	    }
 	}
     }
+}
 
 void	free_signal_states (void)
 {
@@ -359,13 +386,13 @@ void	free_signal_states (void)
 	last_ptr = sstate_ptr->next;
 	DFree (sstate_ptr);
 	sstate_ptr = last_ptr;
-	}
-    global->signalstate_head = NULL;
     }
+    global->signalstate_head = NULL;
+}
 
-void	print_signal_states (w,trace)
-    Widget	w;
-    TRACE	*trace;
+void	print_signal_states (
+    Widget	w,
+    TRACE	*trace)
 {
     SIGNALSTATE *sstate_ptr;
     int i;
@@ -377,13 +404,13 @@ void	print_signal_states (w,trace)
 	    if (sstate_ptr->statename[i][0])
 		printf ("\t%d=%s\n", i, sstate_ptr->statename[i]);
 	sstate_ptr = sstate_ptr->next;
-	}
-    printf ("\n");
     }
+    printf ("\n");
+}
 
-void	config_parse_geometry (line, geometry)
-    char	*line;
-    GEOMETRY	*geometry;
+void	config_parse_geometry (
+    char	*line,
+    GEOMETRY	*geometry)
     /* Like XParseGeometry, but handles percentages */
 {
     int		flags, x, y;
@@ -393,7 +420,7 @@ void	config_parse_geometry (line, geometry)
 
     /* Copy line into a temp, remove the percentage symbols, and parse it */
     strcpy (noper_line, line);
-    while (tp=strchr (noper_line, '%')) strcpy (tp, tp+1);
+    while ((tp=strchr (noper_line, '%'))) strcpy (tp, tp+1);
 
     flags = XParseGeometry (noper_line, &x, &y, &wid, &hei);
     if (flags & WidthValue)	geometry->width = wid;
@@ -411,24 +438,24 @@ void	config_parse_geometry (line, geometry)
 	    else if (flags & HeightValue) geometry->heightp = TRUE;
 	    else if (flags & XValue)	geometry->xp = TRUE;
 	    else if (flags & YValue)	geometry->yp = TRUE;
-	    }
+	}
 	if (flags & WidthValue) 	flags &= flags & (~ WidthValue);
 	else if (flags & HeightValue)	flags &= flags & (~ HeightValue);
 	else if (flags & XValue)	flags &= flags & (~ XValue);
 	else if (flags & YValue)	flags &= flags & (~ YValue);
-	}
+    }
 
     if (DTPRINT_CONFIG) printf ("geometry %s = %dx%d+%d+%d   %c%c%c%c\n", line,
 				geometry->width, geometry->height, 
 				geometry->x, geometry->y,
 				geometry->widthp?'%':'-', geometry->heightp?'%':'-', 
 				geometry->xp?'%':'-', geometry->yp?'%':'-');
-    }
+}
 
 
-void	config_error_ack (trace, message)
-    TRACE	*trace;
-    char	*message;
+void	config_error_ack (
+    TRACE	*trace,
+    char	*message)
 {
     char	newmessage[1000];
 
@@ -437,21 +464,21 @@ void	config_error_ack (trace, message)
     strcpy (newmessage, message);
     if (config_reading_socket) {
 	sprintf (newmessage + strlen(newmessage), "on command # %d from socket %s\n", config_line_num, config_file);
-	}
+    }
     else {
 	sprintf (newmessage + strlen(newmessage), "on line %d of %s\n", config_line_num, config_file);
-	}
-    dino_error_ack (trace, newmessage);
     }
+    dino_error_ack (trace, newmessage);
+}
 
 /**********************************************************************
 *	reading functions w/ error messages
 **********************************************************************/
 
-int	config_read_on_off (trace, line, out)
-    TRACE	*trace;
-    char *line;
-    int *out;
+int	config_read_on_off (
+    TRACE	*trace,
+    char *line,
+    int *out)
     /* Read boolean flag line, return <= 0 and print msg if bad */
 {
     char cmd[MAXSIGLEN];
@@ -468,47 +495,50 @@ int	config_read_on_off (trace, line, out)
 	sprintf (message, "Expected ON or OFF switch\n");
 	config_error_ack (trace, message);
 	*out = -1;
-	}
-
-    return (outlen);
     }
 
-int	config_read_color (trace, line, color, warn)
-    TRACE	*trace;
-    char 	*line;
-    ColorNum	*color;
-    Boolean	warn;
+    return (outlen);
+}
+
+int	config_read_color (
+    TRACE	*trace,
+    char 	*line,
+    ColorNum	*color,
+    Boolean	warn)
     /* Read color name from line, return <= 0 and print msg if bad */
 {
     int outlen;
+    char cmd[MAXSIGLEN];
 
     switch (*line) {
-      case 'N': case 'n':
+    case 'N': case 'n':
+	outlen = config_read_signal (line, cmd);
 	*color = global->highlight_color;
 	break;
-      case 'C': case 'c':
+    case 'C': case 'c':
 	/* Duplicate code in submenu_to_color */
+	outlen = config_read_signal (line, cmd);
 	if ((++global->highlight_color) > MAX_SRCH) global->highlight_color = 1;
 	*color = global->highlight_color;
 	break;
-      default:
+    default:
 	outlen = config_read_int (line, color);
 	if (*color < 0 || *color > MAX_SRCH) {
 	    if (warn) {
 		sprintf (message, "Color numbers must be 0 to %d, NEXT or CURRENT\n", MAX_SRCH);
 		config_error_ack (trace, message);
-	        }
-	    *color = -1;
 	    }
+	    *color = -1;
 	}
-
-    return (outlen);
     }
 
-int	config_read_grid (trace, line, grid_pptr)
-    TRACE	*trace;
-    char 	*line;
-    GRID	**grid_pptr;
+    return (outlen);
+}
+
+int	config_read_grid (
+    TRACE	*trace,
+    char 	*line,
+    GRID	**grid_pptr)
     /* Read grid number name from line, return < 0 and print msg if bad */
 {
     int 	outlen;
@@ -533,10 +563,10 @@ int	config_read_grid (trace, line, grid_pptr)
 *	config_process_states
 **********************************************************************/
 
-int	config_process_state (trace, line, sstate_ptr)
-    TRACE	*trace;
-    char 	*line;
-    SIGNALSTATE *sstate_ptr;
+int	config_process_state (
+    TRACE	*trace,
+    char 	*line,
+    SIGNALSTATE *sstate_ptr)
 {
     char newstate[MAXVALUELEN];
     int	statenum = sstate_ptr->numstates;
@@ -551,26 +581,26 @@ int	config_process_state (trace, line, sstate_ptr)
 		     MAXSTATENAMES, sstate_ptr->signame);
 	    config_error_ack (trace,message);
 	    /* No return, as will just ignore remaining errors */
-	    }
+	}
 	else {
 	    if (newstate[0]) {
 		sstate_ptr->numstates = statenum+1;
 		strcpy (sstate_ptr->statename[statenum], newstate);
-		}
 	    }
 	}
-    return (outlen);
     }
+    return (outlen);
+}
 
 
 /**********************************************************************
 *	config_process_line
 **********************************************************************/
 
-void	config_process_line_internal (trace, line, eof)
-    TRACE	*trace;
-    char	*line;
-    Boolean	eof;		/* Final call of process_line with EOF */
+void	config_process_line_internal (
+    TRACE	*trace,
+    char	*line,
+    Boolean	eof)		/* Final call of process_line with EOF */
 {
     char cmd[MAXSIGLEN];
     int value;
@@ -592,15 +622,15 @@ void	config_process_line_internal (trace, line, eof)
 	if (*line == ';' || *line=='}' || eof) {
 	    if (eof) {
 		config_error_ack (trace, "Unexpected EOF during SIGNAL_STATES\n");
-		}
+	    }
 	    add_signal_state (trace, &newsigst);
 	    processing_sig_state = FALSE;
-	    }
+	}
 	else {
 	    line += config_process_state (trace, line, &newsigst);
 	    goto re_process_line;
-	    }
 	}
+    }
     else {
 	/* General commands */
 
@@ -616,53 +646,54 @@ void	config_process_line_internal (trace, line, eof)
 	    if (value >= 0) {
 		if (DTPRINT) printf ("Config: DTDEBUG=%d\n",value);
 		DTDEBUG=value;
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "PRINT")) {
+	    
 	    value=DTPRINT;
 	    if (toupper(line[0])=='O' && toupper(line[1])=='N') DTPRINT = -1;
 	    else if (toupper(line[0])=='O' && toupper(line[1])=='F') DTPRINT = 0;
 	    else {
-		sscanf (line, "%lx", &value);
+		sscanf (line, "%x", &value);
 		if (value > 0) {
 		    DTPRINT=value;
-		    }
+		}
 		else {
 		    config_error_ack (trace, "Print must be set ON, OFF, or > 0\n");
-		    }
 		}
-	    if (DTPRINT) printf ("Config: DTPRINT=0x%x\n",value);
 	    }
+	    if (DTPRINT) printf ("Config: DTPRINT=0x%x\n",value);
+	}
 	else if (!strcmp(cmd, "SAVE_ENABLES")) {
 	    value=global->save_enables;
 	    line += config_read_on_off (trace, line, &value);
 	    if (value >= 0) {
 		global->save_enables=value;
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "SAVE_ORDERING")) {
 	    value=global->save_ordering;
 	    line += config_read_on_off (trace, line, &value);
 	    if (value >= 0) {
 		global->save_ordering=value;
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "CURSOR")) {
 	    value = trace->cursor_vis;
 	    line += config_read_on_off (trace, line, &value);
 	    if (value >= 0) {
 		if (DTPRINT_CONFIG) printf ("Config: cursor_vis=%d\n",value);
 		trace->cursor_vis = value;
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "CLICK_TO_EDGE")) {
 	    value = global->click_to_edge;
 	    line += config_read_on_off (trace, line, &value);
 	    if (value >= 0) {
 		if (DTPRINT_CONFIG) printf ("Config: click_to_edge=%d\n",value);
 		global->click_to_edge = value;
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "REFRESHING")) {
 	    if (toupper(line[0])=='A')
 		global->redraw_manually = FALSE;
@@ -670,8 +701,8 @@ void	config_process_line_internal (trace, line, eof)
 		global->redraw_manually = TRUE;
 	    else {
 		config_error_ack (trace, "Refreshing must be AUTO, or MANUAL\n");
-	        }
 	    }
+	}
 	else if (!strcmp(cmd, "SIGNAL_HEIGHT")) {
 	    value = trace->sighgt;
 	    line += config_read_int (line, &value);
@@ -679,16 +710,16 @@ void	config_process_line_internal (trace, line, eof)
 		trace->sighgt = value;
 	    else {
 		config_error_ack (trace, "Signal_height must be 15-50\n");
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "GRID")) {
 	    line += config_read_on_off (trace, line, &value);
 	    line += config_read_grid (trace, line, &grid_ptr);
 	    if (grid_ptr && value >= 0) {
 		if (DTPRINT_CONFIG) printf ("Config: grid_vis=%d\n",value);
 		grid_ptr->visible = value;
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "GRID_RESOLUTION")) {
 	    line += config_read_int (line, &value);
 	    if (isalpha(line[0])) { line += config_read_signal (line, pattern); }
@@ -763,7 +794,7 @@ void	config_process_line_internal (trace, line, eof)
 	    line += config_read_int (line, &value);
 	    /* Valid values not known... */
 	    trace->sigrf = value;
-	    }
+	}
 	else if (!strcmp(cmd, "PAGE_INC")) {
 	    value = global->pageinc;
 	    line += config_read_int (line, &value);
@@ -772,9 +803,9 @@ void	config_process_line_internal (trace, line, eof)
 	    else if (value == 4) global->pageinc = QPAGE;
 	    else {
 		config_error_ack (trace, "Page_Inc must be 1, 2, or 4\n");
-		}
-	    if (DTPRINT_CONFIG) printf ("page_inc = %d\n", global->pageinc);
 	    }
+	    if (DTPRINT_CONFIG) printf ("page_inc = %d\n", global->pageinc);
+	}
 	else if (!strcmp(cmd, "TIME_REP")) {
 	    switch (toupper(line[0])) {
 	      case 'N':	trace->timerep = TIMEREP_NS;	break;
@@ -786,9 +817,9 @@ void	config_process_line_internal (trace, line, eof)
 		trace->timerep = atof(line);	break;
 	      default:
 		config_error_ack (trace, "Time_Rep must be PS, NS, US, or CYCLE\n");
-		}
-	    if (DTPRINT_CONFIG) printf ("timerep = %lf\n", trace->timerep);
 	    }
+	    if (DTPRINT_CONFIG) printf ("timerep = %f\n", trace->timerep);
+	}
 	else if (!strcmp(cmd, "TIME_PRECISION")) {
 	    switch (toupper(line[0])) {
 	      case 'N':	global->time_precision = TIMEREP_NS;	break;
@@ -796,22 +827,22 @@ void	config_process_line_internal (trace, line, eof)
 	      case 'P':	global->time_precision = TIMEREP_PS;	break;
 	      default:
 		config_error_ack (trace, "Time_Precision must be PS, NS, or US\n");
-		}
-	    if (DTPRINT_CONFIG) printf ("time_precision = %lf\n", global->time_precision);
 	    }
+	    if (DTPRINT_CONFIG) printf ("time_precision = %f\n", global->time_precision);
+	}
 	else if (!strcmp(cmd, "TIME_FORMAT")) {
 	    line += config_read_signal (line, cmd);
 	    strcpy (global->time_format, cmd);
 	    if (DTPRINT_CONFIG) printf ("time_format = '%s'\n", global->time_format);
-	    }
+	}
 	else if (!strcmp(cmd, "TIME_MULTIPLIER")) {
 	    value = global->tempest_time_mult;
 	    line += config_read_int (line, &value);
 	    if (value > 0) global->tempest_time_mult = value;
 	    else {
 		config_error_ack (trace, "Time_Mult must be > 0\n");
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "PRINT_SIZE")) {
 	    switch (toupper(line[0])) {
 	      case 'A':
@@ -827,8 +858,8 @@ void	config_process_line_internal (trace, line, eof)
 		break;
 	      default:
 		config_error_ack (trace, "Print_Size must be A, B, EPSLAND, or EPSPORT\n");
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "FILE_FORMAT")) {
 	    char *tp;
 	    for (tp = line; *tp && *tp!='Z' && *tp!='z'; tp++) ;
@@ -844,29 +875,29 @@ void	config_process_line_internal (trace, line, eof)
 		break;
 	      default:
 		config_error_ack (trace, "File_Format must be DECSIM, TEMPEST, or VERILOG\n");
-		}
-	    if (DTPRINT_CONFIG) printf ("File_format = %d\n", file_format);
 	    }
+	    if (DTPRINT_CONFIG) printf ("File_format = %d\n", file_format);
+	}
 	else if (!strcmp(cmd, "VECTOR_SEPERATOR")) {
 	    if (*line=='"') line++;
 	    if (*line && *line!='"') {
 		trace->vector_seperator = line[0];
-		}
+	    }
 	    else {
 		trace->vector_seperator = '\0';
-		}
+	    }
 	    /* Take a stab at the ending character */
 	    switch (trace->vector_seperator) {
 	      case '`':	trace->vector_endseperator = '\''; break;
 	      case '(':	trace->vector_endseperator = ')'; break;
 	      case '[':	trace->vector_endseperator = ']'; break;
-	      case '{':	trace->vector_endseperator = '}'; break;
+	    case '{':	trace->vector_endseperator = '}'; break;
 	      case '<':	trace->vector_endseperator = '>'; break;
 	      default:  trace->vector_endseperator = trace->vector_seperator; break;	/* a wild guess SIG$20:1$? */
-		}
+	    }
 	    if (DTPRINT_CONFIG) printf ("Vector_seperator = '%c'  End='%c'\n", 
 					trace->vector_seperator, trace->vector_endseperator);
-	    }
+	}
 	else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
 	    ColorNum color;
 	    line += config_read_color (trace, line, &color, TRUE);
@@ -874,19 +905,19 @@ void	config_process_line_internal (trace, line, eof)
 		line += config_read_signal (line, pattern);
 		if (!pattern[0]) {
 		    config_error_ack (trace, "Signal_Highlight signal name must not be null\n");
-		    }
+		}
 		else {
 		    sig_wildmat_select (NULL, pattern);
 		    sig_highlight_selected (color);
-		    }
 		}
 	    }
+	}
 	else if (!strcmp(cmd, "SIGNAL_ADD")) {
 	    char pattern2[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Add signal name must not be null\n");
-		}
+	    }
 	    else {
 		ColorNum color;
 		line += config_read_signal (line, pattern2);
@@ -895,15 +926,15 @@ void	config_process_line_internal (trace, line, eof)
 		sig_move_selected (trace, pattern2);
 		if (color >= 0) {
 		    sig_highlight_selected (color);
-		    }
 		}
 	    }
+	}
 	else if (!strcmp(cmd, "SIGNAL_MOVE")) {
 	    char pattern2[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Move signal name must not be null\n");
-		}
+	    }
 	    else {
 		ColorNum color;
 		line += config_read_signal (line, pattern2);
@@ -912,16 +943,16 @@ void	config_process_line_internal (trace, line, eof)
 		sig_move_selected (trace, pattern2);
 		if (color >= 0) {
 		    sig_highlight_selected (color);
-		    }
 		}
 	    }
+	}
 	else if (!strcmp(cmd, "SIGNAL_RENAME")) {
 	    char pattern2[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    line += config_read_signal (line, pattern2);
 	    if (!pattern[0] || !pattern2[0]) {
 		config_error_ack (trace, "Signal_Rename signal names must not be null\n");
-		}
+	    }
 	    else {
 		ColorNum color;
 		line += config_read_color (trace, line, &color, FALSE);
@@ -929,15 +960,15 @@ void	config_process_line_internal (trace, line, eof)
 		sig_rename_selected (pattern2);
 		if (color >= 0) {
 		    sig_highlight_selected (color);
-		    }
 		}
 	    }
+	}
 	else if (!strcmp(cmd, "SIGNAL_COPY")) {
 	    char pattern2[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_copy signal name must not be null\n");
-		}
+	    }
 	    else {
 		ColorNum color;
 		line += config_read_signal (line, pattern2);
@@ -946,29 +977,36 @@ void	config_process_line_internal (trace, line, eof)
 		sig_copy_selected (trace, pattern2);
 		if (color >= 0) {
 		    sig_highlight_selected (color);
-		    }
 		}
 	    }
+	}
 	else if (!strcmp(cmd, "SIGNAL_DELETE")) {
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Delete signal name must not be null\n");
-		}
+	    }
 	    else {
 		sig_wildmat_select (trace, pattern);
-		sig_delete_selected (TRUE);
-		}
+		sig_delete_selected (TRUE, FALSE);
 	    }
+	}
 	else if (!strcmp(cmd, "SIGNAL_DELETE_CONSTANT")) {
+	    char flag[MAXSIGLEN];
+	    Boolean ignorexz = FALSE;
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Delete_Constant signal name must not be null\n");
-		}
-	    else {
-		sig_wildmat_select (trace, pattern);
-		sig_delete_selected (FALSE);
-		}
 	    }
+	    else {
+		do {
+		    line += config_read_signal (line, flag);
+		    upcase_string (flag);
+		    if (!strcmp(flag, "-IGNOREXZ")) ignorexz=TRUE;
+		} while (flag[0]);
+		sig_wildmat_select (trace, pattern);
+		sig_delete_selected (FALSE, ignorexz);
+	    }
+	}
 	else if (!strcmp(cmd, "VALUE_HIGHLIGHT")) {
 	    char strg[MAXSIGLEN],flag[MAXSIGLEN],signal[MAXSIGLEN]="*";
 	    Boolean show_value=FALSE, add_cursor=FALSE;
@@ -983,15 +1021,15 @@ void	config_process_line_internal (trace, line, eof)
 		    if (!strcmp(flag, "-CURSOR")) add_cursor=TRUE;
 		    else if (!strcmp(flag, "-VALUE")) show_value=TRUE;
 		    else if (flag[0]) strcpy (signal, flag);
-		    } while (flag[0]);
+		} while (flag[0]);
 		/* Add it */
 		global->val_srch[search_pos].color = (show_value) ? search_pos+1 : 0;
 		global->val_srch[search_pos].cursor = (add_cursor) ? search_pos+1 : 0;
 		string_to_value (trace, strg, global->val_srch[search_pos].value);
 		strcpy (global->val_srch[search_pos].signal, signal);
 		draw_needupd_val_search ();
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "CURSOR_ADD")) {
 	    ColorNum color;
 	    DTime ctime;
@@ -1006,8 +1044,8 @@ void	config_process_line_internal (trace, line, eof)
 		if (!strcmp(flag, "-USER"))
 		    cur_add (ctime, color, USER);
 		else cur_add (ctime, color, CONFIG);
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "TIME_GOTO")) {
 	    DTime ctime;
 	    char strg[MAXSIGLEN];
@@ -1020,8 +1058,8 @@ void	config_process_line_internal (trace, line, eof)
 		/* Slide time if it isn't on the screen already */
 		global->time = ctime - ( TIME_WIDTH (trace) /2 );
 		new_time (trace);
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "RESOLUTION")) {
 	    DTime restime;
 	    char strg[MAXSIGLEN];
@@ -1031,53 +1069,53 @@ void	config_process_line_internal (trace, line, eof)
 
 	    if (restime > 0) {
 		new_res (trace, RES_SCALE / (float)restime);
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "SIGNAL_GOTO")) {
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Goto signal name must not be null\n");
-		}
+	    }
 	    else {
 		sig_goto_pattern (trace, pattern);
-		}
 	    }
+	}
 	else if (!strcmp(cmd, "REFRESH")) {
 	    draw_all_needed ();
 	    draw_manual_needed ();
 	    /* Main loop won't refresh because widget's weren't activated on socket calls */
 	    if (config_reading_socket) {
 		draw_perform();
-	        }
 	    }
+	}
 	else if (!strcmp(cmd, "ANNOTATE")) {
 	    val_annotate_do_cb (NULL,trace,NULL);
-	    }
+	}
 	else if (!strcmp(cmd, "START_GEOMETRY")) {
 	    if (*line=='"') line++;
 	    config_parse_geometry (line, &(global->start_geometry));
-	    }
+	}
 	else if (!strcmp(cmd, "OPEN_GEOMETRY")) {
 	    if (*line=='"') line++;
 	    config_parse_geometry (line, &(global->open_geometry));
-	    }
+	}
 	else if (!strcmp(cmd, "SHRINK_GEOMETRY")) {
 	    if (*line=='"') line++;
 	    config_parse_geometry (line, &(global->shrink_geometry));
-	    }
+	}
 	else if (!strcmp(cmd, "SIGNAL_STATES")) {
 	    memset (&newsigst, 0, sizeof (SIGNALSTATE));
 	    line += config_read_signal (line, newsigst.signame);
 	    processing_sig_state = TRUE;
 	    /* if (DTPRINT) printf ("config_process_states  signal=%s\n", newsigst.signame); */
 	    goto re_process_line;
-	    }
+	}
 	else {
 	    sprintf (message, "Unknown command '%s'\n", cmd);
 	    config_error_ack (trace, message);
-	    }
 	}
     }
+}
     
 /* Normal call */
 #define config_process_line(trace, line)	config_process_line_internal(trace, line, FALSE)
@@ -1090,16 +1128,17 @@ void	config_process_eof (TRACE *trace)
     line[1]='\0';
     line[2]='\0';
     config_process_line_internal (trace, line, TRUE);
-    }
+}
 
 /**********************************************************************
  *	config_read_file
  **********************************************************************/
 
-void config_read_file (trace, filename, report_notfound, report_errors)
-    TRACE	*trace;
-    char	*filename;	/* Specific filename of CONFIG file */
-    Boolean	report_notfound, report_errors;
+void config_read_file (
+    TRACE	*trace,
+    char	*filename,	/* Specific filename of CONFIG file */
+    Boolean	report_notfound,
+    Boolean	report_errors)
 {
     FILE	*readfp;
     char line[1000];
@@ -1151,23 +1190,23 @@ void config_read_file (trace, filename, report_notfound, report_errors)
 	config_get_line (line, 1000, readfp);
 	/* 	printf ("line='%s'\n",line);	*/
 	config_process_line (trace, line);
-	}
+    }
 
     config_process_eof (trace);
 
     fclose (readfp);
-    }
+}
 
 /**********************************************************************
  *	config_read_socket
  **********************************************************************/
 
 void config_read_socket (
-			 char		*line,
-			 char		*name,
-			 int		cmdnum,
-			 Boolean	eof
-			 )
+    char	*line,
+    char	*name,
+    int		cmdnum,
+    Boolean	eof
+    )
 {
     config_report_errors = TRUE;
     config_line_num = cmdnum;
@@ -1176,18 +1215,17 @@ void config_read_socket (
 
     if (eof) {
 	config_process_eof (global->trace_head);
-	}
+    }
     else {
 	config_process_line (global->trace_head, line);
-	}
     }
+}
 
 /**********************************************************************
 *	config_read_defaults
 **********************************************************************/
 
-void config_update_filenames (trace)
-    TRACE	*trace;
+void config_update_filenames (TRACE *trace)
 {
     char *pchar;
 
@@ -1214,12 +1252,10 @@ void config_update_filenames (trace)
     }
 }
 
-void config_read_defaults (trace, report_errors)
-    TRACE	*trace;
-    Boolean	report_errors;
+void config_read_defaults (
+    TRACE	*trace,
+    Boolean	report_errors)
 {
-    char newfilename[MAXFNAMELEN];
-    char *pchar;
     int		cfg_num;
 
     if (DTPRINT_ENTRY) printf ("In config_read_defaults\n");
@@ -1240,16 +1276,16 @@ void config_read_defaults (trace, report_errors)
     draw_all_needed ();
 
     if (DTPRINT_ENTRY) printf ("Exit config_read_defaults\n");
-    }
+}
 
 /**********************************************************************
 *	config_writing
 **********************************************************************/
 
-void config_write_file (filename)
-    char	*filename;	/* Specific filename of CONFIG file */
+void config_write_file (
+    TRACE	*trace,
+    char	*filename)	/* Specific filename of CONFIG file */
 {
-    TRACE	*trace;
     FILE	*writefp;
     SIGNAL	*sig_ptr;
     int		grid_num;
@@ -1263,7 +1299,7 @@ void config_write_file (filename)
 	sprintf(message,"Can't write file %s",filename);
 	dino_error_ack(trace, message);
 	return;
-	}
+    }
 
     fprintf (writefp, "! Customization Write by %s\n", DTVERSION);
     fprintf (writefp, "! Created %s\n", date_string(0));
@@ -1271,8 +1307,8 @@ void config_write_file (filename)
     fprintf (writefp, "\n! ** GLOBAL FLAGS **\n");
     /* Debug and Print skipped */
     fprintf (writefp, "!debug\t\t%s\n", DTDEBUG?"ON":"OFF");
-    fprintf (writefp, "!print\t\t%d\n", DTPRINT);
-    fprintf (writefp, "!refreshing\t%d\n", global->redraw_manually?"MANUAL":"AUTO");
+    fprintf (writefp, "!print\t\t%x\n", DTPRINT);
+    fprintf (writefp, "!refreshing\t%s\n", global->redraw_manually?"MANUAL":"AUTO");
     fprintf (writefp, "save_enables\t%s\n", global->save_enables?"ON":"OFF");
     fprintf (writefp, "save_ordering\t%s\n", global->save_ordering?"ON":"OFF");
     fprintf (writefp, "click_to_edge\t%s\n", global->click_to_edge?"ON":"OFF");
@@ -1284,7 +1320,7 @@ void config_write_file (filename)
       case PRINTSIZE_B:		fprintf (writefp, "B\n");	break;
       case PRINTSIZE_EPSLAND:	fprintf (writefp, "EPSLAND\n");	break;
       case PRINTSIZE_EPSPORT:	fprintf (writefp, "EPSPORT\n");	break;
-	}
+    }
     if (global->time_format[0])
 	fprintf (writefp, "time_format\t%s\n", global->time_format);
     fprintf (writefp, "time_multiplier\t%d\n", global->tempest_time_mult);
@@ -1343,43 +1379,43 @@ void config_write_file (filename)
     }
 
     fclose (writefp);
-    }
+}
 
-void config_write_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void config_write_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     char newfilename[MAXFNAMELEN];
     char *pchar;
 
 #ifdef VMS
-    config_write_file ("SYS$LOGIN:DINOTRACE.WCONFIG");
+    config_write_file (trace,"SYS$LOGIN:DINOTRACE.WCONFIG");
 #else
     newfilename[0] = '\0';
     if (NULL != (pchar = getenv ("HOME"))) strcpy (newfilename, pchar);
     if (newfilename[0]) strcat (newfilename, "/");
     strcat (newfilename, "dinotrace.wconfig");
-    config_write_file (newfilename);
+    config_write_file (trace,newfilename);
 #endif
-    }
+}
 
 /**********************************************************************
 *	config_restore_defaults
 **********************************************************************/
 
-void config_trace_defaults(trace)
-    TRACE	*trace;
+void config_trace_defaults (
+    TRACE	*trace)
 {
     trace->sighgt = 20;	/* was 25 */
     trace->cursor_vis = TRUE;
     trace->sigrf = SIG_RF;
     trace->timerep = global->time_precision;
-    trace->vector_seperator = '<';
-    trace->vector_endseperator = '>';
+    trace->vector_seperator = '[';
+    trace->vector_endseperator = ']';
 
     grid_reset_cb (NULL, trace, NULL);
-    }
+}
 
 
 void config_global_defaults(void)
@@ -1390,6 +1426,6 @@ void config_global_defaults(void)
     
     global->pageinc = FPAGE;
     global->save_ordering = TRUE;
-    }
+}
 
 

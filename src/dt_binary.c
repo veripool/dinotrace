@@ -1,32 +1,71 @@
-/******************************************************************************
- *
- * Filename:
- *     dt_binary.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V6.0
- *
- * Author:
- *     Wilson Snyder
- *
- * Abstract:
- *	Binary trace support
- *
- * Modification History:
- *     WPS	15-Jan-93	Added binary trace support
- *
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dt_binary.c --- CCLI tempest trace reading
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
+#include <config.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 
 #ifdef VMS
 # include <file.h>
@@ -38,7 +77,7 @@ static char rcsid[] = "$Id$";
 #include <Xm/Xm.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
 #include "bintradef.h"
 
 #ifdef VMS
@@ -57,10 +96,10 @@ static char rcsid[] = "$Id$";
 #define EXTRACT_2STATE(buf,pos)	((int)(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 1))
 #define EXTRACT_4STATE(buf,pos)	((int)(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 3))
 
-#ifdef NEVER
-int	EXTRACT_2STATE (buf,pos)
-     unsigned int pos;
-     unsigned long *buf;
+#if 0
+int	EXTRACT_2STATE (
+     unsigned int pos,
+     unsigned long *buf)
 {
     register unsigned int bitcnt, bit_pos;
     register unsigned int bit_mask;
@@ -87,18 +126,18 @@ int	EXTRACT_2STATE (buf,pos)
     /*
     for (bit_mask=0; bit_mask<32; bit_mask++) {
       printf ("%d=%x  ", bit_mask, data>>bit_mask);
-    }
+      }
       printf ("\n");
       */
     return (bit_data);
-    }
+}
 #endif
 
 #pragma inline (read_4state_to_value)
-int	read_4state_to_value (sig_ptr, buf, value_ptr)
-    SIGNAL	*sig_ptr;
-    char	*buf;
-    VALUE	*value_ptr;
+int	read_4state_to_value (
+    SIGNAL	*sig_ptr,
+    char	*buf,
+    VALUE	*value_ptr)
 {
     register int state = STATE_0;	/* Unknown */
     register int bitcnt, bit_pos;
@@ -109,7 +148,7 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
       case 1:	state = STATE_0;	break;	/* Value */
       case 2:	state = STATE_Z;	break;
       case 3:	state = STATE_U;	break;
-	}
+    }
 
     /* Extract the values, HIGH 32 BITS */
     bit_pos = sig_ptr->file_pos;
@@ -128,8 +167,8 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
 	      state = STATE_U;
 	    break;
 	  case 3:	state = STATE_U;      	break;
-	    }
 	}
+    }
 
     /* Extract the values, UPPER MID 32 BITS */
     bit_pos = sig_ptr->file_pos;
@@ -148,8 +187,8 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
 	      state = STATE_U;
 	    break;
 	  case 3:	state = STATE_U;      	break;
-	    }
 	}
+    }
 
     /* Extract the values LOWER MID 32 BITS */
     for (bitcnt=32; bitcnt <= (MIN (63, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
@@ -167,8 +206,8 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
 	      state = STATE_U;
 	    break;
 	  case 3:	state = STATE_U;      	break;
-	    }
 	}
+    }
 
     /* Extract the values LOW 32 BITS */
     for (bitcnt=0; bitcnt <= (MIN (31, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
@@ -186,8 +225,8 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
 	      state = STATE_U;
 	    break;
 	  case 3:	state = STATE_U;      	break;
-	    }
 	}
+    }
 
     switch (state) {
       case STATE_0:	/* Value */
@@ -196,16 +235,16 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
 	return (STATE_Z);
       case STATE_U:
 	return (STATE_U);
-	}
-
-    return (state);
     }
 
+    return (state);
+}
+
 #pragma inline (read_2state_to_value)
-int	read_2state_to_value (sig_ptr, buf, value_ptr)
-    SIGNAL	*sig_ptr;
-    char	*buf;
-    VALUE	*value_ptr;
+int	read_2state_to_value (
+    SIGNAL	*sig_ptr,
+    char	*buf,
+    VALUE	*value_ptr)
 {
     register int bitcnt, bit_pos;
 
@@ -219,36 +258,36 @@ int	read_2state_to_value (sig_ptr, buf, value_ptr)
     bit_pos = sig_ptr->file_pos;
     for (bitcnt=96; bitcnt <= (MIN (127, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	value_ptr->number[3] = (value_ptr->number[3]<<1) + (EXTRACT_2STATE (buf, bit_pos));
-	}
+    }
 
     /* Extract the values, UPPER MID 32 BITS */
     bit_pos = sig_ptr->file_pos;
     for (bitcnt=64; bitcnt <= (MIN (95, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	value_ptr->number[2] = (value_ptr->number[2]<<1) + (EXTRACT_2STATE (buf, bit_pos));
-	}
+    }
 
     /* Extract the values LOWER MID 32 BITS */
     for (bitcnt=32; bitcnt <= (MIN (63, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	value_ptr->number[1] = (value_ptr->number[1]<<1) + (EXTRACT_2STATE (buf, bit_pos));
-	}
+    }
 
     /* Extract the values LOW 32 BITS */
     for (bitcnt=0; bitcnt <= (MIN (31, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	value_ptr->number[0] = (value_ptr->number[0]<<1) + (EXTRACT_2STATE (buf, bit_pos));
-	}
+    }
 
     return (sig_ptr->type);
-    }
+}
 
 
 #ifdef VMS
 #pragma inline (fil_decsim_binary_add_cptr)
-void	fil_decsim_binary_add_cptr (sig_ptr, buf, time, nocheck)
+void	fil_decsim_binary_add_cptr (
     /* Add a cptr corresponding to the decsim value for this signal */
-    SIGNAL	*sig_ptr;
-    char	*buf;
-    DTime	time;
-    Boolean	nocheck;		/* don't compare against previous data */
+    SIGNAL	*sig_ptr,
+    char	*buf,
+    DTime	time,
+    Boolean	nocheck)		/* don't compare against previous data */
 {
     register	int		state;
     register	VALUE	value;
@@ -280,24 +319,24 @@ void	fil_decsim_binary_add_cptr (sig_ptr, buf, time, nocheck)
 	      case 1: state = STATE_1; break;
 	      case 2: state = STATE_Z; break;
 	      case 3: state = STATE_U; break;
-		}
-	    }	
-	}
+	    }
+	}	
+    }
     else {
 	/* Multibit signal */
 	if (sig_ptr->file_type.flag.four_state == 0)
 	    state = read_2state_to_value (sig_ptr, buf, &value);
 	else state = read_4state_to_value (sig_ptr, buf, &value);
-	}
+    }
 	    
     value.siglw.sttime.state = state;
     value.siglw.sttime.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
-    }
+}
 
-void decsim_read_binary (trace, read_fd)
-    TRACE	*trace;
-    int		read_fd;
+void decsim_read_binary (
+    TRACE	*trace,
+    int		read_fd)
 {
     static struct bintrarec *buf, *last_buf;
     static struct bintrarec bufa;
@@ -325,15 +364,15 @@ void decsim_read_binary (trace, read_fd)
 	if (last_buf == &bufb) {
 	    buf = &bufb;
 	    last_buf = &bufa;
-	    }
+	}
 	else {
 	    buf = &bufa;
 	    last_buf = &bufb;
-	    }
+	}
 
 	if (read (read_fd, buf, sizeof (struct bintrarec)) == 0) {
 	    break;
-	    }
+	}
 
 	switch (buf->tra$b_class) {
 	    /***** CLASS: Header *****/
@@ -344,7 +383,7 @@ void decsim_read_binary (trace, read_fd)
 		break;
 	      default:
 		if (DTPRINT) printf ( "%%E, Unknown header type %d\n", buf->tra$b_type);
-		}
+	    }
 	    break;
 
 	    /***** CLASS: Signal *****/
@@ -362,7 +401,7 @@ void decsim_read_binary (trace, read_fd)
 		/**** TYPE: Unknown ****/
 	      default:
 		if (DTPRINT) printf ("%%E, Unknown section identifier type %d\n", buf->tra$b_type);
-		}
+	    }
 	    break;
 
 	    /***** CLASS: Data records *****/
@@ -383,7 +422,7 @@ void decsim_read_binary (trace, read_fd)
 		if ((sig_ptr->file_pos >> 5) > max_lw_pos) {
 		    max_lw_pos = ( (sig_ptr->file_pos + (sig_ptr->file_type.flag.four_state ? 2:1)
 			       * sig_ptr->bits ) >> 5) + 1 /* so over estimate */;
-		    }
+		}
 
 		/* initialize all the pointers that aren't NULL */
 		if (last_sig_ptr) last_sig_ptr->forward = sig_ptr;
@@ -410,7 +449,7 @@ void decsim_read_binary (trace, read_fd)
 		/* save start/ end time */
 		if (first_data) {
 		    trace->start_time = time;
-		    }
+		}
 		trace->end_time = time;
 
 		/* Compute first LW that has a different value in it */
@@ -419,7 +458,7 @@ void decsim_read_binary (trace, read_fd)
 		       && ( ((long *)buf)[next_different_lw_pos]
 			   == ((long *)last_buf)[next_different_lw_pos] )) {
 		    next_different_lw_pos++;
-		    }
+		}
 		/*
 		printf ("ST %d-%d %c%c%c%c%c: ", next_different_lw_pos, max_lw_pos,
 			( ((long *)buf)[5] == ((long *)last_buf)[5])?'-':'5',
@@ -448,18 +487,18 @@ void decsim_read_binary (trace, read_fd)
 				   && ( ((long *)buf)[next_different_lw_pos]
 				       == ((long *)last_buf)[next_different_lw_pos] )) {
 				next_different_lw_pos++;
-				}
-			    /* printf ("%d ", next_different_lw_pos); */
 			    }
+			    /* printf ("%d ", next_different_lw_pos); */
 			}
+		    }
 
 		    /* else signal couldn't have changed in this time slice.
 		       This speed bypass saves an enourmous amount of time */
 		    else {
 			/* For debugging, Accumulate statistics on how often we skipped this signal */
 			/* sig_ptr->color ++; */
-			}
 		    }
+		}
 		/* printf ("\n"); */
 
 		first_data = FALSE;
@@ -468,7 +507,7 @@ void decsim_read_binary (trace, read_fd)
 		/**** TYPE: Unknown ****/
 	      default:
 		if (DTDEBUG) printf ("Unknown data record type %d\n", buf->tra$b_type);
-		}
+	    }
 	    break;
 
 	    /**** CLASS: EOF ****/
@@ -480,8 +519,8 @@ void decsim_read_binary (trace, read_fd)
 	    if (DTPRINT_FILE) printf ("Unknown record class %d, assuming ASCII\n", buf->tra$b_class);
 	    decsim_read_ascii (trace, read_fd, NULL);
 	    return;
-	    }
 	}
+    }
 
     if (DTPRINT_FILE) printf ("Times = %d to %d\n", trace->start_time, trace->end_time);
 
@@ -492,23 +531,23 @@ void decsim_read_binary (trace, read_fd)
 	sig_ptr->color = 0;
 	}
 	*/
-    }
+}
 #endif /* VMS */
 
 
 #pragma inline (fil_tempest_binary_add_cptr)
-void	fil_tempest_binary_add_cptr (sig_ptr, buf, time, nocheck)
+void	fil_tempest_binary_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
-    SIGNAL	*sig_ptr;
-    unsigned int *buf;
-    DTime	time;
-    Boolean	nocheck;		/* don't compare against previous data */
+    SIGNAL	*sig_ptr,
+    unsigned int *buf,
+    DTime	time,
+    Boolean	nocheck)		/* don't compare against previous data */
 {
-    register int state, bit;
+    register int state=STATE_U, bit;
     register unsigned int value_index;
     register unsigned int data_index;
     register unsigned int data_mask;
-    register VALUE	value;
+    VALUE	value;
 
     /* zero the value */
     value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
@@ -521,7 +560,7 @@ void	fil_tempest_binary_add_cptr (sig_ptr, buf, time, nocheck)
 	    data_mask = 1 << ((sig_ptr->file_pos) & 0x1F);	
 
 	    state = (buf[data_index] & data_mask)?STATE_1:STATE_0;
-	    }
+	}
 
 	else { /* Single bit four state (not really supported) */
 	    data_index = (sig_ptr->file_pos >> 5);
@@ -531,17 +570,17 @@ void	fil_tempest_binary_add_cptr (sig_ptr, buf, time, nocheck)
 	    if (!(data_mask = data_mask << 1)) {
 		data_mask = 1;
 		data_index++;
-		}
-	    value_index = value_index << 1 + (buf[data_index] & data_mask);
+	    }
+	    value_index = (value_index << 1) + (buf[data_index] & data_mask);
 
 	    switch (value_index) {
 	      case 0: state = STATE_0; break;
 	      case 1: state = STATE_1; break;
 	      case 2: state = STATE_Z; break;
 	      case 3: state = STATE_U; break;
-		}
-	    }	
-	}
+	    }
+	}	
+    }
     else {
 	/* Multibit signal */
 	if (sig_ptr->file_type.flag.four_state == 0) {
@@ -566,11 +605,11 @@ void	fil_tempest_binary_add_cptr (sig_ptr, buf, time, nocheck)
 	    value.number[3] = (((buf[3] >> bit) & sig_ptr->pos_mask)
 				    | ((buf[4] << (32-bit)) & (~sig_ptr->pos_mask)))
 		& sig_ptr->value_mask[3];
-	    }
+	}
 	else {
 	    state = STATE_U;
-	    }
 	}
+    }
 	    
     value.siglw.sttime.state = state;
     value.siglw.sttime.time = time;
@@ -578,11 +617,11 @@ void	fil_tempest_binary_add_cptr (sig_ptr, buf, time, nocheck)
 
     /*if (DTPRINT_FILE) printf ("SIg %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
       value.number[0]);*/
-    }
+}
 
-void tempest_read (trace, read_fd)
-TRACE	*trace;
-int		read_fd;
+void tempest_read (
+    TRACE	*trace,
+    int		read_fd)
 {
     int		status;
     int		numBytes,numRows,numBitsRow,numBitsRowPad;
@@ -594,7 +633,7 @@ int		read_fd;
     int		i,j;
     int		pad_len;
     unsigned int	time, last_time=EOT;
-    register	SIGNAL	*sig_ptr;
+    register	SIGNAL	*sig_ptr=NULL;
     SIGNAL	*last_sig_ptr=NULL;
     int 	index;
     Boolean	verilator_xor_format;
@@ -640,7 +679,7 @@ int		read_fd;
 	if (DTPRINT_FILE) {
 	    printf ("sigFlags=%x sigOffset=%d sigWidth=%d sigChars=%d sigName=%s\n",
 		   sigFlags,sigOffset,sigWidth,sigChars,chardata);
-	    }
+	}
 	
 	for (index=sigWidth-1 ; index>=0; index--) {
 	    /*
@@ -653,19 +692,19 @@ int		read_fd;
 	    if (trace->firstsig==NULL) {
 		trace->firstsig = sig_ptr;
 		sig_ptr->backward = NULL;
-		}
+	    }
 	    else {
 		last_sig_ptr->forward = sig_ptr;
 		sig_ptr->backward = last_sig_ptr;
-		}
+	    }
 	    if (sigWidth>1) {
 		sig_ptr->bit_index = index;
 		sig_ptr->bits = sigWidth;	/* Special, will be decomposed */
-		}
+	    }
 	    else {
 		sig_ptr->bit_index = -1;
 		sig_ptr->bits = 0;
-		}
+	    }
 	    if (index==sigWidth-1) sig_ptr->file_type.flag.vector_msb = TRUE;
 	    sig_ptr->file_pos = sigOffset + index;
 	    
@@ -686,20 +725,20 @@ int		read_fd;
 	    sig_ptr->signame[sigChars] = '\0';
 	    
 	    last_sig_ptr = sig_ptr;
-	    }
+	}
     
 	/* Checks */
 	if (sig_ptr->file_type.flag.four_state != 0) {
 	    sprintf (message,"Four state tempest not supported.\nSignal %s will be wrong.",sig_ptr->signame);
 	    dino_warning_ack (trace, message);
-	    }
+	}
 
 	/*
 	 ** Read the pad bits
 	 */
 	pad_len = (sigChars%8) ? 8 - (sigChars%8) : 0;
 	status = read (read_fd, chardata, pad_len);
-	}
+    }
 
     /* Make the busses */
     read_make_busses (trace, FALSE);
@@ -736,7 +775,7 @@ int		read_fd;
 	if (DTPRINT_FILE) {
 	    printf ("read: time=%d  status %d data=%08x %08x\n", data[0], 
 		    status, data[0], data[1]);
-	    }*/
+		    }*/
 	
 	/** Extract the phase - this will be used as a 'time' value and
 	 ** is multiplied by 100 to make the trace easier to read
@@ -757,11 +796,11 @@ int		read_fd;
 	/* Perhaps it's because both were written by SEG CAD. */
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    fil_tempest_binary_add_cptr (sig_ptr, data, time, first_data);
-	    }
+	}
 
 	first_data = FALSE;
-	}/* end for */
+    }/* end for */
 
     DFree (data);
-    }
+}
 

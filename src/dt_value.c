@@ -1,24 +1,61 @@
-/******************************************************************************
- *
- * Filename:
- *     dt_value.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V6.3
- *
- * Author:
- *     Wilson Snyder
- *
- * Abstract:
- *
- * Modification History:
- *     WPS	20-Jun-93	Created from dt_signal.c
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dinotrace.c --- main routine and documentation
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the base version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
+#include <config.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -37,16 +74,16 @@ static char rcsid[] = "$Id$";
 #include <Xm/Label.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
 
 
 /****************************** UTILITIES ******************************/
 
-void    value_to_string (trace, strg, cptr, seperator)
-    TRACE *trace;
-    char *strg;
-    unsigned int cptr[];
-    char seperator;		/* What to print between the values */
+void    value_to_string (
+    TRACE *trace,
+    char *strg,
+    unsigned int cptr[],
+    char seperator)		/* What to print between the values */
 {
     if (cptr[3]) {
 	if (trace->busrep == HBUS)
@@ -55,7 +92,7 @@ void    value_to_string (trace, strg, cptr, seperator)
 	    sprintf (strg,"%o%c%010o%c%010o%c%010o", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	else
 	    sprintf (strg,"%d%c%010d%c%010d%c%010d", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
-	}
+    }
     else if (cptr[2]) {
 	if (trace->busrep == HBUS)
 	    sprintf (strg,"%x%c%08x%c%08x", cptr[2], seperator, cptr[1], seperator, cptr[0]);
@@ -63,7 +100,7 @@ void    value_to_string (trace, strg, cptr, seperator)
 	    sprintf (strg,"%o%c%010o%c%010o", cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	else
 	    sprintf (strg,"%d%c%010d%c%010d", cptr[2], seperator, cptr[1], seperator, cptr[0]);
-	}
+    }
     else if (cptr[1]) {
 	if (trace->busrep == HBUS)
 	    sprintf (strg,"%x%c%08x", cptr[1], seperator, cptr[0]);
@@ -71,7 +108,7 @@ void    value_to_string (trace, strg, cptr, seperator)
 	    sprintf (strg,"%o%c%010o", cptr[1], seperator, cptr[0]);
 	else
 	    sprintf (strg,"%d%c%010d", cptr[1], seperator, cptr[0]);
-	}
+    }
     else {
 	if (trace->busrep == HBUS)
 	    sprintf (strg,"%x", cptr[0]);
@@ -79,13 +116,13 @@ void    value_to_string (trace, strg, cptr, seperator)
 	    sprintf (strg,"%o", cptr[0]);
 	else
 	    sprintf (strg,"%d", cptr[0]);
-	}
     }
+}
 
-void    string_to_value (trace, strg, cptr)
-    TRACE *trace;
-    char *strg;
-    unsigned int cptr[];
+void    string_to_value (
+    TRACE *trace,
+    char *strg,
+    unsigned int cptr[])
 {
     register char value;
     unsigned int MSO = (7<<29);		/* Most significant hex digit */
@@ -108,26 +145,26 @@ void    string_to_value (trace, strg, cptr)
 	    cptr[2] = (cptr[2]<<4) + ((cptr[1] & MSH)>>28);
 	    cptr[1] = (cptr[1]<<4) + ((cptr[0] & MSH)>>28);
 	    cptr[0] = (cptr[0]<<4) + value;
-	    }
+	}
 	else if (trace->busrep == OBUS && value >=0 && value <= 7) {
 	    cptr[3] = (cptr[3]<<3) + ((cptr[2] & MSO)>>29);
 	    cptr[2] = (cptr[2]<<3) + ((cptr[1] & MSO)>>29);
 	    cptr[1] = (cptr[1]<<3) + ((cptr[0] & MSO)>>29);
 	    cptr[0] = (cptr[0]<<3) + value;
-	    }
+	}
 	else if (trace->busrep == DBUS && value >=0 && value <= 9) {
 	    /* This may be buggy */
 	    cptr[3] = (cptr[3]*10) + ((cp>=(strg+30))?cp[-30]:0);
 	    cptr[2] = (cptr[2]*10) + ((cp>=(strg+20))?cp[-20]:0);
 	    cptr[1] = (cptr[1]*10) + ((cp>=(strg+10))?cp[-10]:0);
 	    cptr[0] = (cptr[0]*10) + value;
-	    }
 	}
     }
+}
 
-void    cptr_to_search_value (cptr, value)
-    SIGNAL_LW	*cptr;
-    unsigned int value[];
+void    cptr_to_search_value (
+    SIGNAL_LW	*cptr,
+    unsigned int value[])
 {
     value[0] = value[1] = value[2] = value[3] = 0;
     switch (cptr->sttime.state) {
@@ -150,8 +187,8 @@ void    cptr_to_search_value (cptr, value)
 	value[2] = *((unsigned int *)cptr+3);
 	value[3] = *((unsigned int *)cptr+4);
 	break;
-	} /* switch */
-    }
+    } /* switch */
+}
 
 void	val_update_search ()
 {
@@ -177,7 +214,7 @@ void	val_update_search ()
     /* Mark all cursors that are a result of a search as old (-1) */
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 	if (csr_ptr->type==SEARCH) csr_ptr->type = SEARCHOLD;
-	}
+    }
 
     /* Search every trace for the value, mark the signal if it has it to speed up displaying */
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
@@ -185,7 +222,7 @@ void	val_update_search ()
 	    if (sig_ptr->lws == 1) {
 		/* Single bit signal, don't search for values */
 		continue;
-		}
+	    }
 	    
 	    if (any_enabled) {
 		cursorize=0;
@@ -243,12 +280,12 @@ void	val_update_search ()
 		    
 		} /* for cptr */
 	    } /* if enabled */
-	    } /* for sig */
-	} /* for trace */
+	} /* for sig */
+    } /* for trace */
 
     /* Delete all old cursors */
     cur_delete_of_type (SEARCHOLD);
-    }
+}
 
 /****************************** STATES ******************************/
 
@@ -265,19 +302,19 @@ void	val_states_update ()
 		 /* if (DTPRINT_FILE) printf ("Signal %s is patterned\n",sig_ptr->signame); */
 	     }
 	 }
-    }
+     }
 }
 
 
 /****************************** MENU OPTIONS ******************************/
 
-void    val_examine_cb (w, trace, cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void    val_examine_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct	*cb)
 {
     
-    if (DTPRINT_ENTRY) printf ("In val_examine_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In val_examine_cb - trace=%p\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -285,14 +322,14 @@ void    val_examine_cb (w, trace, cb)
     /* process all subsequent button presses as cursor moves */
     set_cursor (trace, DC_VAL_EXAM);
     add_event (ButtonPressMask, val_examine_ev);
-    }
+}
 
-void    val_highlight_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void    val_highlight_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct	*cb)
 {
-    if (DTPRINT_ENTRY) printf ("In val_highlight_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In val_highlight_cb - trace=%p\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -303,16 +340,17 @@ void    val_highlight_cb (w,trace,cb)
     /* process all subsequent button presses as signal deletions */ 
     set_cursor (trace, DC_VAL_HIGHLIGHT);
     add_event (ButtonPressMask, val_highlight_ev);
-    }
+}
 
 
 /****************************** EVENTS ******************************/
 
-void    val_examine_popup (trace, x, y, ev)
+void    val_examine_popup (
     /* Create the popup menu for val_examine, based on cursor position x,y */
-    TRACE		*trace;
-    int			x,y;
-    XButtonPressedEvent	*ev;
+    TRACE	*trace,
+    Position	x,
+    Position	y,
+    XButtonPressedEvent	*ev)
 {
     DTime	time;
     SIGNAL	*sig_ptr;
@@ -331,7 +369,7 @@ void    val_examine_popup (trace, x, y, ev)
 	XtUnmanageChild (trace->examine.popup);
 	/* XtUnmanageChild (trace->examine.label); */
 	trace->examine.popup = NULL;
-	}
+    }
     
     if (time && sig_ptr) {
 	/* Get information */
@@ -341,7 +379,7 @@ void    val_examine_popup (trace, x, y, ev)
 	
 	if (cptr->sttime.time == EOT) {
 	    strcat (strg, "\nValue at EOT:\n");
-	    }
+	}
 	else {
 	    strcat (strg, "\nValue at times ");
 	    time_to_string (trace, strg2, cptr->sttime.time, FALSE);
@@ -349,13 +387,13 @@ void    val_examine_popup (trace, x, y, ev)
 	    strcat (strg, " - ");
 	    if (((cptr + sig_ptr->lws)->sttime.time) == EOT) {
 		strcat (strg, "EOT:\n");
-		}
+	    }
 	    else {
 		time_to_string (trace, strg2, (cptr + sig_ptr->lws)->sttime.time, FALSE);
 		strcat (strg, strg2);
 		strcat (strg, ":\n");
-		}
 	    }
+	}
 	
 	cptr_to_search_value (cptr, value);
 
@@ -387,7 +425,7 @@ void    val_examine_popup (trace, x, y, ev)
                 && (sig_ptr->decode->statename[value[0]][0] != '\0') ) {
 		sprintf (strg2, " = %s\n", sig_ptr->decode->statename[value[0]] );
 		strcat (strg, strg2);
-		}
+	    }
 	    else strcat (strg, "\n");
 
 	    /* Bitwise information */
@@ -416,10 +454,10 @@ void    val_examine_popup (trace, x, y, ev)
 				 bit_value);
 			strcat (strg, strg2);
 			if (col==4 || col==8) strcat (strg, "  ");
-			}
 		    }
-		strcat (strg, "\n");
 		}
+		strcat (strg, "\n");
+	    }
 
 	    if (sig_ptr->bits > 2) {
 		par = 0;
@@ -430,31 +468,31 @@ void    val_examine_popup (trace, x, y, ev)
 		    else  bit_value = ( value[3] >> (bit-96) ) & 1;
 
 		    par ^= bit_value;
-		    }
+		}
 		if (par) strcat (strg, "Odd Parity\n");
 		else  strcat (strg, "Even Parity\n");
-		}
+	    }
 
             break;
-            } /* Case */
+	} /* Case */
 
 	/* Debugging information */
 	if (DTDEBUG) {
 	    sprintf (strg2, "\nState %d\n", cptr->sttime.state);
 	    strcat (strg, strg2);
-	    sprintf (strg2, "Type %d   Lws %d   Blocks %d\n",
+	    sprintf (strg2, "Type %d   Lws %d   Blocks %ld\n",
 		     sig_ptr->type, sig_ptr->lws, sig_ptr->blocks);
 	    strcat (strg, strg2);
 	    sprintf (strg2, "Bits %d   Index %d - %d  Srch_ena %d\n",
 		     sig_ptr->bits, sig_ptr->msb_index, sig_ptr->lsb_index, sig_ptr->srch_ena);
 	    strcat (strg, strg2);
-	    sprintf (strg2, "File_type %d   File_Pos %d-%d  Mask %08lx\n",
+	    sprintf (strg2, "File_type %x  File_Pos %d-%d  Mask %08x\n",
 		     sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->file_end_pos, sig_ptr->pos_mask);
 	    strcat (strg, strg2);
-	    sprintf (strg2, "Value_mask %08lx %08lx %08lx %08lx\n",
+	    sprintf (strg2, "Value_mask %08x %08x %08x %08x\n",
 		     sig_ptr->value_mask[3], sig_ptr->value_mask[2], sig_ptr->value_mask[1], sig_ptr->value_mask[0]);
 	    strcat (strg, strg2);
-	    }
+	}
 	
         /* Create */
         if (DTPRINT_ENTRY) printf ("\ttime = %d, signal = %s\n", time, sig_ptr->signame);
@@ -470,12 +508,12 @@ void    val_examine_popup (trace, x, y, ev)
 
 	XmMenuPosition (trace->examine.popup, ev);
 	XtManageChild (trace->examine.popup);
-	}
     }
+}
 	
-void    val_examine_unpopup_act (w)
+void    val_examine_unpopup_act (
     /* callback or action! */
-    Widget		w;
+    Widget		w)
 {
     TRACE	*trace;		/* Display information */
     
@@ -488,10 +526,10 @@ void    val_examine_unpopup_act (w)
 	XtUnmanageChild (trace->examine.popup);
 	XtUnmanageChild (trace->examine.label);
 	trace->examine.popup = NULL;
-	}
+    }
     /* redraw the screen as popup may have mangled widgets */
     /* draw_all_needed ();*/
-    }
+}
 
 char *events[40] = {"","", "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelease", "MotionNotify",
 			"EnterNotify", "LeaveNotify", "FocusIn", "FocusOut", "KeymapNotify", "Expose", "GraphicsExpose",
@@ -499,12 +537,12 @@ char *events[40] = {"","", "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelea
 			"MapRequest", "ReparentNotify", "ConfigureNotify", "ConfigureRequest", "GravityNotify",
 			"ResizeRequest", "CirculateNotify", "CirculateRequest", "PropertyNotify", "SelectionClear",
 			"SelectionRequest", "SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
-			"LASTEvent"};
+		    "LASTEvent"};
 
-void    val_examine_ev (w, trace, ev)
-    Widget		w;
-    TRACE		*trace;
-    XButtonPressedEvent	*ev;
+void    val_examine_ev (
+    Widget		w,
+    TRACE		*trace,
+    XButtonPressedEvent	*ev)
 {
     XEvent	event;
     XMotionEvent *em;
@@ -532,7 +570,7 @@ void    val_examine_ev (w, trace, ev)
 	/* Mark an update as needed */
 	if (event.type == MotionNotify) {
 	    update_pending = TRUE;
-	    }
+	}
 
 	/* if window was exposed, must redraw it */
 	if (event.type == Expose) win_expose_cb (0,trace);
@@ -543,20 +581,20 @@ void    val_examine_ev (w, trace, ev)
 	if (event.type == ButtonRelease || event.type == ButtonPress) {
 	    /* ButtonPress in case user is freaking out, some strange X behavior caused the ButtonRelease to be lost */
 	    break;
-	    }
+	}
 
 	/* If a update is needed, redraw the menu. */
 	/* Do it later if events pending, otherwise dragging is SLOWWWW */
 	if (update_pending && !XPending (global->display)) {
 	    update_pending = FALSE;
 	    em = (XMotionEvent *)&event;
-	    val_examine_popup (trace, em->x, em->y, em);
-	    }
+	    val_examine_popup (trace, em->x, em->y, NULL);
+	}
 
 	if (global->redraw_needed && !XtAppPending (global->appcontext)) {
 	    draw_perform();
-	    }
 	}
+    }
     
     /* reset the events the widget will respond to */
     XSync (global->display, FALSE);
@@ -565,13 +603,13 @@ void    val_examine_ev (w, trace, ev)
     
     /* unmanage popup */
     val_examine_unpopup_act (trace->work);
-    }
+}
 
-void    val_examine_popup_act (w, ev, params, num_params)
-    Widget		w;
-    XButtonPressedEvent	*ev;
-    String		params;
-    Cardinal		*num_params;
+void    val_examine_popup_act (
+    Widget		w,
+    XButtonPressedEvent	*ev,
+    String		params,
+    Cardinal		*num_params)
 {
     TRACE	*trace;		/* Display information */
     int		prev_cursor;
@@ -589,10 +627,10 @@ void    val_examine_popup_act (w, ev, params, num_params)
     val_examine_ev (w, trace, ev);
 
     set_cursor (trace, prev_cursor);
-    }
+}
 
-void    val_search_widget_update (trace)
-    TRACE	*trace;
+void    val_search_widget_update (
+    TRACE	*trace)
 {
     VSearchNum search_pos;
     char	strg[MAXVALUELEN];
@@ -613,17 +651,17 @@ void    val_search_widget_update (trace)
 
 	/* Update with current signal values */
 	XmTextSetString (trace->value.signal[search_pos], global->val_srch[search_pos].signal);
-	}
     }
+}
 
-void    val_search_cb (w,trace,cb)
-    Widget		w;
-    TRACE	*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    val_search_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmSelectionBoxCallbackStruct *cb)
 {
     int		i;
     
-    if (DTPRINT_ENTRY) printf ("In val_search_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In val_search_cb - trace=%p\n",trace);
     
     if (!trace->value.search) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
@@ -735,7 +773,7 @@ void    val_search_cb (w,trace,cb)
 	    trace->value.signal[i] = XmCreateText (trace->value.form,"texts",arglist,10);
 	    XtAddCallback (trace->value.signal[i], XmNactivateCallback, val_search_ok_cb, trace);
 	    XtManageChild (trace->value.signal[i]);
-	    }
+	}
 
 	/* Create OK button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
@@ -764,26 +802,26 @@ void    val_search_cb (w,trace,cb)
 	XtSetArg (arglist[3], XmNtopOffset, 5);
 	XtSetArg (arglist[4], XmNtopWidget, trace->value.signal[MAX_SRCH-1]);
 	trace->value.cancel = XmCreatePushButton (trace->value.form,"cancel",arglist,5);
-	XtAddCallback (trace->value.cancel, XmNactivateCallback, unmanage_cb, trace->value.form);
+	XtAddCallback (trace->value.cancel, XmNactivateCallback, unmanage_cb, trace->value.search);
 	XtManageChild (trace->value.cancel);
-	}
+    }
     
     /* Copy settings to local area to allow cancel to work */
     val_search_widget_update (trace);
 
     /* manage the popup on the screen */
     XtManageChild (trace->value.search);
-    }
+}
 
-void    val_search_ok_cb (w,trace,cb)
-    Widget				w;
-    TRACE			*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    val_search_ok_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmSelectionBoxCallbackStruct *cb)
 {
     char		*strg;
     int			i;
 
-    if (DTPRINT_ENTRY) printf ("In val_search_ok_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In val_search_ok_cb - trace=%p\n",trace);
 
     for (i=0; i<MAX_SRCH; i++) {
 	/* Update with current search enables */
@@ -804,37 +842,37 @@ void    val_search_ok_cb (w,trace,cb)
 	    char strg2[MAXVALUELEN];
 	    value_to_string (trace, strg2, global->val_srch[i].value, '_');
 	    printf ("Search %d) %d   '%s' -> '%s'\n", i, global->val_srch[i].color, strg, strg2);
-	    }
 	}
+    }
     
     XtUnmanageChild (trace->value.search);
 
     draw_needupd_val_search ();
     draw_all_needed ();
-    }
+}
 
-void    val_search_apply_cb (w,trace,cb)
-    Widget				w;
-    TRACE			*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    val_search_apply_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmSelectionBoxCallbackStruct *cb)
 {
-    if (DTPRINT_ENTRY) printf ("In val_search_apply_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In val_search_apply_cb - trace=%p\n",trace);
 
     val_search_ok_cb (w,trace,cb);
     val_search_cb (w,trace,cb);
-    }
+}
 
-void    val_highlight_ev (w,trace,ev)
-    Widget		w;
-    TRACE		*trace;
-    XButtonPressedEvent	*ev;
+void    val_highlight_ev (
+    Widget	w,
+    TRACE	*trace,
+    XButtonPressedEvent	*ev)
 {
     DTime	time;
     SIGNAL	*sig_ptr;
     SIGNAL_LW	*cptr;
     VSearchNum	search_pos;
     
-    if (DTPRINT_ENTRY) printf ("In val_highlight_ev - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In val_highlight_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
     
     time = posx_to_time (trace, ev->x);
@@ -852,31 +890,31 @@ void    val_highlight_ev (w,trace,ev)
 	    && !global->val_srch[search_pos].cursor ) {
 	    /* presume user really wants color if neither is on */
 	    global->val_srch[search_pos].color = search_pos + 1;
-	    }
 	}
+    }
 
     /* If search requester is on the screen, update it too */
     if (trace->value.search && XtIsManaged (trace->value.search)) {
 	val_search_widget_update (trace);
-	}
+    }
 
     /* redraw the screen */
     draw_needupd_val_search ();
     draw_all_needed ();
-    }
+}
 
 
 /****************************** ANNOTATION ******************************/
 
-void    val_annotate_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void    val_annotate_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct	*cb)
     
 {
     int i;
 
-    if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%p\n",trace);
     
     if (!trace->annotate.dialog) {
 	XtSetArg (arglist[0],XmNdefaultPosition, TRUE);
@@ -916,7 +954,7 @@ void    val_annotate_cb (w,trace,cb)
 	    XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple (""));
 	    trace->annotate.cursors[i] = XmCreateToggleButton (trace->annotate.dialog,"togglenc",arglist,4);
 	    XtManageChild (trace->annotate.cursors[i]);
-	    }
+	}
 
 	/* Cursor enables */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include which auto (dotted) cursor colors:") );
@@ -933,7 +971,7 @@ void    val_annotate_cb (w,trace,cb)
 	    XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple (""));
 	    trace->annotate.cursors_dotted[i] = XmCreateToggleButton (trace->annotate.dialog,"togglencd",arglist,4);
 	    XtManageChild (trace->annotate.cursors_dotted[i]);
-	    }
+	}
 
 	/* Signal Enables */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include which signal colors:") );
@@ -950,7 +988,7 @@ void    val_annotate_cb (w,trace,cb)
 	    XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple (""));
 	    trace->annotate.signals[i] = XmCreateToggleButton (trace->annotate.dialog,"togglen",arglist,4);
 	    XtManageChild (trace->annotate.signals[i]);
-	    }
+	}
 
 	/* Create OK button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
@@ -976,7 +1014,7 @@ void    val_annotate_cb (w,trace,cb)
 	XtAddCallback (trace->annotate.cancel, XmNactivateCallback, unmanage_cb, trace->annotate.dialog);
 
 	XtManageChild (trace->annotate.cancel);
-	}
+    }
     
     /* reset file name */
     XtSetArg (arglist[0], XmNvalue, global->anno_filename);
@@ -989,35 +1027,35 @@ void    val_annotate_cb (w,trace,cb)
 
 	XtSetArg (arglist[0], XmNset, (global->anno_ena_cursor_dotted[i] != 0));
 	XtSetValues (trace->annotate.cursors_dotted[i], arglist, 1);
-	}
+    }
     for (i=1; i<=MAX_SRCH; i++) {
 	XtSetArg (arglist[0], XmNset, (global->anno_ena_signal[i] != 0));
 	XtSetValues (trace->annotate.signals[i], arglist, 1);
-	}
+    }
 
     /* manage the popup on the screen */
     XtManageChild (trace->annotate.dialog);
     global->anno_poppedup = TRUE;
-    }
+}
 
-void    val_annotate_ok_cb (w,trace,cb)
-    Widget				w;
-    TRACE			*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    val_annotate_ok_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct *cb)
 {
     char		*strg;
     int			i;
 
-    if (DTPRINT_ENTRY) printf ("In sig_search_ok_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In sig_search_ok_cb - trace=%p\n",trace);
 
     /* Update with current search enables */
     for (i=0; i<=MAX_SRCH; i++) {
 	global->anno_ena_cursor[i] = XmToggleButtonGetState (trace->annotate.cursors[i]);
 	global->anno_ena_cursor_dotted[i] = XmToggleButtonGetState (trace->annotate.cursors_dotted[i]);
-	}
+    }
     for (i=1; i<=MAX_SRCH; i++) {
 	global->anno_ena_signal[i] = XmToggleButtonGetState (trace->annotate.signals[i]);
-	}
+    }
 	
     /* Update with current search values */
     strg = XmTextGetString (trace->annotate.text);
@@ -1026,23 +1064,23 @@ void    val_annotate_ok_cb (w,trace,cb)
     XtUnmanageChild (trace->annotate.dialog);
 
     val_annotate_do_cb (w,trace,cb);
-    }
+}
 
-void    val_annotate_apply_cb (w,trace,cb)
-    Widget				w;
-    TRACE			*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    val_annotate_apply_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct	*cb)
 {
-    if (DTPRINT_ENTRY) printf ("In sig_search_apply_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In sig_search_apply_cb - trace=%p\n",trace);
 
     val_annotate_ok_cb (w,trace,cb);
     val_annotate_cb (w,trace,cb);
-    }
+}
 
-void    val_annotate_do_cb (w,trace,cb)
-    Widget	w;
-    TRACE	*trace;
-    XmAnyCallbackStruct	*cb;
+void    val_annotate_do_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct	*cb)
 {
     int		i;
     SIGNAL	*sig_ptr;
@@ -1059,12 +1097,12 @@ void    val_annotate_do_cb (w,trace,cb)
 	val_annotate_cb (w,trace,cb);
 	}*/
 
-    if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%d  file=%s\n",trace,global->anno_filename);
+    if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%p  file=%s\n",trace,global->anno_filename);
 
     draw_update ();
 
     /* Socket connection */
-#ifndef VMS
+#ifndef HAVE_SOCKETS
     socket_create ();
 #endif
 
@@ -1072,16 +1110,16 @@ void    val_annotate_do_cb (w,trace,cb)
 	sprintf (message,"Bad Filename: %s\n", global->anno_filename);
 	dino_error_ack (trace,message);
 	return;
-	}
+    }
 	
     /* Socket info */
     if (!global->anno_socket[0] || strchr (global->anno_socket, '*') ) {
 	fprintf (dump_fp, "(setq dinotrace-socket-name nil)\n");
-	}
+    }
     else {
 	fprintf (dump_fp, "(setq dinotrace-socket-name \"%s\")\n\n",
 		 global->anno_socket);
-	}
+    }
 
     /* Trace info */
     fprintf (dump_fp, "(setq dinotrace-traces '(\n");
@@ -1090,8 +1128,8 @@ void    val_annotate_do_cb (w,trace,cb)
 	    fprintf (dump_fp, "	[\"%s\"\t\"%s\"]\n",
 		     trace->filename,
 		     date_string (trace->filestat.st_ctime));
-	    }
 	}
+    }
     fprintf (dump_fp, "\t))\n");
 
 #define colornum_to_name(_color_)  (((_color_)==0)?"":global->color_names[(_color_)])
@@ -1102,8 +1140,8 @@ void    val_annotate_do_cb (w,trace,cb)
 	    time_to_string (global->trace_head, strg, csr_ptr->time, FALSE);
 	    fprintf (dump_fp, "\t[\"%s\"\t%d\t\"%s\"\tnil]\n", strg,
 		     csr_ptr->color, colornum_to_name(csr_ptr->color));
-	    }
 	}
+    }
     fprintf (dump_fp, "\t])\n");
 
     /* Value search info */
@@ -1113,8 +1151,8 @@ void    val_annotate_do_cb (w,trace,cb)
 	    value_to_string (global->trace_head, strg, global->val_srch[i-1].value, '_');
 	    fprintf (dump_fp, "\t[\"%s\"\t%d\t\"%s\"]\n", strg,
 		     i, colornum_to_name(i));
-	    }
 	}
+    }
     fprintf (dump_fp, "\t))\n");
 
     /* Signal color info */
@@ -1122,7 +1160,7 @@ void    val_annotate_do_cb (w,trace,cb)
     fprintf (dump_fp, "(setq dinotrace-signal-colors [\n");
     for (i=0; i<=MAX_SRCH; i++) {
 	fprintf (dump_fp, "\t[%d\t\"%s\"\tnil]\n", i, (i==0 || !global->color_names[i])?"":global->color_names[i]);
-	}
+    }
     fprintf (dump_fp, "\t])\n");
 
     /* Find number of cursors that will be included */
@@ -1130,8 +1168,8 @@ void    val_annotate_do_cb (w,trace,cb)
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 	if ((csr_ptr->type==USER) ? global->anno_ena_cursor[csr_ptr->color] : global->anno_ena_cursor_dotted[csr_ptr->color] ) {
 	    csr_num_incl++;
-	    }
 	}
+    }
 
     /* Signal values */
     fprintf (dump_fp, "(setq dinotrace-signal-values '(\n");
@@ -1152,11 +1190,11 @@ void    val_annotate_do_cb (w,trace,cb)
 		    while ( (cptr->sttime.time <= csr_ptr->time)
 			   && (cptr->sttime.time != EOT)) {
 			cptr += sig_ptr->lws;
-			}
+		    }
 		    if ( (cptr->sttime.time > csr_ptr->time)
 			&& ( cptr != (SIGNAL_LW *)sig_ptr->cptr)) {
 			cptr -= sig_ptr->lws;
-			}
+		    }
 
 		    cptr_to_search_value (cptr, value);
 		    value_to_string (trace, strg, value, '_');
@@ -1170,13 +1208,13 @@ void    val_annotate_do_cb (w,trace,cb)
 			fprintf (dump_fp, "\",%s'\"\t", strg);
 		    else
 			fprintf (dump_fp, "\",%s\"\t", strg);
-		    }
 		}
-	    fprintf (dump_fp, "))\n");
 	    }
+	    fprintf (dump_fp, "))\n");
 	}
+    }
     fprintf (dump_fp, "\t))\n");
     
     fclose (dump_fp);
-    }
+}
 

@@ -1,33 +1,67 @@
-/******************************************************************************
- *
- * Filename:
- *     dt_grid.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V4.0
- *
- * Author:
- *     Allen Gallotta
- *
- * Abstract:
- *
- * Modification History:
- *     AAG	14-Aug-90	Original Version
- *     AAG	22-Aug-90	Base Level V4.1
- *     AAG	29-Apr-91	Use X11 for Ultrix support
- *
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dt_grid.c --- grid drawing and requestors
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
+#include <config.h>
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <X11/Xlib.h>
-#include <Xm/Xm.h>
 #include <Xm/Xm.h>
 #include <Xm/Label.h>
 #include <Xm/LabelP.h>
@@ -41,16 +75,16 @@ static char rcsid[] = "$Id$";
 #include <Xm/BulletinB.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
 
-extern void	grid_customize_ok_cb(), grid_customize_apply_cb(), grid_customize_reset_cb(), grid_customize_option_cb();
+extern void	grid_customize_ok_cb(), grid_customize_apply_cb(), grid_customize_reset_cb(), grid_customize_sensitives_cb(), grid_customize_option_cb();
 
 
 /****************************** AUTO GRIDS ******************************/
 
-void	grid_calc_auto (trace, grid_ptr)
-    TRACE	*trace;
-    GRID	*grid_ptr;
+void	grid_calc_auto (
+    TRACE	*trace,
+    GRID	*grid_ptr)
 {
     SIGNAL	*sig_ptr;
     SIGNAL_LW	*cptr;
@@ -69,9 +103,11 @@ void	grid_calc_auto (trace, grid_ptr)
     if (!sig_ptr) {
 	/* Effectively disable grid */
 	switch (grid_ptr->period_auto) {
-	  case PA_AUTO:
+	case PA_AUTO:
 	    grid_ptr->period = 0;
 	    break;
+	case PA_USER:
+	case PA_EDGE:
 	}
 	return;	
     }
@@ -132,8 +168,8 @@ void	grid_calc_auto (trace, grid_ptr)
        grid_ptr->period, grid_ptr->alignment);
 }
 
-void	grid_calc_autos (trace)
-    TRACE		*trace;
+void	grid_calc_autos (
+    TRACE		*trace)
 {
     int		grid_num;
 
@@ -146,9 +182,9 @@ void	grid_calc_autos (trace)
 
 /****************************** MENU OPTIONS ******************************/
 
-void    grid_align_choose (trace, grid_ptr)
-    TRACE		*trace;
-    GRID		*grid_ptr;
+void    grid_align_choose (
+    TRACE	*trace,
+    GRID	*grid_ptr)
 {
     DTime	time;
     Position	x1,x2,y1,y2;
@@ -229,14 +265,14 @@ void    grid_align_choose (trace, grid_ptr)
 }
 
 
-void grid_align_cb (w, trace, cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void grid_align_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     int			grid_num;
 
-    if (DTPRINT_ENTRY) printf ("In grid_align_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_align_cb - trace=%p\n",trace);
 
     /*   Determine which grid was selected based on which array */
     for (grid_num = 0; grid_num < (MAXGRIDS-1); grid_num++) {	/* -1 as MAXGRID will be the "default if none match*/
@@ -261,15 +297,15 @@ void grid_align_cb (w, trace, cb)
 }
 
 
-void grid_reset_cb (w, trace, cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void grid_reset_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     int		grid_num;
     GRID	*grid_ptr;
 
-    if (DTPRINT_ENTRY) printf ("In grid_reset_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_reset_cb - trace=%p\n",trace);
 
     /* reset the alignment back to zero and resolution to 100 */
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
@@ -296,14 +332,14 @@ void grid_reset_cb (w, trace, cb)
 
     /* cancel the button actions */
     remove_all_events (trace);
-    }
+}
 
 /****************************** CUSTOMIZE ******************************/
 
-void    grid_customize_sensitives_cb (w, trace, cb)
-    Widget		w;
-    TRACE	*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    grid_customize_sensitives_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct *cb)
 {
     int		grid_num;
     int		opt;
@@ -323,10 +359,10 @@ void    grid_customize_sensitives_cb (w, trace, cb)
     }
 }
 
-void    grid_customize_widget_update_cb (w, trace, cb)
-    Widget		w;
-    TRACE	*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    grid_customize_widget_update_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct *cb)
 {
     int		grid_num;
     GRID	*grid_ptr;
@@ -368,17 +404,17 @@ void    grid_customize_widget_update_cb (w, trace, cb)
     grid_customize_sensitives_cb (NULL, trace, NULL);
 }
 
-void    grid_customize_cb (w,trace,cb)
-    Widget		w;
-    TRACE	*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    grid_customize_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct *cb)
 {
     int		grid_num;
     int		y=10, xb=0, ymax=0;
     char	strg[30];
     int		i;
     
-    if (DTPRINT_ENTRY) printf ("In grid_customize_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_customize_cb - trace=%p\n",trace);
     
     if (!trace->gridscus.popup) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
@@ -448,13 +484,13 @@ void    grid_customize_cb (w,trace,cb)
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Manual Periodic") );
 	    trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoperiod_pulldown,"pdbutton0",arglist,1);
-	    XtAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0], XmNactivateCallback, grid_customize_sensitives_cb, trace);
+	    XtAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
 	    XtManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0]);
 
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Auto Periodic") );
 	    trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoperiod_pulldown,"pdbutton0",arglist,1);
-	    XtAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1], XmNactivateCallback, grid_customize_sensitives_cb, trace);
+	    XtAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
 	    XtManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1]);
 
 	    /*
@@ -488,19 +524,19 @@ void    grid_customize_cb (w,trace,cb)
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Manual Edge") );
 	    trace->gridscus.grid[grid_num].autoalign_pulldownbutton[0] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoalign_pulldown,"pdbutton0",arglist,1);
-	    XtAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[0], XmNactivateCallback, grid_customize_sensitives_cb, trace);
+	    XtAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[0], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
 	    XtManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[0]);
 
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Assertion Edge") );
 	    trace->gridscus.grid[grid_num].autoalign_pulldownbutton[1] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoalign_pulldown,"pdbutton0",arglist,1);
-	    XtAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[1], XmNactivateCallback, grid_customize_sensitives_cb, trace);
+	    XtAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[1], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
 	    XtManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[1]);
 
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Deassertion Edge") );
 	    trace->gridscus.grid[grid_num].autoalign_pulldownbutton[2] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoalign_pulldown,"pdbutton0",arglist,1);
-	    XtAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[2], XmNactivateCallback, grid_customize_sensitives_cb, trace);
+	    XtAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[2], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
 	    XtManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[2]);
 
 	    XtSetArg (arglist[0], XmNsubMenuId, trace->gridscus.grid[grid_num].autoalign_pulldown);
@@ -514,13 +550,13 @@ void    grid_customize_cb (w,trace,cb)
 	    XtSetArg (arglist[1], XmNx, xb+195);
 	    XtSetArg (arglist[2], XmNy, y);
 	    trace->gridscus.grid[grid_num].align = XmCreatePushButton (trace->gridscus.popup,"align",arglist,3);
-	    XtAddCallback (trace->gridscus.grid[grid_num].align, XmNactivateCallback, grid_align_cb, trace);
+	    XtAddCallback (trace->gridscus.grid[grid_num].align, XmNactivateCallback, (XtCallbackProc)grid_align_cb, trace);
 	    XtManageChild (trace->gridscus.grid[grid_num].align);
 
 	    y += 60;
 	    ymax = MAX (y, ymax);
 	    if (y > 400) { xb += 350; y = 10; }
-	    }
+	}
 
 	y=ymax;	/* Make sure buttons are below everything */
 	y+= 15;
@@ -556,19 +592,19 @@ void    grid_customize_cb (w,trace,cb)
 	trace->gridscus.cancel = XmCreatePushButton (trace->gridscus.popup,"cancel",arglist,3);
 	XtAddCallback (trace->gridscus.cancel, XmNactivateCallback, unmanage_cb, trace->gridscus.popup);
 	XtManageChild (trace->gridscus.cancel);
-	}
+    }
     
     /* Copy settings to local area to allow cancel to work */
     grid_customize_widget_update_cb (NULL, trace, NULL);
 
     /* manage the popup on the screen */
     XtManageChild (trace->gridscus.popup);
-    }
+}
 
-void    grid_customize_option_cb (w,trace,cb)
-    Widget	w;
-    TRACE	*trace;
-    XmSelectionBoxCallbackStruct *cb;	/* OR     XButtonPressedEvent	*ev; */
+void    grid_customize_option_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct *cb)	/* OR     XButtonPressedEvent	*ev; */
     /* Puts the color in the option menu, since Xm does not copy colors on selection */
     /* Also used as an event callback for exposures */
 {
@@ -577,7 +613,7 @@ void    grid_customize_option_cb (w,trace,cb)
     Position 	x,y,height,width;
     int		grid_num;
 
-    if (DTPRINT_ENTRY) printf ("In grid_customize_option_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_customize_option_cb - trace=%p\n",trace);
 
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 	i = option_to_number(trace->gridscus.grid[grid_num].options, trace->gridscus.grid[grid_num].pulldownbutton, MAX_SRCH);
@@ -598,19 +634,18 @@ void    grid_customize_option_cb (w,trace,cb)
 			x, y, width, height);
     }
 
-    if (DTPRINT_ENTRY) printf ("Done grid_customize_option_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("Done grid_customize_option_cb - trace=%p\n",trace);
 }
 
-void    grid_customize_ok_cb (w,trace,cb)
-    Widget				w;
-    TRACE			*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    grid_customize_ok_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct *cb)
 {
-    char		*strg;
     int			grid_num;
     GRID	*grid_ptr;
 
-    if (DTPRINT_ENTRY) printf ("In grid_customize_ok_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_customize_ok_cb - trace=%p\n",trace);
 
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 	grid_ptr = &(trace->grid[grid_num]);
@@ -625,33 +660,33 @@ void    grid_customize_ok_cb (w,trace,cb)
 	grid_ptr->color = option_to_number(trace->gridscus.grid[grid_num].options, trace->gridscus.grid[grid_num].pulldownbutton, MAX_SRCH);
 	grid_ptr->period_auto = option_to_number(trace->gridscus.grid[grid_num].autoperiod_options, trace->gridscus.grid[grid_num].autoperiod_pulldownbutton, 2);
 	grid_ptr->align_auto = option_to_number(trace->gridscus.grid[grid_num].autoalign_options, trace->gridscus.grid[grid_num].autoalign_pulldownbutton, 2);
-	}
+    }
     
     XtUnmanageChild (trace->gridscus.popup);
 
     grid_calc_autos (trace);
-    }
+}
 
-void    grid_customize_apply_cb (w,trace,cb)
-    Widget				w;
-    TRACE			*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    grid_customize_apply_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct *cb)
 {
-    if (DTPRINT_ENTRY) printf ("In grid_customize_apply_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_customize_apply_cb - trace=%p\n",trace);
 
     grid_customize_ok_cb (w,trace,cb);
     grid_customize_cb (w,trace,cb);
-    }
+}
 
-void    grid_customize_reset_cb (w,trace,cb)
-    Widget				w;
-    TRACE			*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    grid_customize_reset_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct *cb)
 {
-    if (DTPRINT_ENTRY) printf ("In grid_customize_resize_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_customize_resize_cb - trace=%p\n",trace);
 
     XtUnmanageChild (trace->gridscus.popup);
     grid_reset_cb (w, trace, cb);
     grid_customize_cb (w,trace,cb);
-    }
+}
 

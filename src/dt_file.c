@@ -1,42 +1,72 @@
-/******************************************************************************a
- *
- * Filename:
- *     dt_file.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V4.0
- *
- * Author:
- *     Allen Gallotta
- *
- * Abstract:
- *
- * Modification History:
- *     AAG	 5-Jul-89	Original Version
- *     AAG	22-Aug-90	Base Level V4.1
- *     AAG	 6-Nov-90	Added check for #2's
- *     AAG	29-Apr-91	Use X11, removed math include, fixed many casts
- *				 and initialized strings using for loops for
- *				 Ultrix support
- *     AAG	 8-Jul-91	Added read_HLO_TEMPEST
- *     AAG	 7-Feb-92	Corrected calculation of pad bits when reading
- *				 tempest file format
- *     WPS	 5-Jan-93	Made xstart be calculated from signal widths
- *     WPS	15-Jan-93	Added binary trace support
- *
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dt_file.c --- trace file reading
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
+#include <config.h>
 
 #include <stdio.h>
 #include <math.h> /* removed for Ultrix support... */
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#if TM_IN_SYS_TIME
+#include <sys/time.h>
+#else
 #include <time.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -45,7 +75,10 @@ static char rcsid[] = "$Id$";
 # include <unixio.h>
 #endif
 
-#ifdef __osf__
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+#if HAVE_FCNTL_H
 # include <sys/fcntl.h>
 #endif
 
@@ -56,20 +89,24 @@ static char rcsid[] = "$Id$";
 #include <Xm/SelectioB.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
+#if HAVE_DINODOC_H
 #include "dinodoc.h"
+#else
+char dinodoc[] = "Unavailable";
+#endif
 
 int fil_line_num=0;
 
 /****************************** UTILITIES ******************************/
 
-void free_data (trace)
+void free_data (
     /* Free trace information, also used when deleting preserved structure */
-    TRACE	*trace;
+    TRACE	*trace)
 {
     TRACE	*trace_ptr;
 
-    if (DTPRINT_ENTRY) printf ("In free_data - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In free_data - trace=%p\n",trace);
 
     if (!trace || !trace->loaded) return;
     trace->loaded = 0;
@@ -77,41 +114,41 @@ void free_data (trace)
     /* free any added signals in other traces from this trace */
     for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	sig_free (trace, trace_ptr->firstsig, TRUE, TRUE);
-	}
+    }
     /* free signal data and each signal structure */
     sig_free (trace, trace->firstsig, FALSE, TRUE);
     trace->firstsig = NULL;
     trace->dispsig = NULL;
     trace->numsig = 0;
-    }
+}
 
-void trace_read_cb (w,trace)
-    Widget		w;
-    TRACE		*trace;
+void trace_read_cb (
+    Widget		w,
+    TRACE		*trace)
 {
-    if (DTPRINT_ENTRY) printf ("In trace_read_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In trace_read_cb - trace=%p\n",trace);
 
     /* Clear the file format */
     trace->fileformat = FF_AUTO;
 
     /* get the filename */
     get_file_name (trace);
-    }
+}
 
-void trace_reread_all_cb (w,trace)
-    Widget		w;
-    TRACE		*trace;
+void trace_reread_all_cb (
+    Widget		w,
+    TRACE		*trace)
 {
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
 	    trace_reread_cb (w, trace);
-	    }
 	}
     }
+}
 
-void trace_reread_cb (w,trace)
-    Widget		w;
-    TRACE		*trace;
+void trace_reread_cb (
+    Widget		w,
+    TRACE		*trace)
 {
     char *semi;
     int		read_fd;
@@ -121,7 +158,7 @@ void trace_reread_cb (w,trace)
 	trace_read_cb (w,trace);
     else {
 	/* Drop ;xxx */
-	if (semi = strchr (trace->filename,';'))
+	if ((semi = strchr (trace->filename,';')))
 	    *semi = '\0';
 	
 	if (DTPRINT_ENTRY) printf ("In trace_reread_cb - rereading file=%s\n",trace->filename);
@@ -136,16 +173,16 @@ void trace_reread_cb (w,trace)
 		&& (newstat.st_ctime == trace->filestat.st_ctime)) {
 		if (DTPRINT_FILE) printf ("  file has not changed.\n");
 		return;
-		}
 	    }
+	}
 
 	/* read the file */
 	fil_read_cb (trace);
-	}
     }
+}
 
-void fil_read_cb (trace)
-    TRACE	*trace;
+void fil_read_cb (
+    TRACE	*trace)
 {
     int		read_fd;
     FILE	*read_fp;	/* Routines are responsible for assigning this! */
@@ -154,7 +191,7 @@ void fil_read_cb (trace)
     pipecmd[0]='\0';	/* MIPS: no automatic aggregate initialization */
     read_fp = NULL;	/* MIPS: no automatic aggregate initialization */
 
-    if (DTPRINT_ENTRY) printf ("In fil_read_cb trace=%d filename=%s\n",trace,trace->filename);
+    if (DTPRINT_ENTRY) printf ("In fil_read_cb trace=%p filename=%s\n",trace,trace->filename);
     
     /* Update directory name */
     strcpy (global->directory, trace->filename);
@@ -175,7 +212,7 @@ void fil_read_cb (trace)
     /* Compute the file format */
     if (trace->fileformat == FF_AUTO) {
 	trace->fileformat =	file_format;
-	}
+    }
 
     /* Normalize format */
     switch (trace->fileformat) {
@@ -190,7 +227,7 @@ void fil_read_cb (trace)
 #endif
 	break;
 	/* No default */
-	}
+    }
 
     /* Open file and copy descriptor information */
     read_fd = open (trace->filename, O_RDONLY, 0);
@@ -201,9 +238,9 @@ void fil_read_cb (trace)
 	    /* Not regular file */
 	    close (read_fd);
 	    read_fd = -1;
-	    }
-#endif
 	}
+#endif
+    }
     if (read_fd<1) {
 	/* Similar code below! */
 	sprintf (message,"Can't open file %s", trace->filename);
@@ -214,7 +251,7 @@ void fil_read_cb (trace)
 	change_title (trace);
 	set_cursor (trace, DC_NORMAL);
 	return;
-	}
+    }
 
 #ifndef VMS
     /* If compressed, close the file and open as uncompressed */
@@ -244,9 +281,9 @@ void fil_read_cb (trace)
 		change_title (trace);
 		set_cursor (trace, DC_NORMAL);
 		return;
-		}
 	    }
 	}
+    }
 #endif
 
     /*
@@ -269,17 +306,17 @@ void fil_read_cb (trace)
 	break;
       default:
 	fprintf (stderr, "Unknown file format!!\n");
-	}
+    }
 
     /* Close the file */
     if (pipecmd[0] == '\0') {
 	close (read_fd);
-	}
+    }
 #ifndef VMS
     else {
 	fflush (read_fp);
 	pclose (read_fp);
-	}
+    }
 #endif
 
     /* Now add EOT to each signal and reset the cptr */
@@ -296,22 +333,22 @@ void fil_read_cb (trace)
     new_time (trace);		/* Realignes start and displays */
     vscroll_new (trace,0);	/* Realign time */
     if (DTPRINT_ENTRY) printf ("fil_read_cb done!\n");
-    }
+}
 
-void help_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void help_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("in help_cb\n");
 
     dino_information_ack (trace, help_message ());
-    }
+}
 
-void help_trace_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void help_trace_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     static char msg[2000];
     static char msg2[1000];
@@ -320,7 +357,7 @@ void help_trace_cb (w,trace,cb)
     
     if (!trace->loaded) {
 	sprintf (msg, "No trace is loaded.\n");
-	}
+    }
     else {
 	sprintf (msg,
 	     "%s\n\
@@ -337,19 +374,17 @@ void help_trace_cb (w,trace,cb)
 
 	sprintf (msg2, "\nTimes stored to nearest: %s\n", time_units_to_string (global->time_precision, TRUE));
 	strcat (msg, msg2);
-	}
-
-    dino_information_ack (trace, msg);
     }
 
+    dino_information_ack (trace, msg);
+}
 
-void help_doc_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+
+void help_doc_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
-    XmString	xsout;
-
     if (DTPRINT_ENTRY) printf ("in help_doc_cb\n");
 
     /* May be called before the window was opened, if so ignore the help_doc */
@@ -363,9 +398,6 @@ void help_doc_cb (w,trace,cb)
 	XtAddCallback (trace->help_doc, XmNokCallback, unmanage_cb, trace->help_doc);
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->help_doc, XmDIALOG_CANCEL_BUTTON));
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->help_doc, XmDIALOG_HELP_BUTTON));
-
-	/* create string w/ seperators */
-	/*xsout = string_create_with_cr (dinodoc);*/
 
 	/* create the file name text widget */
 	XtSetArg (arglist[0], XmNrows, 40);
@@ -385,13 +417,13 @@ void help_doc_cb (w,trace,cb)
 }
 
 #pragma inline (fil_string_add_cptr)
-void	fil_string_add_cptr (sig_ptr, value_strg, time, nocheck)
+void	fil_string_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
     /* WARNING: Similar verilog_string_to_value in dt_verilog for speed reasons */
-    SIGNAL	*sig_ptr;
-    char	*value_strg;
-    DTime	time;
-    Boolean	nocheck;		/* don't compare against previous data */
+    SIGNAL	*sig_ptr,
+    char	*value_strg,
+    DTime	time,
+    Boolean	nocheck)		/* don't compare against previous data */
 {
     register unsigned int state;
     register char	*cp, *cep;
@@ -420,8 +452,8 @@ void	fil_string_add_cptr (sig_ptr, value_strg, time, nocheck)
 	  default: 
 	    state = STATE_U;
 	    printf ("%%E, Unknown state character '%c' at line %d\n", *value_strg, fil_line_num);
-	    }
 	}
+    }
 
     else {
 	/* Multi bit signal */
@@ -486,10 +518,10 @@ void	fil_string_add_cptr (sig_ptr, value_strg, time, nocheck)
 #if !defined (fil_add_cptr)
 #pragma inline (fil_add_cptr)
 /* WARNING, INLINED CODE IN CALLBACKS.H */
-void	fil_add_cptr (sig_ptr, value_ptr, nocheck)
-    SIGNAL	*sig_ptr;
-    VALUE	*value_ptr;
-    Boolean	nocheck;		/* compare against previous data */
+void	fil_add_cptr (
+    SIGNAL	*sig_ptr,
+    VALUE	*value_ptr,
+    Boolean	nocheck)		/* compare against previous data */
 {
     long	diff;
     SIGNAL_LW	*cptr;
@@ -528,11 +560,11 @@ void	fil_add_cptr (sig_ptr, value_ptr, nocheck)
 }
 #endif
 
-void read_make_busses (trace, not_tempest)
+void read_make_busses (
     /* Take the list of signals and make it into a list of busses */
     /* Also do the common stuff required for each signal. */
-    TRACE	*trace;
-    Boolean	not_tempest;	/* Use the name of the bus to find the bit vectors */
+    TRACE	*trace,
+    Boolean	not_tempest)	/* Use the name of the bus to find the bit vectors */
 {
     SIGNAL	*sig_ptr;	/* ptr to current signal (lower bit number) */
     SIGNAL	*bus_sig_ptr;	/* ptr to signal which is being bussed (upper bit number) */
@@ -571,8 +603,8 @@ void read_make_busses (trace, not_tempest)
 		     sep --) ;
 		if (sep) sep++;
 		bbeg = sep;
-		}
 	    }
+	}
 	
 	/* Extract the bit subscripts from the name of the signal */
 	sig_ptr->signame_buspos = 0;	/* Presume nothing after the vector */
@@ -581,12 +613,12 @@ void read_make_busses (trace, not_tempest)
 	    if (not_tempest) {
 		sig_ptr->msb_index = atoi (bbeg);
 		sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits;
-		}
+	    }
 	    else {
 		sig_ptr->msb_index = atoi (bbeg) + sig_ptr->bit_index - sig_ptr->bits + 1;
 		sig_ptr->lsb_index = sig_ptr->msb_index;
 		sig_ptr->bits = 0;
-		}
+	    }
 	    /* Don't need to search for :'s, as the bits should already be computed */
 	    /* Mark this first digit, _, whatever as null (truncate the name) */
 	    *sep++ = '\0';
@@ -594,44 +626,47 @@ void read_make_busses (trace, not_tempest)
 	    while (*sep && *sep!=trace->vector_endseperator) sep++;
 	    /* Remember if there is stuff after the vector */
 	    if (*sep && *(sep+1)) sig_ptr->signame_buspos = sep+1;
-	    }
+	}
 	else {
 	    if (sig_ptr->bits) {
 		/* Is a unnamed bus */
 		if (not_tempest) {
 		    sig_ptr->msb_index = sig_ptr->bits;
 		    sig_ptr->lsb_index = 0;
-		    }
+		}
 		else {
 		    sig_ptr->msb_index = sig_ptr->bit_index;
 		    sig_ptr->lsb_index = sig_ptr->bit_index;
 		    sig_ptr->bits = 0;
-		    }
 		}
+	    }
 	    else {
 		/* Is a unnamed single signals */
 		sig_ptr->msb_index = -1;
 		sig_ptr->lsb_index = -1;
-		}
 	    }
 	}
+    }
 
     /* Remove signals with NULL names */
+    /* Remove huge memories */
     for (sig_ptr = trace->firstsig; sig_ptr;) {
 	bus_sig_ptr = sig_ptr;
-	if (sig_ptr->signame[0]=='\0') {
+	if ((sig_ptr->signame[0]=='\0')
+	    || (sig_ptr->bits > 2048)) {
 	    /* Null, remove this signal */
+	    printf ("Remove %s %d\n", sig_ptr->signame, sig_ptr->bits);
 	    sig_free (trace, sig_ptr, FALSE, FALSE);
-	    }
-	sig_ptr = bus_sig_ptr->forward;
 	}
+	sig_ptr = bus_sig_ptr->forward;
+    }
     
     
     if (trace->fileformat == FF_VERILOG) {
 	/* Verilog may have busses > 128 bits, other formats should have one record per
 	   bit, so it shouldn't matter.  Make consistent sometime in the future */
 	verilog_womp_128s (trace);
-	}
+    }
 
     /* Vectorize signals */
     bus_sig_ptr = NULL;
@@ -678,10 +713,10 @@ void read_make_busses (trace, not_tempest)
 		/* Delete this signal */
 		sig_free (trace, sig_ptr, FALSE, FALSE);
 		sig_ptr = bus_sig_ptr;
-		}
 	    }
-	bus_sig_ptr = sig_ptr;
 	}
+	bus_sig_ptr = sig_ptr;
+    }
     
     /* Calculate numsig */
     /* and allocate SIGNAL's cptr, bptr, blocks, inc, type */
@@ -694,14 +729,14 @@ void read_make_busses (trace, not_tempest)
 	if (sig_ptr->msb_index >= 0) {
 	    /* Add new vector info */
 	    if (sig_ptr->bits >= 1) {
-		sprintf (sig_ptr->signame + strlen (sig_ptr->signame), "<%d:%d>",
+		sprintf (sig_ptr->signame + strlen (sig_ptr->signame), "[%d:%d]",
 			 sig_ptr->msb_index, sig_ptr->lsb_index);
-		}
-	    else {
-		sprintf (sig_ptr->signame + strlen (sig_ptr->signame), "<%d>",
-			 sig_ptr->msb_index);
-		}
 	    }
+	    else {
+		sprintf (sig_ptr->signame + strlen (sig_ptr->signame), "[%d]",
+			 sig_ptr->msb_index);
+	    }
+	}
 
 	/* Restore the characters after the bus name */
 	if (sig_ptr->signame_buspos) strcat (sig_ptr->signame, postbusstuff);
@@ -713,15 +748,15 @@ void read_make_busses (trace, not_tempest)
 	if (sig_ptr->bits < 1) {
 	    sig_ptr->lws = 1;
 	    sig_ptr->type = 0;
-	    }
+	}
 	else if (sig_ptr->bits < 32) {
 	    sig_ptr->lws = 2;
 	    sig_ptr->type = STATE_B32;
-	    }
+	}
 	else if (sig_ptr->bits < 128) {
 	    sig_ptr->lws = 5;
 	    sig_ptr->type = STATE_B128;
-	    }
+	}
 
 	/* Compute value_mask.  This mask ANDed with the value will clear any bits that
 	   are not represented in this vector.  For example a 12 bit vector will only have the lower
@@ -756,14 +791,14 @@ void read_make_busses (trace, not_tempest)
 	sig_ptr->blocks = BLK_SIZE;
 	sig_ptr->bptr = (SIGNAL_LW *)XtMalloc ((sig_ptr->blocks*sizeof(unsigned int)) + (sizeof(VALUE)*2 + 2));
 	sig_ptr->cptr = sig_ptr->bptr;
-	}
-
-    if (DTPRINT_BUSSES) print_sig_names (NULL, trace);
     }
 
+    if (DTPRINT_BUSSES) print_sig_names (NULL, trace);
+}
 
-void read_mark_cptr_end (trace)
-    TRACE	*trace;
+
+void read_mark_cptr_end (
+    TRACE	*trace)
 {
     SIGNAL	*sig_ptr;
     SIGNAL_LW	*cptr;
@@ -780,23 +815,23 @@ void read_mark_cptr_end (trace)
 		cptr_to_value (cptr, &value);
 		value.siglw.sttime.time = trace->end_time;
 		fil_add_cptr (sig_ptr, &value, TRUE);
-		}
 	    }
+	}
 	else {
 	    if (DTDEBUG) printf ("%%W, No data for signal %s\n", sig_ptr->signame);
-	    }
+	}
 
 	/* Mark end of time */
 	sig_ptr->cptr->sttime.time = EOT;
 
 	/* re-initialize the cptr's to the bptr's */
 	sig_ptr->cptr = sig_ptr->bptr;
-	}
     }
+}
 
-void read_trace_end (trace)
+void read_trace_end (
     /* Perform stuff at end of trace - common across all reading routines */
-    TRACE	*trace;
+    TRACE	*trace)
 {
     SIGNAL	*sig_ptr;
 
@@ -811,7 +846,7 @@ void read_trace_end (trace)
     /* Make sure time is within bounds */
     if ( (global->time < trace->start_time) || (global->time > trace->end_time)) {
 	global->time = trace->start_time;
-	}
+    }
 
     /* Mark as loaded */
     trace->loaded = TRUE;
@@ -825,12 +860,12 @@ void read_trace_end (trace)
       case	FF_VERILOG:
       default:
 	break;
-	}
+    }
 
     /* Create xstring of the name (to avoid calling again and again) */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	sig_ptr->xsigname = XmStringCreateSimple (sig_ptr->signame);
-	}
+    }
 
     /* Preserve file information */
     sig_cross_restore (trace);
@@ -847,22 +882,22 @@ void read_trace_end (trace)
     grid_calc_autos (trace);
 
     if (DTPRINT_FILE) printf ("read_trace_end: Done\n");
-    }
+}
 
 /****************************** DECSIM ASCII ******************************/
 
 #define FIL_SIZE_INC	1024	/* Characters to increase length by */
 
-void fgets_dynamic (line_pptr, length_ptr, readfp)
+void fgets_dynamic (
     /* fgets a line, with dynamically allocated line storage */
-    char **line_pptr;	/* & Line pointer */
-    int	*length_ptr;	/* & Length of the buffer */
-    FILE *readfp;
+    char **line_pptr,	/* & Line pointer */
+    int	*length_ptr,	/* & Length of the buffer */
+    FILE *readfp)
 {
     if (*length_ptr == 0) {
 	*length_ptr = FIL_SIZE_INC;
 	*line_pptr = XtMalloc (*length_ptr);
-	}
+    }
 
     fgets ((*line_pptr), (*length_ptr), readfp);
     
@@ -875,15 +910,16 @@ void fgets_dynamic (line_pptr, length_ptr, readfp)
 	/* Read remainder */
 	fgets (((*line_pptr) + *length_ptr - 2) + 1 - FIL_SIZE_INC,
 	       FIL_SIZE_INC+1, readfp);
-	}
     }
+}
 
-void decsim_read_ascii_header (trace, header_start, data_begin_ptr, sig_start_pos, sig_end_pos,
-			       header_lines)
-    TRACE	*trace;
-    int		sig_start_pos, sig_end_pos, header_lines;
-    char	*data_begin_ptr;
-    char	*header_start;
+void decsim_read_ascii_header (
+    TRACE	*trace,
+    char	*header_start,
+    char	*data_begin_ptr,
+    int		sig_start_pos,
+    int		sig_end_pos,
+    int		header_lines)
 {
     int		line,col;
     SIGNAL	*sig_ptr,*last_sig_ptr=NULL;
@@ -905,11 +941,11 @@ void decsim_read_ascii_header (trace, header_start, data_begin_ptr, sig_start_po
 	if (trace->firstsig==NULL) {
 	    trace->firstsig = sig_ptr;
 	    sig_ptr->backward = NULL;
-	    }
+	}
 	else {
 	    last_sig_ptr->forward = sig_ptr;
 	    sig_ptr->backward = last_sig_ptr;
-	    }
+	}
 
 	/* allow extra space in case becomes vector - don't know size yet */
 	sig_ptr->signame = (char *)XtMalloc (20+header_lines);
@@ -919,7 +955,7 @@ void decsim_read_ascii_header (trace, header_start, data_begin_ptr, sig_start_po
 	sig_ptr->bits = 0;	/* = buf->TRA$W_BITLEN; */
 
 	last_sig_ptr = sig_ptr;
-	}
+    }
 
     /* Save where lines begin */
     line=0;
@@ -928,10 +964,10 @@ void decsim_read_ascii_header (trace, header_start, data_begin_ptr, sig_start_po
 	SIGLINE(line)[sig_end_pos]='\0';
 	if ((tmp_ptr = strchr (SIGLINE(line), '\n')) != 0 ) {
 	    *tmp_ptr = '\0';
-	    }
+	}
 	while ( line_ptr<data_begin_ptr && *line_ptr!='\n') line_ptr++;
 	line++;
-	}
+    }
     header_lines = line;
 
     /* Chop out lines that are beginning comments by decsim */
@@ -939,21 +975,21 @@ void decsim_read_ascii_header (trace, header_start, data_begin_ptr, sig_start_po
     for (line=header_lines-1; line>=0; line--) {
 	if (past_name_block) {
 	    SIGLINE(line)[0] = '\0';
-	    }
+	}
 	else {
 	    if (SIGLINE(line)[0] == '!') {
 		hit_name_block = TRUE;
-		}
+	    }
 	    else {
 		past_name_block = hit_name_block;
-		}
 	    }
 	}
+    }
 
     /* Special exemption, "! MakeDinoHeader\n!\n!....header stuff" */
     if (!strncmp (SIGLINE(0), "! MakeDinoHeader", 16)) {
 	SIGLINE(0)[0]='\0';
-	}
+    }
 
     /* Read Signal Names Into Structure */
     for (line=0; line<header_lines; line++) {
@@ -965,14 +1001,14 @@ void decsim_read_ascii_header (trace, header_start, data_begin_ptr, sig_start_po
 	/* Load signal into name array */
 	for (col=sig_start_pos, sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward, col++) {
 	    sig_ptr->signame[line] = SIGLINE(line)[col];
-	    }
 	}
+    }
 
     /* Add EOS delimiter to each signal name */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	sig_ptr->signame[header_lines] = '\0';
 	/*printf ("Sig '%s'\n", sig_ptr->signame);*/
-	}
+    }
 
     /* See if no header at all */
     no_names=TRUE;
@@ -981,29 +1017,28 @@ void decsim_read_ascii_header (trace, header_start, data_begin_ptr, sig_start_po
 	    if (!isspace (*tmp_ptr)) {
 		no_names=FALSE;
 		break;
-		}
+	    }
 	if (*tmp_ptr) break;
-	}
+    }
     if (no_names) {
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    sprintf (sig_ptr->signame, "SIG %d", sig_ptr->file_pos);
-	    }
 	}
-
-    XtFree (signame_array);
     }
 
-void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
-    TRACE	*trace;
-    int		read_fd;
-    FILE	*decsim_z_readfp;	/* Only pre-set if FF_DECSIM_Z */
+    XtFree (signame_array);
+}
+
+void decsim_read_ascii (
+    TRACE	*trace,
+    int		read_fd,
+    FILE	*decsim_z_readfp)	/* Only pre-set if FF_DECSIM_Z */
 {
     FILE	*readfp;
     Boolean	first_data;
     char	*line_in;
     SIGNAL	*sig_ptr;
     long	time_stamp;
-    VALUE	value;
     char	*pchar;
     DTime	time_divisor;
     int		ch;
@@ -1025,12 +1060,12 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	readfp = fdopen (read_fd, "r");
 	if (!readfp) {
 	    return;
-	    }
-	rewind (readfp);	/* as binary may have used some of the chars */
 	}
+	rewind (readfp);	/* as binary may have used some of the chars */
+    }
     else {
 	readfp = decsim_z_readfp;
-	}
+    }
 
     /* Make the buffer */
     header_length = FIL_SIZE_INC - 4; 	/* -4 for saftey room */
@@ -1058,15 +1093,15 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	  default:	/* starting digit */
 	    if (!in_comment) {
 		hit_start = TRUE;
-		}
-	    break;
 	    }
+	    break;
+	}
 	if (!base_chars_left) {
 	    *header_ptr++ = ch;
-	    }
+	}
 	else {
 	    base_chars_left--;
-	    }
+	}
 	/* Get more space if needed */
 	if (header_ptr - header_start > header_length) {
 	    long header_size;
@@ -1075,8 +1110,8 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	    header_size = header_ptr - header_start;
 	    header_start = (char *)XtRealloc (header_start, header_length);
 	    header_ptr = header_size + header_start;
-	    }
 	}
+    }
 
     if ((header_ptr > header_start) && (*(header_ptr-1)=='\n')) header_ptr--;
     *header_ptr = '\0';
@@ -1090,8 +1125,8 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
     for (t=header_ptr; t>header_start; t--) {
 	if (*t=='\n') {
 	    break;
-	    }
 	}
+    }
     if (*t && t!=header_start) t++;
     data_begin_ptr = t;
 
@@ -1115,12 +1150,12 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	/* Find real ending of the signals */
 	while (*t && (isalnum(*t) || *t=='?')) t++;
 	sig_end_pos = t - data_begin_ptr;
-	}
+    }
     else {
 	chango_format = TRUE;
-	}
+    }
 
-    if (DTPRINT_FILE) printf ("Line:%s\nHeader has %d lines, Signals run from char %d to %d. %s format\n", 
+    if (DTPRINT_FILE) printf ("Line:%s\nHeader has %ld lines, Signals run from char %ld to %ld. %s format\n", 
 			      data_begin_ptr, header_lines, sig_start_pos, sig_end_pos,
 			      chango_format?"Chango":"DECSIM");
 
@@ -1128,10 +1163,11 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	dino_error_ack (trace,"No data in trace file");
 	XtFree (header_start);
 	return;
-	}
+    }
 
     /***** READ SIGNALS DATA ****/
-    decsim_read_ascii_header (trace, header_start, data_begin_ptr, sig_start_pos, sig_end_pos,
+    decsim_read_ascii_header (trace,
+			      header_start, data_begin_ptr, sig_start_pos, sig_end_pos,
 			      header_lines);
 
     /***** SET UP FOR READING DATA ****/
@@ -1149,50 +1185,50 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	    line_in = data_begin_ptr;
 	    fil_line_num = header_lines;
 	    data_begin_ptr = NULL;
-	    }
+	}
 	else {
 	    if (feof (readfp)) break;
 	    line_in = header_start;
 	    fgets (line_in, header_length, readfp);
 	    fil_line_num++;
-	    }
+	}
 
 	/* Remove leading hash mark (old fil_remove_hash) */
 	while ( (pchar=strchr (line_in,'#')) != 0 ) {
 	    *pchar = '\0';
 	    strcat (line_in, pchar+2);
-	    }
+	}
 
 	if ( line_in[0] && (line_in[0] != '!') && (line_in[0] != '\n') ) {
 	    if (chango_format) {
 		time_stamp += 100;
-		}
+	    }
 	    else {
 		/* Be careful of round off error making us overflow the time */
 		time_stamp = (atof (line_in) * 1000.0) / ((float)time_divisor);	/* ASCII traces are always in NS */
 		if (time_stamp<0) {
 		    printf ("%%E, Time underflow!\n");
-		    }
 		}
+	    }
 	    
 	    if (first_data) {
 		trace->start_time = time_stamp;
-		}
+	    }
 	    trace->end_time = time_stamp;
 
 	    /* save information on each signal */
 	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 		fil_string_add_cptr (sig_ptr, line_in + sig_ptr->file_pos, time_stamp, first_data);
-		}
+	    }
 
 	    first_data = FALSE;
-	    }
 	}
+    }
 
     XtFree (header_start);
 
     /* Mark format as may have presumed binary */
     trace->fileformat = FF_DECSIM_ASCII;
     if (DTPRINT_FILE) printf ("decsim_read_ascii done\n");
-    }
+}
 

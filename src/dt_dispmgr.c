@@ -1,32 +1,62 @@
-/******************************************************************************
- *
- * Filename:
- *     Dispmgr.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V4.0
- *
- * Author:
- *     Allen Gallotta
- *
- * Abstract:
- *     This module contains the routines that manage all display functions
- *     (creating, destroying, circulating) for Dinotrace including the
- *     display callbacks.
- *
- * Modification History:
- *     AAG	 5-Jul-89	Original Version
- *     AAG	22-Aug-90	Base Level V4.1
- *     AAG	20-Nov-90	Added code to support siz, pos, and res options
- *     AAG	29-Apr-91	Use X11 for Ultrix support
- *     WPS	03-Jan-93	Default grid_res of 40, sighgt 20 for our project
- *				Additional gadget support, title in icon
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dt_dispmgr.c --- display manager, main window
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
+#include <config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,9 +79,7 @@ static char rcsid[] = "$Id$";
 #include <Xm/MainW.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
-#include "dino.bit"
-#include "bigdino.bit"
+#include "functions.h"
 
 /* Application Resources */
 /* Colors:
@@ -81,23 +109,23 @@ XtResource resources[] = {
     {"signalfont", "SignalFont", XtRString, sizeof(String), Offset(signal_font_name), XtRImmediate, (XtPointer) "-*-Fixed-Medium-R-Normal--*-120-*-*-*-*-*-1"},
     {"timefont",   "TimeFont",   XtRString, sizeof(String), Offset(time_font_name),   XtRImmediate, (XtPointer) "-*-Courier-Medium-R-Normal--*-120-*-*-*-*-*-1"},
     {"valuefont",  "ValueFont",  XtRString, sizeof(String), Offset(value_font_name),  XtRImmediate, (XtPointer) "-*-Fixed-Medium-R-Normal--*-100-*-*-*-*-*-1"}
-    };
+};
 #undef Offset
 
-void debug_event_cb (w,trace,cb)
-    Widget			w;
-    TRACE			*trace;
-    XmDrawingAreaCallbackStruct	*cb;
+void debug_event_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmDrawingAreaCallbackStruct	*cb)
 {
-    printf ("DEBUG_EVENT_CB %d %s\n",w, ""/*(events[cb->event->type]*/);
-    }
+    printf ("DEBUG_EVENT_CB %p %s\n",w, ""/*(events[cb->event->type]*/);
+}
 
 extern void    val_examine_popup_act ();
 extern void    val_examine_unpopup_act ();
 static XtActionsRec actions[] = {
     {"value_examine_popup", val_examine_popup_act},
     {"value_examine_unpopup", val_examine_unpopup_act}
-    };
+};
 
 char *translations = "<Btn2Down> : value_examine_popup()\n";
 /*<Key>F10: hscroll.PageDownOrRight(1)*/
@@ -107,16 +135,16 @@ static int last_set_cursor_num = DC_NORMAL;
 int  last_set_cursor ()
 {return (last_set_cursor_num);}
 
-void set_cursor (trace, cursor_num)
-    TRACE	*trace;			/* Display information */
-    int		cursor_num;		/* Entry in xcursors to display */
+void set_cursor (
+    TRACE	*trace,			/* Display information */
+    int		cursor_num)		/* Entry in xcursors to display */
 {
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	XDefineCursor (global->display, trace->wind, global->xcursors[cursor_num]);
-	}
+    }
     XmSetMenuCursor (global->display, global->xcursors[cursor_num]);
     last_set_cursor_num = cursor_num;
-    }
+}
 
 /* Make the close menu options on all of the menus be active */
 void set_menu_closes ()
@@ -129,18 +157,18 @@ void set_menu_closes ()
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	XtSetArg (arglist[0], XmNsensitive, sensitive);
 	XtSetValues (trace->menu_close, arglist, 1);
-	}
     }
+}
 
 /* Split the current trace, return new trace */
-TRACE *trace_create_split_window (trace)
-    TRACE		*trace;
+TRACE *trace_create_split_window (
+    TRACE	*trace)
 {
     Position x,y,width,height;
     Position new_x,new_y,new_width,new_height;
     TRACE	*trace_new;
 
-    if (DTPRINT_ENTRY) printf ("In trace_open_split_window - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In trace_open_split_window - trace=%p\n",trace);
 
     /* Get orignal sizes */
     XtSetArg (arglist[0], XmNheight,&height);
@@ -177,12 +205,12 @@ TRACE *trace_create_split_window (trace)
     trace_new = create_trace (new_width, new_height, new_x, new_y);
 
     return (trace_new);
-    }
+}
 
-void trace_open_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void trace_open_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     TRACE	*trace_new;
 
@@ -191,16 +219,16 @@ void trace_open_cb (w,trace,cb)
     /* Ask for a file in the new window */
     XSync (global->display,0);
     trace_read_cb (NULL, trace_new);
-    }
+}
 
-void trace_close_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void trace_close_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     TRACE	*trace_ptr;
 
-    if (DTPRINT_ENTRY) printf ("In trace_close - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In trace_close - trace=%p\n",trace);
 
     assert (trace!=global->deleted_trace_head);
 
@@ -218,33 +246,33 @@ void trace_close_cb (w,trace,cb)
 	global->trace_head = trace->next_trace;
     for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	if (trace_ptr->next_trace == trace) trace_ptr->next_trace = trace->next_trace;
-	}
+    }
 
     /* free the display structure */
     DFree (trace);
 
     /* Update menus */
     set_menu_closes ();
-    }
+}
 
-void trace_clear_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void trace_clear_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     TRACE	*trace_ptr;
     TRACE	*trace_next;
 
-    if (DTPRINT_ENTRY) printf ("In clear_trace - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In clear_trace - trace=%p\n",trace);
 
     /* nail all traces except for this window's */
     for (trace_ptr = global->trace_head; trace_ptr; ) {
 	trace_next = trace_ptr->next_trace;
 	if (trace_ptr != trace) {
 	    trace_close_cb (w, trace_ptr, cb);
-	    }
-	trace_ptr = trace_next;
 	}
+	trace_ptr = trace_next;
+    }
 
     /* clear the screen */
     XClearWindow (global->display, trace->wind);
@@ -254,30 +282,30 @@ void trace_clear_cb (w,trace,cb)
 
     /* change the name on title bar back to the trace */
     change_title (trace);
-    }
+}
 
-void trace_exit_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void trace_exit_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     TRACE		*trace_next;
 
-    if (DTPRINT_ENTRY) printf ("In trace_exit_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In trace_exit_cb - trace=%p\n",trace);
 
     for (trace = global->trace_head; trace; ) {
 	trace_next = trace->next_trace;
 	trace_close_cb (w, trace, cb);
 	trace = trace_next;
-	}
+    }
 
     DFree (global);
 
     /* all done */
     exit (1);
-    }
+}
 
-void init_globals ()
+void init_globals (void)
 {
     int i;
     char *pchar;
@@ -325,7 +353,7 @@ void init_globals ()
 	global->anno_ena_signal[i] = (i!=0);
 	global->anno_ena_cursor[i] = (i!=0);
 	global->anno_ena_cursor_dotted[i] = 0;
-	}
+    }
 #ifdef VMS
     strcpy (global->anno_filename, "sys$login:dinotrace.danno");
 #else
@@ -346,7 +374,7 @@ void init_globals ()
 
 	/* Signal */
 	memset ((char *)&global->sig_srch[i], 0, sizeof (SIGSEARCH));
-	}
+    }
 
     /* Config stuff */
     for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
@@ -372,12 +400,12 @@ void init_globals ()
     if (global->config_filename[2][0]) strcat (global->config_filename[2], "/");
     strcat (global->config_filename[2], "dinotrace.dino");
 #endif
-    }
+}
 
-void create_globals (argc, argv, sync)
-    int		argc;
-    char	**argv;
-    Boolean	sync;
+void create_globals (
+    int		argc,
+    char	**argv,
+    Boolean	sync)
 {
     int		argc_copy;
     char	**argv_copy;
@@ -403,24 +431,13 @@ void create_globals (argc, argv, sync)
 	display_name[0] = '\0';
 	printf ("Can't open display '%s'\n", XDisplayName (display_name));
 	exit (0);
-	}
+    }
 
     XSynchronize (global->display, sync);
     if (DTPRINT_ENTRY) printf ("in create_globals, syncronization is %d\n", sync);
 
-    /*
-     * Editor's Note: Thanks go to Sally C. Barry, former employee of DEC,
-     * for her painstaking effort in the creation of the infamous 'Dino'
-     * bitmap icons.
-     */
-    
-    /*** create small dino pixmap from data ***/
-    global->dpm = make_icon (global->display, DefaultRootWindow (global->display),
-			    dino_icon_bits,dino_icon_width,dino_icon_height);    
-    
-    /*** create big dino pixmap from data ***/
-    global->bdpm = make_icon (global->display, DefaultRootWindow (global->display),
-			     bigdino_icon_bits,bigdino_icon_width,bigdino_icon_height);    
+    /*** create dino pixmaps from data ***/
+    icon_dinos ();
 
     /* Define cursors */
     global->xcursors[0] = XCreateFontCursor (global->display, XC_top_left_arrow);
@@ -438,9 +455,9 @@ void create_globals (argc, argv, sync)
     global->xcursors[12] = XCreateFontCursor (global->display, XC_cross);
 
     config_global_defaults ();
-    }
+}
 
-TRACE *malloc_trace ()
+TRACE *malloc_trace (void)
     /* Allocate a trace structure and return it */
     /* This should NOT do any windowing initialization */
 {
@@ -469,16 +486,17 @@ TRACE *malloc_trace ()
     trace->numsigvis = 0;
     trace->numsigstart = 0;
     trace->busrep = HBUS;
-    trace->ystart = 40;
+    trace->ystart = 30;
 
     return (trace);
-    }
+}
     
 
-void dm_menu_title (TRACE *trace,
-		    char *title,	
-		    char key		/* Or '\0' for none */
-		    )
+void dm_menu_title (
+    TRACE *trace,
+    char *title,	
+    char key		/* Or '\0' for none */
+    )
     /*** create a pulldownmenu on the top bar ***/
 {
     int arg=0;
@@ -490,15 +508,16 @@ void dm_menu_title (TRACE *trace,
     if (key !='\0') { XtSetArg (arglist[arg], XmNmnemonic, key );	arg++; }
     trace->menu.pdmenubutton[trace->menu.pde] = XmCreateCascadeButton (trace->menu.menu, "mt", arglist, arg);
     XtManageChild (trace->menu.pdmenubutton[trace->menu.pde]);
-    }
+}
 	
-void dm_menu_entry (TRACE *trace,
-		    char *title,	
-		    char key,		/* Or '\0' for none */
-		    char *accel,	/* Accelerator, or NULL */
-		    char *accel_string,	/* Accelerator string, or NULL */
-		    void (*callback)()
-		    )
+void dm_menu_entry (
+    TRACE *trace,
+    char *title,	
+    char key,		/* Or '\0' for none */
+    char *accel,	/* Accelerator, or NULL */
+    char *accel_string,	/* Accelerator string, or NULL */
+    void (*callback)()
+    )
     /*** create a pulldownmenu entry under the top bar ***/
 {
     int arg=0;
@@ -511,7 +530,7 @@ void dm_menu_entry (TRACE *trace,
     trace->menu.pdentrybutton[trace->menu.pdm] = XmCreatePushButtonGadget (trace->menu.pdmenu[trace->menu.pde], "me", arglist, arg);
     XtAddCallback (trace->menu.pdentrybutton[trace->menu.pdm], XmNactivateCallback, callback, trace);
     XtManageChild (trace->menu.pdentrybutton[trace->menu.pdm]);
-    }
+}
 
 void dm_menu_subtitle (TRACE *trace,
 		       char *title,	
@@ -528,15 +547,16 @@ void dm_menu_subtitle (TRACE *trace,
     if (key != '\0') { XtSetArg (arglist[arg], XmNmnemonic, key );	arg++; }
     trace->menu.pdentrybutton[trace->menu.pdm] = XmCreateCascadeButton (trace->menu.pdmenu[trace->menu.pde], "mst", arglist, arg);
     XtManageChild (trace->menu.pdentrybutton[trace->menu.pdm]);
-    }
+}
 				
-void dm_menu_subentry (TRACE *trace,
-		       char *title,	
-		       char key,		/* Or '\0' for none */
-		       char *accel,	/* Accelerator, or NULL */
-		       char *accel_string,	/* Accelerator string, or NULL */
-		       void (*callback)()
-		       )
+void dm_menu_subentry (
+    TRACE *trace,
+    char *title,	
+    char key,		/* Or '\0' for none */
+    char *accel,	/* Accelerator, or NULL */
+    char *accel_string,	/* Accelerator string, or NULL */
+    void (*callback)()
+    )
     /*** create a pulldownmenu entry under a subtitle ***/
 {
     int arg=0;
@@ -549,15 +569,16 @@ void dm_menu_subentry (TRACE *trace,
     trace->menu.pdsubbutton[trace->menu.pds] = XmCreatePushButtonGadget (trace->menu.pdentry[trace->menu.pdm], "mse", arglist, arg);
     XtAddCallback (trace->menu.pdsubbutton[trace->menu.pds], XmNactivateCallback, callback, trace);
     XtManageChild (trace->menu.pdsubbutton[trace->menu.pds]);
-    }
+}
 
-void dm_menu_subentry_colors (TRACE *trace,
-			      char *cur_accel,	/* Accelerator, or NULL */
-			      char *cur_accel_string,	/* Accelerator string, or NULL */
-			      char *next_accel,	/* Accelerator, or NULL */
-			      char *next_accel_string,	/* Accelerator string, or NULL */
-			      void (*callback)()
-			      )
+void dm_menu_subentry_colors (
+    TRACE *trace,
+    char *cur_accel,	/* Accelerator, or NULL */
+    char *cur_accel_string,	/* Accelerator string, or NULL */
+    char *next_accel,	/* Accelerator, or NULL */
+    char *next_accel_string,	/* Accelerator string, or NULL */
+    void (*callback)()
+    )
     /*** create a pulldownmenu entry under a subtitle (uses special colors) ***/
 {
     int color;
@@ -570,10 +591,10 @@ void dm_menu_subentry_colors (TRACE *trace,
 	trace->menu.pdsubbutton[trace->menu.pds] = XmCreatePushButton (trace->menu.pdentry[trace->menu.pdm], "", arglist, 2);
 	XtAddCallback (trace->menu.pdsubbutton[trace->menu.pds], XmNactivateCallback, callback, trace);
 	XtManageChild (trace->menu.pdsubbutton[trace->menu.pds]);
-	}
+    }
     dm_menu_subentry (trace, (cur_accel ? "Curr":"Current"), 'C', cur_accel, cur_accel_string, callback);
     dm_menu_subentry (trace, "Next", 'N', next_accel, next_accel_string, callback);
-    }
+}
 
 
 /* Try to allocate the given font.  If it doesn't exist, use a default font, rather
@@ -581,9 +602,9 @@ void dm_menu_subentry_colors (TRACE *trace,
 *  return (XLoadQueryFont (global->display, global->signal_font_name))
 *  but that crashes if a font isn't found.
 */
-XFontStruct *grab_font (trace, font_name)
-    TRACE	*trace;
-    char	*font_name;		/* Name of the font */
+XFontStruct *grab_font (
+    TRACE	*trace,
+    char	*font_name)		/* Name of the font */
 {
     int	num;
     char **list;
@@ -600,8 +621,11 @@ XFontStruct *grab_font (trace, font_name)
 }
 
 /* Create a trace display and link it into the global information */
-TRACE *create_trace (xs,ys,xp,yp)
-    int		xs,ys,xp,yp;
+TRACE *create_trace (
+    int		xs,
+    int		ys,
+    int		xp,
+    int		yp)
 {
     /*    int		x1,x2;
 	  unsigned int junk; */
@@ -663,7 +687,7 @@ TRACE *create_trace (xs,ys,xp,yp)
 	    && (XAllocNamedColor (global->display, cmap, global->color_names[i], &xcolor, &xcolor2)))
 	    trace->xcolornums[i] = xcolor.pixel;
 	else trace->xcolornums[i] = XWhitePixel (global->display, 0);
-	}
+    }
 
     if (global->barcolor_name == NULL || global->barcolor_name[0]=='\0') {
 	/* Default is 7% green above background */
@@ -675,11 +699,11 @@ TRACE *create_trace (xs,ys,xp,yp)
 	if (DTPRINT_DISPLAY) printf (" = %x, %x, %x \n", xcolor.red, xcolor.green, xcolor.blue);
 	if (XAllocColor (global->display, cmap, &xcolor))
 	    trace->barcolornum = xcolor.pixel;
-	}
+    }
     else {
 	if (XAllocNamedColor (global->display, cmap, global->barcolor_name, &xcolor, &xcolor2))
 	    trace->barcolornum = xcolor.pixel;
-	}
+    }
 	    
     /****************************************
      * create the menu bar
@@ -707,7 +731,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     dm_menu_entry (trace, 	"ReRead",	'e',	NULL, NULL,	cus_reread_cb);
     if (DTDEBUG) {
 	dm_menu_entry (trace, 	"Write",	'W',	NULL, NULL,	config_write_cb);
-	}
+    }
     dm_menu_entry (trace, 	"Restore",	'R',	NULL, NULL,	cus_restore_cb);
 
     dm_menu_title (trace, "Cursor", 'C');
@@ -760,7 +784,7 @@ TRACE *create_trace (xs,ys,xp,yp)
 	dm_menu_entry	(trace, "Toggle Print",		'P', NULL, NULL,	debug_toggle_print_cb);
 	dm_menu_entry	(trace, "Increase DebugTemp",	'+', NULL, NULL,	debug_increase_debugtemp_cb);
 	dm_menu_entry	(trace, "Decrease DebugTemp",	'-', NULL, NULL,	debug_decrease_debugtemp_cb);
-	}
+    }
 
     dm_menu_title (trace, "Help", 'H');
     dm_menu_entry (trace, 	"On Version",	'V',	NULL, NULL,	help_cb);
@@ -861,6 +885,20 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtAddCallback (trace->hscroll, XmNpageDecrementCallback, hscroll_pagedec, trace);
     XtManageChild (trace->hscroll);
     
+    /* create the signal name horizontal scroll bar */
+    XtSetArg (arglist[0], XmNorientation, XmHORIZONTAL );
+    XtSetArg (arglist[1], XmNbottomAttachment, XmATTACH_WIDGET );
+    XtSetArg (arglist[2], XmNbottomWidget, trace->command.end_but);
+    XtSetArg (arglist[3], XmNleftAttachment, XmATTACH_FORM );
+    XtSetArg (arglist[4], XmNrightAttachment, XmATTACH_WIDGET );
+    XtSetArg (arglist[5], XmNrightWidget, trace->hscroll);
+    XtSetArg (arglist[6], XmNheight, 18);
+    XtSetArg (arglist[7], XmNprocessingDirection, XmMAX_ON_LEFT);
+    trace->command.namescroll = XmCreateScrollBar ( trace->command.command, "namescroll", arglist, 8);
+    XtAddCallback (trace->command.namescroll, XmNvalueChangedCallback, (XtCallbackProc)win_namescroll_change, trace);
+    XtAddCallback (trace->command.namescroll, XmNdragCallback,  (XtCallbackProc)win_namescroll_change, trace);
+    XtManageChild (trace->command.namescroll);
+    
     /*** create full button in command region ***/
     XtSetArg (arglist[0], XmNrightAttachment, XmATTACH_WIDGET );
     XtSetArg (arglist[1], XmNrightWidget, trace->command.reschg_but);
@@ -885,7 +923,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg (arglist[0], XmNrightAttachment, XmATTACH_WIDGET );
     XtSetArg (arglist[1], XmNrightWidget, trace->command.resfull_but);
     XtSetArg (arglist[2], XmNrightOffset, 2);
-    XtSetArg (arglist[3], XmNheight, 32);
+    XtSetArg (arglist[3], XmNheight, 25);
     XtSetArg (arglist[4], XmNbottomAttachment, XmATTACH_FORM );
     XtSetArg (arglist[5], XmNarrowDirection, XmARROW_LEFT );
     trace->command.resdec_but = XmCreateArrowButton (trace->command.command, "decres", arglist, 6);
@@ -896,7 +934,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_WIDGET );
     XtSetArg (arglist[1], XmNleftWidget, trace->command.reszoom_but);
     XtSetArg (arglist[2], XmNleftOffset, 2);
-    XtSetArg (arglist[3], XmNheight, 32);
+    XtSetArg (arglist[3], XmNheight, 25);
     XtSetArg (arglist[4], XmNbottomAttachment, XmATTACH_FORM );
     XtSetArg (arglist[5], XmNarrowDirection, XmARROW_RIGHT );
     trace->command.resinc_but = XmCreateArrowButton (trace->command.command, "incres", arglist, 6);
@@ -947,6 +985,6 @@ TRACE *create_trace (xs,ys,xp,yp)
     set_menu_closes ();
 
     return (trace);
-    }
+}
 
 

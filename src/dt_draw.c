@@ -1,31 +1,62 @@
-/******************************************************************************
- *
- * Filename:
- *     Draw.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V4.0
- *
- * Author:
- *     Allen Gallotta
- *
- * Abstract:
- *     This module draws the data on the screen
- *
- * Modification History:
- *     AAG	 5-Jul-89	Original Version
- *     AAG	22-Aug-90	Base Level V4.1
- *     AAG	 6-Nov-90	Upped Pts[] to 5000 and added check in case
- *				that limit is exceeded
- *     AAG	29-Apr-91	Use X11, fixed casts for Ultrix support
- *     WPS	01-Jan-93	V5.0 signal_states support
- *     WPS	15-Feb-93	V5.2 print number if state doesn't fit
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dt_draw.c --- screen trace drawing
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
+#include <config.h>
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -36,7 +67,7 @@ static char rcsid[] = "$Id$";
 #include <Xm/ScrollBarP.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
 
 #define MAXCNT	4000		/* Maximum number of segment pairs to draw before stopping this signal */
 /* Don't make this above 4000, as some servers choke with that many points. */
@@ -44,14 +75,16 @@ static char rcsid[] = "$Id$";
 #define OVERLAPSPACE 2		/* Number of pixels within which two signal transitions are visualized as one */
 
 extern void draw_hscroll (),
-    draw_vscroll ();
+    draw_vscroll (),
+    draw_trace_signame (TRACE *trace, SIGNAL *sig_ptr, Position y);
 
-void draw_string_fit (trace, textoccupied, x, y, font, strg)
-    TRACE	*trace;
-    Boolean	*textoccupied;
-    Position	x,y;
-    XFontStruct	*font;
-    char	*strg;
+void draw_string_fit (
+    TRACE	*trace,
+    Boolean	*textoccupied,
+    Position	x,
+    Position	y,
+    XFontStruct	*font,
+    char	*strg)
     /* Draw a string if it will fit on the screen without overlapping something already printed */
     /*** Note textoccupied must be initialized before calling!!! */
 {
@@ -82,12 +115,14 @@ void draw_string_fit (trace, textoccupied, x, y, font, strg)
     }
 }
     
-void draw_grid_line (trace, textoccupied, grid_ptr, xtime, y1,y2)
-    TRACE	*trace;           
-    Boolean	*textoccupied;
-    GRID	*grid_ptr;		/* Grid information */
-    DTime	xtime;
-    Position	y1,y2;
+void draw_grid_line (
+    TRACE	*trace,
+    Boolean	*textoccupied,
+    GRID	*grid_ptr,		/* Grid information */
+    DTime	xtime,
+    Position	y0,
+    Position	y1,
+    Position	y2)
 {
     Position	x2;			/* Coordinate of current time */
     char 	strg[MAXTIMELEN];	/* String value to print out */
@@ -102,25 +137,25 @@ void draw_grid_line (trace, textoccupied, grid_ptr, xtime, y1,y2)
     }
 
     XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
-    XDrawLine     (global->display, trace->wind,trace->gc, x2,   y1,   x2, GRID_TIME_Y+2);
+    XDrawLine     (global->display, trace->wind,trace->gc, x2,   y0,   x2, y1);
     if (grid_ptr->wide_line) {
-	XDrawLine (global->display, trace->wind,trace->gc, 1+x2, y1, 1+x2, GRID_TIME_Y+2);
+	XDrawLine (global->display, trace->wind,trace->gc, 1+x2, y0, 1+x2, y1);
     }
 
     /* compute the time value and draw it if it fits */
     time_to_string (trace, strg, xtime, FALSE);
-    draw_string_fit (trace, textoccupied, x2, GRID_TIME_Y, global->time_font, strg);
+    draw_string_fit (trace, textoccupied, x2, trace->ygridtime, global->time_font, strg);
 }
 
-void draw_grid (trace, textoccupied, grid_ptr)
-    TRACE	*trace;           
-    Boolean	*textoccupied;
-    GRID	*grid_ptr;		/* Grid information */
+void draw_grid (
+    TRACE	*trace,
+    Boolean	*textoccupied,
+    GRID	*grid_ptr)		/* Grid information */
 {         
     char 	primary_dash[4];	/* Dash pattern */
     int		end_time;
     DTime	xtime;
-    Position	y1,y2;			/* Starting and ending points */
+    Position	y0,y1,y2;
 
     if (grid_ptr->period < 1) return;
 
@@ -134,8 +169,9 @@ void draw_grid (trace, textoccupied, grid_ptr)
     primary_dash[1] = trace->sighgt - primary_dash[0];
 
     /* Other coordinates */
-    y1 = trace->ystart - SIG_SPACE/4;
-    y2 = trace->height - trace->sighgt;
+    y0 = trace->ystart - Y_GRID_TOP;
+    y1 = trace->ystart;
+    y2 = trace->yend + Y_GRID_BOTTOM;
     
     /* set the line attributes as the specified dash pattern */
     XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0, 0);
@@ -166,13 +202,14 @@ void draw_grid (trace, textoccupied, grid_ptr)
 
 	/* If possible, put one grid line inside the signal names */
 	if (((grid_ptr->period * global->res) < global->xstart)
+	    && (xtime >= global->time)
 	    && (xtime >= grid_ptr->period)) {
 	    xtime -= grid_ptr->period;
 	}
 
 	/* Loop through grid times */
 	for ( ; xtime <= end_time; xtime += grid_ptr->period) {
-	    draw_grid_line (trace, textoccupied, grid_ptr, xtime, y1, y2);
+	    draw_grid_line (trace, textoccupied, grid_ptr, xtime, y0, y1, y2);
 	}
 
 	break;
@@ -186,10 +223,10 @@ void draw_grid (trace, textoccupied, grid_ptr)
 
     /* reset the line attributes */
     XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
-    }
+}
 
-void draw_grids (trace)
-    TRACE	*trace;
+void draw_grids (
+    TRACE	*trace)
 {           
     Boolean	textoccupied[MAXSCREENWIDTH];
     int	grid_num;
@@ -204,15 +241,17 @@ void draw_grids (trace)
 }
 
 
-void draw_cursors (trace)
-    TRACE	*trace;                        
+void draw_cursors (
+    TRACE	*trace)
 {         
     int		len,end_time;
     int		last_drawn_xloc;
     char 	strg[MAXTIMELEN];		/* String value to print out */
     CURSOR 	*csr_ptr;			/* Current cursor being printed */
-    Position	x1,mid,x2,y2;
+    Position	x1,mid,x2;
+    Position	ytop,ybot,ydelta;
     char 	nonuser_dash[2];		/* Dashed line for nonuser cursors */
+    Dimension m_time_height = global->time_font->ascent + global->time_font->descent;
 
     nonuser_dash[0]=2;	nonuser_dash[1]=2;	/* Can't auto-init in ultrix compiler */
 
@@ -221,8 +260,9 @@ void draw_cursors (trace)
     end_time = global->time + TIME_WIDTH (trace);
 
     /* initial the y colors for drawing */
-    y2 = ( (int)((trace->height-trace->ystart)/trace->sighgt) - 1 ) *
-	trace->sighgt + trace->sighgt/2 + trace->ystart + 2;
+    ytop = trace->ystart - Y_CURSOR_TOP;
+    ybot = trace->ycursortimeabs - m_time_height - Y_TEXT_SPACE;
+    ydelta = trace->ycursortimerel - m_time_height/2;
     last_drawn_xloc = -1;
     
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
@@ -235,15 +275,15 @@ void draw_cursors (trace)
 			    trace->xcolornums[csr_ptr->color]);
 	    if (csr_ptr->type==USER) {
 		XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
-		}
+	    }
 	    else {
 		XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0,0);
 		XSetDashes (global->display, trace->gc, 0, nonuser_dash, 2);
-		}
+	    }
 	    
 	    /* draw the cursor */
 	    x1 = TIME_TO_XPOS (csr_ptr->time);
-	    XDrawLine (global->display,trace->wind,trace->gc,x1,25,x1,y2);
+	    XDrawLine (global->display,trace->wind,trace->gc,x1,ytop,x1,ybot);
 	    
 	    /* draw the cursor value */
 	    time_to_string (trace, strg, csr_ptr->time, FALSE);
@@ -251,7 +291,8 @@ void draw_cursors (trace)
 	    if (len/2 < (x1 - last_drawn_xloc)) {
 		last_drawn_xloc = x1 + len/2 + 2;
 		XDrawString (global->display,trace->wind,
-			     trace->gc, x1-len/2, y2+10, strg, strlen (strg));
+			     trace->gc, x1-len/2, trace->ycursortimeabs,
+			     strg, strlen (strg));
 	    }
 	    
 	    /* if there is a previous visible cursor, draw delta line */
@@ -267,24 +308,25 @@ void draw_cursors (trace)
 		    /* calculate the mid pt of the segment */
 		    mid = x2 + (x1 - x2)/2;
 		    XDrawLine (global->display, trace->wind, trace->gc,
-			       x2, y2-5, mid-len/2-2, y2-5);
+			       x2, ydelta, mid-len/2-2, ydelta);
 		    XDrawLine (global->display, trace->wind, trace->gc,
-			       mid+len/2+2, y2-5, x1, y2-5);
+			       mid+len/2+2, ydelta, x1, ydelta);
 		    
 		    XDrawString (global->display,trace->wind,
-				 trace->gc, mid-len/2, y2, strg, strlen (strg));
-		    }
+				 trace->gc, mid-len/2, trace->ycursortimerel,
+				 strg, strlen (strg));
+		}
 		/* or just draw the delta line */
 		else {
 		    XDrawLine (global->display, trace->wind,
-			       trace->gc, x2, y2-5, x1, y2-5);
-		    }
+			       trace->gc, x2, ydelta, x1, ydelta);
 		}
 	    }
 	}
+    }
     /* Reset */
     XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
-    }
+}
 
 /*
  *
@@ -319,7 +361,7 @@ void draw_cursors (trace)
  *                   _________________________/
  *                ^         ^
  *                |         |
- *                |     SIG_SPACE
+ *                |     Y_SIG_SPACE
  *                |         |
  *                |         v
  *                |   _________________\
@@ -332,7 +374,7 @@ void draw_cursors (trace)
  *                |                           \_____________________
  *                |          ^
  *                |          |
- *                |       SIG_SPACE
+ *                |       Y_SIG_SPACE
  *                |          |
  *                v          v
  *              _______________________\
@@ -343,13 +385,13 @@ void draw_cursors (trace)
  */                          
 
 
-void draw_trace (trace)                                 
-    TRACE	*trace;                        
+void draw_trace (
+    TRACE	*trace)
 {         
     int c=0,i,cnt,ymdpt,xloc,xend,du,len,mid,yfntloc;
     int last_drawn_xloc;
     unsigned int last_drawn_state=EOT;
-    int	x1,y1,y2;
+    int	y1,y2;
     int numprt;				/* Number of signals printed out on screen */
     int srch_this_color;		/* Color to print signal if matches search value */
     XPoint Pts[MAXCNT+100];		/* Array of points to plot */
@@ -362,7 +404,7 @@ void draw_trace (trace)
     int end_time;
     int question_width;			/* Width of '?' character */
     
-    if (DTPRINT_ENTRY) printf ("In draw_trace\n");
+    if (DTPRINT_ENTRY) printf ("In draw_trace, xstart=%d\n", global->xstart);
     
     /* don't draw anything if no file is loaded */
     if (!trace->loaded) return;
@@ -373,7 +415,7 @@ void draw_trace (trace)
 
     /* calculate the font y location */
     yfntloc = global->value_font->max_bounds.ascent + global->value_font->max_bounds.descent;
-    yfntloc = (trace->sighgt - yfntloc - SIG_SPACE)/2;
+    yfntloc = (trace->sighgt - yfntloc - Y_SIG_SPACE)/2;
     
     xend = trace->width - XMARGIN;
     end_time = global->time + TIME_WIDTH (trace);
@@ -387,13 +429,13 @@ void draw_trace (trace)
 
 	/* Print the green bars */
 	if ( (c & 1) ^ (trace->numsigstart & 1) ) {
-	    y1 = trace->ystart + c * trace->sighgt + SIG_SPACE;
-	    y2 = y1 + trace->sighgt - 2*SIG_SPACE;
+	    y1 = trace->ystart + c * trace->sighgt + Y_SIG_SPACE;
+	    y2 = y1 + trace->sighgt - 2*Y_SIG_SPACE;
 
 	    XSetForeground (global->display, trace->gc, trace->barcolornum);
 	    XFillRectangle (global->display, trace->wind, trace->gc,
 			    0, y1, trace->width - XMARGIN, y2-y1);
-	    }
+	}
 	
 	/* Grab the color we want */
 	XSetFont (global->display, trace->gc, global->signal_font->fid);
@@ -407,23 +449,15 @@ void draw_trace (trace)
 	*/
 
 	/* calculate the location to draw the signal name and draw it */
-	x1 = global->xstart - XTextWidth (global->signal_font,sig_ptr->signame,
-				       strlen (sig_ptr->signame)) - 10;
-	y1 = trace->ystart + (c+1) * trace->sighgt - SIG_SPACE - yfntloc;
-	XDrawString (global->display, trace->wind, trace->gc, x1, y1,
-		    sig_ptr->signame, strlen (sig_ptr->signame) );
-
-	/*
-	XDrawString (global->display, trace->wind, trace->gc, x1, y1,
-		    temp_strg, strlen (temp_strg) );
-	*/
+	y1 = trace->ystart + (c+1) * trace->sighgt - Y_SIG_SPACE - yfntloc;
+	draw_trace_signame (trace, sig_ptr, y1);
 
 	XSetFont (global->display, trace->gc, global->value_font->fid);
 
 	/* Calculate line position */
-	y1 = trace->ystart + c * trace->sighgt + SIG_SPACE;
-	ymdpt = y1 + (int)(trace->sighgt/2) - SIG_SPACE;
-	y2 = y1 + trace->sighgt - 2*SIG_SPACE;
+	y1 = trace->ystart + c * trace->sighgt + Y_SIG_SPACE;
+	ymdpt = y1 + (int)(trace->sighgt/2) - Y_SIG_SPACE;
+	y2 = y1 + trace->sighgt - 2*Y_SIG_SPACE;
 	cptr = (SIGNAL_LW *)sig_ptr->cptr;
 	cnt = 0;
 	c++;
@@ -439,7 +473,7 @@ void draw_trace (trace)
 	  case STATE_B32: Pts[cnt].y = ymdpt; break;
 	  case STATE_B128: Pts[cnt].y = ymdpt; break;
 	  default: printf ("Error: State=%d\n",cptr->sttime.state); break;
-	    }
+	}
 	
 	/* Loop as long as the time and end of trace are in current screen */
 	while ( cptr->sttime.time != EOT && Pts[cnt].x < xend && cnt < MAXCNT) {
@@ -459,11 +493,11 @@ void draw_trace (trace)
 		/* Too close to previously drawn vector.  User won't see the difference */
 		/* printf ("\tskip\n"); */
 		goto next_state;
-		}
+	    }
 	    else {
 		last_drawn_xloc = xloc;
 		last_drawn_state = cptr->sttime.state;
-		}
+	    }
 	    
 	    /* Determine what the state of the signal is and build transition */
 	    switch ( cptr->sttime.state ) {
@@ -531,8 +565,8 @@ void draw_trace (trace)
 		    if ( xloc-Pts[cnt].x < len + 2 ) {
 			/* doesn't fit, try number */
 			goto value_rep;
-			}
 		    }
+		}
 		else {
 		  value_rep:
 
@@ -542,7 +576,7 @@ void draw_trace (trace)
 			sprintf (strg,"%o", value);
 		    else 
 			sprintf (strg,"%d", value);
-		    }
+		}
 		
 		srch_this_color = 0;
 		for (i=0; i<MAX_SRCH; i++) {
@@ -558,7 +592,7 @@ void draw_trace (trace)
 	      case STATE_B128:
 		if ( xloc > xend ) xloc = xend;
 
-		value_to_string (trace, strg, cptr+1, ' ');
+		value_to_string (trace, strg, (unsigned int *)cptr+1, ' ');
 		
 		srch_this_color = 0;
 		for (i=0; i<MAX_SRCH; i++) {
@@ -586,7 +620,7 @@ void draw_trace (trace)
 		    /* Value won't fit, try question mark */
 		    len = question_width;
 		    strg[0] = '?';  strg[1] = '\0';
-		    }
+		}
 
 		/* write the bus value if it fits */
 		if ( xloc-Pts[cnt].x-2 >= len ) {
@@ -597,12 +631,12 @@ void draw_trace (trace)
 			XDrawString (global->display, XtWindow ( trace->work),
 				    trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
 			XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
-			}
+		    }
 		    else {
 			XDrawString (global->display, XtWindow ( trace->work),
 				    trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
-			}
 		    }
+		}
 
 		/* Plot points */
 		Pts[cnt+1].x=Pts[cnt].x+trace->sigrf; Pts[cnt+1].y=y2;
@@ -619,14 +653,14 @@ void draw_trace (trace)
 		
 	      default:
 		printf ("Error: State=%d\n",cptr->sttime.state); break;
-		} /* end switch */
+	    } /* end switch */
 	    
 	    cnt += 2;
 
 	  next_state:
 
 	    cptr += sig_ptr->lws;
-	    }
+	}
         cnt++;
 	
 	/* draw the lines */
@@ -636,7 +670,7 @@ void draw_trace (trace)
 	    printf ("C%d\tx%d\ty%d\n", cnt, Pts[cnt].x, Pts[cnt].y);
 	    }
 	    */
-	} /* end of FOR */
+    } /* end of FOR */
     
     /* Back to default color */
     if (DTPRINT_DRAW) printf ("Draw done.\n");
@@ -657,8 +691,38 @@ void draw_trace (trace)
     XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
 
     if (DTPRINT_DRAW) printf ("Draw done.\n");
-    } /* End of DRAW */
+} /* End of DRAW */
 
+
+void draw_trace_signame (
+    TRACE *trace,
+    SIGNAL *sig_ptr,
+    Position y)
+{	
+    Position x1;
+    char *basename;
+    Dimension m_sig_width = XTextWidth (global->signal_font,"m",1);
+    int truncchars;
+
+    if (NULL==(basename = strrchr (sig_ptr->signame, '.'))) {
+	basename = sig_ptr->signame;
+    }
+
+    /* calculate the location to draw the signal name and draw it */
+    x1 = global->xstart - XSTART_MARGIN	/* leftmost character position */
+	- m_sig_width * strlen (sig_ptr->signame)  /* fit in whole signal */
+	- m_sig_width * (global->namepos_base - strlen (basename)) /* extra chars to align basename */
+	+ m_sig_width * global->namepos;	/* Scroll position */
+    truncchars = global->namepos - (global->namepos_base - strlen (basename));
+    if (truncchars < 0) truncchars = 0;
+
+    /*printf ("m_sig_width %d  npos %d nbase %d nhier %d nvis %d x1 %d tc %d\n", m_sig_width, global->namepos,
+      global->namepos_base, global->namepos_hier, global->namepos_visible, x1, truncchars);*/
+
+    XDrawString (global->display, trace->wind, trace->gc, x1, y,
+		 sig_ptr->signame,
+		 strlen (sig_ptr->signame) - truncchars);
+}
 
 void	draw_update_sigstart ()
     /* Update the starting coodinate of the signals. */
@@ -666,22 +730,43 @@ void	draw_update_sigstart ()
 {
     TRACE *trace;
     SIGNAL *sig_ptr;
-    int xstarttemp;
-    char *t1;
+    int widest_hier;
+    int widest_base;
+    Dimension xstart_sig, xstart_base;
+    char *basename;
+    Dimension smallest_width;
+    Dimension m_sig_width = XTextWidth (global->signal_font,"m",1);
 
-    if (DTPRINT_ENTRY) printf ("In update_globals\n");
+    if (DTPRINT_ENTRY) printf ("In draw_update_sigstart\n");
+
+    /* What's the smallest window */
+    smallest_width = global->trace_head->width;
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	smallest_width = MIN (smallest_width,trace->width);
+    }
 
     /* Calculate xstart from longest signal name */
-    xstarttemp=XSTART_MIN;
+    widest_hier = 0;
+    widest_base = 0;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	for (sig_ptr = (SIGNAL *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    t1=sig_ptr->signame;
-	    if (strncmp (t1, "%NET.",5)==0) t1+=5;
-	    /* if (DTPRINT) printf ("Signal = '%s'  xstart=%d\n",t1,xstarttemp); */
-	    if (xstarttemp < XTextWidth (global->signal_font,t1,strlen (t1)))
-		xstarttemp = XTextWidth (global->signal_font,t1,strlen (t1));
+	    if (NULL==(basename = strrchr (sig_ptr->signame, '.'))) {
+		basename = sig_ptr->signame;
+	    }
+ 	    /* if (DTPRINT) printf ("Signal = '%s'  xstart=%d\n",t1,widest_sig); */
+	    widest_hier = MAX(widest_hier, (strlen (sig_ptr->signame) - strlen(basename)));
+	    widest_base = MAX(widest_base, (strlen (basename)));
 	}
-    global->xstart = xstarttemp + XSTART_MARGIN;
+	    
+	/* Don't waste more then 1/3 the screen area on signame */
+	xstart_sig = MIN (m_sig_width * (widest_hier+widest_base), (smallest_width/3)) + XSTART_MARGIN;
+	xstart_base = m_sig_width * widest_base + XSTART_MARGIN;
+	global->xstart = MAX (xstart_sig, xstart_base);
+
+	/* Remember position of text */
+	global->namepos_hier = widest_hier;
+	global->namepos_base = widest_base;
+	global->namepos_visible = (global->xstart - XSTART_MARGIN) / m_sig_width;
     }
 }
 
@@ -692,28 +777,30 @@ void draw_perform ()
 
     if (DTPRINT_ENTRY) printf ("In draw_perform %d %d\n", global->redraw_needed, global->trace_head->redraw_needed);
 
-    draw_update();
-
     /* do not unroll this loop, as it will make the refresh across windows */
     /* appear out of sync */
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if ((global->redraw_needed & GRD_ALL) || (trace->redraw_needed & TRD_REDRAW)) {
 	    get_geometry (trace);
-	    }
 	}
+    }
+
+    /* Update xstart, etc.  They may care about geometry (xstart does at least) */
+    draw_update();
+
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if ((global->redraw_needed & GRD_ALL) || (trace->redraw_needed & TRD_REDRAW)) {
 	    XClearWindow (global->display,trace->wind);
-	    }
 	}
+    }
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if ((global->redraw_needed & GRD_ALL) || trace->redraw_needed) {
 	    draw_trace (trace);
 	    trace->redraw_needed = FALSE;
-	    }
 	}
-    global->redraw_needed = FALSE;
     }
+    global->redraw_needed = FALSE;
+}
 
 
 void draw_update ()
@@ -744,8 +831,8 @@ void draw_update ()
  *	Scroll bar hacks (dependent on Motif internals)
  **********************************************************************/
 
-void	draw_hscroll (trace)
-    TRACE *trace;
+void	draw_hscroll (
+    TRACE *trace)
     /* Draw on the horizontal scroll bar - needs guts of the ScrollBarWidget */
 {
     int ymin,ymax,x1,xmin,xmax,slider_xmin,slider_xmax;
@@ -754,6 +841,8 @@ void	draw_hscroll (trace)
     char 	nonuser_dash[2];		/* Dashed line for nonuser cursors */
 
     nonuser_dash[0]=2;	nonuser_dash[1]=2;	/* Can't auto-init in ultrix compiler */
+
+    XSync (global->display,0);
 
     if (!trace->loaded || (trace->end_time == trace->start_time)) return;
 
@@ -788,24 +877,23 @@ void	draw_hscroll (trace)
 
 		if (csr_ptr->type==USER) {
 		    XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
-		    }
+		}
 		else {
 		    XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0,0);
 		    XSetDashes (global->display, trace->gc, 0, nonuser_dash, 2);
-		    }
+		}
 
 		XDrawLine (global->display, XtWindow (trace->hscroll),
 			  trace->gc, x1,ymin,x1,ymax);
-		}
 	    }
+	}
 	/* Reset */
 	XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
-	}
     }
+}
 
-
-void	draw_vscroll (trace)
-    TRACE *trace;
+void	draw_vscroll (
+    TRACE *trace)
     /* Draw on the vertical scroll bar - needs guts of the ScrollBarWidget */
 {
     int ymin,ymax,y1,xmin,xmax,slider_ymin,slider_ymax;
@@ -852,12 +940,12 @@ void	draw_vscroll (trace)
 		if ((y1 - slider_ymin) < ((slider_ymax - slider_ymin ) / 2))
 		    y1 = slider_ymin - 1;	/* Adjust up */
 		else y1 = slider_ymax + 1;	/* Adjust down */
-		}
+	    }
 	    /* Change color */
 	    XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
 	    XDrawLine (global->display, XtWindow (trace->vscroll),
 		      trace->gc, xmin,y1,xmax,y1);
-	    }
 	}
     }
+}
 

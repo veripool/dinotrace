@@ -1,41 +1,75 @@
-/******************************************************************************
- *
- * Filename:
- *     dt_cursor.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V4.0
- *
- * Author:
- *     Allen Gallotta
- *
- * Abstract:
- *
- * Modification History:
- *     AAG	14-Aug-90	Original Version
- *     AAG	22-Aug-90	Base Level V4.1
- *     AAG	29-Apr-91	Use X11, added button event variable for Ultrix
- *				 support
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dt_cursor.c --- cursor requestors, events, etc
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
-#include <stdio.h>
+#include <config.h>
 
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
 
 /****************************** UTILITIES ******************************/
 
-void    cur_remove (csr_ptr)
+void    cur_remove (
     /* Cursor is removed from list, but not freed! */
-    CURSOR	*csr_ptr;	/* Cursor to remove */
+    CURSOR	*csr_ptr)	/* Cursor to remove */
 {
     CURSOR	*next_csr_ptr, *prev_csr_ptr;
     
@@ -45,24 +79,24 @@ void    cur_remove (csr_ptr)
     prev_csr_ptr = csr_ptr->prev;
     if (prev_csr_ptr) {
 	prev_csr_ptr->next = csr_ptr->next;
-	}
+    }
     
     /* if not the last cursors redirect the prev pointer */
     next_csr_ptr = csr_ptr->next;
     if ( next_csr_ptr != NULL ) {
 	next_csr_ptr->prev = csr_ptr->prev;
-	}
+    }
 
     /* if this is the first cursor, change the head */
     if ( csr_ptr == global->cursor_head ) {
         global->cursor_head = csr_ptr->next;
-	}
     }
+}
 
-void cur_add (ctime, color, type)
-    DTime	ctime;
-    ColorNum	color;
-    CursorType	type;
+void cur_add (
+    DTime	ctime,
+    ColorNum	color,
+    CursorType	type)
 {
     CURSOR *new_csr_ptr;
     CURSOR *prev_csr_ptr, *csr_ptr;
@@ -79,7 +113,7 @@ void cur_add (ctime, color, type)
 	 csr_ptr && ( csr_ptr->time < new_csr_ptr->time );
 	 csr_ptr = csr_ptr->next) {
 	prev_csr_ptr = csr_ptr;
-	}
+    }
     
     if (csr_ptr && csr_ptr->time == new_csr_ptr->time) {
 	if ((new_csr_ptr->type == USER) || (csr_ptr->type != USER)) {
@@ -87,29 +121,29 @@ void cur_add (ctime, color, type)
 	    csr_ptr->time = ctime;
 	    csr_ptr->color = color;
 	    csr_ptr->type = type;
-	    }
+	}
 	/* else Don't go over existing user one */
 	/* Don't need new structure */
 	DFree (new_csr_ptr);
-	}
+    }
     else {
 	/* Insert into first position? */
 	if (!prev_csr_ptr) {
 	    global->cursor_head = new_csr_ptr;
-	    }
+	}
 	else {
 	    prev_csr_ptr->next = new_csr_ptr;
-	    }
+	}
 	
 	new_csr_ptr->next = csr_ptr;
 	new_csr_ptr->prev = prev_csr_ptr;
 	if (csr_ptr) csr_ptr->prev = new_csr_ptr;
-	}
     }
+}
 
 
-void cur_delete_of_type (type)
-    CursorType	type;
+void cur_delete_of_type (
+    CursorType	type)
 {
     CURSOR	*csr_ptr,*new_csr_ptr;
 
@@ -119,9 +153,9 @@ void cur_delete_of_type (type)
 	if (new_csr_ptr->type==type) {
 	    cur_remove (new_csr_ptr);
 	    DFree (new_csr_ptr);
-	    }
 	}
     }
+}
 
 void cur_print (FILE *writefp)
 {
@@ -139,12 +173,12 @@ void cur_print (FILE *writefp)
 	    break;
 	  default:
 	    break;
-	    }
 	}
     }
+}
 
-DTime cur_time_first (trace)
-    TRACE 	*trace;
+DTime cur_time_first (
+    TRACE 	*trace)
     /* Return time of the first cursor, or BOT if none */
 {
     CURSOR	*csr_ptr;
@@ -158,8 +192,8 @@ DTime cur_time_first (trace)
     }
 }
 
-DTime cur_time_last (trace)
-    TRACE 	*trace;
+DTime cur_time_last (
+    TRACE 	*trace)
     /* Return time of the last cursor, or EOT if none */
 {
     CURSOR	*csr_ptr;
@@ -176,12 +210,12 @@ DTime cur_time_last (trace)
 
 /****************************** MENU OPTIONS ******************************/
 
-void    cur_add_cb (w, trace, cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void    cur_add_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
-    if (DTPRINT_ENTRY) printf ("In cur_add_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cur_add_cb - trace=%p\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -192,15 +226,15 @@ void    cur_add_cb (w, trace, cb)
     /* process all subsequent button presses as cursor adds */
     set_cursor (trace, DC_CUR_ADD);
     add_event (ButtonPressMask, cur_add_ev);
-    }
+}
 
-void    cur_mov_cb (w, trace, cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void    cur_mov_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     
-    if (DTPRINT_ENTRY) printf ("In cur_mov_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cur_mov_cb - trace=%p\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -208,15 +242,15 @@ void    cur_mov_cb (w, trace, cb)
     /* process all subsequent button presses as cursor moves */
     set_cursor (trace, DC_CUR_MOVE);
     add_event (ButtonPressMask, cur_move_ev);
-    }
+}
 
-void    cur_del_cb (w, trace, cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void    cur_del_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     
-    if (DTPRINT_ENTRY) printf ("In cur_del_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cur_del_cb - trace=%p\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -224,12 +258,12 @@ void    cur_del_cb (w, trace, cb)
     /* process all subsequent button presses as cursor deletes */
     set_cursor (trace, DC_CUR_DELETE);
     add_event (ButtonPressMask, cur_delete_ev);
-    }
+}
 
-void    cur_clr_cb (w, trace, cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void    cur_clr_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     CURSOR	*csr_ptr;
     
@@ -240,20 +274,20 @@ void    cur_clr_cb (w, trace, cb)
 	csr_ptr = global->cursor_head;
 	global->cursor_head = csr_ptr->next;
 	DFree (csr_ptr);
-	}
+    }
     
     /* cancel the button actions */
     remove_all_events (trace);
     
     draw_all_needed ();
-    }
+}
 
-void    cur_highlight_cb (w,trace,cb)
-    Widget			w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void    cur_highlight_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
-    if (DTPRINT_ENTRY) printf ("In cur_highlight_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cur_highlight_cb - trace=%p\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -264,18 +298,18 @@ void    cur_highlight_cb (w,trace,cb)
     /* process all subsequent button presses as signal deletions */ 
     set_cursor (trace, DC_CUR_HIGHLIGHT);
     add_event (ButtonPressMask, cur_highlight_ev);
-    }
+}
 
 /****************************** EVENTS ******************************/
 
-void    cur_add_ev (w, trace, ev)
-    Widget		w;
-    TRACE		*trace;
-    XButtonPressedEvent	*ev;
+void    cur_add_ev (
+    Widget		w,
+    TRACE		*trace,
+    XButtonPressedEvent	*ev)
 {
     DTime	time;
     
-    if (DTPRINT_ENTRY) printf ("In add cursor - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (DTPRINT_ENTRY) printf ("In add cursor - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
     if (ev->type != ButtonPress || ev->button!=1) return;
     
     /* convert x value to a time value */
@@ -286,12 +320,12 @@ void    cur_add_ev (w, trace, ev)
     cur_add (time, global->highlight_color, USER);
     
     draw_all_needed ();
-    }
+}
 
-void    cur_move_ev (w, trace, ev)
-    Widget		w;
-    TRACE		*trace;
-    XButtonPressedEvent	*ev;
+void    cur_move_ev (
+    Widget		w,
+    TRACE		*trace,
+    XButtonPressedEvent	*ev)
 {
     DTime	time;
     Position	x1,x2,y1,y2;
@@ -360,7 +394,7 @@ void    cur_move_ev (w, trace, ev)
 	    eb = (XButtonReleasedEvent *)&event;
 	    time = posx_to_time_edge (trace, eb->x, eb->y);
 	    break;
-	    }
+	}
 
 	if (global->redraw_needed && !XtAppPending (global->appcontext)) {
 	    /* change the GC function back to its default */
@@ -370,7 +404,7 @@ void    cur_move_ev (w, trace, ev)
 	    /* change the GC function to drag the cursor */
 	    xgcv.function = GXinvert;
 	    XChangeGC (global->display,trace->gc,GCFunction,&xgcv);
-	    }
+	}
 	}
     
     /* reset the events the widget will respond to */
@@ -387,16 +421,16 @@ void    cur_move_ev (w, trace, ev)
     XtFree ((char *)csr_ptr);
     
     draw_all_needed ();
-    }
+}
 
-void    cur_delete_ev (w, trace, ev)
-    Widget		w;
-    TRACE		*trace;
-    XButtonPressedEvent	*ev;
+void    cur_delete_ev (
+    Widget		w,
+    TRACE		*trace,
+    XButtonPressedEvent	*ev)
 {
     CURSOR	*csr_ptr;
     
-    if (DTPRINT_ENTRY) printf ("In cur_delete_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (DTPRINT_ENTRY) printf ("In cur_delete_ev - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
     if (ev->type != ButtonPress || ev->button!=1) return;
     
     csr_ptr = posx_to_cursor (trace, ev->x);
@@ -407,16 +441,16 @@ void    cur_delete_ev (w, trace, ev)
     DFree (csr_ptr);
     
     draw_all_needed ();
-    }
+}
 
-void    cur_highlight_ev (w, trace, ev)
-    Widget		w;
-    TRACE		*trace;
-    XButtonPressedEvent	*ev;
+void    cur_highlight_ev (
+    Widget		w,
+    TRACE		*trace,
+    XButtonPressedEvent	*ev)
 {
     CURSOR	*csr_ptr;
     
-    if (DTPRINT_ENTRY) printf ("In cur_highlight_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (DTPRINT_ENTRY) printf ("In cur_highlight_ev - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
     if (ev->type != ButtonPress || ev->button!=1) return;
     
     csr_ptr = posx_to_cursor (trace, ev->x);
@@ -426,5 +460,5 @@ void    cur_highlight_ev (w, trace, ev)
     csr_ptr->color = global->highlight_color;
     
     draw_all_needed ();
-    }
+}
 

@@ -1,23 +1,59 @@
+/* $Id$ */
 /******************************************************************************
+ * functions.h --- Dinotrace functions and callback externs
  *
- * Filename:
- *	callbacks.h
+ * This file is part of Dinotrace.  
  *
- * Subsystem:
- *     Dinotrace
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
  *
- * Version:
- *     Dinotrace V4.0
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
  *
- * Author:
- *     Allen Gallotta
+ ******************************************************************************
  *
- * Abstract:
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the base version has been
+ * released to the public with the following provisions:
  *
- * Modification History:
- *     AAG	5-JUL-89	Original Version
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
  *
- */
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
 /***********************************************************************/
 /* Defined functions.... Really inlines, but old VMS compiler chokes */
@@ -67,9 +103,6 @@
 # endif
 #endif
 
-#define max_sigs_on_screen(_trace_) \
-        ((int)(((_trace_)->height - (_trace_)->ystart) / (_trace_)->sighgt))
-
 #define TIME_TO_XPOS(_xtime_) \
         ( ((_xtime_) - global->time) * global->res + global->xstart )
 
@@ -114,15 +147,15 @@
 	    ((SIGNAL *)(sig_ptr))->bptr = (SIGNAL_LW *)XtRealloc ((char*)((SIGNAL *)(sig_ptr))->bptr,\
 		       (((SIGNAL *)(sig_ptr))->blocks*sizeof(unsigned int)) + (sizeof(VALUE)*2 + 2));\
 	    ((SIGNAL *)(sig_ptr))->cptr = ((SIGNAL *)(sig_ptr))->bptr+diff;\
-	    }\
+	}\
 	(((SIGNAL *)(sig_ptr))->cptr)[0].number = ((VALUE *)(value_ptr))->siglw.number;\
 	(((SIGNAL *)(sig_ptr))->cptr)[1].number = ((VALUE *)(value_ptr))->number[0];\
 	(((SIGNAL *)(sig_ptr))->cptr)[2].number = ((VALUE *)(value_ptr))->number[1];\
 	(((SIGNAL *)(sig_ptr))->cptr)[3].number = ((VALUE *)(value_ptr))->number[2];\
 	(((SIGNAL *)(sig_ptr))->cptr)[4].number = ((VALUE *)(value_ptr))->number[3];\
 	(((SIGNAL *)(sig_ptr))->cptr) += ((SIGNAL *)(sig_ptr))->lws;\
-	}\
-    }
+    }\
+ }
 
 
 /***********************************************************************/
@@ -137,7 +170,8 @@ extern TRACE	*malloc_trace();
 extern TRACE	*open_trace();
 extern void
     trace_open_cb(), trace_close_cb(), trace_exit_cb(), trace_clear_cb(),
-    init_globals(), create_globals(),
+    init_globals(),
+    create_globals(int argc, char **argv, Boolean sync),
     set_cursor();
 extern int	last_set_cursor ();
 
@@ -162,12 +196,13 @@ extern DTime cur_time_last();
 extern void
     config_write_cb(),
     print_signal_states(),
-    config_read_defaults (),
-    config_read_file (), upcase_string(),
+    config_read_defaults (TRACE *, Boolean),
+    config_read_file (TRACE *, char *, Boolean, Boolean),
     config_trace_defaults (TRACE *),
     config_global_defaults (void),
     config_parse_geometry (char *, GEOMETRY *);
 extern void config_update_filenames (TRACE *trace);
+extern void config_read_socket (char *line, char *name, int cmdnum, Boolean eof);
 extern SIGNALSTATE *find_signal_state (TRACE *, char *);
 extern int	wildmat ();
     
@@ -180,7 +215,8 @@ extern void grid_calc_autos();
     
 /* dt_signal.c routines */
 extern void
-    sig_update_search(), sig_free(),
+    sig_update_search(),
+    sig_free (TRACE *trace, SIGNAL *sig_ptr, Boolean select, Boolean recurse),
     sig_highlight_selected (int),
     /**/
     sig_add_cb(), sig_add_ev(), sig_mov_cb(), sig_move_ev(),
@@ -191,7 +227,7 @@ extern void
     sig_search_cb(), sig_search_ok_cb(), sig_search_apply_cb(),
     sig_select_cb(), sig_select_ok_cb(), sig_select_apply_cb();
 extern void sig_modify_enables (TRACE *);
-extern void sig_delete_selected (/*Boolean*/);
+extern void sig_delete_selected (Boolean constant_flag, Boolean ignorexz);
 extern void sig_move_selected (/*Boolean*/);
 extern void sig_copy_selected (/*Boolean*/);
 extern void sig_rename_selected (char *);
@@ -199,7 +235,7 @@ extern void sig_wildmat_select (TRACE *, char *);
 extern void sig_goto_pattern (TRACE *, char *);
 extern void sig_cross_preserve (TRACE *);
 extern void sig_cross_restore (TRACE *);
-#if defined(VMS) || defined(mips)
+#if ! HAVE_STRDUP
 extern char *strdup(char *);
 #endif
     
@@ -210,12 +246,14 @@ extern void
     val_search_cb(), val_search_ok_cb(), val_search_apply_cb(),
     val_highlight_cb(), val_highlight_ev(),
     val_update_search();
-extern void val_states_update();
+extern void value_to_string (TRACE *trace, char *strg, unsigned int cptr[], char seperator);
+extern void val_states_update ();
 extern void cptr_to_search_value ();
     
 /* dt_printscreen routines */
 extern void
     ps_print_internal(), ps_print_req_cb(), ps_print_direct_cb(),
+    ps_range_sensitives_cb(Widget w, RANGE_WDGTS *range_ptr, XmSelectionBoxCallbackStruct *cb),
     ps_print_all(), ps_dialog(), ps_reset();
 extern void cur_print (FILE *);
     
@@ -227,18 +265,20 @@ extern void
 extern void
     trace_read_cb(), trace_reread_cb(), trace_reread_all_cb(),
     free_data(),
-    read_make_busses(),
+    read_make_busses(TRACE *trace, Boolean not_tempest),
     fil_string_to_value(),
     decsim_read_ascii(), 
     read_trace_end(), help_cb(), help_trace_cb(), help_doc_cb();
 extern void  fil_select_set_pattern (TRACE *trace, Widget dialog, char *pattern);
 extern void fgets_dynamic ();
+extern void fil_string_add_cptr (SIGNAL	*sig_ptr, char *value_strg, DTime time, Boolean nocheck);
 #ifndef fil_add_cptr
 extern void fil_add_cptr();
 #endif
 
 /* dt_util routines */
 extern void
+    upcase_string(),
     unmanage_cb(),
     add_event(), remove_all_events(), 
     file_directory(), change_title(),
@@ -246,25 +286,24 @@ extern void
     get_file_name(),
     cancel_all_events(),
     dino_message_ack(), 
-    fil_read_cb(), get_data_popup(), time_to_string(),
+    fil_read_cb(), get_data_popup(),
     fil_format_option_cb(),
     print_sig_names(), print_screen_traces(), print_sig_info(SIGNAL *);
-extern void    value_to_string ();
 extern TRACE	*widget_to_trace (Widget);
 extern SIGNAL_LW *cptr_at_time ();
 extern char	*extract_first_xms_segment (XmString);
 extern XmString	string_create_with_cr (char *);
 extern char	*date_string ();
-extern DTime	posx_to_time ();
-extern DTime	posx_to_time_edge ();
+extern DTime	posx_to_time (TRACE *trace, Position x);
+extern DTime	posx_to_time_edge (TRACE *trace, Position x, Position y);
 extern DTime	string_to_time ();
 extern DTime	time_units_to_multiplier ();
-extern void	time_to_string ();
-extern char	*time_units_to_string ();
-extern SIGNAL	*posy_to_signal ();
-extern CURSOR	*posx_to_cursor ();
+extern void	time_to_string (TRACE *trace, char *strg, DTime ctime, Boolean relative);
+extern char	*time_units_to_string (TimeRep timerep, Boolean showvalue);
+extern SIGNAL	*posy_to_signal (TRACE *trace, Position y);
+extern CURSOR	*posx_to_cursor (TRACE *trace, Position x);
 extern CURSOR	*time_to_cursor ();
-extern ColorNum submenu_to_color (TRACE *, Widget, int);
+extern ColorNum submenu_to_color (TRACE *trace, Widget, int);
 extern void     cptr_to_string ();
 extern void     string_to_value ();
 extern int	option_to_number ();
@@ -289,6 +328,7 @@ extern void
     vscroll_unitinc(), vscroll_unitdec(), vscroll_drag(), 
     vscroll_pageinc(), vscroll_pagedec(), 
     vscroll_bot(), vscroll_top();
+extern void win_namescroll_change (Widget w, TRACE *trace, XmScrollBarCallbackStruct *cb);
 extern int	win_goto_number();
 extern void	vscroll_new();
 
@@ -303,7 +343,8 @@ extern void
     draw();
 
 /* dt_icon */
-extern Pixmap	make_icon (Display *, Drawable, char *, Dimension, Dimension);
+extern Pixmap	icon_dinos ();
+extern Pixmap	icon_make (Display *, Drawable, char *, Dimension, Dimension);
 
 /* dt_verilog */
 extern void	verilog_read();

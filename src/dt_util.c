@@ -1,38 +1,71 @@
-/******************************************************************************
- *
- * Filename:
- *     dt_util.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V4.0
- *
- * Author:
- *     Allen Gallotta
- *
- * Abstract:
- *
- * Modification History:
- *     AAG	14-Aug-90	Original Version
- *     AAG	22-Aug-90	Base Level V4.1
- *     AAG	 6-Nov-90	Changed get_geometry to calculate numsigvis
- *				correctly when cursors are added
- *     AAG	29-Apr-91	Use X11, removed '#include descrip', removed
- *				 '&' in hit_return() param list for Ultrix
- *				 support
- *     AAG	 8-Jul-91	Adding call to read hlo binary trace files,
- *				 added XSync after unmanaging file select
- *				 window, fixed vscroll 'Value' parameter
- *     WPS	 8-Jan-92	Added new_time gadget controls
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dt_util.c --- misc utilities
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
+#include <config.h>
 
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 #include <stdlib.h>
+#if TM_IN_SYS_TIME
+#include <sys/time.h>
+#else
 #include <time.h>
+#endif
 #include <math.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -48,14 +81,19 @@ static char rcsid[] = "$Id$";
 #include <Xm/RowColumn.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
 
 extern void prompt_ok_cb(), fil_ok_cb();
 
 
+void upcase_string (char *tp)
+{
+    for (;*tp;tp++) *tp = toupper (*tp);
+}
+
 /* get normal string from XmString */
-char *extract_first_xms_segment (cs)
-    XmString	cs;
+char *extract_first_xms_segment (
+    XmString	cs)
 {
     XmStringContext	context;
     XmStringCharSet	charset;
@@ -68,11 +106,11 @@ char *extract_first_xms_segment (cs)
 			   &charset,&direction,&separator);
     XmStringFreeContext (context);
     return (primitive_string);
-    }
+}
 
 
-XmString string_create_with_cr (msg)
-    char	*msg;
+XmString string_create_with_cr (
+    char	*msg)
 {
     XmString	xsout,xsnew,xsfree;
     char	*ptr,*nptr;
@@ -87,10 +125,10 @@ XmString string_create_with_cr (msg)
 	    aline[nptr-ptr] = '\0';
 	    nptr++;
 	    xsnew = XmStringCreateSimple (aline);
-	    }
+	}
 	else {
 	    xsnew = XmStringCreateSimple (ptr);
-	    }
+	}
 
 	if (xsout) {
 	    xsout = XmStringConcat (xsfree=xsout, XmStringSeparatorCreate());
@@ -98,54 +136,54 @@ XmString string_create_with_cr (msg)
 	    if (!XmStringEmpty (xsnew)) {
 		xsout = XmStringConcat (xsfree=xsout, xsnew);
 		XmStringFree (xsfree);
-		}
-	    XmStringFree (xsnew);
 	    }
+	    XmStringFree (xsnew);
+	}
 	else {
 	    xsout = xsnew;
-	    }
 	}
-    return (xsout);
     }
+    return (xsout);
+}
     
 
-char *date_string (time_num)
-    time_t	time_num;	/* Time to parse, or 0 for current time */
+char *date_string (
+    time_t	time_num)	/* Time to parse, or 0 for current time */
 {
     static char	date_str[50];
     struct tm *timestr;
     
     if (!time_num) {
 	time_num = time (NULL);
-	}
+    }
     timestr = localtime (&time_num);
     strcpy (date_str, asctime (timestr));
     if (date_str[strlen (date_str)-1]=='\n')
 	date_str[strlen (date_str)-1]='\0';
 
     return (date_str);
-    }
+}
 
 
-void    unmanage_cb (w, tag, cb )
+void    unmanage_cb (
     /* Generic unmanage routine, usually for cancel buttons */
     /* NOTE that you pass the widget in the tag area, not the trace!! */
-    Widget		w;
-    Widget		tag;
-    XmAnyCallbackStruct *cb;
+    Widget	w,
+    Widget	tag,
+    XmAnyCallbackStruct *cb)
 {
     if (DTPRINT_ENTRY) printf ("In unmanage_cb\n");
     
     /* unmanage the widget */
     XtUnmanageChild (tag);
-    }
+}
 
-void    cancel_all_events (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void    cancel_all_events (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct	*cb)
 {
-    if (DTPRINT_ENTRY) printf ("In cancel_all_events - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cancel_all_events - trace=%p\n",trace);
     
     /* remove all events */
     remove_all_events (trace);
@@ -153,11 +191,15 @@ void    cancel_all_events (w,trace,cb)
     /* unmanage any widgets left around */
     if ( trace->signal.add != NULL )
 	XtUnmanageChild (trace->signal.add);
-    }
+}
 
-void    update_scrollbar (w,value,inc,min,max,size)
-    Widget		w;
-    int 	value, inc, min, max, size;
+void    update_scrollbar (
+    Widget	w,
+    int 	value,
+    int		inc,
+    int		min,
+    int		max,
+    int		size)
 {
     if (DTPRINT_ENTRY) printf ("In update_scrollbar - %d %d %d %d %d\n",
 			value, inc, min, max, size);
@@ -165,10 +207,10 @@ void    update_scrollbar (w,value,inc,min,max,size)
     if (min >= max) {
 	XtSetArg (arglist[0], XmNsensitive, FALSE);
 	min=0; max=1; inc=1; size=1; value=0;
-	}
+    }
     else {
 	XtSetArg (arglist[0], XmNsensitive, TRUE);
-	}
+    }
 
     if (inc < 1) inc=1;
     if (size < 1) size=1;
@@ -183,26 +225,26 @@ void    update_scrollbar (w,value,inc,min,max,size)
     XtSetArg (arglist[4], XmNminimum, min);
     XtSetArg (arglist[5], XmNmaximum, max);
     XtSetValues (w, arglist, 6);
-    }
+}
 
 
-void 	add_event (type, callback)
-    int		type;
-    void	(*callback)();
+void 	add_event (
+    int		type,
+    void	(*callback)())
 {
     TRACE	*trace;
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	XtAddEventHandler (trace->work, type, TRUE, callback, trace);
-	}
     }
+}
 
-void    remove_all_events (trace)
-    TRACE	*trace;
+void    remove_all_events (
+    TRACE	*trace)
 {
     TRACE	*trace_ptr;
 
-    if (DTPRINT_ENTRY) printf ("In remove_all_events - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In remove_all_events - trace=%p\n",trace);
     
     for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	/* remove all possible events due to res options */ 
@@ -224,18 +266,18 @@ void    remove_all_events (trace)
 	/* remove all possible events due to nvalue options */ 
 	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,val_examine_ev,trace_ptr);
 	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,val_highlight_ev,trace_ptr);
-	}
+    }
 
     global->selected_sig = NULL;
 
     /* Set the cursor back to normal */
     set_cursor (trace, DC_NORMAL);
-    }
+}
 
-ColorNum submenu_to_color (trace, w, base)
-    TRACE	*trace;		/* Display information */
-    Widget	w;
-    int		base;		/* Loaded when the menu was loaded */
+ColorNum submenu_to_color (
+    TRACE	*trace,		/* Display information */
+    Widget	w,
+    int		base)		/* Loaded when the menu was loaded */
 {
     ColorNum color;
 
@@ -243,23 +285,23 @@ ColorNum submenu_to_color (trace, w, base)
     for (color=0; color<=(MAX_SRCH+2); color++) {
 	if (w == trace->menu.pdsubbutton[color + base]) {
 	    break;
-	    }
 	}
+    }
 
     /* Duplicate code in config_read_color */
     if (color==COLOR_CURRENT) color = global->highlight_color;
     if (color==COLOR_NEXT) {
 	if ((++global->highlight_color) > MAX_SRCH) global->highlight_color = 1;  /* skips black */
 	color = global->highlight_color;
-	}
-
-    return (color);
     }
 
-int option_to_number (w, entry0_ptr, maxnumber)
-    Widget	w;		/* foo.options widget */
-    Widget	*entry0_ptr;	/* &foo.pulldownbutton[0] */
-    int		maxnumber;	/* number to consider (INCLUDING!) */
+    return (color);
+}
+
+int option_to_number (
+    Widget	w,		/* foo.options widget */
+    Widget	*entry0_ptr,	/* &foo.pulldownbutton[0] */
+    int		maxnumber)	/* number to consider (INCLUDING!) */
 {
     int			tempi;
     Widget		clicked;
@@ -269,24 +311,24 @@ int option_to_number (w, entry0_ptr, maxnumber)
     XtGetValues (w, arglist, 1);
     for (tempi=maxnumber; tempi>0; tempi--) {
 	if (entry0_ptr[tempi]==clicked) break;
-	}
-    return (tempi);
     }
+    return (tempi);
+}
 
-TRACE	*widget_to_trace (w)
-    Widget		w;
+TRACE	*widget_to_trace (
+    Widget	w)
 {
     TRACE	*trace;		/* Display information */
     
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->work == w) break;
-	}
+    }
     if (!trace && DTDEBUG) printf ("widget_to_trace failed lookup.\n");
     return (trace);
-    }
+}
 
-void new_time_sigs (sig_first_ptr)
-    SIGNAL	*sig_first_ptr;	
+void new_time_sigs (
+    SIGNAL	*sig_first_ptr)
 {
     SIGNAL	*sig_ptr;	
 
@@ -314,67 +356,93 @@ void new_time_sigs (sig_first_ptr)
     }
 }
 
-void new_time (trace)
-    TRACE 	*trace;
+void new_time (
+    TRACE 	*trace)
 {
     if ( global->time > (trace->end_time - TIME_WIDTH (trace)) ) {
         if (DTPRINT_ENTRY) printf ("At end of trace...\n");
         global->time = trace->end_time - TIME_WIDTH (trace);
-	}
+    }
     
     if ( global->time < trace->start_time ) {
         if (DTPRINT_ENTRY) printf ("At beginning of trace...\n");
         global->time = trace->start_time;
-	}
+    }
 
     /* Update beginning of all traces, DELETED TOO */
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	new_time_sigs (trace->firstsig);
-	}
+    }
 
     /* Update windows */
     draw_all_needed ();
-    }
+}
 
 /* Get window size, calculate what fits on the screen and update scroll bars */
-void get_geometry ( trace )
-    TRACE	*trace;
+void get_geometry (
+    TRACE	*trace)
 {
     int		x,y;
     unsigned int	width,height,dret;
+    Dimension m_time_height = global->time_font->ascent + global->time_font->descent;
     
     XGetGeometry ( global->display, XtWindow (trace->work), (Window *)&dret,
 		 &x, &y, &width, &height, &dret, &dret);
     
     trace->width = MIN(width, MAXSCREENWIDTH-2);
+
+    /* See comment in dinotrace.h about y layout */
     trace->height = height;
+    trace->ygridtime = Y_TOP_BOTTOM + m_time_height;
+    trace->ystart = trace->ygridtime + Y_TEXT_SPACE + MAX(Y_GRID_TOP,Y_CURSOR_TOP);
+
+    /* if there are cursors showing, leave room */
+    trace->ycursortimeabs = trace->height - Y_TOP_BOTTOM; 
+    if ( (global->cursor_head != NULL) &&
+	 trace->cursor_vis) {
+	trace->ycursortimerel = trace->ycursortimeabs - Y_TEXT_SPACE - m_time_height;
+	trace->yend = trace->ycursortimerel - Y_TEXT_SPACE - m_time_height - Y_GRID_BOTTOM;
+    } else {
+	trace->ycursortimerel = trace->ycursortimeabs;
+	trace->yend = trace->ycursortimeabs - Y_GRID_BOTTOM;
+    }
     
     /* calulate the number of signals possibly visible on the screen */
-    trace->numsigvis = max_sigs_on_screen (trace);
+    trace->numsigvis = (trace->yend - trace->ystart) / trace->sighgt;
     
-    /* if there are cursors showing, subtract one to make room for cursor */
-    if ( (global->cursor_head != NULL) &&
-	trace->cursor_vis &&
-	trace->numsigvis > 1 ) {
-	trace->numsigvis--;
-	}
-    
+    /* Correct starting position to be reasonable */
+    if (global->namepos < 0) global->namepos=0;
+    if (global->namepos > (global->namepos_hier + global->namepos_base - global->namepos_visible))
+	global->namepos = (global->namepos_hier + global->namepos_base - global->namepos_visible);
+
+    /* Move horiz scrollbar left edge to start position */
+    XtUnmanageChild (trace->hscroll);
+    XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
+    XtSetArg (arglist[1], XmNleftOffset, global->xstart - XSTART_MARGIN);
+    XtSetValues (trace->hscroll,arglist,2);
+    XtManageChild (trace->hscroll);
+
     update_scrollbar (trace->hscroll, global->time,
 		      trace->grid[0].period,
 		      trace->start_time, trace->end_time, 
 		      (int)TIME_WIDTH(trace) );
+
+    update_scrollbar (trace->command.namescroll, global->namepos,
+		      (global->namepos_hier + global->namepos_base - global->namepos_visible)/10,
+		      0, (global->namepos_hier + global->namepos_base),
+		      global->namepos_visible);
 
     update_scrollbar (trace->vscroll, trace->numsigstart, 1,
 		      0, trace->numsig, MIN (trace->numsigvis, trace->numsig - trace->numsigstart)); 
     
     if (DTPRINT_ENTRY) printf ("In get_geometry: x=%d y=%d width=%d height=%d\n",
 			x,y,width,height);
-    }
+}
 
-void  fil_select_set_pattern (trace, dialog, pattern)
-    TRACE	*trace;
-    Widget	dialog;
-    char	*pattern;
+void  fil_select_set_pattern (
+    TRACE	*trace,
+    Widget	dialog,
+    char	*pattern)
     /* Set the file requester pattern information (called in 2 places) */
 {
     char mask[MAXFNAMELEN], *dirname;
@@ -391,15 +459,15 @@ void  fil_select_set_pattern (trace, dialog, pattern)
     XtSetArg (arglist[0], XmNdirMask, XmStringCreateSimple (mask) );
     XtSetArg (arglist[1], XmNpattern, XmStringCreateSimple (pattern) );
     XtSetValues (dialog,arglist,2);
-    }
+}
 
 
-void  get_file_name ( trace )
-    TRACE	*trace;
+void  get_file_name (
+    TRACE	*trace)
 {
     int		i;
     
-    if (DTPRINT_ENTRY) printf ("In get_file_name trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In get_file_name trace=%p\n",trace);
     
     if (!trace->fileselect.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
@@ -407,7 +475,7 @@ void  get_file_name ( trace )
 
 	trace->fileselect.dialog = XmCreateFileSelectionDialog ( trace->main, "file", arglist, 2);
 	XtAddCallback (trace->fileselect.dialog, XmNokCallback, fil_ok_cb, trace);
-	XtAddCallback (trace->fileselect.dialog, XmNcancelCallback, unmanage_cb, trace->fileselect.dialog);
+	XtAddCallback (trace->fileselect.dialog, XmNcancelCallback, (XtCallbackProc)unmanage_cb, trace->fileselect.dialog);
 	XtUnmanageChild ( XmFileSelectionBoxGetChild (trace->fileselect.dialog, XmDIALOG_HELP_BUTTON));
 	
 	trace->fileselect.work_area = XmCreateWorkArea (trace->fileselect.dialog, "wa", arglist, 0);
@@ -422,8 +490,8 @@ void  get_file_name ( trace )
 		    XmCreatePushButtonGadget (trace->fileselect.format_menu,"pdbutton",arglist,1);
 		XtManageChild (trace->fileselect.format_item[i]);
 		XtAddCallback (trace->fileselect.format_item[i], XmNactivateCallback, fil_format_option_cb, trace);
-		}
 	    }
+	}
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Format"));
 	XtSetArg (arglist[1], XmNsubMenuId, trace->fileselect.format_menu);
@@ -441,7 +509,7 @@ void  get_file_name ( trace )
 	XtManageChild (trace->fileselect.work_area);
 	
 	XSync (global->display,0);
-	}
+    }
     
     XtManageChild (trace->fileselect.dialog);
 
@@ -453,7 +521,7 @@ void  get_file_name ( trace )
     if (filetypes[file_format].selection) {
 	XtSetArg (arglist[0], XmNmenuHistory, trace->fileselect.format_item[file_format]);
 	XtSetValues (trace->fileselect.format_option, arglist, 1);
-	}
+    }
     
     /* Set directory */
     XtSetArg (arglist[0], XmNdirectory, XmStringCreateSimple (global->directory) );
@@ -462,33 +530,33 @@ void  get_file_name ( trace )
     fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
 
     XSync (global->display,0);
-    }
+}
 
-void    fil_format_option_cb (w,trace,cb)
-    Widget	w;
-    TRACE	*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    fil_format_option_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmSelectionBoxCallbackStruct *cb)
 {
     int 	i;
-    if (DTPRINT_ENTRY) printf ("In fil_format_option_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In fil_format_option_cb trace=%p\n",trace);
 
     for (i=0; i<FF_NUMFORMATS; i++) {
 	if (w == trace->fileselect.format_item[i]) {
 	    file_format = i;	/* Change global verion */
 	    trace->fileformat = i;	/* Specifically make this file use this format */
 	    fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
-	    }
 	}
     }
+}
 
-void fil_ok_cb (w, trace, cb)
-    Widget	w;
-    TRACE	*trace;
-    XmFileSelectionBoxCallbackStruct *cb;
+void fil_ok_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmFileSelectionBoxCallbackStruct *cb)
 {
     char	*tmp;
     
-    if (DTPRINT_ENTRY) printf ("In fil_ok_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In fil_ok_cb trace=%p\n",trace);
     
     /*
      ** Unmanage the file select widget here and wait for sync so
@@ -509,16 +577,16 @@ void fil_ok_cb (w, trace, cb)
     
     if (DTPRINT_FILE) printf ("In fil_ok_cb Filename=%s\n",trace->filename);
     fil_read_cb (trace);
-    }
+}
 
 
-void get_data_popup (trace,string,type)
-    TRACE	*trace;
-    char	*string;
-    int		type;
+void get_data_popup (
+    TRACE	*trace,
+    char	*string,
+    int		type)
 {
     if (DTPRINT_ENTRY) 
-	printf ("In get_data trace=%d string=%s type=%d\n",trace,string,type);
+	printf ("In get_data trace=%p string=%s type=%d\n",trace,string,type);
     
     if (trace->prompt_popup == NULL) {
 	/* only need to create the widget once - now just manage/unmanage */
@@ -529,10 +597,10 @@ void get_data_popup (trace,string,type)
 	/* no width so autochosen XtSetArg (arglist[2], XmNwidth, DIALOG_WIDTH); */
 	trace->prompt_popup = XmCreatePromptDialog (trace->work,"", arglist, 1);
 	XtAddCallback (trace->prompt_popup, XmNokCallback, prompt_ok_cb, trace);
-	XtAddCallback (trace->prompt_popup, XmNcancelCallback, unmanage_cb, trace->prompt_popup);
+	XtAddCallback (trace->prompt_popup, XmNcancelCallback, (XtCallbackProc)unmanage_cb, trace->prompt_popup);
 
 	XtUnmanageChild ( XmSelectionBoxGetChild (trace->prompt_popup, XmDIALOG_HELP_BUTTON));
-	}
+    }
     
     XtSetArg (arglist[0], XmNdialogTitle, XmStringCreateSimple (string) );
     XtSetArg (arglist[1], XmNtextString, XmStringCreateSimple ("") );
@@ -541,12 +609,12 @@ void get_data_popup (trace,string,type)
     /* manage the popup window */
     trace->prompt_type = type;
     XtManageChild (trace->prompt_popup);
-    }
+}
 
-void    prompt_ok_cb (w, trace, cb)
-    Widget		w;
-    TRACE		*trace;
-    XmSelectionBoxCallbackStruct *cb;
+void    prompt_ok_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmSelectionBoxCallbackStruct *cb)
 {
     char	*valstr;
     DTime	restime;
@@ -564,7 +632,7 @@ void    prompt_ok_cb (w, trace, cb)
 	sprintf (message,"Value %d out of range", restime);
 	dino_error_ack (trace,message);
 	return;
-	}
+    }
 
     /* do stuff depending on type of data */
     switch (trace->prompt_type)
@@ -580,10 +648,10 @@ void    prompt_ok_cb (w, trace, cb)
     }
 
 
-void dino_message_ack (trace, type, msg)
-    TRACE	*trace;
-    int		type;	/* See dino_warning_ack macros, 1=warning */
-    char	*msg;
+void dino_message_ack (
+    TRACE	*trace,
+    int		type,	/* See dino_warning_ack macros, 1=warning */
+    char	*msg)
 {
     Arg		msg_arglist[10];	/* Local copy so don't munge global args */
     XmString	xsout;
@@ -607,8 +675,8 @@ void dino_message_ack (trace, type, msg)
 	  default:
 	    trace->message = XmCreateErrorDialog (trace->work, "error", msg_arglist, 1);
 	    break;
-	    }
-	XtAddCallback (trace->message, XmNokCallback, unmanage_cb, trace->message);
+	}
+	XtAddCallback (trace->message, XmNokCallback, (XtCallbackProc)unmanage_cb, trace->message);
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->message, XmDIALOG_CANCEL_BUTTON));
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->message, XmDIALOG_HELP_BUTTON));
 	}
@@ -623,19 +691,19 @@ void dino_message_ack (trace, type, msg)
     
     /* manage the widget */
     XtManageChild (trace->message);
-    }
+}
 
-SIGNAL_LW *cptr_at_time (sig_ptr, ctime)
+SIGNAL_LW *cptr_at_time (
     /* Return the CPTR for the given time */
-    SIGNAL	*sig_ptr;
-    DTime	ctime;
+    SIGNAL	*sig_ptr,
+    DTime	ctime)
 {
     SIGNAL_LW	*cptr;
     for (cptr = (SIGNAL_LW *)(sig_ptr->cptr);
 	 (cptr->sttime.time != EOT) && (((cptr + sig_ptr->lws)->sttime.time) <= ctime);
 	     cptr += sig_ptr->lws) ;
     return (cptr);
-    }
+}
 
 
 /******************************************************************************
@@ -644,9 +712,9 @@ SIGNAL_LW *cptr_at_time (sig_ptr, ctime)
  *
  *****************************************************************************/
 
-void    cptr_to_string (cptr, strg)
-    SIGNAL_LW	*cptr;
-    char	*strg;
+void    cptr_to_string (
+    SIGNAL_LW	*cptr,
+    char	*strg)
 {
     switch (cptr->sttime.state) {
       case STATE_1:
@@ -684,12 +752,12 @@ void    cptr_to_string (cptr, strg)
       default:
 	strg[0] = '?';
 	return;
-	}
     }
+}
 
-void    print_sig_names (w,trace)
-    Widget	w;
-    TRACE	*trace;
+void    print_sig_names (
+    Widget	w,
+    TRACE	*trace)
 {
     SIGNAL	*sig_ptr, *back_sig_ptr;
 
@@ -706,29 +774,29 @@ void    print_sig_names (w,trace)
 		sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->bits
 		);
 	if (sig_ptr->backward != back_sig_ptr) {
-	    printf (" %%E, Backward link is to '%d' not '%d'\n", sig_ptr->backward, back_sig_ptr);
-	    }
-	back_sig_ptr = sig_ptr;
+	    printf (" %%E, Backward link is to '%p' not '%p'\n", sig_ptr->backward, back_sig_ptr);
 	}
+	back_sig_ptr = sig_ptr;
+    }
     
     /* Don't do a integrity check here, as sometimes all links aren't ready! */
     /* print_signal_states (trace); */
-    }
+}
 
-void    print_cptr (cptr)
-    SIGNAL_LW	*cptr;
+void    print_cptr (
+    SIGNAL_LW	*cptr)
 {
     char strg[1000];
-    int		value[4];
+    unsigned int	value[4];
 
     cptr_to_search_value (cptr, value);
     value_to_string (global->trace_head, strg, value, '_');
     printf ("%s at time %d\n",strg,cptr->sttime.time);
-    }
+}
 
-void    print_screen_traces (w,trace)
-    Widget	w;
-    TRACE	*trace;
+void    print_screen_traces (
+    Widget	w,
+    TRACE	*trace)
 {
     int		i,num;
     SIGNAL	*sig_ptr;
@@ -745,13 +813,13 @@ void    print_screen_traces (w,trace)
     sig_ptr = (SIGNAL *)trace->dispsig;
     for (i=0; i<num; i++) {
 	sig_ptr = (SIGNAL *)sig_ptr->forward;	
-	}
+    }
     
     print_sig_info (sig_ptr);
-    }
+}
 
-void    print_sig_info (sig_ptr)
-    SIGNAL	*sig_ptr;
+void    print_sig_info (
+    SIGNAL	*sig_ptr)
 {
     SIGNAL_LW	*cptr;
     
@@ -764,14 +832,14 @@ void    print_sig_info (sig_ptr)
 	/*printf ("%x %x %x %x %x    ", (cptr)->number, (cptr+1)->number, (cptr+2)->number,
 		(cptr+3)->number, (cptr+4)->number);*/
 	print_cptr (cptr);
-	}
     }
+}
 
-void    debug_signal_integrity (trace, sig_ptr, list_name, del)
-    TRACE	*trace;
-    SIGNAL	*sig_ptr;
-    char	*list_name;
-    Boolean	del;
+void    debug_signal_integrity (
+    TRACE	*trace,
+    SIGNAL	*sig_ptr,
+    char	*list_name,
+    Boolean	del)
 {
     SIGNAL_LW	*cptr;
     DTime	last_time;
@@ -782,7 +850,7 @@ void    debug_signal_integrity (trace, sig_ptr, list_name, del)
 
     if (sig_ptr->backward != NULL) {
 	printf ("%s, Backward pointer should be NULL on signal %s\n", list_name, sig_ptr->signame);
-	}
+    }
 
     nsig = 0; nsigstart = -1;
     hitstart = FALSE;
@@ -797,26 +865,26 @@ void    debug_signal_integrity (trace, sig_ptr, list_name, del)
 	/* flags */
 	if (sig_ptr->deleted != del) {
 	    printf ("%s, Bad deleted flag on %s!\n", list_name, sig_ptr->signame);
-	    }
+	}
 
 	if (sig_ptr->forward && sig_ptr->forward->backward != sig_ptr) {
 	    printf ("%s, Bad backward link on signal %s\n", list_name, sig_ptr->signame);
-	    }
+	}
 
 	/* Change data */
 	last_time = -1;
 	for (cptr = (SIGNAL_LW *)sig_ptr->bptr; cptr->sttime.time != EOT; cptr += sig_ptr->lws) {
 	    if ( cptr->sttime.time == last_time ) {
 		printf ("%s, Double time change at signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
-		}
+	    }
 	    if ( cptr->sttime.time < last_time ) {
 		printf ("%s, Reverse time change at signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
-		}
-	    last_time = cptr->sttime.time;
 	    }
+	    last_time = cptr->sttime.time;
+	}
 	if (last_time != sig_ptr->trace->end_time) {
 	    printf ("%s, Doesn't end at right time, signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
-	    }
+	}
     }
 
     if (!del) {
@@ -832,27 +900,27 @@ void    debug_signal_integrity (trace, sig_ptr, list_name, del)
     }
 }
 
-void    debug_integrity_check_cb (w,trace,cb)
-    Widget		w;
-    TRACE	       	*trace;
-    XmAnyCallbackStruct	*cb;
+void    debug_integrity_check_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct	*cb)
 {
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	debug_signal_integrity (trace, trace->firstsig, trace->filename, 
 				(trace==global->deleted_trace_head));
-	}
     }
+}
 
 
-void    debug_increase_debugtemp_cb (w,trace,cb)
-    Widget		w;
-    TRACE	       	*trace;
-    XmAnyCallbackStruct	*cb;
+void    debug_increase_debugtemp_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct	*cb)
 {
     DebugTemp++;
     printf ("New DebugTemp = %d\n", DebugTemp);
     draw_all_needed ();
-    }
+}
 
 void    debug_decrease_debugtemp_cb (w,trace,cb)
     Widget		w;
@@ -862,12 +930,12 @@ void    debug_decrease_debugtemp_cb (w,trace,cb)
     DebugTemp--;
     printf ("New DebugTemp = %d\n", DebugTemp);
     draw_all_needed ();
-    }
+}
 
 
 /* Keep only the directory portion of a file spec */
-void file_directory (strg)
-    char	*strg;
+void file_directory (
+    char	*strg)
 {
     char 	*pchar;
     
@@ -885,11 +953,11 @@ void file_directory (strg)
     else
 	strg[0] = '\0';
 #endif
-    }
+}
 
 
-void change_title (trace)
-    TRACE	*trace;
+void change_title (
+    TRACE	*trace)
 {
     char title[300],icontitle[300],*pchar;
     
@@ -900,7 +968,7 @@ void change_title (trace)
     if (trace->loaded) {
 	strcat (title," - ");
 	strcat (title,trace->filename);
-	}
+    }
     
     /* For icon title drop extension and directory */
     if (trace->loaded) {
@@ -922,35 +990,36 @@ void change_title (trace)
 	if ((pchar=strrchr (trace->filename,'/')) != NULL )
 	    strcpy (icontitle, pchar+1);
 #endif
-	}
+    }
     else {
 	strcpy (icontitle, DTVERSION);
-	}
+    }
     
     XtSetArg (arglist[0], XmNtitle, title);
     XtSetArg (arglist[1], XmNiconName, icontitle);
     XtSetValues (trace->toplevel,arglist,2);
-    }
+}
 
 #pragma inline (posx_to_time)
-DTime	posx_to_time (trace,x)
+DTime	posx_to_time (
     /* convert x value to a time value, return -1 if invalid click */
-    TRACE 	*trace;
-    Position 	x;
+    TRACE 	*trace,
+    Position 	x)
 {
     /* check if button has been clicked on trace portion of screen */
     if ( !trace->loaded || x < global->xstart || x > trace->width - XMARGIN )
 	return (-1);
     
     return (((x) + global->time * global->res - global->xstart) / global->res);
-    }
+}
 
 
-DTime	posx_to_time_edge (trace,x,y)
+DTime	posx_to_time_edge (
     /* convert x value to a time value, return -1 if invalid click */
     /* allow clicking to a edge if it is enabled */
-    TRACE 	*trace;
-    Position	x,y;
+    TRACE 	*trace,
+    Position	x,
+    Position	y)
 {
     DTime	xtime;
     SIGNAL 	*sig_ptr;
@@ -979,7 +1048,7 @@ DTime	posx_to_time_edge (trace,x,y)
 		(float)(ABS (left_time - xtime) * global->res),
 		(float)(ABS (right_time - xtime) * global->res)
 		);
-	}
+		}
     */
     
     /* See if edge is "close" on screen */
@@ -989,14 +1058,14 @@ DTime	posx_to_time_edge (trace,x,y)
     
     /* close enough */
     return (left_time);
-    }
+}
 
 
 #pragma inline (posy_to_signal)
-SIGNAL	*posy_to_signal (trace,y)
+SIGNAL	*posy_to_signal (
     /* convert y value to a signal pointer, return NULL if invalid click */
-    TRACE	*trace;
-    Position 	y;
+    TRACE	*trace,
+    Position 	y)
 {
     SIGNAL	*sig_ptr;
     int num,i,max_y;
@@ -1019,14 +1088,14 @@ SIGNAL	*posy_to_signal (trace,y)
 	sig_ptr = sig_ptr->forward;
 
     return (sig_ptr);
-    }
+}
 
 
 #pragma inline (posx_to_cursor)
-CURSOR *posx_to_cursor (trace, x)
+CURSOR *posx_to_cursor (
     /* convert x value to the index of the nearest cursor, return NULL if invalid click */
-    TRACE	*trace;
-    Position	x;
+    TRACE	*trace,
+    Position	x)
 {
     CURSOR 	*csr_ptr;
     DTime 	xtime;
@@ -1034,7 +1103,7 @@ CURSOR *posx_to_cursor (trace, x)
     /* check if there are any cursors */
     if (!global->cursor_head) {
 	return (NULL);
-	}
+    }
     
     xtime = posx_to_time (trace, x);
     if (xtime<0) return (NULL);
@@ -1043,22 +1112,22 @@ CURSOR *posx_to_cursor (trace, x)
     csr_ptr = global->cursor_head;
     while ( (xtime > csr_ptr->time) && csr_ptr->next ) {
 	csr_ptr = csr_ptr->next;
-	}
+    }
     
     /* i is between cursors[i-1] and cursors[i] - determine which is closest */
     if ( csr_ptr->prev && ( (csr_ptr->time - xtime) > (xtime - csr_ptr->prev->time) ) ) {
 	csr_ptr = csr_ptr->prev;
-	}
+    }
 
     return (csr_ptr);
-    }
+}
 
 
 #pragma inline (time_to_cursor)
-CURSOR *time_to_cursor (xtime)
+CURSOR *time_to_cursor (
     /* convert specific time value to the index of the nearest cursor, return NULL if none */
     /* Unlike posx_to_cursor, this will not return a "close" one */
-    DTime	xtime;
+    DTime	xtime)
 {
     CURSOR	*csr_ptr;
 
@@ -1066,18 +1135,18 @@ CURSOR *time_to_cursor (xtime)
     csr_ptr = global->cursor_head;
     while ( csr_ptr && (xtime > csr_ptr->time) ) {
 	csr_ptr = csr_ptr->next;
-	}
+    }
     
     if (csr_ptr && (xtime == csr_ptr->time))
 	return (csr_ptr);
     else return (NULL);
-    }
+}
 
 #pragma inline (string_to_time)
-DTime string_to_time (trace, strg)
+DTime string_to_time (
     /* convert integer to time value */
-    TRACE	*trace;
-    char	*strg;
+    TRACE	*trace,
+    char	*strg)
 {
     double	f_time;
 
@@ -1087,7 +1156,7 @@ DTime string_to_time (trace, strg)
     if (trace->timerep == TIMEREP_CYC) {
 	return ((DTime)(f_time * trace->grid[0].period
 			+ trace->grid[0].alignment % trace->grid[0].period));
-	}
+    }
 
     /* First convert to picoseconds */
     f_time *= trace->timerep;
@@ -1096,15 +1165,15 @@ DTime string_to_time (trace, strg)
     f_time /= global->time_precision;
 
     return ((DTime)f_time);
-    }
+}
 
 #pragma inline (time_to_string)
-void time_to_string (trace, strg, ctime, relative)
+void time_to_string (
     /* convert specific time value into the string passed in */
-    DTime	ctime;
-    char	*strg;
-    TRACE	*trace;
-    Boolean	relative;	/* true = time is relative, so don't adjust */
+    TRACE	*trace,
+    char	*strg,
+    DTime	ctime,
+    Boolean	relative)	/* true = time is relative, so don't adjust */
 {
     double	f_time, remain;
     int		decimals;
@@ -1115,11 +1184,11 @@ void time_to_string (trace, strg, ctime, relative)
 	if (!relative) {
 	    /* Adjust within one cycle so that grids are on .0 boundaries */
 	    f_time -= (double)(trace->grid[0].alignment % trace->grid[0].period);	/* Want integer remainder */
-	    }
+	}
 
 	decimals = 1;
 	f_time = f_time / ((double)trace->grid[0].period);
-	}
+    }
     else {
 	/* Convert time to picoseconds, Preserve fall through order in case statement */
 	f_time *= global->time_precision;
@@ -1132,31 +1201,31 @@ void time_to_string (trace, strg, ctime, relative)
 	if (trace->timerep >= TIMEREP_US) decimals -= 0;
 	else if (trace->timerep >= TIMEREP_NS) decimals -= 3;
 	else decimals -= 6;
-	}
+    }
 
     remain = f_time - floor(f_time);
     if (remain < 0.000001) {
 	sprintf (strg, "%d", (int)f_time);
-	}
+    }
     else {
 	if (global->time_format[0]) {
 	    /* User specified format */
 	    sprintf (strg, global->time_format, f_time);
-	    }
+	}
 	else {	/* Default format */
-	    if (decimals >= 6) sprintf (strg, "%0.06lf", f_time);
-	    else if (decimals >= 3) sprintf (strg, "%0.03lf", f_time);
-	    else if (decimals >= 1) sprintf (strg, "%0.01lf", f_time);
-	    else sprintf (strg, "%lf", f_time);
-	    }
+	    if (decimals >= 6) sprintf (strg, "%0.06f", f_time);
+	    else if (decimals >= 3) sprintf (strg, "%0.03f", f_time);
+	    else if (decimals >= 1) sprintf (strg, "%0.01f", f_time);
+	    else sprintf (strg, "%f", f_time);
 	}
     }
+}
 
 #pragma inline (time_units_to_string)
-char *time_units_to_string (timerep, showvalue)
+char *time_units_to_string (
     /* find units for the given time represetation */
-    TimeRep	timerep;
-    Boolean	showvalue;	/* Show value instead of "units" */
+    TimeRep	timerep,
+    Boolean	showvalue)	/* Show value instead of "units" */
 {
     static char	units[MAXTIMELEN];
 
@@ -1167,16 +1236,16 @@ char *time_units_to_string (timerep, showvalue)
     if (timerep==TIMEREP_NS)		return ("ns");
 
     if (showvalue) {
-	sprintf (units, "%0.0lf", timerep);
+	sprintf (units, "%0.0f", timerep);
 	return (units);
-	}
-    else return ("units");
     }
+    else return ("units");
+}
 
 #pragma inline (time_units_to_multiplier)
-DTime time_units_to_multiplier (timerep)
+DTime time_units_to_multiplier (
     /* find units for the given time represetation */
-    TimeRep	timerep;
+    TimeRep	timerep)
 {
     return (timerep);
     /*
@@ -1192,5 +1261,5 @@ DTime time_units_to_multiplier (timerep)
 	return (1000000);
 	}
 	*/
-    }
+}
 

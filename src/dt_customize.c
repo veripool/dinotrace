@@ -1,30 +1,61 @@
-/******************************************************************************
- *
- * Filename:
- *     dt_customize.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V4.0
- *
- * Author:
- *     Allen Gallotta
- *
- * Abstract:
- *     This module contains the callback routines that are the interface
- *     that allows the user to customize his trace display.
- *
- * Modification History:
- *     AAG	28-Jul-89	Original Version
- *     AAG	22-Aug-90	Base Level V4.1
- *     AAG	29-Apr-91	Use X11,fixed casts for Ultrix support
- *     WPS	17-Mar-93	Conversion to Motif
- *
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dt_customize.c --- customization requestor
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the bas version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
+#include <config.h>
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -44,21 +75,20 @@ static char rcsid[] = "$Id$";
 #include <Xm/BulletinB.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
 
 
 
-void cus_dialog_cb (w,trace,cb)
-    Widget		w;
-    TRACE	*trace;
-    XmAnyCallbackStruct *cb;
+void cus_dialog_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmAnyCallbackStruct *cb)
 {
     char		title[MAXFNAMELEN + 15];
     
-    if (DTPRINT_ENTRY) printf ("In customize - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In customize - trace=%p\n",trace);
     
-    if (!trace->custom.customize)
-	{
+    if (!trace->custom.customize) {
 	if (trace->filename[0] == '\0')
 	    sprintf (title,"Customize Window");
 	else
@@ -240,7 +270,7 @@ void cus_dialog_cb (w,trace,cb)
 	
 	XtManageChild (trace->custom.rpage);
 	XtManageChild (trace->custom.rbus);
-	}
+    }
 
     /* Update with current custom values */
     XtSetArg (arglist[0], XmNset, (global->pageinc==QPAGE));
@@ -283,28 +313,28 @@ void cus_dialog_cb (w,trace,cb)
     
     /* Do it */
     XtManageChild (trace->custom.customize);
-    }
+}
 
 
-void cus_reread_cb (w,trace,cb)
-    Widget			w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void cus_reread_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
-    if (DTPRINT_ENTRY) printf ("in cus_reread_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("in cus_reread_cb trace=%p\n",trace);
     
     config_read_defaults (trace, TRUE);
     
     /* Reformat and refresh */
     draw_all_needed ();
-    }
+}
 
-void	cus_restore_cb (w,trace,cb)
-    Widget			w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void	cus_restore_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
-    if (DTPRINT_ENTRY) printf ("in cus_restore_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("in cus_restore_cb trace=%p\n",trace);
     
     /* do the default thing */
     config_trace_defaults (trace);
@@ -312,16 +342,16 @@ void	cus_restore_cb (w,trace,cb)
     
     /* redraw the display */
     draw_all_needed ();
-    }
+}
 
-void	cus_ok_cb (w,trace,cb)
-    Widget			w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void	cus_ok_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     int hgt;
 
-    if (DTPRINT_ENTRY) printf ("In cus_ok_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cus_ok_cb - trace=%p\n",trace);
     
     XmScaleGetValue (trace->custom.s1, &hgt);
     trace->sighgt = hgt;
@@ -358,33 +388,32 @@ void	cus_ok_cb (w,trace,cb)
     
     /* res units may have changed, fix it & redraw the display */
     new_res (trace, global->res);
-    }
+}
 
-void	cus_apply_cb (w,trace,cb)
-    Widget			w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void	cus_apply_cb (
+    Widget		w,
+    TRACE		*trace,
+    XmAnyCallbackStruct	*cb)
 {
-    if (DTPRINT_ENTRY) printf ("In cus_apply_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cus_apply_cb - trace=%p\n",trace);
     
     /* Pretend an OK */
     cus_ok_cb (w,trace,cb);
     
     /* manage the customize window */
     XtManageChild (trace->custom.customize);
-    }
+}
 
 /****************************** File reading ******************************/
 
-void cus_read_cb (w, trace, cb)
-    Widget	w;
-    TRACE	*trace;
-    XmFileSelectionBoxCallbackStruct *cb;
+void cus_read_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmFileSelectionBoxCallbackStruct *cb)
 {
-    int		i;
     int		cfg_num;
     
-    if (DTPRINT_ENTRY) printf ("In cus_read_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cus_read_cb trace=%p\n",trace);
     
     if (!trace->cusread.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
@@ -410,27 +439,31 @@ void cus_read_cb (w, trace, cb)
 	for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
 	    /* enable button */
 	    XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
-	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_WIDGET );
-	    XtSetArg (arglist[2], XmNtopWidget, 
-		      (cfg_num>0)? trace->cusread.config_enable[cfg_num-1] : trace->cusread.config_label);
+	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_OPPOSITE_WIDGET );
+	    XtSetArg (arglist[2], XmNtopOffset, 5);
 	    XtSetArg (arglist[3], XmNleftOffset, 15);
 	    trace->cusread.config_enable[cfg_num] = XmCreateToggleButton (trace->cusread.work_area,"",arglist,4);
-	    XtManageChild (trace->cusread.config_enable[cfg_num]);
 	    
 	    /* file name */
 	    XtSetArg (arglist[0], XmNrows, 1);
 	    XtSetArg (arglist[1], XmNcolumns, 30);
 	    XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_WIDGET );
 	    XtSetArg (arglist[3], XmNleftWidget, trace->cusread.config_enable[cfg_num]);
-	    XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_OPPOSITE_WIDGET );
-	    XtSetArg (arglist[5], XmNtopOffset, -5);
-	    XtSetArg (arglist[6], XmNtopWidget, trace->cusread.config_enable[cfg_num]);
-	    XtSetArg (arglist[7], XmNresizeHeight, FALSE);
-	    XtSetArg (arglist[8], XmNeditMode, XmSINGLE_LINE_EDIT);
-	    XtSetArg (arglist[9], XmNsensitive, (cfg_num<3));
-	    trace->cusread.config_filename[cfg_num] = XmCreateText (trace->cusread.work_area,"textn",arglist,10);
+	    XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_WIDGET );
+	    XtSetArg (arglist[5], XmNtopWidget, 
+		      (cfg_num>0)? trace->cusread.config_filename[cfg_num-1] : trace->cusread.config_label);
+	    XtSetArg (arglist[6], XmNresizeHeight, FALSE);
+	    XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
+	    XtSetArg (arglist[8], XmNsensitive, (cfg_num<3));
+	    trace->cusread.config_filename[cfg_num] = XmCreateText (trace->cusread.work_area,"textn",arglist,9);
+
+	    /* Set button x*/
+	    XtSetArg (arglist[0], XmNtopWidget, trace->cusread.config_filename[cfg_num]);
+	    XtSetValues (trace->cusread.config_enable[cfg_num],arglist,1);
+
+	    XtManageChild (trace->cusread.config_enable[cfg_num]);
 	    XtManageChild (trace->cusread.config_filename[cfg_num]);
-	    }
+	}
 
 	XtManageChild (trace->cusread.work_area);
 	
@@ -440,7 +473,7 @@ void cus_read_cb (w, trace, cb)
 	XtSetArg (arglist[0], XmNdirectory, XmStringCreateSimple (global->directory) );
 	XtSetValues (trace->cusread.dialog,arglist,1);
 	fil_select_set_pattern (trace, trace->cusread.dialog, "*.dino");
-	}
+    }
     
     config_update_filenames (trace);
     for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
@@ -451,18 +484,18 @@ void cus_read_cb (w, trace, cb)
     XtManageChild (trace->cusread.dialog);
 
     XSync (global->display,0);
-    }
+}
 
-void cus_read_ok_cb (w, trace, cb)
-    Widget	w;
-    TRACE	*trace;
-    XmFileSelectionBoxCallbackStruct *cb;
+void cus_read_ok_cb (
+    Widget	w,
+    TRACE	*trace,
+    XmFileSelectionBoxCallbackStruct *cb)
 {
     char	*tmp;
     char	filename[MAXFNAMELEN];
     int		cfg_num;
     
-    if (DTPRINT_ENTRY) printf ("In cus_read_ok_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cus_read_ok_cb trace=%p\n",trace);
     
     XtUnmanageChild (trace->cusread.dialog);
     XSync (global->display,0);
@@ -482,6 +515,6 @@ void cus_read_ok_cb (w, trace, cb)
     /* Apply the statenames */
     grid_calc_autos (trace);
     draw_all_needed ();
-    }
+}
 
 

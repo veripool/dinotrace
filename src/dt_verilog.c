@@ -1,26 +1,62 @@
-/******************************************************************************
- *
- * Filename:
- *     dt_verilog.c
- *
- * Subsystem:
- *     Dinotrace
- *
- * Version:
- *     Dinotrace V6.4
- *
- * Author:
- *     Wilson Snyder
- *
- * Abstract:
- *	Verilog trace support
- *
- * Modification History:
- *     WPS	08-Sep-93	Added verilog trace support
- *
- */
 static char rcsid[] = "$Id$";
+/******************************************************************************
+ * dt_verilog.c --- Verilog dump file reading
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * Some of the code in this file was originally developed for Digital
+ * Semiconductor, a division of Digital Equipment Corporation.  They
+ * gratefuly have agreed to share it, and thus the base version has been
+ * released to the public with the following provisions:
+ *
+ * 
+ * This software is provided 'AS IS'.
+ * 
+ * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
+ * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
+ * NON-INFRINGEMENT. DIGITAL NEITHER WARRANTS NOR REPRESENTS THAT THE USE
+ * OF ANY SOURCE, OR ANY DERIVATIVE WORK THEREOF, WILL BE UNINTERRUPTED OR
+ * ERROR FREE.  In no event shall DIGITAL be liable for any damages
+ * whatsoever, and in particular DIGITAL shall not be liable for special,
+ * indirect, consequential, or incidental damages, or damages for lost
+ * profits, loss of revenue, or loss of use, arising out of or related to
+ * any use of this software or the information contained in it, whether
+ * such damages arise in contract, tort, negligence, under statute, in
+ * equity, at law or otherwise. This Software is made available solely for
+ * use by end users for information and non-commercial or personal use
+ * only.  Any reproduction for sale of this Software is expressly
+ * prohibited. Any rights not expressly granted herein are reserved.
+ *
+ ******************************************************************************
+ *
+ * Changes made over the basic version are covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
 
+#include <config.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -38,7 +74,7 @@ static char rcsid[] = "$Id$";
 #include <Xm/Xm.h>
 
 #include "dinotrace.h"
-#include "callbacks.h"
+#include "functions.h"
 
 /* File locals */
 static int verilog_line_num=0;
@@ -75,9 +111,9 @@ static SIGNAL	**signal_update_array_last_pptr;
 			    ):0) \
 		):0)
 
-void	verilog_read_till_end (line, readfp)
-    char	*line;
-    FILE	*readfp;
+void	verilog_read_till_end (
+    char	*line,
+    FILE	*readfp)
 {
     char *tp;
 
@@ -87,10 +123,10 @@ void	verilog_read_till_end (line, readfp)
 	    if (*line) {
 		if (!strncmp (line, "$end", 4)) {
 		    return;
-		    }
-		else line++;
 		}
+		else line++;
 	    }
+	}
 
 	fgets_dynamic (&verilog_line_storage, &verilog_line_length, readfp);
 	line = verilog_line_storage;
@@ -98,13 +134,13 @@ void	verilog_read_till_end (line, readfp)
 	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
 	/* if (DTPRINT_FILE) printf ("line='%s'\n",line); */
 	verilog_line_num++;
-	}
     }
+}
 
-void	verilog_read_timescale (trace, line, readfp)
-    TRACE	*trace;
-    char	*line;
-    FILE	*readfp;
+void	verilog_read_timescale (
+    TRACE	*trace,
+    char	*line,
+    FILE	*readfp)
 {
     while (isspace (*line)) line++;
     if (!*line) {
@@ -112,7 +148,7 @@ void	verilog_read_timescale (trace, line, readfp)
 	line = verilog_line_storage;
 	verilog_line_num++;
 	if (feof (readfp)) return;
-	}
+    }
 
     while (isspace (*line)) line++;
     time_scale = atol (line);
@@ -134,12 +170,12 @@ void	verilog_read_timescale (trace, line, readfp)
 	sprintf (message,"Unknown time scale unit '%c' on line %d of %s\n",
 		 *line, verilog_line_num, current_file);
 	dino_error_ack (trace, message);
-	}
+    }
     if (time_scale == 0) time_scale = 1;
     if (DTPRINT_FILE) printf ("timescale=%d\n",time_scale);
 
     verilog_read_till_end (line, readfp);
-    }
+}
 
 #define verilog_skip_parameter(_line_) \
     while (isspace(*_line_)) _line_++; \
@@ -152,12 +188,12 @@ void	verilog_read_timescale (trace, line, readfp)
 	cmd=_line_; \
 	while (*_line_ && !isspace(*_line_)) _line_++; \
 	if (*_line_) *_line_++ = '\0'; \
-	}
+					   }
 
-void	verilog_process_var (trace, line)
+void	verilog_process_var (
     /* Process a VAR statement (read a signal) */
-    TRACE	*trace;
-    char	*line;
+    TRACE	*trace,
+    char	*line)
 {
     char	*type, *cmd, *code;
     int		bits;
@@ -180,7 +216,7 @@ void	verilog_process_var (trace, line)
     for (t=0; t<scope_level; t++) {
 	strcat (signame, scopes[t]);
 	strcat (signame, ".");
-	}
+    }
     
     /* Read <reference> */
     verilog_read_parameter (line, cmd);
@@ -218,7 +254,7 @@ void	verilog_process_var (trace, line)
     len = strlen (signame);
     new_sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
     strcpy (new_sig_ptr->signame, signame);
-    }
+}
 
 
 /*
@@ -235,9 +271,9 @@ For a large trace, here's a table of frequency of signals of each number of bits
 										  12  256
 */
 
-void	verilog_womp_128s (trace)
+void	verilog_womp_128s (
     /* Take signals of 128+ signals and split into several signals */
-    TRACE	*trace;
+    TRACE	*trace)
 {
     SIGNAL	*new_sig_ptr;
     SIGNAL	*sig_ptr;
@@ -281,7 +317,7 @@ void	verilog_womp_128s (trace)
 
 	    /* Next is new guy, may be >> 128 also */
 	    sig_ptr = new_sig_ptr->backward;
-	    }
+	}
 	else {
 	    sig_ptr = sig_ptr->forward;
 	}
@@ -291,8 +327,8 @@ void	verilog_womp_128s (trace)
 }
 
 
-void	verilog_print_pos (max_pos)
-    int max_pos;
+void	verilog_print_pos (
+    int max_pos)
     /* Print the pos array */
 {
     int pos;
@@ -305,14 +341,14 @@ void	verilog_print_pos (max_pos)
 	    printf ("\t%d\t%s\n", pos, pos_sig_ptr->signame);
 	    for (sig_ptr=pos_sig_ptr->verilog_next; sig_ptr; sig_ptr=sig_ptr->verilog_next) {
 		printf ("\t\t\t%s\n", sig_ptr->signame);
-		}
 	    }
 	}
     }
+}
 
-void	verilog_process_definitions (trace)
+void	verilog_process_definitions (
     /* Process the definitions */
-    TRACE	*trace;
+    TRACE	*trace)
 {
     int		max_pos;
     SIGNAL	*sig_ptr;
@@ -327,7 +363,7 @@ void	verilog_process_definitions (trace)
     max_pos = 0;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	max_pos = MAX (max_pos, sig_ptr->file_pos + sig_ptr->bits);
-	}
+    }
     
     /* Allocate space for one signal pointer for each of the possible codes */
     /* This will, of course, use a lot of memory for large traces.  It will be very fast though */
@@ -349,25 +385,25 @@ void	verilog_process_definitions (trace)
 	    pos_sig_ptr = signal_by_pos[pos];
 	    if (!pos_sig_ptr) {
 		signal_by_pos[pos] = sig_ptr;
-		}
+	    }
 	    else {
 		for (level=0, tp=sig_ptr->signame; *tp; tp++) {
 		    if (*tp=='.') level++;
-		    }
+		}
 		for (pos_level=0, tp=pos_sig_ptr->signame; *tp; tp++) {
 		    if (*tp=='.') pos_level++;
-		    }
+		}
 		if (level < pos_level) {
 		    signal_by_pos[pos] = sig_ptr;
 		    sig_ptr->verilog_next = pos_sig_ptr;
-		    }
+		}
 		else {
 		    sig_ptr->verilog_next = pos_sig_ptr->verilog_next;
 		    pos_sig_ptr->verilog_next = sig_ptr;
-		    }
 		}
 	    }
 	}
+    }
 
     /* Print the pos array */
     /* if (DTPRINT_FILE) verilog_print_pos (max_pos); */
@@ -380,11 +416,11 @@ void	verilog_process_definitions (trace)
 		/* Delete this signal */
 		next_sig_ptr = sig_ptr->verilog_next;
 		sig_free (trace, sig_ptr, FALSE, FALSE);
-		}
-	    pos_sig_ptr->verilog_next = NULL;		/* Zero in prep of make_busses */
 	    }
-	signal_by_pos[pos] = NULL;			/* Zero in prep of make_busses */
+	    pos_sig_ptr->verilog_next = NULL;		/* Zero in prep of make_busses */
 	}
+	signal_by_pos[pos] = NULL;			/* Zero in prep of make_busses */
+    }
     
     /* Make the busses */
     /* The pos creation is first because there may be vectors that map to single signals. */
@@ -400,19 +436,19 @@ void	verilog_process_definitions (trace)
 	     pos++) {
 	    /* If already assigned, this is a signal that was womp_128ed. */
 	    if (!signal_by_pos[pos]) signal_by_pos[pos] = sig_ptr;
-	    }
 	}
+    }
 
     /* Print the pos array */
     if (DTPRINT_FILE) verilog_print_pos (max_pos);
-    }
+}
 
-void	verilog_enter_busses (trace, first_data, time)
+void	verilog_enter_busses (
     /* If at a new time a signal has had its state non zero then */
     /* enter the file_value as a new cptr */
-    TRACE	*trace;
-    int		first_data;
-    int		time;
+    TRACE	*trace,
+    int		first_data,
+    int		time)
 {
     SIGNAL	*sig_ptr;
     SIGNAL	**sig_upd_pptr;
@@ -429,15 +465,15 @@ void	verilog_enter_busses (trace, first_data, time)
 	    /* Zero the state and keep the value for next time */
 	    sig_ptr->file_value.siglw.number = 0;
 	    /*if (DTPRINT_FILE) { printf ("Exited: "); print_cptr (&(sig_ptr->file_value)); } */
-	    }
 	}
+    }
     /* All updated */
     signal_update_array_last_pptr = signal_update_array;
-    }
+}
 
-void	verilog_read_data (trace, readfp)
-    TRACE	*trace;
-    FILE	*readfp;
+void	verilog_read_data (
+    TRACE	*trace,
+    FILE	*readfp)
 {
     char	*value_strg, *line, *code;
     DTime	time;
@@ -462,7 +498,7 @@ void	verilog_read_data (trace, readfp)
 	if (DTPRINT_FILE) {
 	    line[strlen(line)-1]= '\0';
 	    printf ("line='%s'\n",line);
-	    }
+	}
 
 	switch (*line++) {
 	    /* Single bits are most common */
@@ -493,7 +529,7 @@ void	verilog_read_data (trace, readfp)
 		    value.siglw.sttime.state = state;
 		    value.siglw.sttime.time = time;
 		    fil_add_cptr (sig_ptr, &value, first_data);
-		    }
+		}
 		else {	/* Unary signal made into a vector */
 		    /* Mark this for update at next time stamp */
 		    *(signal_update_array_last_pptr++) = sig_ptr;
@@ -516,7 +552,7 @@ void	verilog_read_data (trace, readfp)
 			if ( (sig_ptr->file_value.siglw.sttime.state == STATE_Z)
 			    || (sig_ptr->file_value.siglw.sttime.state == STATE_U)) {
 			    sig_ptr->file_value.siglw.sttime.state = STATE_U;
-			    }
+			}
 			else {
 			    register int bit = sig_ptr->bits - (pos - sig_ptr->file_pos); 
 
@@ -524,32 +560,32 @@ void	verilog_read_data (trace, readfp)
 			    if (bit < 32) {
 				sig_ptr->file_value.number[0] = 
 				    ( sig_ptr->file_value.number[0] & (~ (1<<bit)) );
-				}
+			    }
 			    else if (bit < 64) {
 				bit -= 32;
 				sig_ptr->file_value.number[1] = 
 				    ( sig_ptr->file_value.number[1] & (~ (1<<bit)) );
-				}
+			    }
 			    else if (bit < 96) {
 				bit -= 64;
 				sig_ptr->file_value.number[2] = 
 				    ( sig_ptr->file_value.number[2] & (~ (1<<bit)) );
-				}
+			    }
 			    else if (bit < 128) {
 				bit -= 96;
 				sig_ptr->file_value.number[3] = 
 				    ( sig_ptr->file_value.number[3] & (~ (1<<bit)) );
-				}
-			    else printf ("%E, Signal too wide on line %d of %s\n",
-					 verilog_line_num, current_file);
 			    }
+			    else printf ("%%E, Signal too wide on line %d of %s\n",
+					 verilog_line_num, current_file);
+			}
 			break;
 
 		      case STATE_1:
 			if ( (sig_ptr->file_value.siglw.sttime.state == STATE_Z)
 			    || (sig_ptr->file_value.siglw.sttime.state == STATE_U)) {
 			    sig_ptr->file_value.siglw.sttime.state = STATE_U;
-			    }
+			}
 			else {
 			    register int bit = sig_ptr->bits - (pos - sig_ptr->file_pos); 
 
@@ -557,30 +593,30 @@ void	verilog_read_data (trace, readfp)
 			    if (bit < 32) {
 				sig_ptr->file_value.number[0] = 
 				    ( sig_ptr->file_value.number[0] | (1<<bit) );
-				}
+			    }
 			    else if (bit < 64) {
 				bit -= 32;
 				sig_ptr->file_value.number[1] = 
 				    ( sig_ptr->file_value.number[1] | (1<<bit) );
-				}
+			    }
 			    else if (bit < 96) {
 				bit -= 64;
 				sig_ptr->file_value.number[2] = 
 				    ( sig_ptr->file_value.number[2] | (1<<bit) );
-				}
+			    }
 			    else if (bit < 128) {
 				bit -= 96;
 				sig_ptr->file_value.number[3] = 
 				    ( sig_ptr->file_value.number[3] | (1<<bit) );
-				}
-			    else printf ("%E, Signal too wide on line %d of %s\n",
-					 verilog_line_num, current_file);
 			    }
-			break;
+			    else printf ("%%E, Signal too wide on line %d of %s\n",
+					 verilog_line_num, current_file);
 			}
-		    /* if (DTPRINT_FILE) print_cptr (&(sig_ptr->file_value)); */
+			break;
 		    }
+		    /* if (DTPRINT_FILE) print_cptr (&(sig_ptr->file_value)); */
 		}
+	    }
 	    else printf ("%%E, Unknown <identifier_code> '%s'\n", code);
 	    break;
 
@@ -601,7 +637,7 @@ void	verilog_read_data (trace, readfp)
 		if ((sig_ptr->bits == 0) || !sig_ptr->file_type.flag.perm_vector) {
 		    printf ("%%E, Vector decode on single-bit or non perm_vector signal on line %d of %s\n",
 			    verilog_line_num, current_file);
-		    }
+		}
 		else {
 		    register int len;
 
@@ -620,13 +656,13 @@ void	verilog_read_data (trace, readfp)
 			    while (len>0) {
 				*line++ = extend_char;
 				len--;
-				}
+			    }
 			    *line++ = '\0';
 			    
 			    strcat (line, line_copy);	/* tack on the original value */
 			    if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", value_strg, line);
 			    XtFree (line_copy);
-			    }
+			}
 	
 			/* Store the file information */
 			/* if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %s  value %s\n", code, pos, sig_ptr->signame, value_strg); */
@@ -634,9 +670,9 @@ void	verilog_read_data (trace, readfp)
 
 			/* Push string past this signal's bits */
 			value_strg += sig_ptr->bits+1;
-			}
 		    }
 		}
+	    }
 	    else printf ("%%E, Unknown <identifier_code> '%s' on line %d of %s\n",
 			 code, verilog_line_num, current_file);
 	    break;
@@ -646,20 +682,20 @@ void	verilog_read_data (trace, readfp)
 	    verilog_enter_busses (trace, first_data, time);
 	    time = (atol (line) * time_scale) / time_divisor;	/* 1% of time in this division! */
 	    if (DTPRINT_FILE) {
-		printf (" %d * ( %d / %d )\n", atol(line), time_scale, time_divisor);
+		printf (" %ld * ( %d / %d )\n", atol(line), time_scale, time_divisor);
 		printf ("Time %d start %d first %d got %d\n", time, trace->start_time, first_data, got_data);
-		}
+	    }
 	    if (first_data) {
 		if (got_time) {
 		    if (got_data) first_data = FALSE;
 		    got_data = FALSE;
-		    }
+		}
 		got_time = TRUE;
 		trace->start_time = time;
-		}
+	    }
 	    else {
 		trace->end_time = time;
-	        }
+	    }
 	    break;
 
 	    /* Things to ignore, uncommon */
@@ -671,16 +707,16 @@ void	verilog_read_data (trace, readfp)
 	  default:
 	    printf ("%%E, Unknown line character in verilog trace '%c' on line %d of %s\n",
 		    *(line-1), verilog_line_num, current_file);
-	    }
 	}
+    }
 
     /* May be left overs from the last line */
     verilog_enter_busses (trace, first_data, time);
-    }
+}
 
-void	verilog_process_lines (trace, readfp)
-    TRACE	*trace;
-    FILE	*readfp;
+void	verilog_process_lines (
+    TRACE	*trace,
+    FILE	*readfp)
 {
     char	*cmd, *tp;
     char	*line;
@@ -707,13 +743,13 @@ void	verilog_process_lines (trace, readfp)
 	
 	/* Note that these are in most frequent first ordering */
 	if (!strcmp(cmd, "end")) {
-	    }
+	}
 	else if (!strcmp(cmd, "var")) {
 	    verilog_process_var (trace, line);
-	    }
+	}
 	else if (!strcmp(cmd, "upscope")) {
 	    if (scope_level > 0) scope_level--;
-	    }
+	}
 	else if (!strcmp(cmd, "scope")) {
 	    /* Skip <scopetype> = module, task, function, begin, fork */
 	    verilog_skip_parameter (line);
@@ -725,43 +761,43 @@ void	verilog_process_lines (trace, readfp)
 		strcpy (scopes[scope_level], cmd);
 		/* if (DTPRINT_FILE) printf ("added scope, %d='%s'\n", scope_level, scopes[scope_level]); */
 		scope_level++;
-		}
+	    }
 	    else {
 		if (DTPRINT_FILE) printf ("%%E, Too many scope levels on verilog line %d\n", verilog_line_num);
 		
 		sprintf (message, "Too many scope levels on line %d of %s\n",
-			 cmd, verilog_line_num, current_file);
+			 verilog_line_num, current_file);
 		dino_error_ack (trace,message);
-		}
 	    }
+	}
 	else if (!strcmp (cmd, "date")
 		 || !strcmp (cmd, "version")
 		 || !strcmp (cmd, "comment")) {
 	    verilog_read_till_end (line, readfp);
-	    }
+	}
 	else if (!strcmp(cmd, "timescale")) {
 	    verilog_read_timescale (trace, line, readfp);
-	    }
+	}
 	else if (!strcmp (cmd, "enddefinitions")) {
 	    verilog_process_definitions (trace);
 	    verilog_read_data (trace, readfp);
-	    }
+	}
 	else {
 	    if (DTPRINT_FILE) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, verilog_line_num);
 	    
 	    sprintf (message, "Unknown command '%s' on line %d of %s\n",
 		     cmd, verilog_line_num, current_file);
 	    dino_error_ack (trace,message);
-	    }
 	}
+    }
 
     verilog_line_length = 0;
     XtFree (verilog_line_storage);
-    }
+}
 
-void verilog_read (trace, read_fd)
-    TRACE	*trace;
-    int		read_fd;
+void verilog_read (
+    TRACE	*trace,
+    int		read_fd)
 {
     FILE	*readfp;
 
@@ -772,7 +808,7 @@ void verilog_read (trace, read_fd)
     readfp = fdopen (read_fd, "r");
     if (!readfp) {
 	return;
-	}
+    }
 
     /* Signal description data */
     last_sig_ptr = NULL;
@@ -785,6 +821,6 @@ void verilog_read (trace, read_fd)
 
     /* Free up */
     DFree (signal_by_pos);
-    }
+}
 
 
