@@ -91,7 +91,7 @@ ALL_HDRS = $(COMMON_HDRS) bintradef.h dist_date.h dt_post.h dinodoc.h
 #### Top executable
 
 ../dinotrace: $(OBJS) Makefile
-	$(LINK) $(LINKFLAGS) -o ../dinotrace $(LINKOPT) $(OBJS) $(LIBS)
+	$(LINK) $(LDFLAGS) -o ../dinotrace $(LINKOPT) $(OBJS) $(LIBS)
 
 #### Derrived files
 
