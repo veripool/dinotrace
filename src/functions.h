@@ -382,7 +382,7 @@ extern void	help_doc_cb (Widget w);
 /* dt_util routines */
 extern void	strcpy_overlap (char *d, char *s);
 extern void	fgets_dynamic (char **line_pptr, uint_t *length_ptr, FILE *readfp);
-extern int	wildmat (const unsigned char *s, const unsigned char *p);
+extern int	wildmat (const char *s, const char *p);
 extern void	upcase_string (char *tp);
 extern void	file_directory (char *strg);
 extern void	ok_apply_cancel (OkApplyWidgets_t *wid_ptr, Widget, Widget, XtCallbackProc, Trace*, 

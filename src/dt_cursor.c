@@ -1,4 +1,4 @@
-#ident "$Id$"
+#pragma ident "$Id$"
 /******************************************************************************
  * dt_cursor.c --- cursor requestors, events, etc
  *
@@ -261,6 +261,7 @@ char *cur_examine_string (
 	strcat (strg, "Placed by .dino file or Emacs\n");
 	break;
     case SEARCHOLD:
+	break;
     }
     if (csr_ptr->note) {
         strcat (strg, csr_ptr->note);

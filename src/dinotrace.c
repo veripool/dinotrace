@@ -1,4 +1,4 @@
-#ident "$Id$"
+#pragma ident "$Id$"
 /******************************************************************************
  * dinotrace.c --- main routine and documentation
  *

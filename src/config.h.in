@@ -99,6 +99,17 @@
 /**********************************************************************/
 /**** Compile options */
 
+/* Set define if we have lesstif */
+#ifdef VMS
+#define HAVE_LESSTIF 0
+#endif
+#ifdef __alpha
+#define HAVE_LESSTIF 0
+#endif
+#ifndef HAVE_LESSTIF
+#define HAVE_LESSTIF 1
+#endif
+
 /* Set define if documentation is inlinable (need perl) */
 #define HAVE_DINODOC_H 1
 

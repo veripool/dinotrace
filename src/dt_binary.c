@@ -1,4 +1,4 @@
-#ident "$Id$"
+#pragma ident "$Id$"
 /******************************************************************************
  * dt_binary.c --- CCLI tempest trace reading
  *

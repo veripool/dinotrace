@@ -1,4 +1,4 @@
-#ident "$Id$"
+#pragma ident "$Id$"
 /******************************************************************************
  * dt_signal.c --- signal handling, searching, etc
  *
@@ -1405,10 +1405,10 @@ void    sig_sel_update_pattern (
     char	*pattern,		/* Pattern to match to the list */
     XmString	**xs_list,		/* Static storage for string list */
     Signal	***xs_sigs,		/* Static storage for signal list */
-    int		*xs_size)
+    uint_t	*xs_size)
 {
     Signal	*sig_ptr;
-    int		sel_count;
+    uint_t	sel_count;
 
     /* loop thru signals on deleted queue and add to list */
     sel_count = 0;

@@ -1,4 +1,4 @@
-#ident "$Id$"
+#pragma ident "$Id$"
 /******************************************************************************
  * dt_socket.c --- socket interface to command engine
  *
@@ -86,7 +86,7 @@ typedef struct st_client {
     char	command[MAXCMDLEN];	/* Command being formed */
 } Client_t;
 
-extern void gethostname (char *, int);
+extern int gethostname (char *name, int namelen);
 
 /*** MAIN ********************************************************************/
 

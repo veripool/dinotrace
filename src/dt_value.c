@@ -1,4 +1,4 @@
-#ident "$Id$"
+#pragma ident "$Id$"
 /******************************************************************************
  * dinotrace.c --- main routine and documentation
  *
@@ -923,10 +923,15 @@ void    val_examine_popup (
 	("examinepopup", overrideShellWidgetClass, trace->main, arglist, 1);
     
     /* Row column for a nice border */
+#if HAVE_LESSTIF
     XtSetArg (arglist[0], XmNrowColumnType, XmMENU_POPUP);
+#else
+    XtSetArg (arglist[0], XmNrowColumnType, XmWORK_AREA);
+#endif
     XtSetArg (arglist[1], XmNborderWidth, 1);
     XtSetArg (arglist[2], XmNentryAlignment, XmALIGNMENT_CENTER);
-    trace->examine.rowcol = XmCreateRowColumn (trace->examine.popup,"rowcol",arglist,3);
+    XtSetArg (arglist[3], XmNshadowThickness, 2);
+    trace->examine.rowcol = XmCreateRowColumn (trace->examine.popup,"rowcol",arglist,4);
 
     /* Finally the label */
     xs = string_create_with_cr (strg);

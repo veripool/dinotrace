@@ -1,4 +1,4 @@
-#ident "$Id$"
+#pragma ident "$Id$"
 /******************************************************************************
  * dt_grid.c --- grid drawing and requestors
  *
@@ -127,6 +127,7 @@ void	grid_calc_auto (
 	    break;
 	case PA_USER:
 	case PA_EDGE:
+	    break;
 	}
 	return;	
     }

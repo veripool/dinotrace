@@ -1,4 +1,4 @@
-#ident "$Id$"
+#pragma ident "$Id$"
 /******************************************************************************
  * dt_util.c --- misc utilities
  *
@@ -89,8 +89,8 @@ void strcpy_overlap (
 /* Pattern matching from GNU (see wildmat.c) */
 /* Triple procedures, all inlined, unrolls loop much better */
 int wildmatii(
-    const unsigned char	*s,	/* Buffer */
-    const unsigned char	*p)	/* Pattern */
+    const char	*s,	/* Buffer */
+    const char	*p)	/* Pattern */
 {
     for ( ; *p; s++, p++) {
 	if (*p!='*') {
@@ -112,8 +112,8 @@ int wildmatii(
 #pragma inline (wildmatii)
 
 int wildmati(
-    const unsigned char	*s,	/* Buffer */
-    const unsigned char	*p)	/* Pattern */
+    const char	*s,	/* Buffer */
+    const char	*p)	/* Pattern */
 {
     for ( ; *p; s++, p++) {
 	if (*p!='*') {
@@ -135,8 +135,8 @@ int wildmati(
 #pragma inline (wildmati)
 
 int wildmat(
-    const unsigned char	*s,	/* Buffer */
-    const unsigned char	*p)	/* Pattern */
+    const char	*s,	/* Buffer */
+    const char	*p)	/* Pattern */
 {
     for ( ; *p; s++, p++) {
 	if (*p!='*') {
