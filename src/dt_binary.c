@@ -116,7 +116,9 @@ int	EXTRACT_2STATE (
 }
 #endif
 
+#ifdef VMS
 #pragma inline (read_4state_to_value)
+#endif
 static void	read_4state_to_value (
     const Signal_t	*sig_ptr,
     const char	*buf,
@@ -183,7 +185,9 @@ static void	read_4state_to_value (
     }
 }
 
+#ifdef VMS
 #pragma inline (read_2state_to_value)
+#endif
 static void	read_2state_to_value (
     const Signal_t *sig_ptr,
     const char	*buf,
@@ -230,7 +234,9 @@ static void	read_2state_to_value (
     }
 }
 
+#ifdef VMS
 #pragma inline (fil_decsim_binary_add_cptr)
+#endif
 static void	fil_decsim_binary_add_cptr (
     /* Add a cptr corresponding to the decsim value for this signal */
     Signal_t	*sig_ptr,
@@ -491,7 +497,9 @@ void decsim_read_binary (
 #endif /* VMS */
 
 
+#ifdef VMS
 #pragma inline (fil_tempest_binary_add_cptr)
+#endif
 static void	fil_tempest_binary_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
     Signal_t	*sig_ptr,

@@ -534,7 +534,9 @@ void help_doc_cb (
 }
 
 #if !defined (fil_add_cptr)
+#ifdef VMS
 #pragma inline (fil_add_cptr)
+#endif
 /* WARNING, INLINED CODE IN CALLBACKS.H */
 void	fil_add_cptr (
     Signal_t	*sig_ptr,

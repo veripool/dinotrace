@@ -67,7 +67,9 @@ int fil_line_num=0;
 
 /****************************** UTILITIES ******************************/
 
+#ifdef VMS
 #pragma inline (ascii_string_add_cptr)
+#endif
 void	ascii_string_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
     Signal_t	*sig_ptr,

@@ -109,7 +109,9 @@ static int wildmatii(
     }
     return(*s == '\0');
 }
+#ifdef VMS
 #pragma inline (wildmatii)
+#endif
 
 static int wildmati(
     const char	*s,	/* Buffer */
@@ -132,7 +134,9 @@ static int wildmati(
     }
     return(*s == '\0');
 }
+#ifdef VMS
 #pragma inline (wildmati)
+#endif
 
 int wildmat(
     const char	*s,	/* Buffer */
@@ -156,7 +160,9 @@ int wildmat(
     }
     return(*s == '\0');
 }
+#ifdef VMS
 #pragma inline (wildmat)
+#endif
 
 /* get normal string from XmString */
 char *extract_first_xms_segment (
@@ -572,13 +578,14 @@ void get_geometry (
     uint_t	width,height,dret,depth;
     uint_t	pixmap_width,pixmap_height;
     Dimension m_time_height = global->time_font->ascent;
+    Window	root;
     
     float old_res_per_pixel = global->res / (trace->width - global->xstart - XMARGIN);
 
-    XGetGeometry ( global->display, trace->pixmap, (Window *)&dret,
+    XGetGeometry ( global->display, trace->pixmap, &root,
 		   &x, &y, &pixmap_width, &pixmap_height, &dret, &depth);
 
-    XGetGeometry ( global->display, XtWindow (trace->work), (Window *)&dret,
+    XGetGeometry ( global->display, XtWindow (trace->work), &root,
 		   &x, &y, &width, &height, &dret, &depth);
     
     if (pixmap_width != width || pixmap_height != height) {
@@ -1058,7 +1065,9 @@ void change_title (
     XtSetValues (trace->toplevel,arglist,2);
 }
 
+#ifdef VMS
 #pragma inline (posx_to_time)
+#endif
 DTime_t	posx_to_time (
     /* convert x value to a time value, return -1 if invalid click */
     Trace_t 	*trace,
@@ -1135,7 +1144,9 @@ DTime_t	posx_to_time_edge (
 }
 
 
+#ifdef VMS
 #pragma inline (posy_to_signal)
+#endif
 Signal_t	*posy_to_signal (
     /* convert y value to a signal pointer, return NULL if invalid click */
     Trace_t	*trace,
@@ -1165,7 +1176,9 @@ Signal_t	*posy_to_signal (
 }
 
 
+#ifdef VMS
 #pragma inline (posx_to_cursor)
+#endif
 DCursor_t *posx_to_cursor (
     /* convert x value to the index of the nearest cursor, return NULL if invalid click */
     Trace_t	*trace,
@@ -1235,7 +1248,9 @@ Grid_t *posx_to_grid (
 }
 
 
+#ifdef VMS
 #pragma inline (time_to_cursor)
+#endif
 DCursor_t *time_to_cursor (
     /* convert specific time value to the index of the nearest cursor, return NULL if none */
     /* Unlike posx_to_cursor, this will not return a "close" one */
@@ -1280,7 +1295,9 @@ DTime_t cyc_num_to_time (double cyc_num) {
 }
 
 
+#ifdef VMS
 #pragma inline (string_to_time)
+#endif
 DTime_t string_to_time (
     /* convert integer to time value */
     Trace_t	*trace,
@@ -1305,7 +1322,9 @@ DTime_t string_to_time (
     return ((DTime_t)f_time);
 }
 
+#ifdef VMS
 #pragma inline (time_to_string)
+#endif
 void time_to_string (
     /* convert specific time value into the string passed in */
     Trace_t	*trace,
@@ -1364,7 +1383,6 @@ void time_to_string (
     }
 }
 
-#pragma inline (time_units_to_string)
 char *time_units_to_string (
     /* find units for the given time represetation */
     TimeRep_t	timerep,
@@ -1386,7 +1404,6 @@ char *time_units_to_string (
     else return ("units");
 }
 
-#pragma inline (time_units_to_multiplier)
 DTime_t time_units_to_multiplier (
     /* find units for the given time represetation */
     TimeRep_t	timerep)

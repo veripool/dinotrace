@@ -53,6 +53,10 @@ prefix = @prefix@
 
 #### End of system configuration section. ####
 
+ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
+CPPFLAGS += -Wall -Werror
+endif
+
 #### Rules
 
 .c.o:
