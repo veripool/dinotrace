@@ -221,6 +221,9 @@ tag:
 	-e q src/config.h.in`; \
 	cvs tag -F $$distname .
 
+valgrind: dinotrace
+	valgrind --suppressions=$(HOME)/.valgrind.supp ./dinotrace
+
 # Don't depend on DISTFILES because there's no rule for "standards.info*".
 dist: $(DISTDEP) maintainer-copy
 	distname=`sed -e '/DTVERSION/!d' \

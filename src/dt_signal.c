@@ -1980,7 +1980,6 @@ static void sig_cross_sigmatch (
     /* Look at each old signal */
     for (old_sig_ptr = old_trace->firstsig; old_sig_ptr; old_sig_ptr = old_sig_ptr->forward) {
 	/* See if have new signal in hash bucket */
-	Boolean_t next_loop = 0;
 	for (new_sig_ptr = hash[old_sig_ptr->signame_hash];
 	     new_sig_ptr; new_sig_ptr = new_sig_ptr->verilog_next) {
 	    char *os = old_sig_ptr->signame;

@@ -895,7 +895,7 @@ void    debug_signal_integrity (
 {
     Value_t	*cptr;
     Value_t	*cptr_last;
-    Signal_t	*last_sig_ptr;
+    Signal_t	*last_sig_ptr=NULL;
     DTime_t	last_time;
     uint_t	nsigstart, nsig;
     Boolean_t	hitstart;

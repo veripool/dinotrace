@@ -263,7 +263,7 @@ void sig_new_file (
     )
 {
     Signal_t 	*new_sig_ptr;
-    char	*endcp, *sep, *bbeg;
+    char	*sep, *bbeg;
     char	*signame_buspos;	/* Text after the bus information */
     char	*pos;
 
