@@ -608,9 +608,7 @@ void tempest_read (
     int 	index;
     Boolean_t	verilator_xor_format;
 
-    /*
-     ** Read the file identification block
-     */
+    /* Read the file identification block */
     status = read (read_fd, chardata, 4);
     chardata[4]='\0';
     verilator_xor_format = !strncmp (chardata,"BX",2);
@@ -632,8 +630,7 @@ void tempest_read (
 		chardata,numBytes,trace->numsig,numRows,numBitsRow,numBitsRowPad);
     }
 
-    /*
-     ** Read the signal description data - a signal description block is
+    /** Read the signal description data - a signal description block is
      ** created for each signal describing the signal and containing ptrs
      ** for the trace data, current trace location, etc.
      */
@@ -653,10 +650,7 @@ void tempest_read (
 	}
 	
 	for (index=sigWidth-1 ; index>=0; index--) {
-	    /*
-	     ** Initialize all pointers and other stuff in the signal
-	     ** description block
-	     */
+	    /* Initialize all pointers and other stuff in the signal block */
 	    sig_ptr = DNewCalloc (Signal_t);
 	    sig_ptr->trace = trace;
 	    sig_ptr->dfile = &(trace->dfile);
@@ -689,9 +683,7 @@ void tempest_read (
 	    sig_ptr->file_type.flag.pin_timestamp = ((sigFlags & 8) != 0);
 	    sig_ptr->file_type.flag.four_state = ((sigFlags & 16) != 0);
 	    
-	    /*
-	     ** Copy the signal name, add EOS delimiter and initialize the pointer to it
-	     */
+	    /* Copy the signal name, add EOS delimiter and initialize the pointer to it */
 	    sig_ptr->signame = (char *)XtMalloc (10+sigChars); /* allow extra space in case becomes vector */
 	    for (j=0;j<sigChars;j++)
 		sig_ptr->signame[j] = chardata[j];
@@ -715,9 +707,7 @@ void tempest_read (
 	    dino_warning_ack (trace, message);
 	}
 
-	/*
-	 ** Read the pad bits
-	 */
+	/* Read the pad bits */
 	pad_len = (sigChars%8) ? 8 - (sigChars%8) : 0;
 	status = read (read_fd, chardata, pad_len);
     }
