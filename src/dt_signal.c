@@ -536,7 +536,7 @@ void    sig_print_names (
     /* loop thru each signal */
     back_sig_ptr = NULL;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	printf (" Sig '%s'  ty=%d index=%d-%d tempbit %d btyp=%d bpos=%d bits=%d\n",
+	printf (" Sig '%s'  ty=%d index=%d-%d bitindex=%d btyp=%x bpos=%d bits=%d\n",
 		sig_ptr->signame, sig_ptr->type,
 		sig_ptr->msb_index ,sig_ptr->lsb_index, sig_ptr->bit_index,
 		sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->bits
