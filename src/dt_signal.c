@@ -333,6 +333,7 @@ void	sig_move (old_trace, sig_ptr, new_trace, after_sig_ptr)
 	add_signal_to_queue (new_trace, sig_ptr, after_sig_ptr, &new_trace->firstsig);
 	new_trace->numsig++;
 	}
+    
 #if 0
     printf ("Adding %s\n", sig_ptr->signame);
     sig_ptr = global->delsig;
@@ -481,6 +482,7 @@ void    sig_copy_selected (new_trace, after_pattern)
 	sig_copy (old_trace, sig_ptr, new_trace, after_sig_ptr);
 	}
 
+    update_globals();	/* Get xstart to be correct */
     draw_all_needed ();
     }
 
@@ -905,6 +907,7 @@ void    sig_add_ev (w,trace,ev)
     XtUnmanageChild ( trace->signal.add );
     XtManageChild ( trace->signal.add );
     
+    update_globals();	/* Get xstart to be correct */
     draw_all_needed ();
     }
 
@@ -950,6 +953,7 @@ void    sig_move_ev (w,trace,ev)
 	set_cursor (trace, DC_SIG_MOVE_1);
 	}
     
+    update_globals();	/* Get xstart to be correct */
     draw_all_needed ();
     }
 
@@ -987,6 +991,7 @@ void    sig_copy_ev (w,trace,ev)
 	set_cursor (trace, DC_SIG_COPY_1);
 	}
     
+    update_globals();	/* Get xstart to be correct */
     draw_all_needed ();
     }
 
@@ -1304,6 +1309,7 @@ void    sig_sel_ok_cb (w,trace,cb)
     TRACE			*trace;
     XmAnyCallbackStruct		*cb;
 {
+    update_globals();	/* Get xstart to be correct */
     draw_all_needed ();
     }
 
