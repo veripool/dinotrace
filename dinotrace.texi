@@ -201,12 +201,10 @@ Corporation) and took over the support of Dinotrace.  I converted it
 from Digital's X toolkit to Motif, added color, highlighting, searching,
 and other features.  Several formats were added to Dinotrace to support
 Verilator, our group's own Verilog to C translator, written by Paul
-Wasson.  (And soon be available on the Dinotrace website at
-@uref{http://www.ultranet.com/~wsnyder/veripool/verilator}.)  As the
-years went on, other groups started using the typical industry standard
-Verilog simulators.  Although programs like vwaves were available, they
-had some silly limitations.  Besides, we were hooked on Dinotrace, so I
-added Verilog format, and Dinotrace lived on.
+Wasson.  As the years went on, other groups started using the typical
+industry standard Verilog simulators.  Although programs like vwaves
+were available, they had some silly limitations.  Besides, we were
+hooked on Dinotrace, so I added Verilog format, and Dinotrace lived on.
 
 In 1998 I moved to Maker Communications, where I am currently employed.
 Life, however, was sad and incomplete without Dinotrace.  Through the

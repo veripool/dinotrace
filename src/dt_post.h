@@ -70,7 +70,7 @@ char dt_post[] = "% $Id$\n\
   /width exch def		% width of DINOTRACE window\n\
   /height exch def		% height of DINOTRACE window\n\
   /heightmul PG_HGT 50 sub height div def\n\
-  /YADJ { height exch sub heightmul mul 50 add } def\n\
+  /YADJ { height exch sub heightmul mul 40 add } def\n\
   /basewidth 0 def		% Prepare for sigwidth calc\n\
   /hierwidth 0 def		% Prepare for sigwidth calc\n\
   stroke /Times-Roman findfont 8 scalefont setfont\n\

@@ -9,6 +9,11 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 * Changes in Dinotrace 9.0e  9/1999
 
+****	Fixed a bug which would resize the screen incorrectly.
+
+****	Fixed a postscript bug which would truncate the timestamps. [Rainer
+	Mueller]
+
 ** Enhancements:
 
 **	Signal Clear Highlight allows for unhighlighting all signals.
