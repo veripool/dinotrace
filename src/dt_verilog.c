@@ -711,9 +711,11 @@ static void	verilog_read_data (
 	    state = STATE_1;
 	    goto common;
 	case 'z':
+	case 'Z':
 	    state = STATE_Z;
 	    goto common;
 	case 'x':
+	case 'X':
 	    state = STATE_U;
 	    goto common;
 
@@ -759,7 +761,9 @@ static void	verilog_read_data (
 		    case '0': state = STATE_0; break;
 		    case '1': state = STATE_1; break;
 		    case 'z': state = STATE_Z; break;
+		    case 'Z': state = STATE_Z; break;
 		    case 'x': state = STATE_U; break;
+		    case 'X': state = STATE_U; break;
 		    default: printf ("%%E, Strange bit value %c on line %d of %s\n",
 				     value_strg[0], verilog_line_num, current_file);
 		    }
