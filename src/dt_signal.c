@@ -537,10 +537,11 @@ void    sig_print_names (
     /* loop thru each signal */
     back_sig_ptr = NULL;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	printf (" Sig '%s'  ty=%d index=%d-%d, btyp=%x bpos=%d bcode=%d bits=%d\n",
+	printf (" Sig '%s'  ty=%d index=%d-%d, btyp=%x bpos=%d bcode=%d bits=%d copy=%s\n",
 		sig_ptr->signame, sig_ptr->type,
 		sig_ptr->msb_index ,sig_ptr->lsb_index,
-		sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->file_code, sig_ptr->bits
+		sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->file_code, sig_ptr->bits,
+		(sig_ptr->copyof?"Y":"N")
 		);
 	if (sig_ptr->backward != back_sig_ptr) {
 	    printf (" %%E, Backward link is to '%p' not '%p'\n", sig_ptr->backward, back_sig_ptr);

@@ -704,28 +704,30 @@ static void fil_mark_cptr_end (
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_next_ptr) {
 	sig_next_ptr = sig_ptr->forward;
 
-	/* Must be a cptr which has the same time as the last time on the screen */
-	/* If none exists, create it */
-	if (sig_ptr->cptr->siglw.number || sig_ptr->cptr!=sig_ptr->bptr) {
-	    Value_t	*cptr = sig_ptr->cptr;
-	    if (CPTR_TIME(cptr) != trace->end_time) {
-		val_copy (&value, sig_ptr->cptr);
-		value.time = trace->end_time;
-		fil_add_cptr (sig_ptr, &value, TRUE);
+	if (!sig_ptr->copyof) {
+	    /* Must be a cptr which has the same time as the last time on the screen */
+	    /* If none exists, create it */
+	    if (sig_ptr->cptr->siglw.number || sig_ptr->cptr!=sig_ptr->bptr) {
+		Value_t	*cptr = sig_ptr->cptr;
+		if (CPTR_TIME(cptr) != trace->end_time) {
+		    val_copy (&value, sig_ptr->cptr);
+		    value.time = trace->end_time;
+		    fil_add_cptr (sig_ptr, &value, TRUE);
+		}
 	    }
-	}
-	else {
-	    if (DTDEBUG && !msg) {
-		printf ("%%W, No data for signal %s\n\tAdditional messages suppressed\n", sig_ptr->signame);
-		msg = TRUE;
+	    else {
+		if (DTDEBUG && !msg) {
+		    printf ("%%W, No data for signal %s\n\tAdditional messages suppressed\n", sig_ptr->signame);
+		    msg = TRUE;
+		}
+		sig_free (trace, sig_ptr, FALSE, FALSE);
+		continue;
 	    }
-	    sig_free (trace, sig_ptr, FALSE, FALSE);
-	    continue;
-	}
 
-	/* Mark end of time */
-	value.time = EOT;
-	fil_add_cptr (sig_ptr, &value, TRUE);
+	    /* Mark end of time */
+	    value.time = EOT;
+	    fil_add_cptr (sig_ptr, &value, TRUE);
+	}
 
 	/* re-initialize the cptr's to the bptr's */
 	sig_ptr->cptr = sig_ptr->bptr;
