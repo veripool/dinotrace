@@ -27,6 +27,10 @@
 #define draw_needed(_trace_)		{ global->redraw_needed |= GRD_TRACE; (_trace_)->redraw_needed |= TRD_REDRAW; }
 #define draw_all_needed() 		{ global->redraw_needed |= GRD_ALL; }
 #define draw_manual_needed() 		{ global->redraw_needed |= GRD_MANUAL; }
+#define draw_needupd_sig_start()	{ global->updates_needed |= GUD_SIG_START; }
+#define draw_needupd_sig_search()	{ global->updates_needed |= GUD_SIG_SEARCH; }
+#define draw_needupd_val_search()	{ global->updates_needed |= GUD_VAL_SEARCH; }
+#define draw_needupd_val_states()	{ global->updates_needed |= GUD_VAL_STATES; }
 
 
 /* Utilities */
@@ -97,7 +101,7 @@
     SIGNAL_LW	*cptr;\
     long diff;\
     cptr = ((SIGNAL *)(sig_ptr))->cptr - ((SIGNAL *)(sig_ptr))->lws;\
-    if ( !(nocheck)\
+    if ( (nocheck)\
 	|| ( cptr->sttime.state != ((VALUE *)(value_ptr))->siglw.sttime.state )\
 	|| ( cptr[1].number != ((VALUE *)(value_ptr))->number[0] )\
 	|| ( cptr[2].number != ((VALUE *)(value_ptr))->number[1] )\
@@ -105,9 +109,10 @@
 	|| ( cptr[4].number != ((VALUE *)(value_ptr))->number[3] ) )\
 	{\
 	diff = ((SIGNAL *)sig_ptr)->cptr - ((SIGNAL *)sig_ptr)->bptr;\
-	if ((diff*sizeof(SIGNAL_LW)) > ( BLK_SIZE * (sig_ptr)->blocks - sizeof(VALUE)*2 - 2 )) {\
-	    ((SIGNAL *)(sig_ptr))->blocks++;\
-	    ((SIGNAL *)(sig_ptr))->bptr = (SIGNAL_LW *)XtRealloc ((char*)((SIGNAL *)(sig_ptr))->bptr, ((SIGNAL *)(sig_ptr))->blocks*BLK_SIZE);\
+	if (diff > (sig_ptr)->blocks) {\
+	    ((SIGNAL *)(sig_ptr))->blocks += BLK_SIZE;\
+	    ((SIGNAL *)(sig_ptr))->bptr = (SIGNAL_LW *)XtRealloc ((char*)((SIGNAL *)(sig_ptr))->bptr,\
+		       (((SIGNAL *)(sig_ptr))->blocks*sizeof(unsigned int)) + (sizeof(VALUE)*2 + 2));\
 	    ((SIGNAL *)(sig_ptr))->cptr = ((SIGNAL *)(sig_ptr))->bptr+diff;\
 	    }\
 	(((SIGNAL *)(sig_ptr))->cptr)[0].number = ((VALUE *)(value_ptr))->siglw.number;\
@@ -289,6 +294,7 @@ extern void	socket_create();
 extern void
     draw_update_sigstart(),
     draw_perform(),
+    draw_update(),
     draw();
 
 /* dt_icon */

@@ -241,18 +241,20 @@ int	read_2state_to_value (sig_ptr, buf, value_ptr)
     }
 
 
-
-#pragma inline (fil_decsim_binary_to_value)
-void	fil_decsim_binary_to_value (sig_ptr, buf, value_ptr)
-    /* Returns state and value corresponding to the decsim value for this signal */
+#ifdef VMS
+#pragma inline (fil_decsim_binary_add_cptr)
+void	fil_decsim_binary_add_cptr (sig_ptr, buf, time, nocheck)
+    /* Add a cptr corresponding to the decsim value for this signal */
     SIGNAL	*sig_ptr;
     char	*buf;
-    VALUE	*value_ptr;
+    DTime	time;
+    Boolean	nocheck;		/* don't compare against previous data */
 {
-    int		state;
+    register	int		state;
+    register	VALUE	value;
 
     /* zero the value */
-    value_ptr->siglw.number = value_ptr->number[0] = value_ptr->number[1] = value_ptr->number[2] = value_ptr->number[3] = 0;
+    value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
 
     if (sig_ptr->bits == 0) {
 	/* Single bit signal */
@@ -284,91 +286,15 @@ void	fil_decsim_binary_to_value (sig_ptr, buf, value_ptr)
     else {
 	/* Multibit signal */
 	if (sig_ptr->file_type.flag.four_state == 0)
-	    state = read_2state_to_value (sig_ptr, buf, value_ptr);
-	else state = read_4state_to_value (sig_ptr, buf, value_ptr);
+	    state = read_2state_to_value (sig_ptr, buf, &value);
+	else state = read_4state_to_value (sig_ptr, buf, &value);
 	}
 	    
-    value_ptr->siglw.sttime.state = state;
+    value.siglw.sttime.state = state;
+    value.siglw.sttime.time = time;
+    fil_add_cptr (sig_ptr, &value, nocheck);
     }
 
-#pragma inline (fil_tempest_binary_to_value)
-void	fil_tempest_binary_to_value (sig_ptr, buf, value_ptr)
-    /* Returns state and value corresponding to the tempest value for this signal */
-    SIGNAL	*sig_ptr;
-    unsigned int *buf;
-    VALUE	*value_ptr;
-{
-    register int state, bit;
-    register unsigned int value_index;
-    register unsigned int data_index;
-    register unsigned int data_mask;
-
-    /* zero the value */
-    value_ptr->siglw.number = value_ptr->number[0] = value_ptr->number[1] = value_ptr->number[2] = value_ptr->number[3] = 0;
-
-    /* determine starting index and bit mask */
-    if (sig_ptr->bits == 0) {
-	/* Single bit signal */
-	if (sig_ptr->file_type.flag.four_state == 0) {
-	    data_index = (sig_ptr->file_pos >> 5);
-	    data_mask = 1 << ((sig_ptr->file_pos) & 0x1F);	
-
-	    state = (buf[data_index] & data_mask)?STATE_1:STATE_0;
-	    }
-
-	else { /* Single bit four state (not really supported) */
-	    data_index = (sig_ptr->file_pos >> 5);
-	    data_mask = 1 << ((sig_ptr->file_pos) & 0x1F);	
-
-	    value_index = (buf[data_index] & data_mask);	/* Used as temp */
-	    if (!(data_mask = data_mask << 1)) {
-		data_mask = 1;
-		data_index++;
-		}
-	    value_index = value_index << 1 + (buf[data_index] & data_mask);
-
-	    switch (value_index) {
-	      case 0: state = STATE_0; break;
-	      case 1: state = STATE_1; break;
-	      case 2: state = STATE_Z; break;
-	      case 3: state = STATE_U; break;
-		}
-	    }	
-	}
-    else {
-	/* Multibit signal */
-	if (sig_ptr->file_type.flag.four_state == 0) {
-	    buf += (sig_ptr->file_pos >> 5);	/* Point to LSB's LW */
-	    bit = (sig_ptr->file_pos & 0x1F);	/* Point to LSB's bit position in LW */
-	    state = sig_ptr->type;
-
-	    /* We want to take the data and move it so that the LSB of the data to be extracted is
-	       now in value[0].  This is effectively a shift right of "bit" bits.  The fun comes in
-	       because we want more then one LW of accuracy.  (Give me a 128 bit architecture!)
-	       This method runs fast because it can execute in parallel and has no branches. */
-
-	    value_ptr->number[0] = (((buf[0] >> bit) & sig_ptr->pos_mask)
-				    | ((buf[1] << (32-bit)) & (~sig_ptr->pos_mask)))
-		& sig_ptr->value_mask[0];
-	    value_ptr->number[1] = (((buf[1] >> bit) & sig_ptr->pos_mask)
-				    | ((buf[2] << (32-bit)) & (~sig_ptr->pos_mask)))
-		& sig_ptr->value_mask[1];
-	    value_ptr->number[2] = (((buf[2] >> bit) & sig_ptr->pos_mask)
-				    | ((buf[3] << (32-bit)) & (~sig_ptr->pos_mask)))
-		& sig_ptr->value_mask[2];
-	    value_ptr->number[3] = (((buf[3] >> bit) & sig_ptr->pos_mask)
-				    | ((buf[4] << (32-bit)) & (~sig_ptr->pos_mask)))
-		& sig_ptr->value_mask[3];
-	    }
-	else {
-	    state = STATE_U;
-	    }
-	}
-	    
-    value_ptr->siglw.sttime.state = state;
-    }
-
-#ifdef VMS
 void decsim_read_binary (trace, read_fd)
     TRACE	*trace;
     int		read_fd;
@@ -381,7 +307,6 @@ void decsim_read_binary (trace, read_fd)
     int		next_different_lw_pos;	/* LW pos with different value than last time slice */
     int		time;
     SIGNAL	*sig_ptr,*last_sig_ptr;
-    VALUE	value;
     int		max_lw_pos=0;		/* Maximum position in buf that has trace data */
     DTime	time_divisor;
 
@@ -512,9 +437,7 @@ void decsim_read_binary (trace, read_fd)
 			   This signal itself may not have changed though, since there could
 			   be 31 of 32 signals in this LW that were not changed.  */
 
-			fil_decsim_binary_to_value (sig_ptr, buf, &value);
-			value.siglw.sttime.time = time;
-			fil_add_cptr (sig_ptr, &value, first_data);
+			fil_decsim_binary_to_value (sig_ptr, buf, time, first_data);
 
 			/* Compute next different lw */
 			if (((sig_ptr->file_end_pos + 1) >> 5) > next_different_lw_pos) {
@@ -573,6 +496,90 @@ void decsim_read_binary (trace, read_fd)
 #endif /* VMS */
 
 
+#pragma inline (fil_tempest_binary_add_cptr)
+void	fil_tempest_binary_add_cptr (sig_ptr, buf, time, nocheck)
+    /* Add a cptr corresponding to the text at value_strg */
+    SIGNAL	*sig_ptr;
+    unsigned int *buf;
+    DTime	time;
+    Boolean	nocheck;		/* don't compare against previous data */
+{
+    register int state, bit;
+    register unsigned int value_index;
+    register unsigned int data_index;
+    register unsigned int data_mask;
+    register VALUE	value;
+
+    /* zero the value */
+    value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
+
+    /* determine starting index and bit mask */
+    if (sig_ptr->bits == 0) {
+	/* Single bit signal */
+	if (sig_ptr->file_type.flag.four_state == 0) {
+	    data_index = (sig_ptr->file_pos >> 5);
+	    data_mask = 1 << ((sig_ptr->file_pos) & 0x1F);	
+
+	    state = (buf[data_index] & data_mask)?STATE_1:STATE_0;
+	    }
+
+	else { /* Single bit four state (not really supported) */
+	    data_index = (sig_ptr->file_pos >> 5);
+	    data_mask = 1 << ((sig_ptr->file_pos) & 0x1F);	
+
+	    value_index = (buf[data_index] & data_mask);	/* Used as temp */
+	    if (!(data_mask = data_mask << 1)) {
+		data_mask = 1;
+		data_index++;
+		}
+	    value_index = value_index << 1 + (buf[data_index] & data_mask);
+
+	    switch (value_index) {
+	      case 0: state = STATE_0; break;
+	      case 1: state = STATE_1; break;
+	      case 2: state = STATE_Z; break;
+	      case 3: state = STATE_U; break;
+		}
+	    }	
+	}
+    else {
+	/* Multibit signal */
+	if (sig_ptr->file_type.flag.four_state == 0) {
+	    buf += (sig_ptr->file_pos >> 5);	/* Point to LSB's LW */
+	    bit = (sig_ptr->file_pos & 0x1F);	/* Point to LSB's bit position in LW */
+	    state = sig_ptr->type;
+
+	    /* We want to take the data and move it so that the LSB of the data to be extracted is
+	       now in value[0].  This is effectively a shift right of "bit" bits.  The fun comes in
+	       because we want more then one LW of accuracy.  (Give me a 128 bit architecture!)
+	       This method runs fast because it can execute in parallel and has no branches. */
+
+	    value.number[0] = (((buf[0] >> bit) & sig_ptr->pos_mask)
+				    | ((buf[1] << (32-bit)) & (~sig_ptr->pos_mask)))
+		& sig_ptr->value_mask[0];
+	    value.number[1] = (((buf[1] >> bit) & sig_ptr->pos_mask)
+				    | ((buf[2] << (32-bit)) & (~sig_ptr->pos_mask)))
+		& sig_ptr->value_mask[1];
+	    value.number[2] = (((buf[2] >> bit) & sig_ptr->pos_mask)
+				    | ((buf[3] << (32-bit)) & (~sig_ptr->pos_mask)))
+		& sig_ptr->value_mask[2];
+	    value.number[3] = (((buf[3] >> bit) & sig_ptr->pos_mask)
+				    | ((buf[4] << (32-bit)) & (~sig_ptr->pos_mask)))
+		& sig_ptr->value_mask[3];
+	    }
+	else {
+	    state = STATE_U;
+	    }
+	}
+	    
+    value.siglw.sttime.state = state;
+    value.siglw.sttime.time = time;
+    fil_add_cptr (sig_ptr, &value, nocheck);
+
+    /*if (DTPRINT_FILE) printf ("SIg %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
+      value.number[0]);*/
+    }
+
 void tempest_read (trace, read_fd)
 TRACE	*trace;
 int		read_fd;
@@ -587,8 +594,8 @@ int		read_fd;
     int		i,j;
     int		pad_len;
     unsigned int	time, last_time=EOT;
-    SIGNAL	*sig_ptr,*last_sig_ptr=NULL;
-    VALUE	value;
+    register	SIGNAL	*sig_ptr;
+    SIGNAL	*last_sig_ptr=NULL;
     int 	index;
     Boolean	verilator_xor_format;
 
@@ -749,11 +756,7 @@ int		read_fd;
 	/* Fortunately, Tempest and Decsim have identical binary packed formats. */
 	/* Perhaps it's because both were written by SEG CAD. */
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    fil_tempest_binary_to_value (sig_ptr, data, &value);
-	    /*if (DTPRINT_FILE) printf ("SIg %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
-		    value.number[0]);*/
-	    value.siglw.sttime.time = time;
-	    fil_add_cptr (sig_ptr, &value, first_data);
+	    fil_tempest_binary_add_cptr (sig_ptr, data, time, first_data);
 	    }
 
 	first_data = FALSE;

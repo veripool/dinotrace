@@ -52,7 +52,7 @@
 #define MAXSCREENWIDTH	5000	/* Maximum width of screen */
 #define	MIN_GRID_RES	5	/* Minimum grid resolution, in pixels between grid lines */
 #define	GRID_TIME_Y	20	/* Y Coordinate of where to print grid times */
-#define BLK_SIZE	512	/* Trace data block size */
+#define BLK_SIZE	512	/* Trace data block size (512 transitions/signal == 2K min/sig) */
 #define	CLICKCLOSE	20	/* Number of pixels that are "close" for click-to-edges */
 
 #define	RES_SCALE	((float)500.0)	/* Scaling factor for entering resolution */
@@ -451,7 +451,7 @@ typedef struct st_signal {
     SIGNALSTATE		*decode;	/* Pointer to decode information, NULL if none */
     char *		(*decode_fptr)(); /* Pointer to function that decodes statenames, NULL if none */
     int			lws;		/* Number of LWs in a SIGNAL_LW record */
-    int			blocks;		/* Number of time data blocks */
+    long		blocks;		/* Number of time data blocks allocated, in # of ints */
     int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20), -1=none */
     int			lsb_index;	/* Bit subscript of last index in a signal (<20:10> == 10), -1=none */
     int			bit_index;	/* Bit subscript of this bit, ignoring <>'s, tempest only */
@@ -643,6 +643,11 @@ typedef struct {
 #define				GRD_TRACE	0x1
 #define				GRD_ALL		0x2
 #define				GRD_MANUAL	0x4
+    int			updates_needed;	/* Things that are out of date and need to be called before redraw */
+#define				GUD_SIG_START	0x100	/* Call sig_update_start */
+#define				GUD_SIG_SEARCH	0x200	/* Call sig_update_search */
+#define				GUD_VAL_SEARCH	0x400	/* Call val_update_search */
+#define				GUD_VAL_STATES	0x800	/* Call val_update_states */
 
     DTime		time;		/* Time of trace at left edge of screen */
     float		res;		/* Resolution of graph width (gadgets) */

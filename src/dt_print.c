@@ -442,6 +442,8 @@ void    ps_print_internal (trace)
 	return;
 	}
     
+    draw_update ();
+
     set_cursor (trace, DC_BUSY);
     XSync (global->display,0);
     

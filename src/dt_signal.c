@@ -426,6 +426,7 @@ void    sig_move_selected (new_trace, after_pattern)
 	sig_move (old_trace, sig_ptr, new_trace, after_sig_ptr);
 	}
 
+    draw_needupd_sig_start ();
     draw_all_needed ();
     }
 
@@ -449,7 +450,7 @@ void    sig_copy_selected (new_trace, after_pattern)
 	sig_copy (old_trace, sig_ptr, new_trace, after_sig_ptr);
 	}
 
-    draw_update_sigstart();	/* Get xstart to be correct */
+    draw_needupd_sig_start ();
     draw_all_needed ();
     }
 
@@ -471,6 +472,7 @@ void    sig_delete_selected (constant_flag)
 	    }
 	}
 
+    draw_needupd_sig_start ();
     draw_all_needed ();
     }
 
@@ -814,8 +816,8 @@ void    sig_search_ok_cb (w,trace,cb)
     
     XtUnmanageChild (trace->signal.search);
 
-    sig_update_search ();
-
+    draw_needupd_sig_search ();
+    draw_needupd_sig_start ();
     draw_all_needed ();
     }
 
@@ -870,7 +872,7 @@ void    sig_add_ev (w,trace,ev)
     XtUnmanageChild ( trace->signal.add );
     XtManageChild ( trace->signal.add );
     
-    draw_update_sigstart();	/* Get xstart to be correct */
+    draw_needupd_sig_start ();
     draw_all_needed ();
     }
 
@@ -916,7 +918,7 @@ void    sig_move_ev (w,trace,ev)
 	set_cursor (trace, DC_SIG_MOVE_1);
 	}
     
-    draw_update_sigstart();	/* Get xstart to be correct */
+    draw_needupd_sig_start ();
     draw_all_needed ();
     }
 
@@ -954,7 +956,7 @@ void    sig_copy_ev (w,trace,ev)
 	set_cursor (trace, DC_SIG_COPY_1);
 	}
     
-    draw_update_sigstart();	/* Get xstart to be correct */
+    draw_needupd_sig_start ();
     draw_all_needed ();
     }
 
@@ -989,6 +991,7 @@ void    sig_delete_ev (w,trace,ev)
 		       sig_ptr->xsigname, 0 );
 	}
     
+    draw_needupd_sig_start ();
     draw_all_needed ();
     }
 
@@ -1272,7 +1275,7 @@ void    sig_sel_ok_cb (w,trace,cb)
     TRACE			*trace;
     XmAnyCallbackStruct		*cb;
 {
-    draw_update_sigstart();	/* Get xstart to be correct */
+    draw_needupd_sig_start ();
     draw_all_needed ();
     }
 
@@ -1710,9 +1713,9 @@ void sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr)
     /* Forget this is a copy, and allocate new data storage space */
     new_sig_ptr->signame = strdup (new_sig_ptr->signame);
     new_sig_ptr->copyof = NULL;
-    new_sig_ptr->bptr = (SIGNAL_LW *)XtMalloc (BLK_SIZE);
+    new_sig_ptr->blocks = BLK_SIZE;
+    new_sig_ptr->bptr = (SIGNAL_LW *)XtMalloc ((new_sig_ptr->blocks*sizeof(unsigned int)) + (sizeof(VALUE)*2 + 2));
     new_sig_ptr->cptr = new_sig_ptr->bptr;
-    new_sig_ptr->blocks = 1;
 
     base_cptr = (SIGNAL_LW *)(base_sig_ptr->bptr),
     en_cptr = (SIGNAL_LW *)(en_sig_ptr->bptr);

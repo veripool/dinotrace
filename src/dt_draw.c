@@ -661,6 +661,8 @@ void draw_trace (trace)
 
 
 void	draw_update_sigstart ()
+    /* Update the starting coodinate of the signals. */
+    /* Don't call directly, instead use draw_update_sig_start() it will log a request for the update */
 {
     TRACE *trace;
     SIGNAL *sig_ptr;
@@ -690,6 +692,8 @@ void draw_perform ()
 
     if (DTPRINT_ENTRY) printf ("In draw_perform %d %d\n", global->redraw_needed, global->trace_head->redraw_needed);
 
+    draw_update();
+
     /* do not unroll this loop, as it will make the refresh across windows */
     /* appear out of sync */
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
@@ -710,6 +714,30 @@ void draw_perform ()
 	}
     global->redraw_needed = FALSE;
     }
+
+
+void draw_update ()
+    /* Update any asyncronous elements that aren't up to date */
+    /* Call this before showing the user any data */
+{
+    /* calculate anything out of date */
+    if (global->updates_needed & GUD_SIG_START) {
+	draw_update_sigstart();
+	global->updates_needed &= ~GUD_SIG_START;
+    }
+    if (global->updates_needed & GUD_SIG_SEARCH) {
+	sig_update_search ();
+	global->updates_needed &= ~GUD_SIG_SEARCH;
+    }
+    if (global->updates_needed & GUD_VAL_SEARCH) {
+	val_update_search ();
+	global->updates_needed &= ~GUD_VAL_SEARCH;
+    }
+    if (global->updates_needed & GUD_VAL_STATES) {
+	val_states_update ();
+	global->updates_needed &= ~GUD_VAL_STATES;
+    }
+}
 
 
 /**********************************************************************

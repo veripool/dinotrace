@@ -585,9 +585,11 @@ void	verilog_read_data (trace, readfp)
 	    break;
 
 	  case 'b':
-	    if (first_data)
+	    if (first_data) {
 		trace->start_time = time;
-	    else trace->end_time = time;
+		trace->end_time = time;
+		first_data = FALSE;
+	    }
 	    got_data = TRUE;
 
 	    verilog_read_parameter (line, value_strg);

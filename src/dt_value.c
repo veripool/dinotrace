@@ -738,8 +738,7 @@ void    val_search_ok_cb (w,trace,cb)
     
     XtUnmanageChild (trace->value.search);
 
-    val_update_search ();
-
+    draw_needupd_val_search ();
     draw_all_needed ();
     }
 
@@ -790,7 +789,7 @@ void    val_highlight_ev (w,trace,ev)
 	}
 
     /* redraw the screen */
-    val_update_search ();
+    draw_needupd_val_search ();
     draw_all_needed ();
     }
 
@@ -988,6 +987,8 @@ void    val_annotate_do_cb (w,trace,cb)
 	}*/
 
     if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%d  file=%s\n",trace,global->anno_filename);
+
+    draw_update ();
 
     /* Socket connection */
 #ifndef VMS

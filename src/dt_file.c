@@ -340,7 +340,7 @@ void help_trace_cb (w,trace,cb)
 
 #pragma inline (fil_string_add_cptr)
 void	fil_string_add_cptr (sig_ptr, value_strg, time, nocheck)
-    /* Returns state and value corresponding to the text at value_strg */
+    /* Add a cptr corresponding to the text at value_strg */
     /* WARNING: Similar verilog_string_to_value in dt_verilog for speed reasons */
     SIGNAL	*sig_ptr;
     char	*value_strg;
@@ -348,7 +348,8 @@ void	fil_string_add_cptr (sig_ptr, value_strg, time, nocheck)
     Boolean	nocheck;		/* don't compare against previous data */
 {
     register unsigned int state;
-    register char	*cp;
+    register char	*cp, *cep;
+    register char 	state_chr;
     register int	len, bitcnt;
     VALUE	value;
 
@@ -356,7 +357,6 @@ void	fil_string_add_cptr (sig_ptr, value_strg, time, nocheck)
     /* We do NOT need to set value.siglw.number, as is set later */
     /* I set it anyways to get it into the cache */
     value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
-    state = STATE_U;
 
     if (sig_ptr->bits == 0) {
 	/* This branch not used for verilog, only Decsim */
@@ -372,59 +372,70 @@ void	fil_string_add_cptr (sig_ptr, value_strg, time, nocheck)
 	  case 'Z': 
 	  case 'z': state = STATE_Z; break;
 	  default: 
+	    state = STATE_U;
 	    printf ("%%E, Unknown state character '%c' at line %d\n", *value_strg, fil_line_num);
 	    }
 	}
 
     else {
 	/* Multi bit signal */
-
 	/* determine the state of the bus */
-	state = STATE_0;
-	cp = value_strg;
+	state_chr = 0;
 	len = sig_ptr->bits;
-	for (bitcnt=0; bitcnt <= sig_ptr->bits; bitcnt++, cp++) {
-	    switch (*cp) {
-	      case '?':
-	      case 'X':
-	      case 'x':
-	      case 'u':
-	      case 'U':
-		state = STATE_U; break;
-	      case 'z': 
-	      case 'Z': 
-		if (state != STATE_0 && state != STATE_Z) state = STATE_U;
-		else state = STATE_Z;
-		break;
-	      default:
-		if (state != STATE_0 && state != STATE_1) state = STATE_U;
-		else state = STATE_1;
-		}
-	    }
-	if (state != STATE_U && state != STATE_Z) {
+	cp = value_strg;
+	cep = cp + len;
+	/* Ok, here comes a fast algorithm (5% faster file reads)
+	 * Take each letter in the trace as a binary vector
+	 *	?   = 0011 1111	state_u
+	 *	x/X = 01x1 1000	state_u
+	 *	u/U = 01x1 0101	state_u
+	 *	z/Z = 01x1 1010	state_z
+	 *	0/1 = 0011 000x	state_0
+	 *
+	 * If we OR together every character, we will get:
+	 *	    01x1 1010	if everything is z
+	 *	    0011 000x	if everything is 0 or 1
+	 *	    else	it's a U
+	 */
+	while (cp <= cep) {
+	    state_chr |= *cp++;
+	}
+	switch (state_chr) {
+	  case '0':
+	  case '1':
 	    /* compute the value */
 	    /* Note '0'->0 and '1'->1 by just ANDing with 1 */
 	    state = sig_ptr->type;
 	    cp = value_strg;
 	    for (bitcnt=96; bitcnt <= (MIN (127,len)); bitcnt++)
-		value.number[3] = (value.number[3]<<1) + (*cp++ & 1);
+		value.number[3] = (value.number[3]<<1) | (*cp++=='1');
 	    
 	    for (bitcnt=64; bitcnt <= (MIN (95,len)); bitcnt++)
-		value.number[2] = (value.number[2]<<1) + (*cp++ & 1);
+		value.number[2] = (value.number[2]<<1) | (*cp++=='1');
 	    
 	    for (bitcnt=32; bitcnt <= (MIN (63,len)); bitcnt++)
-		value.number[1] = (value.number[1]<<1) + (*cp++ & 1);
+		value.number[1] = (value.number[1]<<1) | (*cp++=='1');
 
 	    for (bitcnt=0; bitcnt <= (MIN (31,len)); bitcnt++)
-		value.number[0] = (value.number[0]<<1) + (*cp++ & 1);
-	    }
+		value.number[0] = (value.number[0]<<1) | (*cp++=='1');
+	    break;
+
+	  case 'z':
+	  case 'Z':
+	    state = STATE_Z;
+	    break;
+
+	  default:
+	    state = STATE_U;
+	    break;
 	}
+    }
 
     /* if (DTPRINT_FILE) printf ("time %d sig %s state %d\n", time, sig_ptr->signame,  state); */
     value.siglw.sttime.state = state;
     value.siglw.sttime.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
-    }
+}
 
 #if !defined (fil_add_cptr)
 #pragma inline (fil_add_cptr)
@@ -443,8 +454,6 @@ void	fil_add_cptr (sig_ptr, value_ptr, nocheck)
 	    ((sig_ptr->cptr) - sig_ptr->lws)->sttime.state,      
 	    ((sig_ptr->cptr) - sig_ptr->lws)->sttime.time
 	    );
-    /*
-	    */
 
     /* Comparing all 4 LW's works because we keep the unused LWs zeroed */
     cptr = sig_ptr->cptr - sig_ptr->lws;
@@ -456,9 +465,10 @@ void	fil_add_cptr (sig_ptr, value_ptr, nocheck)
 	|| ( cptr[4].number != value_ptr->number[3] ) ) {
 
 	diff = sig_ptr->cptr - sig_ptr->bptr;
-	if ((diff*sizeof(SIGNAL_LW)) > ( (BLK_SIZE * sig_ptr->blocks - sizeof(VALUE)*2 - 2 ))) {
-	    sig_ptr->blocks++;
-	    sig_ptr->bptr = (SIGNAL_LW *)XtRealloc ((char*)sig_ptr->bptr, sig_ptr->blocks*BLK_SIZE);
+	if (diff > sig_ptr->blocks ) {
+	    sig_ptr->blocks += BLK_SIZE;
+	    sig_ptr->bptr = (SIGNAL_LW *)XtRealloc ((char*)sig_ptr->bptr,
+						    (sig_ptr->blocks*sizeof(unsigned int)) + (sizeof(VALUE)*2 + 2));
 	    sig_ptr->cptr = sig_ptr->bptr + diff;
 	}
        
@@ -468,8 +478,8 @@ void	fil_add_cptr (sig_ptr, value_ptr, nocheck)
 	(sig_ptr->cptr)[3].number = value_ptr->number[2];
 	(sig_ptr->cptr)[4].number = value_ptr->number[3];
 	(sig_ptr->cptr) += sig_ptr->lws;
-	}
     }
+}
 #endif
 
 void read_make_busses (trace, not_tempest)
@@ -694,9 +704,9 @@ void read_make_busses (trace, not_tempest)
 	    + ((sig_ptr->file_type.flag.four_state) ? 2:1) * sig_ptr->bits;
 	
 	/* allocate the data storage memory */
-	sig_ptr->bptr = (SIGNAL_LW *)XtMalloc (BLK_SIZE);
+	sig_ptr->blocks = BLK_SIZE;
+	sig_ptr->bptr = (SIGNAL_LW *)XtMalloc ((sig_ptr->blocks*sizeof(unsigned int)) + (sizeof(VALUE)*2 + 2));
 	sig_ptr->cptr = sig_ptr->bptr;
-	sig_ptr->blocks = 1;
 	}
 
     if (DTPRINT_BUSSES) print_sig_names (NULL, trace);
@@ -781,11 +791,11 @@ void read_trace_end (trace)
     config_read_defaults (trace, FALSE);
 
     /* Apply the statenames */
-    val_states_update ();
-    val_update_search ();
-    sig_update_search ();
+    draw_needupd_val_states ();
+    draw_needupd_val_search ();
+    draw_needupd_sig_search ();
+    draw_needupd_sig_start ();
     grid_calc_autos (trace);
-    draw_update_sigstart ();
 
     if (DTPRINT_FILE) printf ("read_trace_end: Done\n");
     }

@@ -328,6 +328,7 @@ void	add_signal_state (trace, info)
       memcpy ((void *)new, (void *)info, sizeof(SIGNALSTATE));
       new->next = global->signalstate_head;
       global->signalstate_head = new;
+      draw_needupd_val_states ();
     }
     else {
       /* Found, overwrite old */
@@ -936,7 +937,7 @@ void	config_process_line_internal (trace, line, eof)
 		global->val_srch[search_pos].color = (show_value) ? search_pos+1 : 0;
 		global->val_srch[search_pos].cursor = (add_cursor) ? search_pos+1 : 0;
 		string_to_value (trace, strg, global->val_srch[search_pos].value);
-		val_update_search ();
+		draw_needupd_val_search ();
 		}
 	    }
 	else if (!strcmp(cmd, "CURSOR_ADD")) {
@@ -1171,9 +1172,9 @@ void config_read_defaults (trace, report_errors)
 	}
 
     /* Apply the statenames */
-    val_states_update ();
-    val_update_search ();
-    sig_update_search ();
+    draw_needupd_val_states ();
+    draw_needupd_val_search ();
+    draw_needupd_sig_search ();
     grid_calc_autos (trace);
 
     if (DTPRINT_ENTRY) printf ("Exit config_read_defaults\n");
@@ -1323,11 +1324,13 @@ void config_global_defaults(trace)
     TRACE	*trace;
 {
     free_signal_states (trace);
-    val_states_update ();
-    draw_update_sigstart ();
+    draw_needupd_val_states ();
+    draw_needupd_sig_start ();
     
     global->pageinc = FPAGE;
     global->save_ordering = TRUE;
     }
 
+
+/****************************** Callbacks ******************************/
 
