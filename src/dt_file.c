@@ -1141,19 +1141,21 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
     sig_start_pos = t - data_begin_ptr;
 
     /* Skip timestamp or data (don't know which yet) */
-    while (*t && isalnum(*t)) t++;
+    /* Note that a '?' isn't alnum, but need it for WEDOIT::MDBELKIN's traces */
+    while (*t && (isalnum(*t) || *t=='?')) t++;
     sig_end_pos = t - data_begin_ptr;
 
     /* Skip more spaces */
+    /* Nore
     while (*t && isspace(*t)) t++;
-    if (isalnum (*t)) {
+    if (isalnum (*t) || *t=='?') {
 	/* Found second digit, as in the 1 in: " 0000 1" */
 	/* So, this must not be chango format, as it has a timestamp */
 	chango_format = FALSE;
 	sig_start_pos = t - data_begin_ptr;
 
 	/* Find real ending of the signals */
-	while (*t && isalnum(*t)) t++;
+	while (*t && (isalnum(*t) || *t=='?')) t++;
 	sig_end_pos = t - data_begin_ptr;
 	}
     else {
