@@ -240,32 +240,52 @@ int	config_read_on_off (line, out)
 *	pattern matching from GNU (see wildmat.c)
 **********************************************************************/
 
-static int wildStar(s, p)
-    register char	*s;
-    register char	*p;
-{
-    while (wildmat(s, p) == FALSE)
-	if (*++s == '\0')
-	    return(FALSE);
-    return(TRUE);
-    }
-
-int wildmat(s, p)
-    register char	*s;	/* Buffer */
-    register char	*p;	/* Pattern */
+/* Double procedures, both inlined, unrolls loop much better */
+int wildmati(s, p)
+    register unsigned char	*s;	/* Buffer */
+    register unsigned char	*p;	/* Pattern */
 {
     for ( ; *p; s++, p++) {
 	if (*p!='*') {
-	    if (toupper(*s) != toupper(*p)  && *p != '?')
+	    /* df is magic conversion to lower case */
+	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
 		return(FALSE);
 	    }
 	else {
 	    /* Trailing star matches everything. */
-	    return(*++p ? wildStar(s, p) : TRUE);
+	    if (!*++p) return (TRUE);
+	    while (wildmat(s, p) == FALSE)
+		if (*++s == '\0')
+		    return(FALSE);
+	    return(TRUE);
 	    }
 	}
     return(*s == '\0');
     }
+#pragma inline (wildmati)
+
+int wildmat(s, p)
+    register unsigned char	*s;	/* Buffer */
+    register unsigned char	*p;	/* Pattern */
+{
+    for ( ; *p; s++, p++) {
+	if (*p!='*') {
+	    /* df is magic conversion to lower case */
+	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
+		return(FALSE);
+	    }
+	else {
+	    /* Trailing star matches everything. */
+	    if (!*++p) return (TRUE);
+	    while (wildmati(s, p) == FALSE)
+		if (*++s == '\0')
+		    return(FALSE);
+	    return(TRUE);
+	    }
+	}
+    return(*s == '\0');
+    }
+#pragma inline (wildmat)
 
 /**********************************************************************
 *	SUPPORT FUNCTIONS
