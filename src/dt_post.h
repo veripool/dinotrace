@@ -16,7 +16,7 @@ char dinopost[] = "%\n\
 /DELU { 5 XADJ } def		% define DELU\n\
 /DELU2 { 10 XADJ } def		% define DELU2\n\
 \n\
-/PAGEHDR      % stack pagenum file date signum res st_time end_time\n\
+/PAGEHDR      % stack: pagenum file date signum res st_end_time\n\
 { newpath			    % clear current path\n\
   90 rotate                         % rotates to landscape\n\
   0 8.5 72 mul neg translate        % translates so you can see the image\n\
@@ -38,7 +38,7 @@ char dinopost[] = "%\n\
   250 30 MT (Date: ) show 25 string cvs show\n\
   250 20 MT (Digital Equipment Corporation Confidential) show\n\
   530 30 MT (Resolution: ) show 10 string cvs show ( ns/page) show\n\
-  530 20 MT (Time: ) show 10 string cvs show\n\
+  530 20 MT (Time: ) show 25 string cvs show\n\
   stroke /Times-Roman findfont 8 scalefont setfont\n\
   } def\n\
 \n\

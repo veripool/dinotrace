@@ -21,14 +21,15 @@
  *     AAG	 9-Jul-91	Changed to version 4.3, added trace format
  *				 support
  *     WPS	 4-Jan-93	Version 5.0
+ *     WPS	 4-Jan-93	Version 5.1 - Upped max state names to 96
  *
  */
 
-#define DTVERSION	"Dinotrace V5.0"
+#define DTVERSION	"Dinotrace V5.1"
 
 #define MAXSIGLEN 128		/* Maximum length of signal names */
 #define MAXFNAMELEN 128		/* Maximum length of file names */
-#define MAXSTATENAMES 64	/* Maximum number of state name translations */
+#define MAXSTATENAMES 96	/* Maximum number of state name translations */
 #define MAXSTATELEN  32		/* Maximum number of state name translations */
 #define MAX_SIG  512
 #define MAX_CURSORS  64
