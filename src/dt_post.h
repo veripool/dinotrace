@@ -4,7 +4,7 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@iname.com>
  *
  * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
@@ -56,7 +56,7 @@
  *****************************************************************************/
 
 char dt_post[] = "% $Id$\n\
-% Contact wsnyder@ultranet.com with any problems with this document\n\
+% Contact wsnyder@world.std.com with any problems with this document\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
 /STROKE {currentpoint stroke MT} def	% define STROKE saving point\n\

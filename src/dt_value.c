@@ -4,7 +4,7 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@iname.com>
  *
  * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
@@ -789,6 +789,22 @@ char *val_examine_string (
 	strcat (strg, "\n");
     }
 
+    if (sig_ptr->bits>1
+	&& sig_ptr->lsb_index > 0
+	&& ((sig_ptr->bits + sig_ptr->lsb_index) <= 32)
+	&& (cptr->siglw.stbits.state == STATE_B32)) {
+	Value_t shifted;
+	val_zero (&shifted);
+	(&shifted)->siglw     = cptr->siglw;
+	(&shifted)->number[0] = cptr->number[0] << sig_ptr->lsb_index;
+	/* Show decode */
+	sprintf (strg2, "[%d:0] = ", sig_ptr->msb_index);
+	strcat (strg, strg2);
+	val_to_string (sig_ptr->radix, strg2, &shifted, FALSE);
+	strcat (strg, strg2);
+	strcat (strg, "\n");
+    }
+	
     if (sig_ptr->bits>1
 	&& (cptr->siglw.stbits.state == STATE_B32
 	    || cptr->siglw.stbits.state == STATE_0)) {

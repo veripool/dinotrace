@@ -4,7 +4,7 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@iname.com>
  *
  * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
@@ -582,24 +582,6 @@ int	config_read_grid (
     return (outlen);
 }
 
-int	config_read_time (
-    Trace_t	*trace,
-    char 	*line,
-    DTime_t	*dtime)
-{
-    int 	outlen;
-    char cmd[MAXSIGLEN];
-
-    outlen = config_read_string (trace, line, cmd);
-    if (!isdigit(cmd[0])) {
-	sprintf (message, "Expected time\n");
-	*dtime = 0;
-    }
-    *dtime = string_to_time (trace, cmd);
-
-    return (outlen);
-}
-
 /**********************************************************************
 *	config_process_states
 **********************************************************************/
@@ -885,10 +867,9 @@ static void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "GRID_RESOLUTION")) {
 	    line += config_read_grid (trace, line, &grid_ptr);
-	    line += config_read_time (trace, line, &value);
+	    line += config_read_string (trace, line, pattern);
 	    if (grid_ptr) {
-		if (isalpha(line[0])) {
-		    line += config_read_string (trace, line, pattern);
+		if (isalpha(pattern[0])) {
 		    if (toupper(pattern[0])=='A')
 			grid_ptr->period_auto = PA_AUTO;
 		    else if (toupper(pattern[0])=='E')
@@ -898,6 +879,7 @@ static void	config_process_line_internal (
 		    }
 		}
 		else {
+		    value = string_to_time (trace, pattern);
 		    grid_ptr->period = value;
 		    grid_ptr->period_auto = PA_USER;
 		}
@@ -905,9 +887,8 @@ static void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "GRID_ALIGN")) {
 	    line += config_read_grid (trace, line, &grid_ptr);
-	    line += config_read_time (trace, line, &value);
-	    if (isalpha(line[0])) {
-		line += config_read_string (trace, line, pattern);
+	    line += config_read_string (trace, line, pattern);
+	    if (isalpha(pattern[0])) {
 		if (toupper(pattern[0])=='A')
 		    grid_ptr->align_auto = AA_ASS;
 		else if (toupper(pattern[0])=='D')
@@ -919,6 +900,7 @@ static void	config_process_line_internal (
 		}
 	    }
 	    else {
+		value = string_to_time (trace, pattern);
 		grid_ptr->alignment = value;
 		grid_ptr->align_auto = AA_USER;
 	    }

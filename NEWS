@@ -18,8 +18,11 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 **	If a common prefix is present on every signal being displayed,
 	then that prefix is no longer drawn, though it is still kept inside
 	Dinotrace.  Drawing prefixes may be reenabled with a button in the
-	Configure window, and with the draw_prefix configuration switch.
+	Configure window, or with the draw_prefix configuration switch.
 	[Dominik Strasser]
+
+***	Value Examine (Mouse Button 2) now shows the value shifted to bit 0,
+	if appropriate.  For example [10:3]=1 gets displayed also as [10:0]=8.
 
 ****	Fixed tempest files which start with phase b. [Steve Hoover]
 
