@@ -98,7 +98,9 @@ INFOS = dinotrace.info INSTALL FAQ dinotrace.txt
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = $(INFOS) Makefile src/dinodoc.pl src/dist_date.pl
 # Files to distribute.
-DISTBIN = bin/dinotrace-sparc-sun-solaris2.5.1 bin/dinotrace-sparc-sun-sunos4.1.4
+DISTBIN = bin/dinotrace-sparc-sun-solaris2.5.1 \
+	bin/dinotrace-sparc-sun-sunos4.1.4 \
+	bin/dinotrace-i386-pc-cygwin32.exe
 DISTFILES = $(INFOS) COPYING NEWS TODO configure *.in \
 	config.sub config.guess \
 	install-sh mkinstalldirs *.texi *.com \
