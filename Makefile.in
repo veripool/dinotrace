@@ -241,6 +241,6 @@ dist: $(DISTDEP) maintainer-copy
 	uuencode $$distname.tar.gz $$distname.tar.gz > $$distname.tar.gz.uu; \
 
 maintainer-dist: dist tag
-	echo "Did you rebuild all versions in .../bin ?"
+	echo "****** Did you rebuild all versions in .../bin ?"
 	cp *.gz ~/backpack
 	cp *.gz ~/src/kits
