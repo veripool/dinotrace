@@ -799,6 +799,8 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		    sprintf (vstrg,"%x", value);
 		else if (trace->busrep == OBUS)
 		    sprintf (vstrg,"%o", value);
+		else
+		    sprintf (vstrg,"%d", value);
 
 		/* Below evaluation left to right important to prevent error */
 		if ( (sig_ptr->decode != NULL) &&

@@ -32,6 +32,8 @@ static char rcsid[] = "$Id$";
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
+#include <Xm/FileSB.h>
+#include <Xm/Form.h>
 #include <Xm/RowColumn.h>
 #include <Xm/PushB.h>
 #include <Xm/ToggleB.h>
@@ -125,6 +127,10 @@ void cus_dialog_cb (w,trace,cb)
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Hexadecimal"));
 	trace->custom.tbus4 = XmCreateToggleButton (trace->custom.rbus,"tbus4",arglist,1);
 	XtManageChild (trace->custom.tbus4);
+	
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Decimal"));
+	trace->custom.tbus5 = XmCreateToggleButton (trace->custom.rbus,"tbus5",arglist,1);
+	XtManageChild (trace->custom.tbus5);
 	
 	/* Create label for time value */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Time Repres."));
@@ -248,6 +254,8 @@ void cus_dialog_cb (w,trace,cb)
     XtSetValues (trace->custom.tbus3,arglist,1);
     XtSetArg (arglist[0], XmNset, (trace->busrep==HBUS));
     XtSetValues (trace->custom.tbus4,arglist,1);
+    XtSetArg (arglist[0], XmNset, (trace->busrep==DBUS));
+    XtSetValues (trace->custom.tbus5,arglist,1);
     
     XtSetArg (arglist[0], XmNset, (trace->timerep==TIMEREP_NS));
     XtSetValues (trace->custom.ttimens,arglist,1);
@@ -277,21 +285,6 @@ void cus_dialog_cb (w,trace,cb)
     XtManageChild (trace->custom.customize);
     }
 
-
-void cus_read_cb (w,trace,cb)
-    Widget			w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
-{
-    if (DTPRINT_ENTRY) printf ("in cus_read_cb trace=%d\n",trace);
-    
-    /* create popup to get filename */
-    
-    config_read_file (trace, "DINODISK:DINOTRACE.DINO", FALSE, TRUE);
-    
-    /* Reformat and refresh */
-    draw_all_needed ();
-    }
 
 void cus_reread_cb (w,trace,cb)
     Widget			w;
@@ -342,7 +335,9 @@ void	cus_ok_cb (w,trace,cb)
 
     if (XmToggleButtonGetState (trace->custom.tbus3))
 	trace->busrep = OBUS;
-    else trace->busrep = HBUS;
+    else if (XmToggleButtonGetState (trace->custom.tbus4))
+	trace->busrep = HBUS;
+    else trace->busrep = DBUS;
 
     if (XmToggleButtonGetState (trace->custom.ttimecyc))
 	trace->timerep = TIMEREP_CYC;
@@ -378,4 +373,115 @@ void	cus_apply_cb (w,trace,cb)
     /* manage the customize window */
     XtManageChild (trace->custom.customize);
     }
+
+/****************************** File reading ******************************/
+
+void cus_read_cb (w, trace, cb)
+    Widget	w;
+    TRACE	*trace;
+    XmFileSelectionBoxCallbackStruct *cb;
+{
+    int		i;
+    int		cfg_num;
+    
+    if (DTPRINT_ENTRY) printf ("In cus_read_cb trace=%d\n",trace);
+    
+    if (!trace->cusread.dialog) {
+	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Read Dinotrace File") );
+	trace->cusread.dialog = XmCreateFileSelectionDialog ( trace->main, "file", arglist, 2);
+	XtAddCallback (trace->cusread.dialog, XmNokCallback, cus_read_ok_cb, trace);
+	XtAddCallback (trace->cusread.dialog, XmNcancelCallback, unmanage_cb, trace->cusread.dialog);
+	XtUnmanageChild ( XmFileSelectionBoxGetChild (trace->cusread.dialog, XmDIALOG_HELP_BUTTON));
+	
+	XtSetArg (arglist[0], XmNhorizontalSpacing, 10);
+	XtSetArg (arglist[1], XmNverticalSpacing, 7);
+	trace->cusread.work_area = XmCreateForm (trace->cusread.dialog, "wa", arglist, 2);
+	/*trace->cusread.form = XmCreateWorkArea (trace->cusread.work_, "wa", arglist, 0);*/
+
+	/* Create label for this grid */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("When reading a trace, read which .dino files?"));
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNleftOffset, 25);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_FORM );
+	trace->cusread.config_label = XmCreateLabel (trace->cusread.work_area,"label",arglist,5);
+	XtManageChild (trace->cusread.config_label);
+	
+	for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
+	    /* enable button */
+	    XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
+	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_WIDGET );
+	    XtSetArg (arglist[2], XmNtopWidget, 
+		      (cfg_num>0)? trace->cusread.config_enable[cfg_num-1] : trace->cusread.config_label);
+	    XtSetArg (arglist[3], XmNleftOffset, 15);
+	    trace->cusread.config_enable[cfg_num] = XmCreateToggleButton (trace->cusread.work_area,"",arglist,4);
+	    XtManageChild (trace->cusread.config_enable[cfg_num]);
+	    
+	    /* file name */
+	    XtSetArg (arglist[0], XmNrows, 1);
+	    XtSetArg (arglist[1], XmNcolumns, 30);
+	    XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_WIDGET );
+	    XtSetArg (arglist[3], XmNleftWidget, trace->cusread.config_enable[cfg_num]);
+	    XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_OPPOSITE_WIDGET );
+	    XtSetArg (arglist[5], XmNtopOffset, -5);
+	    XtSetArg (arglist[6], XmNtopWidget, trace->cusread.config_enable[cfg_num]);
+	    XtSetArg (arglist[7], XmNresizeHeight, FALSE);
+	    XtSetArg (arglist[8], XmNeditMode, XmSINGLE_LINE_EDIT);
+	    XtSetArg (arglist[9], XmNsensitive, (cfg_num<3));
+	    trace->cusread.config_filename[cfg_num] = XmCreateText (trace->cusread.work_area,"textn",arglist,10);
+	    XtManageChild (trace->cusread.config_filename[cfg_num]);
+	    }
+
+	XtManageChild (trace->cusread.work_area);
+	
+	XSync (global->display,0);
+
+	/* Set directory */
+	XtSetArg (arglist[0], XmNdirectory, XmStringCreateSimple (global->directory) );
+	XtSetValues (trace->cusread.dialog,arglist,1);
+	fil_select_set_pattern (trace, trace->cusread.dialog, "*.dino");
+	}
+    
+    config_update_filenames (trace);
+    for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
+	XmToggleButtonSetState (trace->cusread.config_enable[cfg_num], (global->config_enable[cfg_num]), TRUE);
+	XmTextSetString (trace->cusread.config_filename[cfg_num], global->config_filename[cfg_num]);
+    }
+
+    XtManageChild (trace->cusread.dialog);
+
+    XSync (global->display,0);
+    }
+
+void cus_read_ok_cb (w, trace, cb)
+    Widget	w;
+    TRACE	*trace;
+    XmFileSelectionBoxCallbackStruct *cb;
+{
+    char	*tmp;
+    char	filename[MAXFNAMELEN];
+    int		cfg_num;
+    
+    if (DTPRINT_ENTRY) printf ("In cus_read_ok_cb trace=%d\n",trace);
+    
+    XtUnmanageChild (trace->cusread.dialog);
+    XSync (global->display,0);
+    
+    for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
+	global->config_enable[cfg_num] = XmToggleButtonGetState (trace->cusread.config_enable[cfg_num]);
+	strcpy (global->config_filename[cfg_num], XmTextGetString (trace->cusread.config_filename[cfg_num]));
+    }
+
+    tmp = extract_first_xms_segment (cb->value);
+    strcpy (filename, tmp);
+    DFree (tmp);
+    if (DTPRINT_FILE) printf ("In fil_ok_cb Filename=%s\n",trace->filename);
+
+    config_read_file (trace, filename, TRUE, TRUE);
+
+    /* Apply the statenames */
+    grid_calc_autos (trace);
+    draw_all_needed ();
+    }
+
 

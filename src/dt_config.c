@@ -1053,6 +1053,11 @@ void config_read_file (trace, filename, report_notfound, report_errors)
     char line[1000];
     
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Reading config file %s\n", filename);
+
+    if (filename[strlen(filename)-1] == '/') {
+	/* Ignore it, It's a directory */
+	return;
+    }
     
     config_report_errors = report_errors;
     
@@ -1109,73 +1114,58 @@ void config_read_socket (
 *	config_read_defaults
 **********************************************************************/
 
+void config_update_filenames (trace)
+    TRACE	*trace;
+{
+    char *pchar;
+
+    if (DTPRINT_ENTRY) printf ("In config_update_filenames\n");
+	
+    global->config_filename[3][0] = '\0';
+    global->config_filename[4][0] = '\0';
+
+    /* Same directory as trace, dinotrace.dino */
+    if (trace->filename != '\0') {
+	strcpy (global->config_filename[3], trace->filename);
+	file_directory (global->config_filename[3]);
+	strcat (global->config_filename[3], "dinotrace.dino");
+    }
+
+    /* Same file as trace, but .dino extension */
+    if (trace->filename != '\0') {
+	strcpy (global->config_filename[4], trace->filename);
+	if ((pchar=strrchr(global->config_filename[4],'.')) != NULL )
+	    *pchar = '\0';
+	if ((pchar=strrchr(global->config_filename[4],'.')) != NULL )
+	    *pchar = '\0';
+	strcat (global->config_filename[4], ".dino");
+    }
+}
+
 void config_read_defaults (trace, report_errors)
     TRACE	*trace;
     Boolean	report_errors;
 {
     char newfilename[MAXFNAMELEN];
     char *pchar;
+    int		cfg_num;
 
     if (DTPRINT_ENTRY) printf ("In config_read_defaults\n");
 
     /* Erase old cursors */
     cur_delete_of_type (CONFIG);
 
-    if (!global->suppress_config) {
-#ifdef VMS
-	config_read_file (trace, "DINODISK:DINOTRACE.DINO", FALSE, report_errors);
-	config_read_file (trace, "DINOCONFIG:", FALSE, report_errors);
-	config_read_file (trace, "SYS$LOGIN:DINOTRACE.DINO", FALSE, report_errors);
-#else
-	newfilename[0] = '\0';
-	if (NULL != (pchar = getenv ("DINODISK"))) strcpy (newfilename, pchar);
-	if (newfilename[0]) strcat (newfilename, "/");
-	strcat (newfilename, "dinotrace.dino");
-	config_read_file (trace, newfilename, FALSE, report_errors);
-	
-	newfilename[0] = '\0';
-	if (NULL != (pchar = getenv ("DINOCONFIG"))) strcpy (newfilename, pchar);
-	config_read_file (trace, newfilename, FALSE, report_errors);
-	
-	newfilename[0] = '\0';
-	if (NULL != (pchar = getenv ("HOME"))) strcpy (newfilename, pchar);
-	if (newfilename[0]) strcat (newfilename, "/");
-	strcat (newfilename, "dinotrace.dino");
-	config_read_file (trace, newfilename, FALSE, report_errors);
-#endif
-	
-	/* Same directory as trace, dinotrace.dino */
-	if (trace->filename != '\0') {
-	    strcpy (newfilename, trace->filename);
-	    file_directory (newfilename);
-	    strcat (newfilename, "dinotrace.dino");
-	    config_read_file (trace, newfilename, FALSE, report_errors);
-	    }
-	}
+    config_update_filenames(trace);
 
-    /* Same file as trace, but .dino extension */
-    if (trace->filename != '\0') {
-	strcpy (newfilename, trace->filename);
-	if ((pchar=strrchr(newfilename,'.')) != NULL )
-	    *pchar = '\0';
-	strcat (newfilename, ".dino");
-	config_read_file (trace, newfilename, FALSE, report_errors);
-	/* Chop one more period & try again */
-	if (pchar) {
-	    *pchar = '\0';
-	    if ((pchar=strrchr(newfilename,'.')) != NULL ) {
-		*pchar = '\0';
-		strcat (newfilename, ".dino");
-		config_read_file (trace, newfilename, FALSE, report_errors);
-		}
-	    }
+    for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
+	if ( global->config_enable[cfg_num] ) {
+	    config_read_file (trace, global->config_filename[cfg_num], FALSE, report_errors);
 	}
+    }
 
     /* Apply the statenames */
-    draw_needupd_val_states ();
-    draw_needupd_val_search ();
-    draw_needupd_sig_search ();
     grid_calc_autos (trace);
+    draw_all_needed ();
 
     if (DTPRINT_ENTRY) printf ("Exit config_read_defaults\n");
     }
@@ -1331,6 +1321,4 @@ void config_global_defaults(trace)
     global->save_ordering = TRUE;
     }
 
-
-/****************************** Callbacks ******************************/
 

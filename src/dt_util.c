@@ -371,25 +371,26 @@ void get_geometry ( trace )
 			x,y,width,height);
     }
 
-void  fil_select_set_pattern (trace)
+void  fil_select_set_pattern (trace, dialog, pattern)
     TRACE	*trace;
+    Widget	dialog;
+    char	*pattern;
     /* Set the file requester pattern information (called in 2 places) */
 {
-    char mask[MAXFNAMELEN], *dirname, *pattern;
+    char mask[MAXFNAMELEN], *dirname;
     XmString	xs_dirname;
 
     /* Grab directory information */
     XtSetArg (arglist[0], XmNdirectory, &xs_dirname);
-    XtGetValues (trace->fileselect.dialog, arglist, 1);
+    XtGetValues (dialog, arglist, 1);
     dirname = extract_first_xms_segment (xs_dirname);
 
     /* Pattern information */
     strcpy (mask, dirname);
-    pattern = filetypes[file_format].mask;
     strcat (mask, pattern);
     XtSetArg (arglist[0], XmNdirMask, XmStringCreateSimple (mask) );
     XtSetArg (arglist[1], XmNpattern, XmStringCreateSimple (pattern) );
-    XtSetValues (trace->fileselect.dialog,arglist,2);
+    XtSetValues (dialog,arglist,2);
     }
 
 
@@ -458,7 +459,7 @@ void  get_file_name ( trace )
     XtSetArg (arglist[0], XmNdirectory, XmStringCreateSimple (global->directory) );
     XtSetValues (trace->fileselect.dialog,arglist,1);
 
-    fil_select_set_pattern (trace);
+    fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
 
     XSync (global->display,0);
     }
@@ -475,7 +476,7 @@ void    fil_format_option_cb (w,trace,cb)
 	if (w == trace->fileselect.format_item[i]) {
 	    file_format = i;	/* Change global verion */
 	    trace->fileformat = i;	/* Specifically make this file use this format */
-	    fil_select_set_pattern (trace);
+	    fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
 	    }
 	}
     }

@@ -131,8 +131,11 @@ int    main (argc, argv)
 		global->res_default = FALSE;
 		}
 	    else if ( !strcmp (argv[i], "-noconfig") ) {
-		global->suppress_config = TRUE;
+		int cfg_num;
+		for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
+		    global->config_enable[cfg_num] = FALSE;
 		}
+	    }
 	    else {
 		printf ("Invalid %s Option: %s\n", DTVERSION, argv[i]);
 		printf ("\n%s\n\n", help_message ());

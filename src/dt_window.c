@@ -371,6 +371,9 @@ void win_full_res_cb (w,trace,cb)
     /*    printf ("%d %d %d %d %d\n",
 	   global->xstart, trace->width,XMARGIN, trace->end_time, trace->start_time);	   */
 
+    /* xstart matters, so recalc if needed */
+    draw_update();
+
     /* set resolution  */
     if (trace->end_time != trace->start_time) {
 	global->time = trace->start_time;

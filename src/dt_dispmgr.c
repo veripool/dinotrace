@@ -281,6 +281,7 @@ void init_globals ()
 {
     int i;
     char *pchar;
+    int		cfg_num;
 
     if (DTPRINT_ENTRY) printf ("in init_globals\n");
 
@@ -345,6 +346,31 @@ void init_globals ()
 	/* Signal */
 	memset ((char *)&global->sig_srch[i], 0, sizeof (SIGSEARCH));
 	}
+
+    /* Config stuff */
+    for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
+	global->config_enable[cfg_num] = TRUE;
+	global->config_filename[cfg_num][0] = '\0';
+    }
+
+#ifdef VMS
+    strcpy (global->config_filename[0], "DINODISK:DINOTRACE.DINO");
+    strcpy (global->config_filename[1], "DINOCONFIG:");
+    strcpy (global->config_filename[2], "SYS$LOGIN:DINOTRACE.DINO");
+#else
+    global->config_filename[0][0] = '\0';
+    if (NULL != (pchar = getenv ("DINODISK"))) strcpy (global->config_filename[0], pchar);
+    if (global->config_filename[0][0]) strcat (global->config_filename[0], "/");
+    strcat (global->config_filename[0], "dinotrace.dino");
+	
+    global->config_filename[1][0] = '\0';
+    if (NULL != (pchar = getenv ("DINOCONFIG"))) strcpy (global->config_filename[1], pchar);
+	
+    global->config_filename[2][0] = '\0';
+    if (NULL != (pchar = getenv ("HOME"))) strcpy (global->config_filename[2], pchar);
+    if (global->config_filename[2][0]) strcat (global->config_filename[2], "/");
+    strcat (global->config_filename[2], "dinotrace.dino");
+#endif
     }
 
 void create_globals (argc, argv, sync)
@@ -673,7 +699,8 @@ TRACE *create_trace (xs,ys,xp,yp)
 
     dm_menu_title (trace, "Customize", 'u');
     dm_menu_entry (trace, 	"Change...",	'C',	NULL, NULL,	cus_dialog_cb);
-    dm_menu_entry (trace, 	"Grid...",	'R',	NULL, NULL,	grid_customize_cb);
+    dm_menu_entry (trace, 	"Grid...",	'G',	NULL, NULL,	grid_customize_cb);
+    dm_menu_entry (trace, 	"Read...",	'R',	NULL, NULL,	cus_read_cb);
     dm_menu_entry (trace, 	"ReRead",	'e',	NULL, NULL,	cus_reread_cb);
     if (DTDEBUG) {
 	dm_menu_entry (trace, 	"Write",	'W',	NULL, NULL,	config_write_cb);

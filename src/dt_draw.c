@@ -534,10 +534,14 @@ void draw_trace (trace)
 			}
 		    }
 		else {
-		  value_rep:	    if (trace->busrep == HBUS)
-		      sprintf (strg,"%x", value);
-		  else if (trace->busrep == OBUS)
-		      sprintf (strg,"%o", value);
+		  value_rep:
+
+		    if (trace->busrep == HBUS)
+			sprintf (strg,"%x", value);
+		    else if (trace->busrep == OBUS)
+			sprintf (strg,"%o", value);
+		    else 
+			sprintf (strg,"%d", value);
 		    }
 		
 		srch_this_color = 0;

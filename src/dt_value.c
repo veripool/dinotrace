@@ -52,24 +52,32 @@ void    value_to_string (trace, strg, cptr, seperator)
 	    sprintf (strg,"%x%c%08x%c%08x%c%08x", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	else if (trace->busrep == OBUS)
 	    sprintf (strg,"%o%c%010o%c%010o%c%010o", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
+	else
+	    sprintf (strg,"%d%c%010d%c%010d%c%010d", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	}
     else if (cptr[2]) {
 	if (trace->busrep == HBUS)
 	    sprintf (strg,"%x%c%08x%c%08x", cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	else if (trace->busrep == OBUS)
 	    sprintf (strg,"%o%c%010o%c%010o", cptr[2], seperator, cptr[1], seperator, cptr[0]);
+	else
+	    sprintf (strg,"%d%c%010d%c%010d", cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	}
     else if (cptr[1]) {
 	if (trace->busrep == HBUS)
 	    sprintf (strg,"%x%c%08x", cptr[1], seperator, cptr[0]);
 	else if (trace->busrep == OBUS)
 	    sprintf (strg,"%o%c%010o", cptr[1], seperator, cptr[0]);
+	else
+	    sprintf (strg,"%d%c%010d", cptr[1], seperator, cptr[0]);
 	}
     else {
 	if (trace->busrep == HBUS)
 	    sprintf (strg,"%x", cptr[0]);
 	else if (trace->busrep == OBUS)
 	    sprintf (strg,"%o", cptr[0]);
+	else
+	    sprintf (strg,"%d", cptr[0]);
 	}
     }
 
@@ -81,17 +89,18 @@ void    string_to_value (trace, strg, cptr)
     register char value;
     unsigned int MSO = (7<<29);		/* Most significant hex digit */
     unsigned int MSH = (15<<28);	/* Most significant octal digit */
+    register char *cp;
 
     cptr[0] = cptr[1] = cptr[2] = cptr[3] = 0;
 
-    for (; *strg; strg++) {
+    for (cp=strg; *cp; cp++) {
 	value = -1;
-	if (*strg >= '0' && *strg <= '9')
-	    value = *strg - '0';
-	else if (*strg >= 'A' && *strg <= 'F')
-	    value = *strg - ('A' - 10);
-	else if (*strg >= 'a' && *strg <= 'f')
-	    value = *strg - ('a' - 10);
+	if (*cp >= '0' && *cp <= '9')
+	    value = *cp - '0';
+	else if (*cp >= 'A' && *cp <= 'F')
+	    value = *cp - ('A' - 10);
+	else if (*cp >= 'a' && *cp <= 'f')
+	    value = *cp - ('a' - 10);
 
 	if (trace->busrep == HBUS && value >=0 && value <= 15) {
 	    cptr[3] = (cptr[3]<<4) + ((cptr[2] & MSH)>>28);
@@ -104,6 +113,13 @@ void    string_to_value (trace, strg, cptr)
 	    cptr[2] = (cptr[2]<<3) + ((cptr[1] & MSO)>>29);
 	    cptr[1] = (cptr[1]<<3) + ((cptr[0] & MSO)>>29);
 	    cptr[0] = (cptr[0]<<3) + value;
+	    }
+	else if (trace->busrep == DBUS && value >=0 && value <= 9) {
+	    /* This may be buggy */
+	    cptr[3] = (cptr[3]*10) + ((cp>=(strg+30))?cp[-30]:0);
+	    cptr[2] = (cptr[2]*10) + ((cp>=(strg+20))?cp[-20]:0);
+	    cptr[1] = (cptr[1]*10) + ((cp>=(strg+10))?cp[-10]:0);
+	    cptr[0] = (cptr[0]*10) + value;
 	    }
 	}
     }
@@ -635,7 +651,8 @@ void    val_search_cb (w,trace,cb)
 	XtManageChild (trace->value.label5);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple
-		 ( (trace->busrep == HBUS)? "Search value in HEX":"Search value in OCTAL" ) );
+		 ( (trace->busrep == HBUS)? "Search value in HEX":
+		  ( (trace->busrep == DBUS) ? "Search value in OCTAL" : "Search value in DECIMAL" ) ) );
 	XtSetArg (arglist[1], XmNx, 140);
 	XtSetArg (arglist[2], XmNy, y);
 	trace->value.label3 = XmCreateLabel (trace->value.search,"label3",arglist,3);

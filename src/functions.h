@@ -145,7 +145,7 @@ extern int	last_set_cursor ();
 extern void
     cus_dialog_cb(), cus_read_cb(), 
     cus_ok_cb(), cus_apply_cb(), 
-    cus_hit_return(), cus_restore_cb(), cus_reread_cb();
+    cus_hit_return(), cus_restore_cb(), cus_reread_cb(), cus_read_cb(), cus_read_ok_cb();
     
 /* dt_cursor.c routines */
 extern void

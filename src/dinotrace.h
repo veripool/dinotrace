@@ -50,6 +50,7 @@
 #define MAXVALUELEN	40	/* Maximum length of values or state names, 32hex digits + 4 sep + NULL */
 #define MAXGRIDS	4	/* Maximum number of grids */
 #define MAXSCREENWIDTH	5000	/* Maximum width of screen */
+#define MAXCFGFILES	5	/* Maximum number of config files */
 #define	MIN_GRID_RES	5	/* Minimum grid resolution, in pixels between grid lines */
 #define	GRID_TIME_Y	20	/* Y Coordinate of where to print grid times */
 #define BLK_SIZE	512	/* Trace data block size (512 transitions/signal == 2K min/sig) */
@@ -111,6 +112,7 @@
 #define BBUS 2
 #define OBUS 3
 #define HBUS 4
+#define DBUS 5
 
 /* Time representation enums */
 #define TIMEREP_PS 1.0
@@ -216,7 +218,7 @@ typedef struct {
     Widget page_label;
     Widget rpage, tpage1, tpage2, tpage3;
     Widget bus_label;
-    Widget rbus, tbus1, tbus2, tbus3, tbus4;
+    Widget rbus, tbus1, tbus2, tbus3, tbus4, tbus5;
     Widget time_label;
     Widget rtime, ttimens, ttimecyc, ttimeus, ttimeps;
     Widget sighgt_label;
@@ -304,6 +306,16 @@ typedef struct {
     Widget format_menu, format_option, format_item[FF_NUMFORMATS];
     Widget save_ordering;
     } FILE_WDGTS;
+
+typedef struct {
+    Widget dialog;
+    Widget work_area;
+    Widget save_ordering;
+    Widget form;
+    Widget config_label;
+    Widget config_enable[MAXCFGFILES];
+    Widget config_filename[MAXCFGFILES];
+    } CUSREAD_WDGTS;
 
 typedef struct {
     Widget popup;
@@ -534,6 +546,7 @@ typedef struct st_trace {
     GRIDS_WDGTS		gridscus;
     SELECT_WDGTS	select;
     FILE_WDGTS		fileselect;
+    CUSREAD_WDGTS	cusread;
     Widget		shell;
     Widget		main;
     Widget		work;
@@ -562,7 +575,7 @@ typedef struct st_trace {
     Position		ystart;		/* Start Y pos of signals on display (dispmgr) */
     Position		sighgt;		/* Height of signals (customize) */
     int			sigrf;		/* Signal rise/fall time spec */
-    int			busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS */
+    int			busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS/DBUS */
     TimeRep		timerep;	/* Time representation = TIMEREP_NS/TIMEREP_CYC */
 
     GRID		grid[MAXGRIDS];	/* Grid information */
@@ -615,7 +628,6 @@ typedef struct {
     GEOMETRY		start_geometry;	/* Geometry to open first trace with */
     GEOMETRY		open_geometry;	/* Geometry to open later traces with */
     GEOMETRY		shrink_geometry; /* Geometry to shrink trace->open traces with */
-    Boolean		suppress_config;/* Don't read in any group, user, or directory config files */
 
     Boolean		anno_poppedup;	/* Annotation has been poped up on some window */
     Boolean		anno_ena_signal[MAX_SRCH+1];   /* Annotation signal enables */
@@ -655,6 +667,9 @@ typedef struct {
     Position		xstart;		/* Start X pos of signals on display (read_DECSIM) */
     DTime		click_time;	/* time clicked on for res_zoom_click */
     GRID		*click_grid;	/* grid being set by grid_align */
+
+    Boolean		config_enable[MAXCFGFILES];/* Read in this config file */
+    char		config_filename[MAXCFGFILES][MAXFNAMELEN];	/* Config files */
     } GLOBAL;
 
 extern GLOBAL *global;
