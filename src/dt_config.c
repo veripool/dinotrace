@@ -59,10 +59,10 @@
 ! Modification of traces:
 !	signal_delete	<signal_pattern>
 !	signal_delete_constant	<signal_pattern>
-!	signal_add	<signal_pattern>	[<after_signal_first_matches>]
-!	signal_copy	<signal_pattern>	[<after_signal_first_matches>]
-!	signal_move	<signal_pattern>	[<after_signal_first_matches>]
-!	signal_rename	<signal_pattern> <new_signal_name>
+!	signal_add	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
+!	signal_copy	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
+!	signal_move	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
+!	signal_rename	<signal_pattern> <new_signal_name>	[<color>]
 !	signal_highlight <color> <signal_pattern>
 !	cursor_add	<color> <time>	[-USER]
 !	value_highlight <color>	<value>	[<signal_pattern>] [-CURSOR] [-VALUE]
@@ -473,10 +473,11 @@ int	config_read_on_off (trace, line, out)
     return (outlen);
     }
 
-int	config_read_color (trace, line, color)
+int	config_read_color (trace, line, color, warn)
     TRACE	*trace;
     char 	*line;
     ColorNum	*color;
+    Boolean	warn;
     /* Read color name from line, return <= 0 and print msg if bad */
 {
     int outlen;
@@ -493,8 +494,10 @@ int	config_read_color (trace, line, color)
       default:
 	outlen = config_read_int (line, color);
 	if (*color < 0 || *color > MAX_SRCH) {
-	    sprintf (message, "Color numbers must be 0 to %d, NEXT or CURRENT\n", MAX_SRCH);
-	    config_error_ack (trace, message);
+	    if (warn) {
+		sprintf (message, "Color numbers must be 0 to %d, NEXT or CURRENT\n", MAX_SRCH);
+		config_error_ack (trace, message);
+	        }
 	    *color = -1;
 	    }
 	}
@@ -749,7 +752,7 @@ void	config_process_line_internal (trace, line, eof)
 	}
 	else if (!strcmp(cmd, "GRID_COLOR")) {
 	    ColorNum color;
-	    line += config_read_color (trace, line, &color);
+	    line += config_read_color (trace, line, &color, TRUE);
 	    line += config_read_grid (trace, line, &grid_ptr);
 	    if (grid_ptr && color>=0) {
 		grid_ptr->color = color;
@@ -866,7 +869,7 @@ void	config_process_line_internal (trace, line, eof)
 	    }
 	else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
 	    ColorNum color;
-	    line += config_read_color (trace, line, &color);
+	    line += config_read_color (trace, line, &color, TRUE);
 	    if (color >= 0) {
 		line += config_read_signal (line, pattern);
 		if (!pattern[0]) {
@@ -885,9 +888,14 @@ void	config_process_line_internal (trace, line, eof)
 		config_error_ack (trace, "Signal_Add signal name must not be null\n");
 		}
 	    else {
+		ColorNum color;
 		line += config_read_signal (line, pattern2);
+		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (global->deleted_trace_head, pattern);
 		sig_move_selected (trace, pattern2);
+		if (color >= 0) {
+		    sig_highlight_selected (color);
+		    }
 		}
 	    }
 	else if (!strcmp(cmd, "SIGNAL_MOVE")) {
@@ -897,9 +905,14 @@ void	config_process_line_internal (trace, line, eof)
 		config_error_ack (trace, "Signal_Move signal name must not be null\n");
 		}
 	    else {
+		ColorNum color;
 		line += config_read_signal (line, pattern2);
+		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (NULL, pattern);
 		sig_move_selected (trace, pattern2);
+		if (color >= 0) {
+		    sig_highlight_selected (color);
+		    }
 		}
 	    }
 	else if (!strcmp(cmd, "SIGNAL_RENAME")) {
@@ -910,8 +923,13 @@ void	config_process_line_internal (trace, line, eof)
 		config_error_ack (trace, "Signal_Rename signal names must not be null\n");
 		}
 	    else {
+		ColorNum color;
+		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (NULL, pattern);
 		sig_rename_selected (pattern2);
+		if (color >= 0) {
+		    sig_highlight_selected (color);
+		    }
 		}
 	    }
 	else if (!strcmp(cmd, "SIGNAL_COPY")) {
@@ -921,9 +939,14 @@ void	config_process_line_internal (trace, line, eof)
 		config_error_ack (trace, "Signal_copy signal name must not be null\n");
 		}
 	    else {
+		ColorNum color;
 		line += config_read_signal (line, pattern2);
+		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (NULL, pattern);
 		sig_copy_selected (trace, pattern2);
+		if (color >= 0) {
+		    sig_highlight_selected (color);
+		    }
 		}
 	    }
 	else if (!strcmp(cmd, "SIGNAL_DELETE")) {
@@ -950,7 +973,7 @@ void	config_process_line_internal (trace, line, eof)
 	    char strg[MAXSIGLEN],flag[MAXSIGLEN],signal[MAXSIGLEN]="*";
 	    Boolean show_value=FALSE, add_cursor=FALSE;
 	    VSearchNum search_pos;
-	    line += config_read_color (trace, line, &search_pos);
+	    line += config_read_color (trace, line, &search_pos, TRUE);
 	    search_pos--;
 	    if (search_pos >= 0) {
 		line += config_read_signal (line, strg);
@@ -974,7 +997,7 @@ void	config_process_line_internal (trace, line, eof)
 	    DTime ctime;
 	    char strg[MAXSIGLEN],flag[MAXSIGLEN];
 	    
-	    line += config_read_color (trace, line, &color);
+	    line += config_read_color (trace, line, &color, TRUE);
 	    if (color >= 0) {
 		line += config_read_signal (line, strg);
 		ctime = string_to_time (trace, strg);
