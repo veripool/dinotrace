@@ -60,6 +60,7 @@
 
 srcdir = @srcdir@
 VPATH = @srcdir@
+HOST = @HOST@
 
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -97,10 +98,12 @@ INFOS = dinotrace.info INSTALL FAQ dinotrace.txt
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = $(INFOS) Makefile src/dinodoc.pl src/dist_date.pl
 # Files to distribute.
+DISTBIN = bin/dinotrace-sparc-sun-solaris2.5.1 bin/dinotrace-sparc-sun-sunos4.1.4
 DISTFILES = $(INFOS) COPYING NEWS TODO configure *.in \
 	config.sub config.guess \
 	install-sh mkinstalldirs *.texi *.com \
-	src/*.in src/*.h src/*.c src/*.pl src/*.com lisp/* traces/*
+	src/*.in src/*.h src/*.c src/*.pl src/*.com lisp/* traces/* \
+	$(DISTBIN)
 
 all: dinotrace_exe info
 
@@ -108,7 +111,7 @@ all: dinotrace_exe info
 .PHONY:dinotrace
 dinotrace_exe dinotrace:
 	echo making dinotrace in src ; \
-	  (cd src && $(MAKE) ../dinotrace) ; \
+	  (cd src && $(MAKE) ../dinotrace && cp ../dinotrace ../bin/dinotrace-$(HOST)) ; \
 
 info: $(INFOS)
 
@@ -217,7 +220,7 @@ dist: $(DISTDEP) maintainer-copy
 	distname=`sed -e '/DTVERSION/!d' \
 	-e 's/[^0-9]*\([0-9.a-z]*\).*/dinotrace-\1/' -e q src/config.h.in`; \
 	rm -fr $$distname; \
-	mkdir $$distname $$distname/src $$distname/lisp $$distname/traces; \
+	mkdir $$distname $$distname/src $$distname/lisp $$distname/traces $$distname/bin; \
 	for file in $(DISTFILES); do \
 	  ln $$file $$distname/$$file \
 	  || { echo copying $$file instead; cp -p $$file $$distname/$$file;}; \

@@ -53,3 +53,8 @@ AC_DEFINE_UNQUOTED(DINODISK_DEFAULT,"$pkgdatadir")
 AC_SUBST(pkgdatadir)
 
 AC_OUTPUT(Makefile src/Makefile)
+
+AC_MSG_RESULT([])
+AC_MSG_RESULT([You may want to look in bin/ for a precompiled executable])
+AC_MSG_RESULT([else, now type 'make'])
+AC_MSG_RESULT([])

@@ -72,12 +72,13 @@ still build on:
 @item mips-dec-ultrix
 @end itemize
 
-@node Unix Installation, Basic Installation, Supported Systems
+@node Unix Installation, VMS Installation, Supported Systems
 @section Unix Installation
 
 Dinotrace uses the GNU @code{autoconf} program.
 
 @menu
+* Trivial Installation::        
 * Basic Installation::          
 * Compilers and Options::       
 * Multiple Architectures::      
@@ -86,7 +87,15 @@ Dinotrace uses the GNU @code{autoconf} program.
 * Operation Controls::          
 @end menu
 
-@node Basic Installation, Compilers and Options, Unix Installation
+@node Trivial Installation, Basic Installation, Unix Installation, Unix Installation
+@subsection Trivial Installation
+
+If you are using one of a handful of supported systems, look in the
+@file{bin} directory for the appropriate executable.  If it exists, and
+runs, put it into your search path.  That's it.  You also may want to do
+a install on the lisp directory.
+
+@node Basic Installation, Compilers and Options, Trivial Installation, Unix Installation
 @subsection Basic Installation
 
 The @code{configure} shell script attempts to guess correct values for
@@ -136,7 +145,7 @@ Finally, see the Dinotrace manual for configuring Dinotrace for your site.
 
 @end enumerate
 
-@node Compilers and Options, Multiple Architectures, Basic Installation
+@node Compilers and Options, Multiple Architectures, Basic Installation, Unix Installation
 @subsection Compilers and Options
 
 Some systems require unusual options for compilation or linking that
@@ -154,7 +163,7 @@ Or on systems that have the @code{env} program, you can do it like this:
 env CPPFLAGS=-I/usr/local/include LDFLAGS=-s ./configure
 @end example
 
-@node Multiple Architectures, Installation Names, Compilers and Options
+@node Multiple Architectures, Installation Names, Compilers and Options, Unix Installation
 @subsection Compiling For Multiple Architectures
 
 You can compile Dinotrace for more than one kind of computer at the
@@ -172,7 +181,7 @@ in the source code directory.  After you have installed Dinotrace for
 one architecture, use @samp{make distclean} before reconfiguring for
 another architecture.
 
-@node Installation Names, System Type, Multiple Architectures
+@node Installation Names, System Type, Multiple Architectures, Unix Installation
 @subsection Installation Names
 
 By default, @samp{make install} will install Dinotrace's files in
@@ -196,7 +205,7 @@ an extra prefix or suffix on their names by giving @code{configure} the
 option @samp{--program-prefix=@var{PREFIX}} or
 @samp{--program-suffix=@var{SUFFIX}}.
 
-@node System Type, Operation Controls, Installation Names
+@node System Type, Operation Controls, Installation Names, Unix Installation
 @subsection Specifying the System Type
 
 There may be some features @code{configure} can not figure out
@@ -212,7 +221,7 @@ fields:
 @noindent
 See the file @file{config.sub} for the possible values of each field.
 
-@node Operation Controls, VMS Installation, System Type
+@node Operation Controls,  , System Type, Unix Installation
 @subsection Operation Controls
 
 @code{configure} recognizes the following options to control how it
@@ -244,7 +253,7 @@ Look for Dinotrace's source code in directory @var{dir}.  Usually
 @code{configure} also accepts some other, not widely useful, options.
 
 
-@node VMS Installation,  , Operation Controls
+@node VMS Installation,  , Unix Installation
 @section VMS Installation
 
 The @code{configure} program does not support Dinotrace, thus several
