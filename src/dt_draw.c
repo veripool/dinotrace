@@ -112,7 +112,7 @@ static void draw_string_fit (
     }
 }
     
-inline double draw_analog_value (
+double draw_analog_value (
     const Signal_t *sig_ptr,
     const Value_t  *cptr)
 {
