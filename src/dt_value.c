@@ -47,21 +47,27 @@ void    value_to_string (trace, strg, cptr, seperator)
     unsigned int cptr[];
     char seperator;		/* What to print between the values */
 {
-    if (cptr[2]) {
+    if (cptr[3]) {
 	if (trace->busrep == HBUS)
-	    sprintf (strg,"%X%c%08X%c%08X", cptr[2], seperator, cptr[1], seperator, cptr[0]);
+	    sprintf (strg,"%x%c%08x%c%08x%c%08x", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	else if (trace->busrep == OBUS)
-	    sprintf (strg,"%o%c%o%c%o", cptr[2], seperator, cptr[1], seperator, cptr[0]);
+	    sprintf (strg,"%o%c%010o%c%010o%c%010o", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
+	}
+    else if (cptr[2]) {
+	if (trace->busrep == HBUS)
+	    sprintf (strg,"%x%c%08x%c%08x", cptr[2], seperator, cptr[1], seperator, cptr[0]);
+	else if (trace->busrep == OBUS)
+	    sprintf (strg,"%o%c%010o%c%010o", cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	}
     else if (cptr[1]) {
 	if (trace->busrep == HBUS)
-	    sprintf (strg,"%X%c%08X", cptr[1], seperator, cptr[0]);
+	    sprintf (strg,"%x%c%08x", cptr[1], seperator, cptr[0]);
 	else if (trace->busrep == OBUS)
-	    sprintf (strg,"%o%c%o", cptr[1], seperator, cptr[0]);
+	    sprintf (strg,"%o%c%010o", cptr[1], seperator, cptr[0]);
 	}
     else {
 	if (trace->busrep == HBUS)
-	    sprintf (strg,"%X", cptr[0]);
+	    sprintf (strg,"%x", cptr[0]);
 	else if (trace->busrep == OBUS)
 	    sprintf (strg,"%o", cptr[0]);
 	}
@@ -76,7 +82,7 @@ void    string_to_value (trace, strg, cptr)
     unsigned int MSO = (7<<29);		/* Most significant hex digit */
     unsigned int MSH = (15<<28);	/* Most significant octal digit */
 
-    cptr[0] = cptr[1] = cptr[2] = 0;
+    cptr[0] = cptr[1] = cptr[2] = cptr[3] = 0;
 
     for (; *strg; strg++) {
 	value = -1;
@@ -88,11 +94,13 @@ void    string_to_value (trace, strg, cptr)
 	    value = *strg - ('a' - 10);
 
 	if (trace->busrep == HBUS && value >=0 && value <= 15) {
+	    cptr[3] = (cptr[3]<<4) + ((cptr[2] & MSH)>>28);
 	    cptr[2] = (cptr[2]<<4) + ((cptr[1] & MSH)>>28);
 	    cptr[1] = (cptr[1]<<4) + ((cptr[0] & MSH)>>28);
 	    cptr[0] = (cptr[0]<<4) + value;
 	    }
 	else if (trace->busrep == OBUS && value >=0 && value <= 7) {
+	    cptr[3] = (cptr[3]<<3) + ((cptr[2] & MSO)>>29);
 	    cptr[2] = (cptr[2]<<3) + ((cptr[1] & MSO)>>29);
 	    cptr[1] = (cptr[1]<<3) + ((cptr[0] & MSO)>>29);
 	    cptr[0] = (cptr[0]<<3) + value;
@@ -104,8 +112,13 @@ void    cptr_to_search_value (cptr, value)
     SIGNAL_LW	*cptr;
     unsigned int value[];
 {
-    value[0] = value[1] = value[2] = 0;
+    value[0] = value[1] = value[2] = value[3] = 0;
     switch (cptr->sttime.state) {
+      case STATE_0:
+      case STATE_U:
+      case STATE_Z:
+	break;
+
       case STATE_1:
 	value[0] = 1;
 	break;
@@ -114,15 +127,11 @@ void    cptr_to_search_value (cptr, value)
 	value[0] = *((unsigned int *)cptr+1);
 	break;
 	
-      case STATE_B64:
-	value[0] = *((unsigned int *)cptr+1);
-	value[1] = *((unsigned int *)cptr+2);
-	break;
-
-      case STATE_B96:
+      case STATE_B128:
 	value[0] = *((unsigned int *)cptr+1);
 	value[1] = *((unsigned int *)cptr+2);
 	value[2] = *((unsigned int *)cptr+3);
+	value[3] = *((unsigned int *)cptr+4);
 	break;
 	} /* switch */
     }
@@ -164,7 +173,8 @@ void	val_update_search ()
 		    for (i=0; i<MAX_SRCH; i++) {
 			if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
 			    && ( global->val_srch[i].value[1] == 0) 
-			    && ( global->val_srch[i].value[2] == 0) ) {
+			    && ( global->val_srch[i].value[2] == 0)
+			    && ( global->val_srch[i].value[3] == 0) ) {
 			    found |= ( global->val_srch[i].color != 0) ;
 			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
 			    /* don't break, because if same value on two lines, one with cursor and one without will fail */
@@ -172,22 +182,12 @@ void	val_update_search ()
 			}
 		    break;
 		    
-		  case STATE_B64:
+		  case STATE_B128:
 		    for (i=0; i<MAX_SRCH; i++) {
 			if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
 			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
-			    && ( global->val_srch[i].value[2] == 0) ) {
-			    found |= ( global->val_srch[i].color != 0) ;
-			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
-			    }
-			}
-		    break;
-		    
-		  case STATE_B96:
-		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
-			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
-			    && ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) ) ) {
+			    && ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
+			    && ( global->val_srch[i].value[3]== *((unsigned int *)cptr+4) ) ) {
 			    found |= ( global->val_srch[i].color != 0) ;
 			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
 			    }
@@ -272,8 +272,9 @@ void    val_examine_popup (trace, x, y, ev)
     char	strg[2000];
     char	strg2[2000];
     XmString	xs;
-    int		value[3];
+    int		value[4];
     int		rows, cols, bit, bit_value, row, col, par;
+    char	*format;
     
     time = posx_to_time (trace, x);
     sig_ptr = posy_to_signal (trace, y);
@@ -328,8 +329,7 @@ void    val_examine_popup (trace, x, y, ev)
 	    break;
 	  
 	  case STATE_B32:
-	  case STATE_B64:
-	  case STATE_B96:
+	  case STATE_B128:
 	    strcat (strg, "= ");
 	    value_to_string (trace, strg2, value, ' ');
 	    strcat (strg, strg2);
@@ -347,22 +347,27 @@ void    val_examine_popup (trace, x, y, ev)
 	    cols = ceil ((double)(rows) / 4.0) * 4;
 	    rows = ceil ((double)(sig_ptr->bits + 1)/ (double)cols);
 
+	    format = "<%01d>=%d ";
+	    if (sig_ptr->bits >= 10)  format = "<%02d>=%d ";
+	    if (sig_ptr->bits >= 100) format = "<%03d>=%d ";
+
 	    bit = 0;
 	    for (row=rows - 1; row >= 0; row--) {
 		for (col = cols - 1; col >= 0; col--) {
 		    bit = (row * cols + col);
 
 		    if (bit<32) bit_value = ( value[0] >> bit ) & 1;
-			else if (bit<64) bit_value = ( value[1] >> (bit-32) ) & 1;
-			    else  bit_value = ( value[2] >> (bit-64) ) & 1;
+		    else if (bit<64) bit_value = ( value[1] >> (bit-32) ) & 1;
+		    else if (bit<96) bit_value = ( value[2] >> (bit-64) ) & 1;
+		    else  bit_value = ( value[3] >> (bit-96) ) & 1;
 
 		    if ((bit>=0) && (bit <= sig_ptr->bits)) {
-			sprintf (strg2, "<%02d>=%d ", sig_ptr->msb_index +
+			sprintf (strg2, format, sig_ptr->msb_index +
 				 ((sig_ptr->msb_index >= sig_ptr->lsb_index)
 				  ? (bit - sig_ptr->bits) : (sig_ptr->bits - bit)),
 				 bit_value);
 			strcat (strg, strg2);
-			if (col==4) strcat (strg, "  ");
+			if (col==4 || col==8) strcat (strg, "  ");
 			}
 		    }
 		strcat (strg, "\n");
@@ -373,7 +378,8 @@ void    val_examine_popup (trace, x, y, ev)
 		for (bit=0; bit<=sig_ptr->bits; bit++) {
 		    if (bit<32) bit_value = ( value[0] >> bit ) & 1;
 		    else if (bit<64) bit_value = ( value[1] >> (bit-32) ) & 1;
-		    else  bit_value = ( value[2] >> (bit-64) ) & 1;
+		    else if (bit<96) bit_value = ( value[2] >> (bit-64) ) & 1;
+		    else  bit_value = ( value[3] >> (bit-96) ) & 1;
 
 		    par ^= bit_value;
 		    }
@@ -397,8 +403,8 @@ void    val_examine_popup (trace, x, y, ev)
 	    sprintf (strg2, "File_type %d   File_Pos %d-%d  Mask %08lx\n",
 		     sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->file_end_pos, sig_ptr->pos_mask);
 	    strcat (strg, strg2);
-	    sprintf (strg2, "Value_mask %08lx %08lx %08lx\n",
-		     sig_ptr->value_mask[2], sig_ptr->value_mask[1], sig_ptr->value_mask[0]);
+	    sprintf (strg2, "Value_mask %08lx %08lx %08lx %08lx\n",
+		     sig_ptr->value_mask[3], sig_ptr->value_mask[2], sig_ptr->value_mask[1], sig_ptr->value_mask[0]);
 	    strcat (strg, strg2);
 	    }
 	
@@ -541,7 +547,7 @@ void    val_search_widget_update (trace)
     TRACE	*trace;
 {
     VSearchNum search_pos;
-    char	strg[40];
+    char	strg[MAXVALUELEN];
 
     /* Copy settings to local area to allow cancel to work */
     for (search_pos=0; search_pos<MAX_SRCH; search_pos++) {
@@ -629,7 +635,7 @@ void    val_search_cb (w,trace,cb)
 
 	    /* create the file name text widget */
 	    XtSetArg (arglist[0], XmNrows, 1);
-	    XtSetArg (arglist[1], XmNcolumns, 30);
+	    XtSetArg (arglist[1], XmNcolumns, MAXVALUELEN);
 	    XtSetArg (arglist[2], XmNx, 120);
 	    XtSetArg (arglist[3], XmNy, y);
 	    XtSetArg (arglist[4], XmNresizeHeight, FALSE);
@@ -697,7 +703,7 @@ void    val_search_ok_cb (w,trace,cb)
 	string_to_value (trace, strg, global->val_srch[i].value);
 
 	if (DTPRINT_SEARCH) {
-	    char strg2[40];
+	    char strg2[MAXVALUELEN];
 	    value_to_string (trace, strg2, global->val_srch[i].value, '_');
 	    printf ("Search %d) %d   '%s' -> '%s'\n", i, global->val_srch[i].color, strg, strg2);
 	    }
@@ -945,7 +951,7 @@ void    val_annotate_do_cb (w,trace,cb)
     SIGNAL_LW	*cptr;
     FILE	*dump_fp;
     CURSOR 	*csr_ptr;		/* Current cursor being printed */
-    char	strg[100];
+    char	strg[1000];
     int		csr_num, csr_num_incl;
     
     /* Initialize requestor before first usage? */

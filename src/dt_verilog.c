@@ -206,8 +206,9 @@ void	verilog_process_var (trace, line)
     new_sig_ptr->file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
 
     new_sig_ptr->file_value.siglw.number = new_sig_ptr->file_value.number[0] =
-	new_sig_ptr->file_value.number[1] = new_sig_ptr->file_value.number[2] = 0;
-
+	new_sig_ptr->file_value.number[1] =  new_sig_ptr->file_value.number[2] =
+	    new_sig_ptr->file_value.number[3] = 0;
+    
     /* initialize all the pointers that aren't NULL */
     if (last_sig_ptr) last_sig_ptr->forward = new_sig_ptr;
     new_sig_ptr->backward = last_sig_ptr;
@@ -221,19 +222,21 @@ void	verilog_process_var (trace, line)
     }
 
 
-void	verilog_womp_96s (trace)
-    /* Take signals of 96+ signals and split into several signals */
+void	verilog_womp_128s (trace)
+    /* Take signals of 128+ signals and split into several signals */
     TRACE	*trace;
 {
     SIGNAL	*new_sig_ptr;
     SIGNAL	*sig_ptr;
     int		len;
+    int		chop;
 
     /*print_sig_names (NULL, trace);*/
-    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+    for (sig_ptr = trace->firstsig; sig_ptr; /* increment below */ ) {
 
-	if (sig_ptr->bits > 96) {
-	    if (DTPRINT_FILE) printf ("Adjusting signal %s > 96\n", sig_ptr->signame);
+	if (sig_ptr->bits > 128) {
+	    if (DTPRINT_FILE) printf ("Adjusting signal %s [%d - %d]   %d > 128\n",
+				      sig_ptr->signame, sig_ptr->lsb_index, sig_ptr->msb_index, sig_ptr->bits);
 	    /* Allocate new signal structure */
 	    new_sig_ptr = XtNew (SIGNAL);
 	    memcpy (new_sig_ptr, sig_ptr, sizeof (SIGNAL));
@@ -250,21 +253,29 @@ void	verilog_womp_96s (trace)
 	    new_sig_ptr->verilog_next = sig_ptr->verilog_next;
 	    sig_ptr->verilog_next = new_sig_ptr;
 
-	    /* Make new be remainders */
-	    new_sig_ptr->bits = sig_ptr->bits - 96;
-	    new_sig_ptr->msb_index = sig_ptr->msb_index - 96;
+	    /* How much to remove */
+	    chop = (sig_ptr->bits+1) % 128;
+	    if (chop==0) chop=128;
+	    /*printf ("chopping %d\n",chop);*/
 
-	    /* Shorten bits of old */
-	    sig_ptr->bits = 96 - 1;
-	    sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits;
+ 	    /* Make new be remainders */
+ 	    new_sig_ptr->bits = sig_ptr->bits - chop;
+ 	    new_sig_ptr->msb_index = sig_ptr->msb_index - chop;
+  
+  	    /* Shorten bits of old */
+ 	    sig_ptr->bits = chop - 1;
+ 	    sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits;
 
-	    /* Next is new guy, may be >> 96 also */
+	    /* Next is new guy, may be >> 128 also */
 	    sig_ptr = new_sig_ptr->backward;
 	    }
+	else {
+	    sig_ptr = sig_ptr->forward;
 	}
+    }
 
     /*print_sig_names (NULL, trace);*/
-    }
+}
 
 
 void	verilog_print_pos (max_pos)
@@ -374,7 +385,7 @@ void	verilog_process_definitions (trace)
 	for (pos = sig_ptr->file_pos; 
 	     pos <= sig_ptr->file_pos + ((sig_ptr->file_type.flag.perm_vector)?0:sig_ptr->bits);
 	     pos++) {
-	    /* If already assigned, this is a signal that was womp_96ed. */
+	    /* If already assigned, this is a signal that was womp_128ed. */
 	    if (!signal_by_pos[pos]) signal_by_pos[pos] = sig_ptr;
 	    }
 	}
@@ -488,7 +499,7 @@ void	verilog_read_data (trace, readfp)
 		/* printf ("\tsignal '%s'=%d %s  state %d\n", code, pos, sig_ptr->signame, state); */
 		if (sig_ptr->bits == 0) {
 		    /* Not a vector.  This is easy */
-		    value.siglw.number = value.number[0] = value.number[1] = value.number[2] = 0;
+		    value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
 		    value.siglw.sttime.state = state;
 		    value.siglw.sttime.time = time;
 		    fil_add_cptr (sig_ptr, &value, !first_data);
@@ -534,6 +545,11 @@ void	verilog_read_data (trace, readfp)
 				sig_ptr->file_value.number[2] = 
 				    ( sig_ptr->file_value.number[2] & (~ (1<<bit)) );
 				}
+			    else if (bit < 128) {
+				bit -= 96;
+				sig_ptr->file_value.number[3] = 
+				    ( sig_ptr->file_value.number[3] & (~ (1<<bit)) );
+				}
 			    else printf ("%E, Signal too wide on line %d of %s\n",
 					 verilog_line_num, current_file);
 			    }
@@ -561,6 +577,11 @@ void	verilog_read_data (trace, readfp)
 				bit -= 64;
 				sig_ptr->file_value.number[2] = 
 				    ( sig_ptr->file_value.number[2] | (1<<bit) );
+				}
+			    else if (bit < 128) {
+				bit -= 96;
+				sig_ptr->file_value.number[3] = 
+				    ( sig_ptr->file_value.number[3] | (1<<bit) );
 				}
 			    else printf ("%E, Signal too wide on line %d of %s\n",
 					 verilog_line_num, current_file);

@@ -29,6 +29,7 @@ static char rcsid[] = "$Id$";
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -331,13 +332,10 @@ void init_globals ()
 	global->color_names[i] = NULL;
 
 	/* Value */
-	global->val_srch[i].color = global->val_srch[i].cursor =
-	    global->val_srch[i].value[0] = global->val_srch[i].value[1] =
-		global->val_srch[i].value[2] = 0;
+	memset ((char *)&global->val_srch[i], 0, sizeof (VALSEARCH));
 
 	/* Signal */
-	global->sig_srch[i].color = 0;
-	global->sig_srch[i].string[0] = '\0';
+	memset ((char *)&global->sig_srch[i], 0, sizeof (SIGSEARCH));
 	}
     }
 

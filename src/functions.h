@@ -33,33 +33,36 @@
      (value_ptr)->number[0] = (cptr)[1].number;\
      (value_ptr)->number[1] = (cptr)[2].number;\
      (value_ptr)->number[2] = (cptr)[3].number;\
+     (value_ptr)->number[3] = (cptr)[4].number;\
  }
 
 /* Also identical commented function in dt_file if this isn't defined */
 #define	fil_add_cptr(sig_ptr, value_ptr, check) \
 {\
     SIGNAL_LW	*cptr;\
-    long diff = ((SIGNAL *)(sig_ptr))->cptr - ((SIGNAL *)(sig_ptr))->bptr;\
-    if (diff > BLK_SIZE / 4 * ((SIGNAL *)(sig_ptr))->blocks - 4) {\
-	((SIGNAL *)(sig_ptr))->blocks++;\
-	((SIGNAL *)(sig_ptr))->bptr = (SIGNAL_LW *)XtRealloc ((char*)((SIGNAL *)(sig_ptr))->bptr, ((SIGNAL *)(sig_ptr))->blocks*BLK_SIZE);\
-	((SIGNAL *)(sig_ptr))->cptr = ((SIGNAL *)(sig_ptr))->bptr+diff;\
-	}\
+    long diff;\
     cptr = ((SIGNAL *)(sig_ptr))->cptr - ((SIGNAL *)(sig_ptr))->lws;\
     if ( !(check)\
 	|| ( cptr->sttime.state != ((VALUE *)(value_ptr))->siglw.sttime.state )\
-	|| ( (cptr+1)->number != ((VALUE *)(value_ptr))->number[0] )\
-	|| ( (cptr+2)->number != ((VALUE *)(value_ptr))->number[1] )\
-	|| ( (cptr+3)->number != ((VALUE *)(value_ptr))->number[2] ) )\
+	|| ( cptr[1].number != ((VALUE *)(value_ptr))->number[0] )\
+	|| ( cptr[2].number != ((VALUE *)(value_ptr))->number[1] )\
+	|| ( cptr[3].number != ((VALUE *)(value_ptr))->number[2] )\
+	|| ( cptr[4].number != ((VALUE *)(value_ptr))->number[3] ) )\
 	{\
+	diff = ((SIGNAL *)sig_ptr)->cptr - ((SIGNAL *)sig_ptr)->bptr;\
+	if ((diff*sizeof(SIGNAL_LW)) > ( BLK_SIZE * (sig_ptr)->blocks - sizeof(VALUE)*2 - 2 )) {\
+	    ((SIGNAL *)(sig_ptr))->blocks++;\
+	    ((SIGNAL *)(sig_ptr))->bptr = (SIGNAL_LW *)XtRealloc ((char*)((SIGNAL *)(sig_ptr))->bptr, ((SIGNAL *)(sig_ptr))->blocks*BLK_SIZE);\
+	    ((SIGNAL *)(sig_ptr))->cptr = ((SIGNAL *)(sig_ptr))->bptr+diff;\
+	    }\
 	(((SIGNAL *)(sig_ptr))->cptr)[0].number = ((VALUE *)(value_ptr))->siglw.number;\
 	(((SIGNAL *)(sig_ptr))->cptr)[1].number = ((VALUE *)(value_ptr))->number[0];\
 	(((SIGNAL *)(sig_ptr))->cptr)[2].number = ((VALUE *)(value_ptr))->number[1];\
 	(((SIGNAL *)(sig_ptr))->cptr)[3].number = ((VALUE *)(value_ptr))->number[2];\
+	(((SIGNAL *)(sig_ptr))->cptr)[4].number = ((VALUE *)(value_ptr))->number[3];\
 	(((SIGNAL *)(sig_ptr))->cptr) += ((SIGNAL *)(sig_ptr))->lws;\
 	}\
     }
-/*#undef	fil_add_cptr*/
 
 
 /***********************************************************************/
@@ -236,5 +239,5 @@ extern Pixmap	make_icon (Display *, Drawable, char *, Dimension, Dimension);
 
 /* dt_verilog */
 extern void	verilog_read();
-extern void	verilog_womp_96s(TRACE *);
+extern void	verilog_womp_128s(TRACE *);
 

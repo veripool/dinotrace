@@ -113,6 +113,26 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
 
     /* Extract the values, HIGH 32 BITS */
     bit_pos = sig_ptr->file_pos;
+    for (bitcnt=96; bitcnt <= (MIN (127, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
+	switch (EXTRACT_4STATE (buf, bit_pos)) {
+	  case 0:
+	    if (state!=STATE_0) 
+		state = STATE_U;
+	    value_ptr->number[3] = (value_ptr->number[3]<<1);	break;
+	  case 1:
+	    if (state!=STATE_0) 
+		state = STATE_U;
+	    value_ptr->number[3] = (value_ptr->number[3]<<1) + 1;      break;
+	  case 2:
+	    if (state!=STATE_Z)
+	      state = STATE_U;
+	    break;
+	  case 3:	state = STATE_U;      	break;
+	    }
+	}
+
+    /* Extract the values, UPPER MID 32 BITS */
+    bit_pos = sig_ptr->file_pos;
     for (bitcnt=64; bitcnt <= (MIN (95, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
 	switch (EXTRACT_4STATE (buf, bit_pos)) {
 	  case 0:
@@ -131,7 +151,7 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
 	    }
 	}
 
-    /* Extract the values MID 32 BITS */
+    /* Extract the values LOWER MID 32 BITS */
     for (bitcnt=32; bitcnt <= (MIN (63, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
 	switch (EXTRACT_4STATE (buf, bit_pos)) {
 	  case 0:
@@ -197,11 +217,17 @@ int	read_2state_to_value (sig_ptr, buf, value_ptr)
 
     /* Extract the values, HIGH 32 BITS */
     bit_pos = sig_ptr->file_pos;
+    for (bitcnt=96; bitcnt <= (MIN (127, sig_ptr->bits)); bitcnt++, bit_pos++) {
+	value_ptr->number[3] = (value_ptr->number[3]<<1) + (EXTRACT_2STATE (buf, bit_pos));
+	}
+
+    /* Extract the values, UPPER MID 32 BITS */
+    bit_pos = sig_ptr->file_pos;
     for (bitcnt=64; bitcnt <= (MIN (95, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	value_ptr->number[2] = (value_ptr->number[2]<<1) + (EXTRACT_2STATE (buf, bit_pos));
 	}
 
-    /* Extract the values MID 32 BITS */
+    /* Extract the values LOWER MID 32 BITS */
     for (bitcnt=32; bitcnt <= (MIN (63, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	value_ptr->number[1] = (value_ptr->number[1]<<1) + (EXTRACT_2STATE (buf, bit_pos));
 	}
@@ -226,7 +252,7 @@ void	fil_decsim_binary_to_value (sig_ptr, buf, value_ptr)
     int		state;
 
     /* zero the value */
-    value_ptr->siglw.number = value_ptr->number[0] = value_ptr->number[1] = value_ptr->number[2] = 0;
+    value_ptr->siglw.number = value_ptr->number[0] = value_ptr->number[1] = value_ptr->number[2] = value_ptr->number[3] = 0;
 
     if (sig_ptr->bits == 0) {
 	/* Single bit signal */
@@ -278,7 +304,7 @@ void	fil_tempest_binary_to_value (sig_ptr, buf, value_ptr)
     register unsigned int data_mask;
 
     /* zero the value */
-    value_ptr->siglw.number = value_ptr->number[0] = value_ptr->number[1] = value_ptr->number[2] = 0;
+    value_ptr->siglw.number = value_ptr->number[0] = value_ptr->number[1] = value_ptr->number[2] = value_ptr->number[3] = 0;
 
     /* determine starting index and bit mask */
     if (sig_ptr->bits == 0) {
@@ -330,6 +356,9 @@ void	fil_tempest_binary_to_value (sig_ptr, buf, value_ptr)
 	    value_ptr->number[2] = (((buf[2] >> bit) & sig_ptr->pos_mask)
 				    | ((buf[3] << (32-bit)) & (~sig_ptr->pos_mask)))
 		& sig_ptr->value_mask[2];
+	    value_ptr->number[3] = (((buf[3] >> bit) & sig_ptr->pos_mask)
+				    | ((buf[4] << (32-bit)) & (~sig_ptr->pos_mask)))
+		& sig_ptr->value_mask[3];
 	    }
 	else {
 	    state = STATE_U;

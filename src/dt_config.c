@@ -185,8 +185,8 @@ int	config_read_state (line, out, statenum_ptr)
 	}
 
     /* extract state */
-    strncpy(out, line, MAXSTATELEN);
-    out[MAXSTATELEN-1]='\0';
+    strncpy(out, line, MAXVALUELEN);
+    out[MAXVALUELEN-1]='\0';
     for (tp=out; *tp && isstatechr(*tp); tp++) ;
     *tp='\0';
 
@@ -471,7 +471,7 @@ int	config_read_grid (trace, line, grid_pptr)
 {
     int 	outlen;
     int		grid_num;
-    char	message [50];
+    char	message [MAXTIMELEN];
 
     outlen = config_read_int (line, &grid_num);
 
@@ -496,7 +496,7 @@ int	config_process_state (trace, line, sstate_ptr)
     char 	*line;
     SIGNALSTATE *sstate_ptr;
 {
-    char newstate[MAXSTATELEN];
+    char newstate[MAXVALUELEN];
     int	statenum = sstate_ptr->numstates;
     int outlen=0;
 

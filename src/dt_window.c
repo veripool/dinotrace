@@ -313,7 +313,7 @@ void win_chg_res_cb (w,trace,cb)
 void new_res (trace)
     TRACE	*trace;
 {
-    char	string[30], timestrg[20];
+    char	string[MAXTIMELEN+30], timestrg[MAXTIMELEN];
 
     if (DTPRINT_ENTRY) printf ("In new_res - res = %f\n",global->res);
 

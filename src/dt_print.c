@@ -62,7 +62,7 @@ void    ps_range_sensitives_cb (w, range_ptr, cb)
 {
     int		opt;
     int		active;
-    char	strg[20];
+    char	strg[MAXTIMELEN];
     TRACE	*trace;
 
     if (DTPRINT_ENTRY) printf ("In ps_range_sensitives_cb\n");
@@ -169,7 +169,7 @@ void    ps_range_create (trace, range_ptr, popup, x_ptr, y_ptr, descrip, type)
 	XtManageChild (range_ptr->time_option);
 
 	/* Default */
-	XtSetArg (arglist[0], XmNmenuHistory, range_ptr->time_pulldownbutton[3], strg);
+	XtSetArg (arglist[0], XmNmenuHistory, range_ptr->time_pulldownbutton[3]);
 	XtSetValues (range_ptr->time_option, arglist, 1);
 
 	/* Begin Text */
@@ -421,8 +421,8 @@ void    ps_print_internal (trace)
     int		numprt;
     DTime	printtime;	/* Time current page starts on */
     char	pagenum[20];
-    char	sstrg[20];
-    char	estrg[20];
+    char	sstrg[MAXTIMELEN];
+    char	estrg[MAXTIMELEN];
     
     if (DTPRINT_ENTRY) printf ("In ps_print_internal - trace=%d\n",trace);
     
@@ -615,7 +615,7 @@ void ps_draw_grid (trace, psfile, printtime, grid_ptr, draw_numbers)
     GRID	*grid_ptr;		/* Grid information */
     Boolean	draw_numbers;		/* Whether to print the times or not */
 { 
-    char 	strg[MAXSTATELEN+16];	/* String value to print out */
+    char 	strg[MAXTIMELEN];	/* String value to print out */
     int		end_time;
     DTime	xtime;
     Position	x2;			/* Coordinate of current time */
@@ -711,8 +711,8 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
     int c=0,adj,ymdpt,xloc,xend,xstart,ystart;
     int y1,y2;
     SIGNAL_LW *cptr,*nptr;
-    char strg[32];
-    char vstrg[32];
+    char strg[MAXVALUELEN];
+    char vstrg[MAXVALUELEN];
     unsigned int value;
     int unstroked=0;		/* Number commands not stroked */
     
@@ -750,8 +750,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	  case STATE_U: ystart = ymdpt; break;
 	  case STATE_Z: ystart = ymdpt; break;
 	  case STATE_B32: ystart = ymdpt; break;
-	  case STATE_B64: ystart = ymdpt; break;
-	  case STATE_B96: ystart = ymdpt; break;
+	  case STATE_B128: ystart = ymdpt; break;
 	  default: printf ("Error: State=%d\n",cptr->sttime.state); break;
 	    }
 	
@@ -811,26 +810,11 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		
 		break;
 		
-	      case STATE_B64: if ( xloc > xend ) xloc = xend;
-		if (trace->busrep == HBUS)
-		    sprintf (vstrg,"%x %08x",*((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+1));
-		else if (trace->busrep == OBUS)
-		    sprintf (vstrg,"%o %o",*((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+1));
-		
-		fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
-		break;
-		
-	      case STATE_B96: if ( xloc > xend ) xloc = xend;
-		if (trace->busrep == HBUS)
-		    sprintf (vstrg,"%x %08x %08x",*((unsigned int *)cptr+3),
-			    *((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+1));
-		else if (trace->busrep == OBUS)
-		    sprintf (vstrg,"%o %o %o",*((unsigned int *)cptr+3),
-			    *((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+1));
+	      case STATE_B128:
+		if ( xloc > xend ) xloc = xend;
+
+		value_to_string (trace, strg, cptr+1, ' ');
+
 		fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
 		break;
 		
@@ -891,7 +875,7 @@ void ps_draw_cursors (trace, psfile, printtime)
     DTime	printtime;	/* Time to start on */
 {
     Position	x1,x2,y1,y2;
-    char 	strg[32];
+    char 	strg[MAXTIMELEN];
     int		adj,xend;
     CURSOR	*csr_ptr;
     

@@ -87,7 +87,7 @@ void draw_grid_line (trace, textoccupied, grid_ptr, xtime, y1,y2)
     Position	y1,y2;
 {
     Position	x2;			/* Coordinate of current time */
-    char 	strg[MAXSTATELEN+16];	/* String value to print out */
+    char 	strg[MAXTIMELEN];	/* String value to print out */
 
     x2 = TIME_TO_XPOS (xtime);
 
@@ -206,7 +206,7 @@ void draw_cursors (trace)
 {         
     int		len,end_time;
     int		last_drawn_xloc;
-    char 	strg[MAXSTATELEN+16];		/* String value to print out */
+    char 	strg[MAXTIMELEN];		/* String value to print out */
     CURSOR 	*csr_ptr;			/* Current cursor being printed */
     Position	x1,mid,x2,y2;
     char 	nonuser_dash[2];		/* Dashed line for nonuser cursors */
@@ -349,8 +349,8 @@ void draw_trace (trace)
     int	x1,y1,y2;
     int numprt;				/* Number of signals printed out on screen */
     int srch_this_color;		/* Color to print signal if matches search value */
-    XPoint Pts[MAXCNT+100];			/* Array of points to plot */
-    char strg[MAXSTATELEN+16];		/* String value to print out */
+    XPoint Pts[MAXCNT+100];		/* Array of points to plot */
+    char strg[MAXVALUELEN];		/* String value to print out */
     register SIGNAL_LW *cptr,*nptr;	/* Current value pointer and next value pointer */
     SIGNAL *sig_ptr;			/* Current signal being printed */
     unsigned int value;
@@ -382,6 +382,7 @@ void draw_trace (trace)
     /* Loop and draw each signal individually */
     for (sig_ptr = trace->dispsig, numprt = 0; sig_ptr && numprt<trace->numsigvis;
 	 sig_ptr = sig_ptr->forward, numprt++) {
+	if (DTPRINT_DRAW) printf ("draw %s\n",sig_ptr->signame);
 
 	/* Print the green bars */
 	if ( (c & 1) ^ (trace->numsigstart & 1) ) {
@@ -435,8 +436,7 @@ void draw_trace (trace)
 	  case STATE_U: Pts[cnt].y = ymdpt; break;
 	  case STATE_Z: Pts[cnt].y = ymdpt; break;
 	  case STATE_B32: Pts[cnt].y = ymdpt; break;
-	  case STATE_B64: Pts[cnt].y = ymdpt; break;
-	  case STATE_B96: Pts[cnt].y = ymdpt; break;
+	  case STATE_B128: Pts[cnt].y = ymdpt; break;
 	  default: printf ("Error: State=%d\n",cptr->sttime.state); break;
 	    }
 	
@@ -552,46 +552,16 @@ void draw_trace (trace)
 
 		goto state_plot;
 
-	      case STATE_B64:
+	      case STATE_B128:
 		if ( xloc > xend ) xloc = xend;
 
-		if (trace->busrep == HBUS)
-		    sprintf (strg,"%x %08x",*((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+1));
-		else if (trace->busrep == OBUS)
-		    sprintf (strg,"%o %o",*((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+1));
+		value_to_string (trace, strg, cptr+1, ' ');
 		
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
-			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
-			    && global->val_srch[i].color ) {
-			    srch_this_color = global->val_srch[i].color;
-			    break;
-			    }
-			}
-		    }
-
-		goto state_plot;
-		
-	      case STATE_B96:
-		if ( xloc > xend ) xloc = xend;
-
-		if (trace->busrep == HBUS)
-		    sprintf (strg,"%x %08x %08x",*((unsigned int *)cptr+3),
-			    *((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+1));
-		else if (trace->busrep == OBUS)
-		    sprintf (strg,"%o %o %o",*((unsigned int *)cptr+3),
-			    *((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+1));
-		
-		srch_this_color = 0;
-		if (sig_ptr->srch_ena) {
-		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
+			if (   ( global->val_srch[i].value[3]== *((unsigned int *)cptr+4) )
+			    && ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
 			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
 			    && ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
 			    && global->val_srch[i].color ) {

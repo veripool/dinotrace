@@ -84,8 +84,7 @@ void	grid_calc_auto (trace, grid_ptr)
 	    else if (!fall3) fall3 = cptr->sttime.time;
 	    break;
 	  case STATE_B32:
-	  case STATE_B64:
-	  case STATE_B96:
+	  case STATE_B128:
 	    if (!rise1) rise1 = cptr->sttime.time;
 	    else if (!rise2) rise2 = cptr->sttime.time;
 	    else if (!rise3) rise3 = cptr->sttime.time;
@@ -323,7 +322,7 @@ void    grid_customize_widget_update_cb (w, trace, cb)
 {
     int		grid_num;
     GRID	*grid_ptr;
-    char	strg[20];
+    char	strg[MAXTIMELEN];
     int		opt;
 
     if (DTPRINT_ENTRY) printf ("In grid_customize_widget_update\n");
@@ -368,7 +367,7 @@ void    grid_customize_cb (w,trace,cb)
 {
     int		grid_num;
     int		y=10, xb=0, ymax=0;
-    char	strg[20];
+    char	strg[30];
     int		i;
     
     if (DTPRINT_ENTRY) printf ("In grid_customize_cb - trace=%d\n",trace);
@@ -418,7 +417,7 @@ void    grid_customize_cb (w,trace,cb)
 	    /*Color options */
 	    trace->gridscus.grid[grid_num].pulldown = XmCreatePulldownMenu (trace->gridscus.popup,"pulldown",arglist,0);
 
-	    for (i=0; i<MAX_SRCH; i++) {
+	    for (i=0; i<=MAX_SRCH; i++) {
 		XtSetArg (arglist[0], XmNbackground, trace->xcolornums[i] );
 		XtSetArg (arglist[1], XmNmarginRight, 20);
 		XtSetArg (arglist[2], XmNmarginBottom, 2);
@@ -573,7 +572,7 @@ void    grid_customize_option_cb (w,trace,cb)
     if (DTPRINT_ENTRY) printf ("In grid_customize_option_cb - trace=%d\n",trace);
 
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
-	i = option_to_number(trace->gridscus.grid[grid_num].options, trace->gridscus.grid[grid_num].pulldownbutton, MAX_SRCH-1);
+	i = option_to_number(trace->gridscus.grid[grid_num].options, trace->gridscus.grid[grid_num].pulldownbutton, MAX_SRCH);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Color"));
 	XtSetValues ( XmOptionButtonGadget (trace->gridscus.grid[grid_num].options), arglist, 1);
@@ -615,7 +614,7 @@ void    grid_customize_ok_cb (w,trace,cb)
 	    grid_ptr->period = string_to_time (trace, XmTextGetString (trace->gridscus.grid[grid_num].period));
 	}
 
-	grid_ptr->color = option_to_number(trace->gridscus.grid[grid_num].options, trace->gridscus.grid[grid_num].pulldownbutton, MAX_SRCH-1);
+	grid_ptr->color = option_to_number(trace->gridscus.grid[grid_num].options, trace->gridscus.grid[grid_num].pulldownbutton, MAX_SRCH);
 	grid_ptr->period_auto = option_to_number(trace->gridscus.grid[grid_num].autoperiod_options, trace->gridscus.grid[grid_num].autoperiod_pulldownbutton, 2);
 	grid_ptr->align_auto = option_to_number(trace->gridscus.grid[grid_num].autoalign_options, trace->gridscus.grid[grid_num].autoalign_pulldownbutton, 2);
 	}

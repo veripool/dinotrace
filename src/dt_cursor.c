@@ -126,7 +126,7 @@ void cur_delete_of_type (type)
 void cur_print (FILE *writefp)
 {
     CURSOR	*csr_ptr;
-    char strg[MAXSIGLEN];
+    char strg[MAXTIMELEN];
 
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 	time_to_string (global->trace_head, strg, csr_ptr->time, FALSE);

@@ -47,7 +47,7 @@
 #define MAXTIMELEN	20	/* Maximum length of largest time as a string */
 #define MAXFNAMELEN	200	/* Maximum length of file names */
 #define MAXSTATENAMES	130	/* Maximum number of state name translations */
-#define MAXSTATELEN	32	/* Maximum length of state names */
+#define MAXVALUELEN	40	/* Maximum length of values or state names, 32hex digits + 4 sep + NULL */
 #define MAXGRIDS	4	/* Maximum number of grids */
 #define MAXSCREENWIDTH	5000	/* Maximum width of screen */
 #define	MIN_GRID_RES	5	/* Minimum grid resolution, in pixels between grid lines */
@@ -81,9 +81,10 @@
 #define STATE_1   1
 #define STATE_U   2
 #define STATE_Z   3
-#define STATE_B32 4
-#define STATE_B64 5
-#define STATE_B96 6
+#define STATE_B32 4		/* 2-32 bit vector */
+#define STATE_B128 5		/* 33-128 bit vector */
+#define STATE_UN6 6		/* not used */
+#define STATE_UN7 7		/* not used */
 
 /* dino_message_ack types */
 #define	dino_error_ack(tr,msg)		dino_message_ack (tr, 0, msg)
@@ -183,7 +184,7 @@ typedef enum {
 #define DeNull(_str_) ( ((_str_)==NULL) ? "NULL" : (_str_) )
 #define DeNullSignal(_sig_) ( ((_sig_)==NULL) ? "NULLPTR" : (DeNull((_sig_)->signame) ) )
 
-typedef	long 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
+typedef	int 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
 
 /* Colors */
 #define MAX_SRCH	9		/* Maximum number of search values, or cursor/signal colors */
@@ -222,7 +223,6 @@ extern struct st_filetypes {
     char	       	*name;		/* Name of this file type */
     char		*extension;	/* File extension */
     char		*mask;		/* File Open mask */
-    /*char		*pipe;		/ * Pipe to use (if NULL, no pipe) */
     /* void		(*routine);	/ * Routine to read it */
     } filetypes[FF_NUMFORMATS];
 
@@ -408,7 +408,7 @@ typedef struct st_signalstate {
     struct st_signalstate *next;	/* Next structure in a linked list */
     int	 numstates;			/* Number of states in the structure */
     char signame[MAXSIGLEN];		/* Signal name to translate, Nil = wildcard */
-    char statename[MAXSTATENAMES][MAXSTATELEN];	/* Name for each state, nil=keep */
+    char statename[MAXSTATENAMES][MAXVALUELEN];	/* Name for each state, nil=keep */
     } SIGNALSTATE;
 
 /* Signal LW: A structure for each transition of each signal, */
@@ -427,14 +427,14 @@ typedef union un_signal_lw {
 /* since from 0 to 2 of the unsigned ints are dropped in the cptr array */
 typedef struct st_value {
     SIGNAL_LW		siglw;
-    unsigned int	number[3];	/* [0]=bits 31-0, [1]=bits 63-32, [2]=bits 95-64 */
+    unsigned int	number[4];	/* [0]=bits 31-0, [1]=bits 63-32, [2]=bits 95-64, [3]=bits 127-96 */
     } VALUE;
 
 /* Value searching structure */
 typedef struct st_valsearch {
     ColorNum		color;		/* Color number (index into trace->xcolornum) 0=OFF*/
     ColorNum		cursor;		/* Enable cursors, color or 0=OFF */
-    int			value[3];	/* Value to search for, (96 bit LW format) */
+    unsigned int	value[4];	/* Value to search for, (128 bit LW format) */
     } VALSEARCH;
 
 /* Signal searching structure */
@@ -497,6 +497,7 @@ typedef struct st_signal {
 
     int			type;		/* Type of signal, STATE_B32, _B64, etc */
     SIGNALSTATE		*decode;	/* Pointer to decode information, NULL if none */
+    char *		(*decode_fptr)(); /* Pointer to function that decodes statenames, NULL if none */
     int			lws;		/* Number of LWs in a SIGNAL_LW record */
     int			blocks;		/* Number of time data blocks */
     int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20), -1=none */
@@ -519,7 +520,7 @@ typedef struct st_signal {
 	int		flags;
 	}		file_type;	/* File specific type of trace, two/fourstate, etc */
 
-    unsigned int	value_mask[3];	/* Value Mask with 1s in bits that are to be set */
+    unsigned int	value_mask[4];	/* Value Mask with 1s in bits that are to be set */
     unsigned int	pos_mask;	/* Mask to translate file positions */
     VALUE		file_value;	/* current state/time LW information for reading in */
     } SIGNAL;

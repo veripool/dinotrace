@@ -159,7 +159,7 @@ int    main (argc, argv)
     /* quick structure portability check */
 #ifndef lint	/* constant in conditional context */
     if ((sizeof (SIGNAL_LW) != sizeof (unsigned int))
-	|| (sizeof (VALUE) != 4*sizeof (unsigned int))) {
+	|| (sizeof (VALUE) != 5*sizeof (unsigned int))) {
 	printf ("%%E, Internal structure portability problem %d!=%d!=%d/4.\n",
 		sizeof (SIGNAL_LW), sizeof (unsigned int), sizeof (VALUE));
 	}

@@ -76,7 +76,7 @@ XmString string_create_with_cr (msg)
 {
     XmString	xsout,xsnew,xsfree;
     char	*ptr,*nptr;
-    char	aline[200];
+    char	aline[2000];
 
     /* create string w/ seperators */
     xsout = NULL;
@@ -666,16 +666,13 @@ void    cptr_to_string (cptr, strg)
 	return;
 	
       case STATE_B32:
-	sprintf (strg, "%X", (cptr+1)->number);
+	sprintf (strg, "%x", (cptr+1)->number);
 	return;
 	
-      case STATE_B64:
-	sprintf (strg, "%X_%08X", (cptr+2)->number,
-		 (cptr+1)->number);
-	return;
-	
-      case STATE_B96:
-	sprintf (strg, "%X_%08X_%08X", (cptr+3)->number,
+      case STATE_B128:
+	sprintf (strg, "%x_%08x_%08x_%08x",
+		 (cptr+4)->number,
+		 (cptr+3)->number,
 		 (cptr+2)->number,
 		 (cptr+1)->number);
 	return;
@@ -710,13 +707,14 @@ void    print_sig_names (w,trace)
 	back_sig_ptr = sig_ptr;
 	}
     
+    /* Don't do a integrity check here, as sometimes all links aren't ready! */
     /* print_signal_states (trace); */
     }
 
 void    print_cptr (cptr)
     SIGNAL_LW	*cptr;
 {
-    char strg[100];
+    char strg[1000];
 
     cptr_to_string (cptr, strg);
     printf ("%s at time %d\n",strg,cptr->sttime.time);
@@ -1158,7 +1156,7 @@ char *time_units_to_string (timerep, showvalue)
     TimeRep	timerep;
     Boolean	showvalue;	/* Show value instead of "units" */
 {
-    static char	units[20];
+    static char	units[MAXTIMELEN];
 
     /* Can't switch as not a integral expression. */
     if (timerep==TIMEREP_CYC)		return ("cycles");

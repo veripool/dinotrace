@@ -1441,6 +1441,9 @@ void    sig_sel_del_list_cb (w,trace,cb)
 	Erase old signal information
 */
 
+#define new_trace_sig	verilog_next	/* Use existing unused field (not current trace) */ 
+#define new_forward_sig	verilog_next	/* Use existing unused field (in  current trace) */ 
+
 void sig_cross_preserve (trace)
     /* This is pre-cleanup when preserving signal information for a new trace to be read */
     TRACE	*trace;
@@ -1471,6 +1474,7 @@ void sig_cross_preserve (trace)
 
 	    /* change to point to the new preserved structure */
 	    sig_ptr->trace = global->preserved_trace;
+	    sig_ptr->new_trace_sig = NULL;
 	}
     }
 
@@ -1485,6 +1489,7 @@ void sig_cross_preserve (trace)
 
 		/* change to point to the new preserved structure */
 		sig_ptr->trace = global->preserved_trace;
+		sig_ptr->new_trace_sig = NULL;
 	    }
 	}
     }
@@ -1493,9 +1498,6 @@ void sig_cross_preserve (trace)
     trace->firstsig = NULL;
     trace->dispsig = NULL;
 }
-
-#define new_trace_sig	verilog_next	/* Use existing unused field (not current trace) */ 
-#define new_forward_sig	verilog_next	/* Use existing unused field (in  current trace) */ 
 
 void sig_cross_sigmatch (new_trace, old_sig_ptr)
     /* Look through each signal in the old list, attempt to match with
@@ -1621,7 +1623,7 @@ void sig_cross_restore (trace)
 		}
 	    }
 	}
-if (DTPRINT_PRESERVE && global->preserved_trace->firstsig) printf ("Preserve: %d %s\n", __LINE__, global->preserved_trace->firstsig->signame);
+	if (DTPRINT_PRESERVE && global->preserved_trace->firstsig) printf ("Preserve: %d %s\n", __LINE__, global->preserved_trace->firstsig->signame);
 
 	/* Zero new_forward_sigs in prep of making new list */
 	for (new_sig_ptr = trace->firstsig; new_sig_ptr; new_sig_ptr = new_sig_ptr->forward) {
@@ -1637,7 +1639,7 @@ if (DTPRINT_PRESERVE && global->preserved_trace->firstsig) printf ("Preserve: %d
 	old_sig_ptr = global->preserved_trace->firstsig;	/* This will trash old list, kill heads now */
 	global->preserved_trace->firstsig = NULL;
 	global->preserved_trace->dispsig = NULL;
-if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
+	if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 	while (old_sig_ptr) {
 	    if (DTPRINT_PRESERVE && old_sig_ptr) printf ("Preserve: %s\n", old_sig_ptr->signame);
 		
@@ -1793,16 +1795,17 @@ void sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr)
 	    has_zeros = 0;
 	    break;
 	  case STATE_B32:
-	  case STATE_B64:
-	  case STATE_B96:
+	  case STATE_B128:
 	    has_ones =
 		( en_value.number[0] & en_sig_ptr->value_mask[0]
 		 | en_value.number[1] & en_sig_ptr->value_mask[1]
-		 | en_value.number[2] & en_sig_ptr->value_mask[2] );
+		 | en_value.number[2] & en_sig_ptr->value_mask[2]
+		 | en_value.number[3] & en_sig_ptr->value_mask[3] );
 	    has_zeros =
 		(  (~ en_value.number[0]) & en_sig_ptr->value_mask[0]
 		 | (~ en_value.number[1]) & en_sig_ptr->value_mask[1]
-		 | (~ en_value.number[2]) & en_sig_ptr->value_mask[2] );
+		 | (~ en_value.number[2]) & en_sig_ptr->value_mask[2]
+		 | (~ en_value.number[3]) & en_sig_ptr->value_mask[3] );
 	    break;
 	    } /* switch */
 
@@ -1812,6 +1815,7 @@ void sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr)
 	new_value.number[0] = base_value.number[0];
 	new_value.number[1] = base_value.number[1];
 	new_value.number[2] = base_value.number[2];
+	new_value.number[3] = base_value.number[3];
 
 	if (has_zeros) {
 	    if (has_ones) {

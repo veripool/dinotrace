@@ -313,7 +313,7 @@ void help_trace_cb (w,trace,cb)
     XmAnyCallbackStruct	*cb;
 {
     static char msg[2000];
-    static char msg2[100];
+    static char msg2[1000];
 
     if (DTPRINT_ENTRY) printf ("in help_trace_cb\n");
     
@@ -353,7 +353,7 @@ void	fil_string_to_value (sig_ptr, value_strg, value_ptr)
     int		len, bitcnt;
 
     /* zero the value */
-    value_ptr->siglw.number = value_ptr->number[0] = value_ptr->number[1] = value_ptr->number[2] = 0;
+    value_ptr->siglw.number = value_ptr->number[0] = value_ptr->number[1] = value_ptr->number[2] = value_ptr->number[3] = 0;
 
     if (sig_ptr->bits == 0) {
 	/* scalar signal */  
@@ -401,6 +401,9 @@ void	fil_string_to_value (sig_ptr, value_strg, value_ptr)
 	    state = sig_ptr->type;
 	    cp = value_strg;
 	    len = sig_ptr->bits;
+	    for (bitcnt=96; bitcnt <= (MIN (127,len)); bitcnt++)
+		value_ptr->number[3] = (value_ptr->number[3]<<1) + ((*cp++ == '1')?1:0);
+	    
 	    for (bitcnt=64; bitcnt <= (MIN (95,len)); bitcnt++)
 		value_ptr->number[2] = (value_ptr->number[2]<<1) + ((*cp++ == '1')?1:0);
 	    
@@ -417,6 +420,7 @@ void	fil_string_to_value (sig_ptr, value_strg, value_ptr)
 
 #if !defined (fil_add_cptr)
 #pragma inline (fil_add_cptr)
+/* WARNING, INLINED CODE IN CALLBACKS.H */
 void	fil_add_cptr (sig_ptr, value_ptr, check)
     SIGNAL	*sig_ptr;
     VALUE	*value_ptr;
@@ -425,34 +429,36 @@ void	fil_add_cptr (sig_ptr, value_ptr, check)
     long	diff;
     SIGNAL_LW	*cptr;
 
-    /*
     printf ("Checking st %d tm %d with st %d time %d\n",
 	    value_ptr->siglw.sttime.state,
 	    value_ptr->siglw.sttime.time,
 	    ((sig_ptr->cptr) - sig_ptr->lws)->sttime.state,      
 	    ((sig_ptr->cptr) - sig_ptr->lws)->sttime.time
 	    );
+    /*
 	    */
 
-    diff = sig_ptr->cptr - sig_ptr->bptr;
-    if (diff > BLK_SIZE / 4 * sig_ptr->blocks - 4) {
-	sig_ptr->blocks++;
-	sig_ptr->bptr = (SIGNAL_LW *)XtRealloc ((char*)sig_ptr->bptr, sig_ptr->blocks*BLK_SIZE);
-	sig_ptr->cptr = sig_ptr->bptr+diff;
-	}
-       
     /* Comparing all 4 LW's works because we keep the unused LWs zeroed */
     cptr = sig_ptr->cptr - sig_ptr->lws;
     if ( !check
 	|| ( cptr->sttime.state != value_ptr->siglw.sttime.state )
-	|| ( (cptr+1)->number != value_ptr->number[0] )
-	|| ( (cptr+2)->number != value_ptr->number[1] )
-	|| ( (cptr+3)->number != value_ptr->number[2] ) )
-	{
+	|| ( cptr[1].number != value_ptr->number[0] )
+	|| ( cptr[2].number != value_ptr->number[1] )
+	|| ( cptr[3].number != value_ptr->number[2] )
+	|| ( cptr[4].number != value_ptr->number[3] ) ) {
+
+	diff = sig_ptr->cptr - sig_ptr->bptr;
+	if ((diff*sizeof(SIGNAL_LW)) > ( (BLK_SIZE * sig_ptr->blocks - sizeof(VALUE)*2 - 2 ))) {
+	    sig_ptr->blocks++;
+	    sig_ptr->bptr = (SIGNAL_LW *)XtRealloc ((char*)sig_ptr->bptr, sig_ptr->blocks*BLK_SIZE);
+	    sig_ptr->cptr = sig_ptr->bptr + diff;
+	}
+       
 	(sig_ptr->cptr)[0].number = value_ptr->siglw.number;
 	(sig_ptr->cptr)[1].number = value_ptr->number[0];
 	(sig_ptr->cptr)[2].number = value_ptr->number[1];
 	(sig_ptr->cptr)[3].number = value_ptr->number[2];
+	(sig_ptr->cptr)[4].number = value_ptr->number[3];
 	(sig_ptr->cptr) += sig_ptr->lws;
 	}
     }
@@ -558,9 +564,9 @@ void read_make_busses (trace, not_tempest)
     
     
     if (trace->fileformat == FF_VERILOG) {
-	/* Verilog may have busses > 96 bits, other formats should have one record per
+	/* Verilog may have busses > 128 bits, other formats should have one record per
 	   bit, so it shouldn't matter.  Make consistent sometime in the future */
-	verilog_womp_96s (trace);
+	verilog_womp_128s (trace);
 	}
 
     /* Vectorize signals */
@@ -579,8 +585,8 @@ void read_make_busses (trace, not_tempest)
 	    /*  are a vector */
 	    if (sig_ptr->msb_index >= 0
 		&& !strcmp (sig_ptr->signame, bus_sig_ptr->signame)
-		/*  & the result would have < 96 bits */
-		&& (ABS(bus_sig_ptr->msb_index - sig_ptr->lsb_index) < 96 )
+		/*  & the result would have < 128 bits */
+		&& (ABS(bus_sig_ptr->msb_index - sig_ptr->lsb_index) < 128 )
 		/* 	& have subscripts that are different by 1  (<20:10> and <9:5> are seperated by 10-9=1) */
 		&& ( ((bus_sig_ptr->msb_index >= sig_ptr->lsb_index)
 		      && ((bus_sig_ptr->lsb_index - 1) == sig_ptr->msb_index))
@@ -645,28 +651,27 @@ void read_make_busses (trace, not_tempest)
 	    sig_ptr->lws = 2;
 	    sig_ptr->type = STATE_B32;
 	    }
-	else if (sig_ptr->bits < 64) {
-	    sig_ptr->lws = 3;
-	    sig_ptr->type = STATE_B64;
-	    }
-	else if (sig_ptr->bits < 96) {
-	    sig_ptr->lws = 4;
-	    sig_ptr->type = STATE_B96;
+	else if (sig_ptr->bits < 128) {
+	    sig_ptr->lws = 5;
+	    sig_ptr->type = STATE_B128;
 	    }
 
 	/* Compute value_mask.  This mask ANDed with the value will clear any bits that
 	   are not represented in this vector.  For example a 12 bit vector will only have the lower
 	   twelve bits set, all others will be clear */
 
-	sig_ptr->value_mask[2] = sig_ptr->value_mask[1] = sig_ptr->value_mask[0] = 0;
+	sig_ptr->value_mask[3] = sig_ptr->value_mask[2] = sig_ptr->value_mask[1] = sig_ptr->value_mask[0] = 0;
 
-	if (sig_ptr->bits >= 95) sig_ptr->value_mask[2] = 0xFFFFFFFF;
+	if (sig_ptr->bits >= 127) sig_ptr->value_mask[3] = 0xFFFFFFFF;
+	else if (sig_ptr->bits >= 96 ) sig_ptr->value_mask[3] = (0x7FFFFFFF >> (126-sig_ptr->bits));
+	else if (sig_ptr->bits >= 95 ) sig_ptr->value_mask[2] = 0xFFFFFFFF;
 	else if (sig_ptr->bits >= 64 ) sig_ptr->value_mask[2] = (0x7FFFFFFF >> (94-sig_ptr->bits));
 	else if (sig_ptr->bits >= 63 ) sig_ptr->value_mask[1] = 0xFFFFFFFF;
 	else if (sig_ptr->bits >= 32 ) sig_ptr->value_mask[1] = (0x7FFFFFFF >> (62-sig_ptr->bits));
 	else if (sig_ptr->bits >= 31 ) sig_ptr->value_mask[0] = 0xFFFFFFFF;
 	else sig_ptr->value_mask[0] = (0x7FFFFFFF >> (30-sig_ptr->bits));
 
+	if (sig_ptr->value_mask[3]) sig_ptr->value_mask[2] = 0xFFFFFFFF;
 	if (sig_ptr->value_mask[2]) sig_ptr->value_mask[1] = 0xFFFFFFFF;
 	if (sig_ptr->value_mask[1]) sig_ptr->value_mask[0] = 0xFFFFFFFF;
 
@@ -1153,5 +1158,6 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 
     /* Mark format as may have presumed binary */
     trace->fileformat = FF_DECSIM_ASCII;
+    if (DTPRINT_FILE) printf ("decsim_read_ascii done\n");
     }
 
