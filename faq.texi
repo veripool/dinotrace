@@ -47,8 +47,8 @@
 @end titlepage
 
 This is a list of frequently asked questions (FAQ) for Dinotrace users.
-A hypertext version is available on the World Wide Web at
-@uref{http://www.veripool.com/dinotrace/FAQ_toc.html}.
+A hypertext version is available on the web at
+@uref{http://www.veripool.com/dinotrace/faq.html}.
 
 Please send updates and corrections to the FAQ to
 @code{wsnyder@@world.std.com}.
