@@ -174,7 +174,9 @@ int    main (argc, argv)
     /* Create a temporary trace structure for this, as config will want to write to the trace structure */
     trace = malloc_trace ();
     config_read_defaults (trace, TRUE);
-    DFree (trace);
+
+    /* Make the temporary trace the deleted signal trace */
+    global->deleted_trace_head = trace;
     global->trace_head = NULL;
 
     /* create the main dialog window */
