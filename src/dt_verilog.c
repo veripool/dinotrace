@@ -573,7 +573,7 @@ static void	verilog_print_pos (void)
 	if (pos_sig_ptr) {
 	    printf ("\t%d\t%s\n", pos, pos_sig_ptr->signame);
 	    for (sig_ptr=pos_sig_ptr->verilog_next; sig_ptr; sig_ptr=sig_ptr->verilog_next) {
-		printf ("\t\t\t%s\n", sig_ptr->signame);
+		printf ("\t\t\t%p  %s\n", sig_ptr, sig_ptr->signame);
 	    }
 	}
     }
@@ -616,7 +616,9 @@ static void	verilog_process_definitions (
 	     pos++) {
 	    pos_sig_ptr = signal_by_code[pos];
 	    if (!pos_sig_ptr) {
-		signal_by_code[pos] = sig_ptr;
+		pos_sig_ptr = sig_ptr;
+		signal_by_code[pos] = pos_sig_ptr;
+		sig_ptr->verilog_next = NULL;
 	    }
 	    else {
 		for (level=0, tp=sig_ptr->signame; *tp; tp++) {
@@ -626,15 +628,18 @@ static void	verilog_process_definitions (
 		    if (*tp=='.') pos_level++;
 		}
 		/*printf ("Compare %d %d  %s %s\n",level, pos_level, sig_ptr->signame, pos_sig_ptr->signame);*/
-		if (level < pos_level) {
-		    /* Put first */
-		    signal_by_code[pos] = sig_ptr;
-		    sig_ptr->verilog_next = pos_sig_ptr;
+		if (pos == sig_ptr->file_code) {
+		    if (level < pos_level) {
+			/* Put first */
+			signal_by_code[pos] = sig_ptr;
+			sig_ptr->verilog_next = pos_sig_ptr;
+		    }
+		    else { /* Put second */
+			sig_ptr->verilog_next = pos_sig_ptr->verilog_next;
+			pos_sig_ptr->verilog_next = sig_ptr;
+		    }
 		}
-		else { /* Put second */
-		    sig_ptr->verilog_next = pos_sig_ptr->verilog_next;
-		    pos_sig_ptr->verilog_next = sig_ptr;
-		}
+		// Else it's multi bit, we already used the verilog_next
 	    }
 	}
     }
