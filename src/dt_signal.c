@@ -307,15 +307,16 @@ void	sig_wildmat_select (trace, pattern)
 	}
     }
 
-void	sig_delete (trace, sig_ptr)
+void	sig_delete (trace, sig_ptr, preserve)
     TRACE	*trace;
     SIGNAL	*sig_ptr;	/* Signal to remove */
+    Boolean	preserve;	/* TRUE if should preserve deletion on rereading */
     /* Delete the given signal */
 {
     if (sig_ptr) {
 	remove_signal_from_queue (trace, sig_ptr);
 	sig_ptr->deleted = TRUE;
-	sig_ptr->deleted_preserve = TRUE;
+	sig_ptr->deleted_preserve = preserve;
 	add_signal_to_queue (trace, sig_ptr, ADD_LAST, &global->delsig);
 	}
     }
@@ -499,8 +500,7 @@ void    sig_delete_selected (constant_flag)
 	sig_ptr = siglst_ptr->signal;
 	trace = siglst_ptr->trace;
 	if  ( constant_flag || sig_is_constant (trace, sig_ptr)) {
-	    sig_delete (trace, sig_ptr);
-	    if (constant_flag) sig_ptr->deleted_preserve = FALSE;	/* Don't preserve constant deletions, recalc */
+	    sig_delete (trace, sig_ptr, constant_flag );
 	    }
 	}
 
@@ -1014,7 +1014,7 @@ void    sig_delete_ev (w,trace,ev)
     if (!sig_ptr) return;
     
     /* remove the signal from the queue */
-    sig_delete (trace, sig_ptr);
+    sig_delete (trace, sig_ptr, TRUE);
     
     /* add signame to list box */
     if ( trace->signal.add != NULL ) {
@@ -1355,7 +1355,7 @@ void    sig_sel_del_all_cb (w,trace,cb)
     for (i=0; 1; i++) {
 	sig_ptr = (trace->select.del_signals)[i];
 	if (!sig_ptr) break;
-	sig_delete (trace, sig_ptr);
+	sig_delete (trace, sig_ptr, TRUE);
 	}
     sig_sel_pattern_cb (NULL, trace, NULL);
     }
@@ -1377,7 +1377,7 @@ void    sig_sel_del_const_cb (w,trace,cb)
 
 	/* Delete it */
 	if (sig_is_constant (trace, sig_ptr)) {
-	    sig_delete (trace, sig_ptr);
+	    sig_delete (trace, sig_ptr, FALSE);
 	    }
 	}
     sig_sel_pattern_cb (NULL, trace, NULL);
@@ -1422,7 +1422,7 @@ void    sig_sel_del_list_cb (w,trace,cb)
 	/*if (DTPRINT) printf ("Pos %d sig '%s'\n", i, sig_ptr->signame);*/
 
 	/* Delete it */
-	sig_delete (trace, sig_ptr);
+	sig_delete (trace, sig_ptr, TRUE);
 	}
     sig_sel_pattern_cb (NULL, trace, NULL);
     }
@@ -1586,7 +1586,7 @@ void sig_cross_restore (trace)
 		new_sig_ptr = old_sig_ptr->new_trace_sig;
 		if (old_sig_ptr->deleted_preserve && (NULL != new_sig_ptr)) {
 		    if (DTPRINT_PRESERVE) printf ("Preserve: Please delete %s\n", old_sig_ptr->signame);
-		    sig_delete (trace, new_sig_ptr);
+		    sig_delete (trace, new_sig_ptr, TRUE);
 		}
 	    }
 	}
