@@ -79,6 +79,8 @@ void	grid_calc_auto (trace, grid_ptr)
     cptr = sig_ptr->cptr;
     /* Skip to end */
     while ( cptr->sttime.time != EOT) cptr += sig_ptr->lws;
+    /* Ignore last - determined by EOT, not period */
+    while ( cptr != sig_ptr->cptr) cptr -= sig_ptr->lws;
 
     /* Move back 3 grids, if we can */
     while ( cptr != sig_ptr->cptr) {
