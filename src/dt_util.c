@@ -278,7 +278,9 @@ void dinodisk_directory (char *filename)
 #else
     char *pchar;
     pchar = getenv ("DINODISK");
-    if (pchar == NULL) pchar = DINODISK_DEFAULT;
+    if (pchar == NULL) {
+	filename[0] = '\0'; return;
+    }
     strcpy (filename, pchar);
     strcat (filename, "/");
 #endif

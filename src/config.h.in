@@ -100,10 +100,6 @@
 #define HAVE_SOCKETS 0
 #endif
 
-/* Default location of dinotrace files, if $DINODISK isn't in environment */
-/* VMS doesn't need this, thus the config default */
-#define DINODISK_DEFAULT "@pkgdatadir@"
-
 /**********************************************************************/
 /**** Compile options */
 

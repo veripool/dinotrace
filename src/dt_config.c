@@ -1027,7 +1027,8 @@ void	config_process_line_internal (
 	else if (!strcmp(cmd, "CURSOR_ADD")) {
 	    ColorNum color;
 	    DTime ctime;
-	    char strg[MAXSIGLEN],flag[MAXSIGLEN],note[MAXSIGLEN];
+	    char strg[MAXSIGLEN],flag[MAXSIGLEN];
+	    char note[MAXSIGLEN]="";
 	    CursorType_t type = CONFIG;
 	    
 	    line += config_read_string (trace, line, strg);

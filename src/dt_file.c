@@ -160,8 +160,6 @@ void trace_read_cb (
 	XSync (global->display,0);
     }
     
-    DManageChild (trace->fileselect.dialog, trace, MC_NOKEYS);
-
     /* Ordering */
     XtSetArg (arglist[0], XmNset, global->save_ordering ? 1:0);
     XtSetValues (trace->fileselect.save_ordering,arglist,1);
@@ -177,6 +175,8 @@ void trace_read_cb (
     XtSetValues (trace->fileselect.dialog,arglist,1);
 
     fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
+
+    DManageChild (trace->fileselect.dialog, trace, MC_NOKEYS);
 
     XSync (global->display,0);
 }

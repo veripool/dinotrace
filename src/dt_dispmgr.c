@@ -737,8 +737,10 @@ Trace *create_trace (
     memcpy (argv_copy, global->argv, global->argc * sizeof (char *));
     XtSetArg (arglist[0], XtNargc, argc_copy);
     XtSetArg (arglist[1], XtNargv, argv_copy);
-    trace->toplevel = XtAppCreateShell (NULL, "Dinotrace",
-				 applicationShellWidgetClass, global->display, arglist, 2);
+    XtSetArg (arglist[2], XmNallowShellResize, FALSE);
+    trace->toplevel = XtAppCreateShell
+	(NULL, "Dinotrace", applicationShellWidgetClass,
+	 global->display, arglist, 3);
     /* printf ("&& && trace %d, top=%d\n", trace, trace->toplevel); */
 
     change_title (trace);

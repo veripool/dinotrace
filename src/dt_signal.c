@@ -424,6 +424,7 @@ Boolean_t sig_is_constant (
     /* Is there a transition? */
     changes=FALSE;
     old_got_value = FALSE;
+    if (!sig_ptr || !sig_ptr->bptr) abort();
     for (cptr = sig_ptr->bptr ; CPTR_TIME(cptr) != EOT; cptr = CPTR_NEXT(cptr)) {
 	if (CPTR_TIME(cptr) == trace->end_time) {
 	    break;
@@ -592,11 +593,14 @@ void    sig_delete_selected (
     Signal	*sig_ptr;
     SignalList	*siglst_ptr;
     
+
     if (DTPRINT_ENTRY) printf ("In sig_delete_selected %d %d\n", constant_flag, ignorexz);
 
     for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
 	sig_ptr = siglst_ptr->signal;
 	trace = siglst_ptr->trace;
+	if (!sig_ptr || !sig_ptr->bptr) abort();
+	if (sig_ptr==NULL) abort();
 	if  ( constant_flag || sig_is_constant (trace, sig_ptr, ignorexz)) {
 	    sig_delete (trace, sig_ptr, constant_flag );
 	}
@@ -1643,10 +1647,6 @@ void sig_cross_preserve (
 	for (sig_ptr = trace_ptr->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 
 	    if (sig_ptr->trace == trace) {
-		/* free the signal data to save memory */
-		DFree (sig_ptr->bptr);
-		DFree (sig_ptr->xsigname);
-
 		/* change to point to the new preserved structure */
 		sig_ptr->trace = global->preserved_trace;
 		sig_ptr->new_trace_sig = NULL;
