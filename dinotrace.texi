@@ -2169,12 +2169,12 @@ somewhere in a module:
 @example
 // Create a dump file
 initial begin
-        $dumpfile ("trace_top.dmp");
+        $dumpfile ("|gzip --fast --stdout >trace_top.dmp.gz");
         $dumpvars (12, top);
 end
 @end example
 
-Where top is the name of the module to be traced, trace_top.dmp is the
+Where top is the name of the module to be traced, trace_top.dmp.gz is the
 output file, and 12 is the number of levels of hierarchy underneath top
 to be traced.  Dinotrace expects the @file{.dmp} extension.  This
 command will dump all signals in the module top.  For more information
