@@ -34,7 +34,7 @@
 !	refreshing	AUTO | MANUAL
 !	grid		ON | OFF	<grid_number>
 !	grid_align	<number> | ASSERTION | DEASSERTION	<grid_number>
-!	grid_resolution	<number> | AUTO 	 <grid_number>
+!	grid_resolution	<number> | AUTO | EDGE 	 <grid_number>
 !	grid_type	NORMAL | WIDE		 <grid_number>
 !	grid_signal	<signal_pattern> 	 <grid_number>
 !	grid_color	<color>		 	 <grid_number>
@@ -659,8 +659,10 @@ void	config_process_line_internal (trace, line, eof)
 		else {
 		    if (toupper(pattern[0])=='A')
 			grid_ptr->period_auto = PA_AUTO;
+		    else if (toupper(pattern[0])=='E')
+			grid_ptr->period_auto = PA_EDGE;
 		    else {
-			config_error_ack (trace, "Grid_res must be >0, or ASSERTION\n");
+			config_error_ack (trace, "Grid_res must be >0, ASSERTION, or EDGE\n");
 		    }
 		}
 	    }
