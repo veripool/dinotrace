@@ -261,7 +261,7 @@ void    cur_add_cb (
 
     /* process all subsequent button presses as cursor adds */
     remove_all_events (trace);
-    set_cursor (trace, DC_CUR_ADD);
+    set_cursor (DC_CUR_ADD);
     add_event (ButtonPressMask, cur_add_ev);
 }
 
@@ -274,7 +274,7 @@ void    cur_mov_cb (
     
     /* process all subsequent button presses as cursor moves */
     remove_all_events (trace);
-    set_cursor (trace, DC_CUR_MOVE);
+    set_cursor (DC_CUR_MOVE);
     add_event (ButtonPressMask, cur_move_ev);
 }
 
@@ -287,7 +287,7 @@ void    cur_del_cb (
     
     /* process all subsequent button presses as cursor deletes */
     remove_all_events (trace);
-    set_cursor (trace, DC_CUR_DELETE);
+    set_cursor (DC_CUR_DELETE);
     add_event (ButtonPressMask, cur_delete_ev);
 }
 
@@ -323,7 +323,7 @@ void    cur_highlight_cb (
 
     /* process all subsequent button presses as signal deletions */ 
     remove_all_events (trace);
-    set_cursor (trace, DC_CUR_HIGHLIGHT);
+    set_cursor (DC_CUR_HIGHLIGHT);
     add_event (ButtonPressMask, cur_highlight_ev);
 }
 

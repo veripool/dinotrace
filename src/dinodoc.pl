@@ -34,21 +34,29 @@ print "/* Created automatically by dinodoc.pl from dinotrace.txt */\n";
 
 print "\nchar dinodoc[] = \"\\\n";
 
-# Every so often, end the string, as some compilers barf on long lines 
 my $line = 0;
-
+my $output = 1;
 while(<STDIN>) {
     my $buf = $_;
     chop $buf;
-    $buf =~ s/\\/{backslash}/g;
-    $buf =~ s/{backslash}/\\\\/g;
-    $buf =~ s/\"/\\\"/g;
-    print "$buf\\n\\\n";
-    
-    $line++;
-    if ($line > 30) {
-	print "\"\n\"";
-        $line = 0;
+    # Strip out the index, it's not useful in this form
+    if ($buf =~ /^Index$/) {
+	$output = 0;
+    }
+
+    if ($output) {
+	# Quote backslashes
+	$buf =~ s/\\/{backslash}/g;
+	$buf =~ s/{backslash}/\\\\/g;
+	$buf =~ s/\"/\\\"/g;
+	print "$buf\\n\\\n";
+	
+	# Every so often, end the string, as some compilers barf on long lines 
+	$line++;
+	if ($line > 30) {
+	    print "\"\n\"";
+	    $line = 0;
+	}
     }
 }
 

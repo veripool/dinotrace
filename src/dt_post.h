@@ -59,29 +59,31 @@ char dt_post[] = "% $Id$\n\
 % Contact wsnyder@ultranet.com with any problems with this document\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
+/STROKE {currentpoint stroke MT} def	% define STROKE saving point\n\
 \n\
-/PAGESCALE      % stack: height width sigrf paper_height paper_width\n\
+/PAGESCALE      % (height width sigrf paper_height paper_width)\n\
 { newpath\n\
   /PG_WID exch def		% def PG_WID = 11 * 72\n\
   /PG_HGT exch def		% def PG_HGT = 8.5 * 72\n\
-  /sigrf exch def		% signal rf time\n\
+  /psigrf exch def		% signal rf time\n\
   /xstart exch def		% xstart of DINOTRACE window\n\
   /width exch def		% width of DINOTRACE window\n\
   /height exch def		% height of DINOTRACE window\n\
-  /YADJ { PG_HGT 50 sub height div mul 50 add } def\n\
-  /YTRN { PG_HGT 50 sub height div mul } def\n\
-  /DELU 5 def			% width of U diamond\n\
-  /DELU2 10 def			% twice DELU\n\
+  /heightmul PG_HGT 50 sub height div def
+  /YADJ { height exch sub heightmul mul 50 add } def
+  /basewidth 0 def		% Prepare for sigwidth calc\n\
+  /hierwidth 0 def		% Prepare for sigwidth calc\n\
+  stroke /Times-Roman findfont 8 scalefont setfont\n\
 } def \n\
 \n\
-/EPSPHDR      % stack: st_end_time res date note file pagenum dtversion\n\
+/EPSPHDR      % (st_end_time res date note file pagenum dtversion)\n\
 { newpath			% clear current path\n\
   pop pop pop pop pop pop pop\n\
   1 setlinecap 1 setlinejoin 1 setlinewidth     % set line char\n\
   /Times-Roman findfont 8 scalefont setfont\n\
   } def\n\
 \n\
-/EPSLHDR      % stack: st_end_time res date note file pagenum dtversion\n\
+/EPSLHDR      % (st_end_time res date note file pagenum dtversion)\n\
 { newpath			% clear current path\n\
   90 rotate			% rotates to landscape\n\
   0 PG_HGT neg translate	% translates so you can see the image\n\
@@ -90,7 +92,7 @@ char dt_post[] = "% $Id$\n\
   /Times-Roman findfont 8 scalefont setfont\n\
   } def\n\
 \n\
-/PAGEHDR      % stack: st_end_time res date note file pagenum dtversion\n\
+/PAGEHDR      % (st_end_time res date note file pagenum dtversion)\n\
 { newpath			% clear current path\n\
   90 rotate			% rotates to landscape\n\
   0 PG_HGT neg translate	% translates so you can see the image\n\
@@ -118,8 +120,7 @@ char dt_post[] = "% $Id$\n\
   TPOS 40 MT (File: ) show 150 string cvs show\n\
   TPOS 30 MT (Note: ) show 150 string cvs show\n\
   TPOS 20 MT (Date: ) show 25 string cvs show\n\
-  %TPOS 10 MT (Digital Equipment Corporation Confidential) show\n\
-  TPOS 150 add 20 MT (DEC Confidential) show\n\
+  TPOS 150 add 20 MT (Confidential) show\n\
   PG_WID 300 sub 30 MT (Resolution: ) show 25 string cvs show\n\
   PG_WID 300 sub 20 MT (Time: ) show 25 string cvs show\n\
   stroke /Times-Roman findfont 8 scalefont setfont\n\
@@ -151,32 +152,57 @@ char dt_post[] = "% $Id$\n\
     } if\n\
 } def\n\
 \n\
-/SIGMARGIN	% set margin to max of this width or prev widths\n\
-{ stringwidth pop dup	% get width of string\n\
-  sigwidth gt {		% compare to current width\n\
-  /sigwidth exch def	% set it\n\
+/SIGMARGIN	% (hiername basename) set margin to max of this width or prev widths\n\
+{ stringwidth pop dup	% get width of base signal name\n\
+  basewidth gt {		% compare to current width\n\
+  /basewidth exch def	% set it\n\
+  } { pop } ifelse\n\
+ stringwidth pop dup	% get width of hier string\n\
+  hierwidth gt {	% compare to current width\n\
+  /hierwidth exch def	% set it\n\
   } { pop } ifelse\n\
 } def\n\
 \n\
+/SIGNAME	% (ymdpt hiername basename) draw a signal name\n\
+{ /basename exch def	% Base part of signal name\n\
+  /hiername exch def	% Hiearchy part of signal name\n\
+  /ymdpt exch YADJ def	% ymdpt - Midpoint of signame\n\
+  hierwidth ymdpt 3 sub MT	% move to right edge of .\n\
+  hiername RIGHTSHOW	% plot hiername to left\n\
+  hierwidth ymdpt 3 sub MT	% move to right edge of .\n\
+  basename show		% plot basename to right\n\
+} def\n\
+\n\
 /XSCALESET	% set signal xscaling after all signals were margined\n\
-{ /sigwidth sigwidth 20 add def		% left margin creation\n\
-  /sigstart sigwidth 10 add def		% space between signal and values\n\
+{ /hierwidth hierwidth 20 add def	% left margin creation\n\
+  /sigstart hierwidth basewidth add 10 add def	% space between signal and values\n\
   /sigxscale PG_WID sigstart sub width xstart sub div def	% Scaling for signal section\n\
+  /XSCALE { sigxscale mul } def	% convert X screen to print coord\n\
   /XADJ { xstart sub sigxscale mul sigstart add } def	% convert X screen to print coord\n\
 } def\n\
 \n\
-/START_GRID	% (yh yl ylabel) start a signal's information\n\
+/START_GRID	% (ytop ybot ylabel) start a signal's information\n\
 { /ylabel exch YADJ def	% ylabel - Where to put label y coord\n\
-  /yl exch YADJ def	% yl - Bottom of grid line y coord\n\
-  /yh exch YADJ def	% yh - Top of grid line y coord\n\
+  /ybot exch YADJ def	% ybot - Bottom of grid line y coord\n\
+  /ytop exch YADJ def	% ytop - Top of grid line y coord\n\
   /xc 0 XADJ def	% xc- current x coord for determining if fits\n\
 } def\n\
 \n\
-/GRID		% (x label) start a signal's information\n\
+/GRID		% (x label) make grid\n\
 { /label exch def		% time label for grid\n\
   /x exch XADJ def		% x coord of grid\n\
-  x yh MT x yl LT stroke	% draw grid line\n\
+  x ytop MT x ybot LT stroke	% draw grid line\n\
   x ylabel label FITCENTERSHOW	% draw label\n\
+} def\n\
+\n\
+/CSRU		% (x label) make user cursor\n\
+{ [] 0 setdash\n\
+  GRID\n\
+} def\n\
+\n\
+/CSRA		% (x label) make auto cursor\n\
+{ [1 1] 0 setdash\n\
+  GRID\n\
 } def\n\
 \n\
 /CURSOR_DELTA	% (x1 x2 y label) draw a delta line between two cursors\n\
@@ -200,119 +226,127 @@ char dt_post[] = "% $Id$\n\
   stroke\n\
 } def\n\
 \n\
-/START_SIG	% (ym yh yl xstart ystart) start a signal's information\n\
-{ stroke YADJ exch XADJ exch MT		% start at given xstart & ystart\n\
-  /yl exch YADJ def	% yl - Bottom of signal's y coord\n\
-  /yh exch YADJ def	% yh - Top of signal's y coord\n\
-  /ym exch YADJ def	% ym - Middle of signal's y coord\n\
+/START_SIG	% (ymdpt ytop ybot xstart) start a signal's information\n\
+{ /xl exch XADJ def	% xl - last/left x coord\n\
+  /ybot exch YADJ def	% ybot - Bottom of signal's y coord\n\
+  /ytop exch YADJ def	% ytop - Top of signal's y coord\n\
+  /ymdpt exch YADJ def	% ymdpt - Middle of signal's y coord\n\
+  /sigrf psigrf XSCALE def % sigrf scaled from page rise-fall\n\
+  stroke xl ymdpt MT\n\
+  /x xl def\n\
 } def\n\
 \n\
-/STATE_1\n\
-{ /x exch def\n\
-  currentpoint pop\n\
-  sigrf add yh LT\n\
-  x XADJ yh LT\n\
+% State drawing routines:\n\
+%   Preserve last /x as /lx\n\
+%   Leave point at (xl,ymdpt)\n\
+\n\
+/S0		% (x) low\n\
+{ /xl x def\n\
+  /x exch XADJ def\n\
+  xl sigrf add ybot LT	% \\ \n\
+  x sigrf sub ybot LT	% - \n\
+  x ymdpt LT		% / \n\
   } def\n\
 \n\
-/STATE_0\n\
-{ /x exch def\n\
-  currentpoint pop\n\
-  sigrf add yl LT\n\
-  x XADJ yl LT\n\
+/S1		% (x) high\n\
+{ /xl x def\n\
+  /x exch XADJ def\n\
+  xl ymdpt MT\n\
+  xl sigrf add ytop LT	% / \n\
+  STROKE\n\
+  2 setlinewidth\n\
+  x sigrf sub ytop LT	% = \n\
+  STROKE\n\
+  1 setlinewidth\n\
+  x ymdpt LT		% \\ \n\
   } def\n\
 \n\
-/STATE_U\n\
-{ /x exch XADJ def		% store end location of U\n\
-  currentpoint pop		% get current x location\n\
-  /xc exch def			% store current x location\n\
-  xc ym LT			% draw line to beginning of U\n\
-  { xc x DELU2 sub lt		% is current x past end location - 1 width\n\
-    {				% draw diamond\n\
-    xc ym MT			% move to start of 'diamond'\n\
-    xc DELU add yh LT		% draw 1st segment\n\
-    xc DELU2 add ym LT		% draw 2nd segment\n\
-    xc DELU add yl LT		% draw 3rd segment\n\
-    closepath			% draw 4th segment\n\
-    xc DELU2 add /xc exch def	% add one 'diamond' width to current xc\n\
-    }\n\
-    {\n\
-    /xh x xc sub 2 div xc add def % calculate midpoint of remaining segment\n\
-    xc ym MT			% move to start of last 'diamond'\n\
-    xh yh LT			% draw 1st segment\n\
-    x ym LT			% draw 2nd segment\n\
-    xh yl LT			% draw 3rd segment\n\
-    closepath			% draw 4th segment\n\
-    exit\n\
-    }\n\
-  ifelse }\n\
-  loop\n\
-  stroke\n\
-  x ym MT			% reset current point\n\
+/SZ		% (x) Tristate\n\
+{ /xl x def\n\
+  /x exch XADJ def\n\
+  STROKE\n\
+  [1 1] 0 setdash\n\
+  x ymdpt LT	% .... \n\
+  STROKE\n\
+  [] 0 setdash\n\
   } def\n\
 \n\
-/STATE_B			% draw bus waveform with value\n\
-{ /v exch def			% convert to hex string\n\
-  /x exch XADJ def		% store end location of bus\n\
-  currentpoint pop		% get current x location\n\
-  /xc exch def			% store current x location\n\
-  xc sigrf add yh LT		% draw 1st segment\n\
-  x sigrf sub yh LT		% draw 2nd segment\n\
-  x ym LT			% draw 3rd segment\n\
-  x sigrf sub yl LT		% draw 4th segment\n\
-  xc sigrf add yl LT		% draw 5th segment\n\
-  xc ym LT stroke		% draw 6th segment and stroke\n\
+/SB		% (x) bus\n\
+{ /xl x def\n\
+  /x exch XADJ def\n\
+  xl sigrf add ytop LT	% / \n\
+  x sigrf sub ytop LT	% - \n\
+  x ymdpt LT		% \\ \n\
+  x sigrf sub ybot LT	% / \n\
+  xl sigrf add ybot LT	% - \n\
+  xl ymdpt LT		% \\ \n\
+  x ymdpt MT\n\
+  } def\n\
 \n\
+/SH		% (x) bus high\n\
+{ /xl x def\n\
+  /x exch XADJ def\n\
+  xl sigrf add ytop LT	% / \n\
+  STROKE\n\
+  2 setlinewidth\n\
+  x sigrf sub ytop LT	% = \n\
+  STROKE\n\
+  1 setlinewidth\n\
+  x ymdpt LT		% \\ \n\
+  x sigrf sub ybot LT	% / \n\
+  xl sigrf add ybot LT	% \\ \n\
+  x ymdpt MT\n\
+  } def\n\
+\n\
+/SU		% (x) Unknown\n\
+{ /xl x def\n\
+  /x exch XADJ def\n\
+  STROKE\n\
+  xl ymdpt MT\n\
+  xl sigrf add ytop LT	% / \n\
+  x sigrf sub ytop LT	% - \n\
+  x ymdpt LT		% \\ \n\
+  x sigrf sub ybot LT	% / \n\
+  xl sigrf add ybot LT	% - \n\
+  closepath		% \\ \n\
+  fill stroke\n\
+  x ymdpt MT\n\
+  } def\n\
+\n\
+/SV	% (valstrg) draw bus value\n\
+{ /v exch def			% value as string\n\
   v stringwidth pop		% get width of string\n\
-  x xc sub			% get width of bus\n\
+  x xl sub			% get width of bus\n\
   lt {				% is string wid lt bus wid?\n\
-    xc x xc sub 2 div add	% calculate the mdpt\n\
+    xl x xl sub 2 div add	% calculate the mdpt\n\
     v stringwidth pop 2 div sub	% calculate start location of text\n\
-    ym 3 sub MT v show		% draw the bus value\n\
+    ymdpt 3 sub MT v show	% draw the bus value\n\
     } if\n\
 \n\
-  x ym MT			% reset current point\n\
+  x ymdpt MT			% reset current point\n\
   } def\n\
 \n\
-/STATE_B_FB			% (x fallback_value value) draw bus waveform with decoded value, fallback if doesn't fit\n\
-{ /v exch def			% convert to hex string\n\
-  /fallback exch def		% fallback string\n\
-  /x exch XADJ def		% store end location of bus\n\
-  currentpoint pop		% get current x location\n\
-  /xc exch def			% store current x location\n\
-  xc sigrf add yh LT		% draw 1st segment\n\
-  x sigrf sub yh LT		% draw 2nd segment\n\
-  x ym LT			% draw 3rd segment\n\
-  x sigrf sub yl LT		% draw 4th segment\n\
-  xc sigrf add yl LT		% draw 5th segment\n\
-  xc ym LT stroke		% draw 6th segment and stroke\n\
-\n\
+/SN	% ( value fallback_value) draw bus waveform with decoded value, fallback if doesn't fit\n\
+{ /fallback exch def		% fallback string\n\
+  /v exch def			% convert to hex string\n\
   v stringwidth pop		% get width of string\n\
-  x xc sub			% get width of bus\n\
+  x xl sub			% get width of bus\n\
   lt {				% is string wid lt bus wid?\n\
-    xc x xc sub 2 div add	% calculate the mdpt\n\
+    xl x xl sub 2 div add	% calculate the mdpt\n\
     v stringwidth pop 2 div sub	% calculate start location of text\n\
-    ym 3 sub MT v show		% draw the bus value\n\
+    ymdpt 3 sub MT v show	% draw the bus value\n\
     } \n\
   { \n\
     fallback stringwidth pop	% get width of string\n\
-    x xc sub			% get width of bus\n\
+    x xl sub			% get width of bus\n\
     lt {			% is string wid lt bus wid?\n\
-      xc x xc sub 2 div add	% calculate the mdpt\n\
+      xl x xl sub 2 div add	% calculate the mdpt\n\
       fallback stringwidth pop 2 div sub	% calculate start location of text\n\
-      ym 3 sub MT fallback show	% draw the bus value\n\
+      ymdpt 3 sub MT fallback show	% draw the bus value\n\
       } if \n\
     } ifelse\n\
 \n\
-  x ym MT			% reset current point\n\
+  x ymdpt MT			% reset current point\n\
   } def\n\
 \n\
-/STATE_Z			% (x) Tristate\n\
-{ /x exch def\n\
-  currentpoint pop\n\
-  sigrf add dup ym LT stroke\n\
-  [2 2] 0 setdash\n\
-  ym MT\n\
-  x XADJ ym LT stroke\n\
-  [] 0 setdash\n\
-  x XADJ ym MT\n\
-  } def\n";
+\n";

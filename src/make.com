@@ -16,6 +16,7 @@ $ qual := """"""
 $ if p1 .eqs. "DEBUG" then qual := '/debug'
 $ if p2 .eqs. "DEBUG" then qual := """/debug /noopt=(noinline,nodisjoint)"""
 $!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+$!
 $ write sys$output "Compiling Dinotrace..."
 $ write sys$output "**********************************************************************"
 $!

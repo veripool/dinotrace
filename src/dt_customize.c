@@ -96,7 +96,7 @@ void cus_dialog_cb (
 {
     char		title[MAXFNAMELEN + 15];
     
-    if (DTPRINT_ENTRY) printf ("In customize - trace=%p\n",trace);
+    if (DTPRINT_ENTRY) printf ("In custom - trace=%p\n",trace);
     
     if (!trace->custom.dialog) {
 	if (trace->filename[0] == '\0')

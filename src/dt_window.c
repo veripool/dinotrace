@@ -393,7 +393,7 @@ void win_zoom_res_cb (
     /* process all subsequent button presses as res_zoom clicks */
     global->click_time = -1;	/* time must be signed */
     remove_all_events (trace);
-    set_cursor (trace, DC_ZOOM_1);
+    set_cursor (DC_ZOOM_1);
     add_event (ButtonPressMask, res_zoom_click_ev);
 }
 
@@ -414,7 +414,7 @@ void res_zoom_click_ev (
     /* If no click time defined, define one and wait for second click */
     if ( global->click_time < 0) {
 	global->click_time = time;
-	set_cursor (trace, DC_ZOOM_2);
+	set_cursor (DC_ZOOM_2);
 	return;
     }
 

@@ -121,12 +121,10 @@ void debug_event_cb (
 }
 
 extern void    val_examine_popup_act ();
-extern void    val_examine_unpopup_act ();
 /* Any actions must be called with (0) so the callbacks will pass */
 /* a null in the trace parameter and thus cause us to search for the right trace */
 static XtActionsRec actions[] = {
     {"value_examine_popup", val_examine_popup_act},
-    {"value_examine_unpopup", val_examine_unpopup_act},
     {"hscroll_unitinc", (XtActionProc)hscroll_unitinc_cb},
     {"hscroll_unitdec", (XtActionProc)hscroll_unitdec_cb},
     {"hscroll_pageinc", (XtActionProc)hscroll_pageinc_cb},
@@ -169,9 +167,9 @@ int  last_set_cursor ()
 {return (last_set_cursor_num);}
 
 void set_cursor (
-    Trace	*trace,			/* Display information */
     int		cursor_num)		/* Entry in xcursors to display */
 {
+    Trace	*trace;			/* Display information */
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	XDefineCursor (global->display, trace->wind, global->xcursors[cursor_num]);
     }
@@ -447,18 +445,21 @@ void init_globals (void)
     strcpy (global->config_filename[1], "DINOCONFIG:");
     strcpy (global->config_filename[2], "SYS$LOGIN:DINOTRACE.DINO");
 #else
-    global->config_filename[0][0] = '\0';
-    if (NULL != (pchar = getenv ("DINODISK"))) strcpy (global->config_filename[0], pchar);
-    if (global->config_filename[0][0]) strcat (global->config_filename[0], "/");
-    strcat (global->config_filename[0], "dinotrace.dino");
+    dinodisk_directory (global->config_filename[0]);
+    if (global->config_filename[0][0]) {
+	strcat (global->config_filename[0], "/dinotrace.dino");
+    }
 	
     global->config_filename[1][0] = '\0';
-    if (NULL != (pchar = getenv ("DINOCONFIG"))) strcpy (global->config_filename[1], pchar);
+    if (NULL != (pchar = getenv ("DINOCONFIG"))) {
+	strcpy (global->config_filename[1], pchar);
+    }
 	
     global->config_filename[2][0] = '\0';
-    if (NULL != (pchar = getenv ("HOME"))) strcpy (global->config_filename[2], pchar);
-    if (global->config_filename[2][0]) strcat (global->config_filename[2], "/");
-    strcat (global->config_filename[2], "dinotrace.dino");
+    if (NULL != (pchar = getenv ("HOME"))) {
+	strcpy (global->config_filename[2], pchar);
+	strcat (global->config_filename[2], "/dinotrace.dino");
+    }
 #endif
 }
 
@@ -813,8 +814,8 @@ Trace *create_trace (
     trace->menu.menu_close = trace->menu.pdentrybutton[trace->menu.pdm];
     dm_menu_entry (trace, 	"Clear",	'l',	NULL, NULL,	trace_clear_cb);
     dm_menu_separator (trace);
-    dm_menu_entry (trace, 	"Print...",	'i',	NULL, NULL,	ps_dialog_cb);
-    dm_menu_entry (trace, 	"Print",	'P',	NULL, NULL,	ps_print_direct_cb);
+    dm_menu_entry (trace, 	"Print...",	'i',	NULL, NULL,	print_dialog_cb);
+    dm_menu_entry (trace, 	"Print",	'P',	NULL, NULL,	print_direct_cb);
     dm_menu_separator (trace);
     dm_menu_entry (trace, 	"Exit", 	'x',	NULL, NULL,	trace_exit_cb);
 
@@ -1068,13 +1069,13 @@ Trace *create_trace (
     draw_scroll_hook_cb_expose ();
 
     /* Reset requestors and prepare a redraw */
-    ps_reset (trace);
+    print_reset (trace);
 
     config_trace_defaults (trace);
     
     new_res (trace, global->res);
 
-    set_cursor (trace, DC_NORMAL);
+    set_cursor (DC_NORMAL);
 
     get_geometry (trace);
 

@@ -61,10 +61,10 @@
 
 #include "functions.h"
 
-#if HAVE_COMPILE_DATE_H
-#include "compile_date.h"
+#if HAVE_DIST_DATE_H
+#include "dist_date.h"
 #else
-#define COMPILE_DATE_STRG "Unknown"
+#define DIST_DATE_STRG "Unknown"
 #endif
 
 /**********************************************************************/
@@ -86,6 +86,16 @@ struct st_filetypes filetypes[FF_NUMFORMATS] = {
     { 0, "DECSIM Binary",	"TRA",	"*.tra*"	},
     { 0, "DECSIM Ascii",	"TRA",	"*.tra*"	},
 };
+
+char *events[40] = {"","", "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelease", "MotionNotify",
+		    "EnterNotify", "LeaveNotify", "FocusIn", "FocusOut", "KeymapNotify", "Expose", "GraphicsExpose",
+		    "NoExpose", "VisibilityNotify", "CreateNotify", "DestroyNotify", "UnmapNotify", "MapNotify",
+		    "MapRequest", "ReparentNotify", "ConfigureNotify", "ConfigureRequest", "GravityNotify",
+		    "ResizeRequest", "CirculateNotify", "CirculateRequest", "PropertyNotify", "SelectionClear",
+		    "SelectionRequest", "SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
+		    "LASTEvent"};
+
+/**********************************************************************/
 
 void version(), usage();
 
@@ -203,7 +213,7 @@ int    main (
     
     /* expiration check */
 #if EXPIRATION
-    if ((COMPILE_DATE + (EXPIRATION)) < time (NULL)) {
+    if ((DIST_DATE + (EXPIRATION)) < time (NULL)) {
 	XSync (global->display,0);
 	dino_information_ack (trace, "This version of Dinotrace has expired.\n\
 Please install a newer version.\n\
@@ -240,6 +250,7 @@ See the Help menu for more information.");
 	}
 
 	XtAppNextEvent (global->appcontext, &event);
+	/*printf ("Event %s ", events[event.type]);*/
 	XtDispatchEvent (&event);
     }
 }
@@ -277,13 +288,15 @@ char	*help_message ()
 Compiled %s for %s\n\
 \n\
 Written by Wilson Snyder\n\
-<wsnyder@world.std.com> or <wsnyder@ultranet.com>\n\
+<wsnyder@ultranet.com> or <wsnyder@iname.com>\n\
 \n\
-Copyright 1993,1994,1995,1996 by Digital Equipment Corporation.\n\
-Copyright 1997,1998 by Wilson Snyder\n\
-This software is covered by the GNU Public License\n\
+Copyright 1993,1994,1995,1996,1997 by Digital Equipment Corporation.\n\
+Copyright 1998 by Wilson Snyder\n\
+This software is covered by the GNU Public License,\n\
+and is WITHOUT ANY WARRANTY.\n\
 \n\
-Please see %sdinotrace.txt for documentation.\n\
+Please see the help menu or %sdinotrace.txt
+for documentation.\n\
 \n\
 A complete Dinotrace kit is available on:\n\
 http://www.ultranet.com/~wsnyder/dinotrace\n\
@@ -295,7 +308,7 @@ For configuration information, Dinotrace reads in order:\n\
      %sdinotrace.dino\n\
      %sCURRENT_TRACE_NAME.dino\n",
 	     DTVERSION,
-	     COMPILE_DATE_STRG,
+	     DIST_DATE_STRG,
 	     HOST,
 #ifdef VMS
 	     "DINODISK:",

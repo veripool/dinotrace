@@ -94,6 +94,7 @@ void free_data (
 
     if (!trace || !trace->loaded) return;
     trace->loaded = 0;
+    trace->numsigstart = 0;
 
     /* free any added signals in other traces from this trace */
     for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
@@ -244,7 +245,7 @@ void fil_read (
 
     /* Clear the data structures & the screen */
     XClearWindow (global->display, trace->wind);
-    set_cursor (trace, DC_BUSY);
+    set_cursor (DC_BUSY);
     XSync (global->display,0);
 
     /* free memory associated with the data */
@@ -294,7 +295,7 @@ void fil_read (
 	/* Clear cursor and return*/
 	sig_cross_restore (trace);
 	change_title (trace);
-	set_cursor (trace, DC_NORMAL);
+	set_cursor (DC_NORMAL);
 	return;
     }
 
@@ -324,7 +325,7 @@ void fil_read (
 		/* Clear cursor and return */
 		sig_cross_restore (trace);
 		change_title (trace);
-		set_cursor (trace, DC_NORMAL);
+		set_cursor (DC_NORMAL);
 		return;
 	    }
 	}
@@ -373,7 +374,7 @@ void fil_read (
     /*
      ** Clear the window and draw the screen with the new file
      */
-    set_cursor (trace, DC_NORMAL);
+    set_cursor (DC_NORMAL);
     if (global->res_default) win_full_res (trace);
     new_time (trace);		/* Realignes start and displays */
     vscroll_new (trace,0);	/* Realign time */

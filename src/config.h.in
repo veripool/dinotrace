@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id$ -*- c -*- */
 /******************************************************************************
  * config.h.in --- configure source; system configuration
  *
@@ -34,11 +34,13 @@
 /**********************************************************************/
 /**** Version and host name */
 
-#define DTVERSION	"Dinotrace V9.0a"
+#define DTVERSION	"Dinotrace 9.0a"
 
 /* When this version will expire */
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
 #define	EXPIRATION 0
+
+/*la @HOST@ */
 
 #ifndef HOST
 # ifdef VMS
@@ -86,6 +88,7 @@
 
 /**********************************************************************/
 /**** System Information */
+
 /* Set define if words are stored with the most significant byte first */
 /* (like Motorola and SPARC, but not Intel and VAX, CPUs) */
 #define WORDS_BIGENDIAN 0
@@ -97,21 +100,18 @@
 #define HAVE_SOCKETS 0
 #endif
 
+/* Default location of dinotrace files, if $DINODISK isn't in environment */
+/* VMS doesn't need this, thus the config default */
+#define DINODISK_DEFAULT "@pkgdatadir@"
+
 /**********************************************************************/
 /**** Compile options */
+
 /* Set define if documentation is inlinable (need perl) */
 #define HAVE_DINODOC_H 1
-#ifdef VMS
-#undef HAVE_DINODOC_H
-#define HAVE_DINODOC_H 0
-#endif
 
 /* Set define if we have compile date information */
-#define HAVE_COMPILE_DATE_H 1
-#ifdef VMS
-#undef HAVE_COMPILE_DATE_H
-#define HAVE_COMPILE_DATE_H 0
-#endif
+#define HAVE_DIST_DATE_H 1
 
 /* Typedefs that system includes should define, but may not */
 #if defined(__sun__) && !defined(__svr4__)

@@ -77,7 +77,7 @@ char *val_state_name[] = { "STATE_0", "STATE_1", "STATE_U", "STATE_Z",
 /****************************** UTILITIES ******************************/
 
 uint_t val_bit (
-    Value_t *value_ptr,
+    const Value_t *value_ptr,
     int bit)
     /* Return bit value, understanding 4-state, may be 0/1/U/Z */
 {
@@ -473,8 +473,13 @@ void	val_update_search ()
     Boolean_t	any_enabled;
     Boolean_t	matches[MAX_SRCH];	/* Cache the wildmat for each bit, so searching is faster */
     static Boolean_t enabled_lasttime = FALSE;
+    int		prev_cursor;
 
     if (DTPRINT_ENTRY) printf ("In val_update_search\n");
+
+    /* This sometimes takes a while (don't XSync in case it doesn't) */
+    prev_cursor = last_set_cursor ();
+    set_cursor (DC_BUSY);
 
     /* If no searches are enabled, skip the cptr loop.  This saves */
     /* 3% of the first reading time on large traces */
@@ -556,6 +561,8 @@ void	val_update_search ()
 
     /* Delete all old cursors */
     cur_delete_of_type (SEARCHOLD);
+
+    set_cursor (prev_cursor);
 }
 
 /****************************** RADIXS ******************************/
@@ -574,8 +581,8 @@ Radix_t *val_radix_find (
 
 Radix_t *val_radix_add (
     RadixType_t type,
-    char *name,
-    char *prefix)
+    const char *name,
+    const char *prefix)
 {
     int radixnum;
     Radix_t *radix_ptr;
@@ -618,6 +625,8 @@ void	val_radix_init ()
 	global->radixs[radixnum] = NULL;
     }
     /* This order MUST match the enum order of RadixType_t */
+    /* The first one listed is the system default */
+#define DEFAULT_RADIX_PREFIX "'h"
     val_radix_add (RADIX_HEX_UN, "Hex", "");
     val_radix_add (RADIX_OCT_UN, "Octal",	"'o");
     val_radix_add (RADIX_BIN_UN, "Binary", "'b");
@@ -656,7 +665,7 @@ void    val_examine_cb (
     
     /* process all subsequent button presses as cursor moves */
     remove_all_events (trace);
-    set_cursor (trace, DC_VAL_EXAM);
+    set_cursor (DC_VAL_EXAM);
     add_event (ButtonPressMask, val_examine_ev);
 }
 
@@ -671,7 +680,7 @@ void    val_highlight_cb (
 
     /* process all subsequent button presses as signal deletions */ 
     remove_all_events (trace);
-    set_cursor (trace, DC_VAL_HIGHLIGHT);
+    set_cursor (DC_VAL_HIGHLIGHT);
     add_event (ButtonPressMask, val_highlight_ev);
 }
 
@@ -716,6 +725,7 @@ char *val_examine_string (
     strcat (strg, "\n");
     if (sig_ptr->radix->type != global->radixs[0]->type) {
 	strcat (strg, "= ");
+	strcat (strg, DEFAULT_RADIX_PREFIX);
 	val_to_string (global->radixs[0], strg2, cptr, FALSE);
 	strcat (strg, strg2);
 	strcat (strg, "\n");
@@ -730,7 +740,7 @@ char *val_examine_string (
 	    && (num0 < sig_ptr->decode->numstates)
 	    && (sig_ptr->decode->statename[num0][0] != '\0') ) {
 	    /* Show decode */
-	    sprintf (strg2, "signal state = %s\n", sig_ptr->decode->statename[num0] );
+	    sprintf (strg2, "State = %s\n", sig_ptr->decode->statename[num0] );
 	    strcat (strg, strg2);
 	}
     }
@@ -794,6 +804,24 @@ char *val_examine_string (
     return (strg);
 }
 	
+void    val_examine_popdown (
+    Trace	*trace)
+{
+    if (trace->examine.popup) {
+	if (XtIsManaged(trace->examine.popup)) {
+	    XtUnmanageChild (trace->examine.label);
+	    XtUnmanageChild (trace->examine.rowcol);
+	    XtUnmanageChild (trace->examine.popup);
+	}
+	/* We'll regenerate, as the text gets hosed elsewise */
+	XtDestroyWidget (trace->examine.label);
+	XtDestroyWidget (trace->examine.rowcol);
+	XtDestroyWidget (trace->examine.popup);
+	trace->examine.popup = NULL;
+    }
+}
+
+
 void    val_examine_popup (
     /* Create the popup menu for val_examine, radixd on cursor position x,y */
     Trace	*trace,
@@ -808,12 +836,9 @@ void    val_examine_popup (
     sig_ptr = posy_to_signal (trace, ev->y);
     if (DTPRINT_ENTRY) printf ("In val_examine_popup %d %d time %d\n", __LINE__, ev->x, time);
     
-    if (trace->examine.popup && XtIsManaged(trace->examine.popup)) {
-	XtUnmanageChild (trace->examine.popup);
-	XtDestroyWidget (trace->examine.popup);
-	trace->examine.popup = NULL;
-    }
+    val_examine_popdown (trace);
       
+    /* Get the text to display */
     /* Brace yourself for something that should be object oriented... */
     if (sig_ptr) {
 	/* Get information */
@@ -834,47 +859,43 @@ void    val_examine_popup (
     }
 	    
 	
-    XtSetArg (arglist[0], XmNentryAlignment, XmALIGNMENT_CENTER);
-    XtSetArg (arglist[1], XmNinput, FALSE);
-    trace->examine.popup = XmCreatePopupMenu (trace->main, "examinepopup", arglist, 2);
-  
+    /* First, a override for the shell */
+    /* It's probably tempting to use XmCreatePopupMenu. */
+    /* Don't.  It was that way, but the keyboard grab proved problematic */
+    XtSetArg (arglist[0], XmNallowShellResize, TRUE);
+    XtSetArg (arglist[1], XmNx, ev->x_root);
+    XtSetArg (arglist[2], XmNy, ev->y_root);
+    trace->examine.popup = XtCreatePopupShell
+	("examinepopup", overrideShellWidgetClass, trace->main, arglist, 3);
+
+    /* Row column for a nice border */
+    XtSetArg (arglist[0], XmNrowColumnType, XmMENU_POPUP);
+    XtSetArg (arglist[1], XmNborderWidth, 1);
+    XtSetArg (arglist[2], XmNentryAlignment, XmALIGNMENT_CENTER);
+    trace->examine.rowcol = XmCreateRowColumn (trace->examine.popup,"rc",arglist,3);
+
+    /* Finally the label */
     xs = string_create_with_cr (strg);
     XtSetArg (arglist[0], XmNlabelString, xs);
-    XtSetArg (arglist[1], XmNinput, FALSE);
-    trace->examine.label = XmCreateLabel (trace->examine.popup,"popuplabel",arglist,2);
+    trace->examine.label = XmCreateLabel (trace->examine.rowcol, "popuplabel",arglist,1);
     DManageChild (trace->examine.label, trace, MC_GLOBALKEYS);
     XmStringFree (xs);
 
-    XmMenuPosition (trace->examine.popup, ev);
+    /* Putem up */
+    DManageChild (trace->examine.rowcol, trace, MC_GLOBALKEYS);
     DManageChild (trace->examine.popup, trace, MC_GLOBALKEYS);
+
+    /* Make sure we find out when button gets released */
+    XSelectInput (XtDisplay (trace->work),XtWindow (trace->examine.popup),
+		 ButtonReleaseMask|PointerMotionMask|StructureNotifyMask|ExposureMask);
 
     /* We definately shouldn't have to force exposure of the popup. */
     /* However, the reality is lessTif doesn't seem to draw the text unless we do */
     /* This is a unknown bug in lessTif; it works fine on the true Motif */
-    (xmRowColumnClassRec.core_class.expose) (trace->examine.popup, (XEvent*) ev, NULL);
+    (xmRowColumnClassRec.core_class.expose) (trace->examine.rowcol, (XEvent*) ev, NULL);
     (xmLabelClassRec.core_class.expose) (trace->examine.label, (XEvent*) ev, NULL);
 }
 	
-void    val_examine_unpopup_act (
-    /* callback or action! */
-    Widget		w)
-{
-    Trace	*trace;		/* Display information */
-    
-    if (DTPRINT_ENTRY) printf ("In val_examine_unpopup_act\n");
-    
-    if (!(trace = widget_to_trace (w))) return;
-
-    /* unmanage popup */
-    if (trace->examine.popup) {
-	XtUnmanageChild (trace->examine.popup);
-	XtUnmanageChild (trace->examine.label);
-	trace->examine.popup = NULL;
-    }
-    /* redraw the screen as popup may have mangled widgets */
-    /* draw_all_needed ();*/
-}
-
 void    val_examine_ev (
     Widget		w,
     Trace		*trace,
@@ -938,7 +959,7 @@ void    val_examine_ev (
 		 ButtonPressMask|StructureNotifyMask|ExposureMask);
     
     /* unmanage popup */
-    val_examine_unpopup_act (trace->work);
+    val_examine_popdown (trace);
     draw_needed (trace);
 }
 
@@ -959,11 +980,11 @@ void    val_examine_popup_act (
 
     /* Create */
     prev_cursor = last_set_cursor ();
-    set_cursor (trace, DC_VAL_EXAM);
+    set_cursor (DC_VAL_EXAM);
 
     val_examine_ev (w, trace, ev);
 
-    set_cursor (trace, prev_cursor);
+    set_cursor (prev_cursor);
 }
 
 void    val_search_widget_update (
@@ -1543,13 +1564,7 @@ void    val_annotate_do_cb (
 
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    char *basename, *p;
-	    /* First is the basename with hiearchy and bus bits stripped */
-	    basename = strrchr ((sig_ptr->signame_buspos ?
-				 sig_ptr->signame_buspos : sig_ptr->signame),
-				trace->hierarchy_separator);
-	    if (!basename) basename = sig_ptr->signame;
-	    else basename++;
-	    basename = strdup (basename);
+	    basename = strdup (sig_basename (trace, sig_ptr));
 	    p = strrchr (basename, '[');	/* Not vector_separator: it's standardized by here*/
 	    if (p) *p = '\0';
 	    fprintf (dump_fp, "\t(\"%s\"\t", basename);

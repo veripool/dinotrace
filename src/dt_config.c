@@ -293,80 +293,6 @@ int	config_read_int (
 
 
 /**********************************************************************
-*	pattern matching from GNU (see wildmat.c)
-**********************************************************************/
-
-/* Triple procedures, all inlined, unrolls loop much better */
-int wildmatii(
-    register unsigned char	*s,	/* Buffer */
-    register unsigned char	*p)	/* Pattern */
-{
-    for ( ; *p; s++, p++) {
-	if (*p!='*') {
-	    /* df is magic conversion to lower case */
-	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
-		return(FALSE);
-	}
-	else {
-	    /* Trailing star matches everything. */
-	    if (!*++p) return (TRUE);
-	    while (wildmat(s, p) == FALSE)
-		if (*++s == '\0')
-		    return(FALSE);
-	    return(TRUE);
-	}
-    }
-    return(*s == '\0');
-}
-#pragma inline (wildmatii)
-
-int wildmati(
-    register unsigned char	*s,	/* Buffer */
-    register unsigned char	*p)	/* Pattern */
-{
-    for ( ; *p; s++, p++) {
-	if (*p!='*') {
-	    /* df is magic conversion to lower case */
-	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
-		return(FALSE);
-	}
-	else {
-	    /* Trailing star matches everything. */
-	    if (!*++p) return (TRUE);
-	    while (wildmatii(s, p) == FALSE)
-		if (*++s == '\0')
-		    return(FALSE);
-	    return(TRUE);
-	}
-    }
-    return(*s == '\0');
-}
-#pragma inline (wildmati)
-
-int wildmat(
-    register unsigned char	*s,	/* Buffer */
-    register unsigned char	*p)	/* Pattern */
-{
-    for ( ; *p; s++, p++) {
-	if (*p!='*') {
-	    /* df is magic conversion to lower case */
-	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
-		return(FALSE);
-	}
-	else {
-	    /* Trailing star matches everything. */
-	    if (!*++p) return (TRUE);
-	    while (wildmati(s, p) == FALSE)
-		if (*++s == '\0')
-		    return(FALSE);
-	    return(TRUE);
-	}
-    }
-    return(*s == '\0');
-}
-#pragma inline (wildmat)
-
-/**********************************************************************
 *	SUPPORT FUNCTIONS
 **********************************************************************/
 
@@ -543,22 +469,27 @@ int	config_read_color (
     Boolean_t	warn)
     /* Read color name from line, return <= 0 and print msg if bad */
 {
-    int outlen;
+    int outlen=0;
     char cmd[MAXSIGLEN];
+
+    while (*line && isspace(*line)) {
+	line++; outlen++;
+    }
 
     switch (*line) {
     case 'N': case 'n':
-	outlen = config_read_string (trace, line, cmd);
+	outlen += config_read_string (trace, line, cmd);
 	*color = global->highlight_color;
 	break;
     case 'C': case 'c':
 	/* Duplicate code in submenu_to_color */
-	outlen = config_read_string (trace, line, cmd);
+	outlen += config_read_string (trace, line, cmd);
 	if ((++global->highlight_color) > MAX_SRCH) global->highlight_color = 1;
 	*color = global->highlight_color;
 	break;
-    default:
-	outlen = config_read_int (line, color);
+    case '0': case '1': case '2':case '3':case '4':
+    case '5': case '6': case '7':case '8':case '9':
+	outlen += config_read_int (line, color);
 	if (*color < 0 || *color > MAX_SRCH) {
 	    if (warn) {
 		sprintf (message, "Color numbers must be 0 to %d, NEXT or CURRENT\n", MAX_SRCH);
@@ -566,6 +497,10 @@ int	config_read_color (
 	    }
 	    *color = -1;
 	}
+	break;
+    default:
+	*color = -1;
+	break;
     }
 
     return (outlen);

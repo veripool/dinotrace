@@ -137,8 +137,9 @@
 #define	dino_information_ack(tr,msg)	dino_message_ack (tr, 2, msg)
 #define	CKPT() printf ("CKPT %s:%d\n", __FILE__, __LINE__)
 
-#define TIME_TO_XPOS(_xtime_) \
-        ( ((_xtime_) - global->time) * global->res + global->xstart )
+#define TIME_TO_XPOS_REL(_xtime_, _base_) \
+        ( ((_xtime_) - (_base_)) * global->res + global->xstart )
+#define TIME_TO_XPOS(_xtime_) TIME_TO_XPOS_REL ((_xtime_), global->time)
 
 #define	TIME_WIDTH(_trace_) \
 	((DTime)( ((_trace_)->width - XMARGIN - global->xstart) / global->res ))
@@ -223,7 +224,7 @@ extern Trace *	trace_create_split_window (Trace *trace);
 extern Trace *	malloc_trace (void);
 extern void	init_globals (void);
 extern void	create_globals (int argc, char **argv, Boolean_t sync);
-extern void	set_cursor (Trace *trace, int cursor_num);
+extern void	set_cursor (int cursor_num);
 extern int	last_set_cursor (void);
 
 extern void	trace_open_cb (Widget w);
@@ -271,7 +272,6 @@ extern void	config_update_filenames (Trace *trace);
 extern void	config_read_socket (char *line, char *name, int cmdnum, Boolean_t eof);
 extern void	config_write_file (Trace *trace, char *filename);
 extern SignalState_t *signalstate_find (Trace *, char *);
-extern int	wildmat ();
 
 /* dt_grid.c routines */
 extern void	grid_calc_autos (Trace *trace);
@@ -299,6 +299,7 @@ extern Signal *	sig_find_signame (Trace *trace, char *signame);
 extern Signal *	sig_wildmat_signame (Trace *trace, char *signame);
 extern void	sig_print_names (Trace *trace);
 extern char *	sig_examine_string (Trace *trace, Signal *sig_ptr);
+extern char *	sig_basename (const Trace *trace, const Signal *sig_ptr);
 
 extern void	sig_add_cb (Widget w);
 extern void	sig_mov_cb (Widget w);
@@ -340,14 +341,14 @@ extern void	val_highlight_cb (Widget w);
 extern void	val_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 
 /* dt_print routines */
-extern void	ps_print_internal (Trace *trace);
-extern void	ps_reset  (Trace *trace);
+extern void	print_internal (Trace *trace);
+extern void	print_reset  (Trace *trace);
 
-extern void	ps_dialog_cb (Widget w);
-extern void	ps_reset_cb  (Widget w);
-extern void	ps_print_direct_cb (Widget w);
-extern void	ps_print_req_cb (Widget w);
-extern void	ps_range_sensitives_cb (Widget w, RangeWidgets_t *range_ptr, XmSelectionBoxCallbackStruct *cb);
+extern void	print_dialog_cb (Widget w);
+extern void	print_reset_cb  (Widget w);
+extern void	print_direct_cb (Widget w);
+extern void	print_req_cb (Widget w);
+extern void	print_range_sensitives_cb (Widget w, RangeWidgets_t *range_ptr, XmSelectionBoxCallbackStruct *cb);
 
 /* dt_binary.c routines */
 extern void	tempest_read (Trace *trace, int read_fd);
@@ -377,14 +378,16 @@ extern void	help_doc_cb (Widget w);
 /* dt_util routines */
 extern void	strcpy_overlap (char *d, char *s);
 extern void	fgets_dynamic (char **line_pptr, uint_t *length_ptr, FILE *readfp);
+extern int	wildmat (const unsigned char *s, const unsigned char *p);
 extern void	upcase_string (char *tp);
 extern void	file_directory (char *strg);
 extern void	ok_apply_cancel (OkApplyWidgets_t *wid_ptr, Widget, Widget, XtCallbackProc, Trace*, 
 				 XtCallbackProc, Trace*, XtCallbackProc, Trace*, XtCallbackProc, Trace*);
 extern char *	extract_first_xms_segment (XmString);
 extern char *	date_string (time_t time_num);
+extern void	dinodisk_directory (char *filename);
 #if ! HAVE_STRDUP
-extern char *	strdup (char *);
+extern char *	strdup (const char *);
 #endif
 
 extern void	new_time (Trace *);
@@ -410,7 +413,7 @@ extern void	add_event (int type, void (*callback)());
 extern void	remove_all_events (Trace *trace);
 extern void	change_title (Trace *trace);
 extern void	dino_message_ack (Trace *trace, int type, char *msg);
-extern XmString	string_create_with_cr (char *);
+extern XmString	string_create_with_cr (const char *);
 extern ColorNum submenu_to_color (Trace *trace, Widget, int);
 extern int	option_to_number (Widget w, Widget *entry0_ptr, int maxnumber);
 

@@ -252,6 +252,21 @@ Signal *sig_replicate (
     return (new_sig_ptr);
 }
 
+/* Returns basename of signal */
+char *sig_basename (
+    const Trace *trace,	    
+    const Signal	*sig_ptr)
+{
+    char *basename;
+    /* First is the basename with hiearchy and bus bits stripped */
+    basename = strrchr ((sig_ptr->signame_buspos ?
+			 sig_ptr->signame_buspos : sig_ptr->signame),
+			trace->hierarchy_separator);
+    if (!basename) basename = sig_ptr->signame;
+    else basename++;
+    return (basename);
+}
+
 /* Returns Signal or NULL if not found */
 Signal *sig_find_signame (
     Trace	*trace,
@@ -764,7 +779,7 @@ void    sig_add_sel_cb (
     if (sig_ptr && XmStringCompare (cb->value, sig_ptr->xsigname)) {
 	global->selected_sig = sig_ptr;
 	/* process all subsequent button presses as signal adds */ 
-	set_cursor (trace, DC_SIG_ADD);
+	set_cursor (DC_SIG_ADD);
 	add_event (ButtonPressMask, sig_add_ev);
 
 	/* unmanage the popup on the screen */
@@ -800,7 +815,7 @@ void    sig_mov_cb (
     /* process all subsequent button presses as signal moves */ 
     remove_all_events (trace);
     add_event (ButtonPressMask, sig_move_ev);
-    set_cursor (trace, DC_SIG_MOVE_1);
+    set_cursor (DC_SIG_MOVE_1);
 }
 
 void    sig_copy_cb (
@@ -815,7 +830,7 @@ void    sig_copy_cb (
     /* process all subsequent button presses as signal moves */ 
     remove_all_events (trace);
     add_event (ButtonPressMask, sig_copy_ev);
-    set_cursor (trace, DC_SIG_COPY_1);
+    set_cursor (DC_SIG_COPY_1);
 }
 
 void    sig_del_cb (
@@ -826,7 +841,7 @@ void    sig_del_cb (
     
     /* process all subsequent button presses as signal deletions */ 
     remove_all_events (trace);
-    set_cursor (trace, DC_SIG_DELETE);
+    set_cursor (DC_SIG_DELETE);
     add_event (ButtonPressMask, sig_delete_ev);
 }
 
@@ -842,7 +857,7 @@ void    sig_radix_cb (
 
     /* process all subsequent button presses as signal deletions */ 
     remove_all_events (trace);
-    set_cursor (trace, DC_SIG_RADIX);
+    set_cursor (DC_SIG_RADIX);
     add_event (ButtonPressMask, sig_radix_ev);
 }
 
@@ -857,7 +872,7 @@ void    sig_highlight_cb (
 
     /* process all subsequent button presses as signal deletions */ 
     remove_all_events (trace);
-    set_cursor (trace, DC_SIG_HIGHLIGHT);
+    set_cursor (DC_SIG_HIGHLIGHT);
     add_event (ButtonPressMask, sig_highlight_ev);
 }
 
@@ -1058,7 +1073,7 @@ void    sig_move_ev (
 	/* next call will perform the move */
 	global->selected_sig = sig_ptr;
 	global->selected_trace = trace;
-	set_cursor (trace, DC_SIG_MOVE_2);
+	set_cursor (DC_SIG_MOVE_2);
     }
     else {
 	/* get previous signal */
@@ -1071,7 +1086,7 @@ void    sig_move_ev (
 	
 	/* guarantee that next button press will select signal */
 	global->selected_sig = NULL;
-	set_cursor (trace, DC_SIG_MOVE_1);
+	set_cursor (DC_SIG_MOVE_1);
     }
     
     draw_needupd_sig_start ();
@@ -1096,7 +1111,7 @@ void    sig_copy_ev (
 	/* next call will perform the copy */
 	global->selected_sig = sig_ptr;
 	global->selected_trace = trace;
-	set_cursor (trace, DC_SIG_COPY_2);
+	set_cursor (DC_SIG_COPY_2);
     }
     else {
 	/* get previous signal */
@@ -1109,7 +1124,7 @@ void    sig_copy_ev (
 	
 	/* guarantee that next button press will select signal */
 	global->selected_sig = NULL;
-	set_cursor (trace, DC_SIG_COPY_1);
+	set_cursor (DC_SIG_COPY_1);
     }
     
     draw_needupd_sig_start ();
@@ -1438,6 +1453,11 @@ void    sig_sel_pattern_cb (
     /* Called by creation or call back - create the list of signals with a possibly new pattern */
 {
     char	*pattern;
+    int		prev_cursor;
+
+    /* This may take a while */
+    prev_cursor = last_set_cursor ();
+    set_cursor (DC_BUSY);
 
     /* loop thru signals on deleted queue and add to list */
     pattern = XmTextGetString (trace->select.add_pat);
@@ -1450,6 +1470,8 @@ void    sig_sel_pattern_cb (
     sig_sel_update_pattern (trace->select.delete_sigs, trace->firstsig, pattern,
 			    &(trace->select.del_strings), &(trace->select.del_signals),
 			    &(trace->select.del_size));
+
+    set_cursor (prev_cursor);
 }
 
 void    sig_sel_ok_cb (

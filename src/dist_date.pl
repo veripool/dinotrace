@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl
 # $Id$
 #*****************************************************************************
-# compile_date.pl --- create header file with compilation date in it
+# dist_date.pl --- create header file with compilation date in it
 # 
 # This file is part of Dinotrace.  
 # 
@@ -33,10 +33,10 @@
 my $date_number = time;
 my $date_string = localtime($date_number);
 
-my $filename="compile_date.h";
+my $filename="dist_date.h";
 
 open (TFILE, ">$filename") or die "Can't write $filename.";
-print TFILE "/* Date of compiliation.  Created with perl compile_date.pl */\n";
-print TFILE "#define COMPILE_DATE $date_number\n";
-print TFILE "#define COMPILE_DATE_STRG \"$date_string\"\n";
+print TFILE "/* Date of compiliation.  Created with perl dist_date.pl */\n";
+print TFILE "#define DIST_DATE $date_number\n";
+print TFILE "#define DIST_DATE_STRG \"$date_string\"\n";
 close (TFILE);

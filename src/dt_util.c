@@ -81,10 +81,82 @@ void upcase_string (char *tp)
 void strcpy_overlap (
     /* Copy strings, maybe overlapping (strcpy would be unhappy) */
     char *d,
-    char *s)
+    char *s)	/* NOT const, may be overlapping */
 {
     while ((*d++ = *s++)) ;
 }
+
+/* Pattern matching from GNU (see wildmat.c) */
+/* Triple procedures, all inlined, unrolls loop much better */
+int wildmatii(
+    const unsigned char	*s,	/* Buffer */
+    const unsigned char	*p)	/* Pattern */
+{
+    for ( ; *p; s++, p++) {
+	if (*p!='*') {
+	    /* df is magic conversion to lower case */
+	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
+		return(FALSE);
+	}
+	else {
+	    /* Trailing star matches everything. */
+	    if (!*++p) return (TRUE);
+	    while (wildmat(s, p) == FALSE)
+		if (*++s == '\0')
+		    return(FALSE);
+	    return(TRUE);
+	}
+    }
+    return(*s == '\0');
+}
+#pragma inline (wildmatii)
+
+int wildmati(
+    const unsigned char	*s,	/* Buffer */
+    const unsigned char	*p)	/* Pattern */
+{
+    for ( ; *p; s++, p++) {
+	if (*p!='*') {
+	    /* df is magic conversion to lower case */
+	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
+		return(FALSE);
+	}
+	else {
+	    /* Trailing star matches everything. */
+	    if (!*++p) return (TRUE);
+	    while (wildmatii(s, p) == FALSE)
+		if (*++s == '\0')
+		    return(FALSE);
+	    return(TRUE);
+	}
+    }
+    return(*s == '\0');
+}
+#pragma inline (wildmati)
+
+int wildmat(
+    const unsigned char	*s,	/* Buffer */
+    const unsigned char	*p)	/* Pattern */
+{
+    for ( ; *p; s++, p++) {
+	if (*p!='*') {
+	    /* df is magic conversion to lower case */
+	    /* Not portable, but makes ~10% difference overall performance! */
+	    if (((*s & 0xdf)!=(*p & 0xdf)) && *p != '?')
+		return(FALSE);
+	}
+	else {
+	    /* Trailing star matches everything. */
+	    if (!*++p) return (TRUE);
+	    while (wildmati(s, p) == FALSE)
+		if (*++s == '\0')
+		    return(FALSE);
+	    return(TRUE);
+	}
+    }
+    return(*s == '\0');
+}
+#pragma inline (wildmat)
 
 /* get normal string from XmString */
 char *extract_first_xms_segment (
@@ -105,11 +177,11 @@ char *extract_first_xms_segment (
 
 
 XmString string_create_with_cr (
-    char	*msg)
+    const char	*msg)
 {
     XmString	xsout,xsnew,xsfree;
-    char	*ptr,*nptr;
-    char	aline[2000];
+    const char	*ptr,*nptr;
+    char	aline[3000];
 
     /* create string w/ separators */
     xsout = NULL;
@@ -119,11 +191,11 @@ XmString string_create_with_cr (
 	    strncpy (aline, ptr, nptr-ptr);
 	    aline[nptr-ptr] = '\0';
 	    nptr++;
-	    xsnew = XmStringCreateSimple (aline);
 	}
 	else {
-	    xsnew = XmStringCreateSimple (ptr);
+	    strcpy (aline, ptr);
 	}
+	xsnew = XmStringCreateSimple (aline);
 
 	if (xsout) {
 	    xsout = XmStringConcat (xsfree=xsout, XmStringSeparatorCreate());
@@ -161,7 +233,7 @@ char *date_string (
 
 
 #if ! HAVE_STRDUP
-char *strdup(char *s)
+char *strdup(const char *s)
 {
     char *d;
     d=(char *)malloc(strlen(s)+1);
@@ -195,6 +267,21 @@ void fgets_dynamic (
 	fgets (((*line_pptr) + *length_ptr - 2) + 1 - FGETS_SIZE_INC,
 	       FGETS_SIZE_INC+1, readfp);
     }
+}
+
+/* Load char with dinodisk directory, with appropriate / or : tacked on */
+/* "" if not defined */
+void dinodisk_directory (char *filename)
+{
+#ifdef VMS
+    strcpy (filename, "DINODISK:");
+#else
+    char *pchar;
+    pchar = getenv ("DINODISK");
+    if (pchar == NULL) pchar = DINODISK_DEFAULT;
+    strcpy (filename, pchar);
+    strcat (filename, "/");
+#endif
 }
 
 /* Keep only the directory portion of a file spec */
@@ -338,7 +425,7 @@ void    remove_all_events (
     global->selected_sig = NULL;
 
     /* Set the cursor back to normal */
-    set_cursor (trace, DC_NORMAL);
+    set_cursor (DC_NORMAL);
 }
 
 ColorNum submenu_to_color (
@@ -558,8 +645,8 @@ void get_data_popup (
 }
 
 void    prompt_ok_cb (
-    Widget		w,
-    Trace		*trace,
+    Widget	w,
+    Trace	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     char	*valstr;
@@ -1103,7 +1190,7 @@ Grid *posx_to_grid (
     /* find the closest grid */
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 	Grid *grid_ptr = &(trace->grid[grid_num]);
-	if (grid_ptr->visible) {
+	if (grid_ptr->visible && grid_ptr->period) {
 	    DTime grid_error = ((xtime - (grid_ptr->alignment % grid_ptr->period))
 				% grid_ptr->period);
 	    DTime grid_time = xtime - grid_error;

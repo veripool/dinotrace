@@ -438,6 +438,7 @@ typedef struct {
 
 typedef struct {
     Widget popup;
+    Widget rowcol;
     Widget label;
 } ExamineWidgets_t;
 
@@ -691,7 +692,7 @@ struct st_trace {
     MenuWidgets_t	menu;
     CommandWidgets_t	command;
     CustomWidgets_t	custom;
-    PrintWidgets_t	prntscr;
+    PrintWidgets_t	print;
     AnnotateWidgets_t	annotate;
     SignalWidgets_t	signal;
     ExamineWidgets_t	examine;

@@ -34,7 +34,6 @@
 srcdir = @srcdir@
 VPATH = @srcdir@
 
-HOST = @HOST@
 PERL = @PERL@
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -44,19 +43,18 @@ LINK = @CC@
 
 CFLAGS = @CFLAGS@ @X_CFLAGS@ -I. -Wall
 CPPFLAGS = @CPPFLAGS@
-DEFS = @DEFS@ -DHOST=$(HOST)
+DEFS = @DEFS@
 LDFLAGS = @LDFLAGS@
 LIBS = @X_PRE_LIBS@ @LIBS@ @X_LIBS@ @X_EXTRA_LIBS@ -lXm -lXt -lX11 -lm
 
 prefix = @prefix@
-exec_prefix = @exec_prefix@
 
 #### End of system configuration section. ####
 
 #### Rules
 
 .c.o:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(DEFS) -c $< -o $@
 
 #### Top level
 
@@ -69,7 +67,7 @@ distclean maintainer-clean::
 	rm -f Makefile config.h
 
 maintainer-clean::
-	rm -f dinodoc.h compile_date.h
+	rm -f dinodoc.h dist_date.h
 
 #### Modules
 
@@ -82,7 +80,7 @@ OBJS = dt_binary.o dt_config.o dt_cursor.o dt_customize.o dt_dispmgr.o dt_draw.o
 	dt_window.o dt_value.o dt_verilog.o dt_socket.o dinotrace.o dt_icon.o
 
 COMMON_HDRS = dinotrace.h functions.h
-ALL_HDRS = $(COMMON_HDRS) bintradef.h compile_date.h dt_post.h dinodoc.h
+ALL_HDRS = $(COMMON_HDRS) bintradef.h dist_date.h dt_post.h dinodoc.h
 
 #### Top executable
 
@@ -94,12 +92,14 @@ ALL_HDRS = $(COMMON_HDRS) bintradef.h compile_date.h dt_post.h dinodoc.h
 dinodoc.h: ../dinotrace.txt dinodoc.pl
 	$(PERL) dinodoc.pl <../dinotrace.txt >dinodoc.h
 
-compile_date.h: compile_date.pl dinotrace.h functions.h dinotrace.c
-	$(PERL) compile_date.pl
+# Dependancies are somewhat arbitrary, we base them on common files that
+# might change
+dist_date.h: dist_date.pl dinotrace.h functions.h dinotrace.c
+	$(PERL) dist_date.pl
 
 #### Object links
 
-dinotrace.o: dinotrace.c $(COMMON_HDRS) compile_date.h
+dinotrace.o: dinotrace.c $(COMMON_HDRS) dist_date.h
 
 dt_binary.o: dt_binary.c $(COMMON_HDRS) bintradef.h
 

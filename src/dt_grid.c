@@ -202,9 +202,11 @@ char *grid_examine_string (
     strcat (strg, "\nEvery ");
     time_to_string (trace, strg2, grid_ptr->period, FALSE);
     strcat (strg, strg2);
-    strcat (strg, " starting at ");
-    time_to_string (trace, strg2, (grid_ptr->alignment % grid_ptr->period), FALSE);
-    strcat (strg, strg2);
+    if (grid_ptr->period) {
+	strcat (strg, " starting at ");
+	time_to_string (trace, strg2, (grid_ptr->alignment % grid_ptr->period), FALSE);
+	strcat (strg, strg2);
+    }
     strcat (strg, "\n");
     if (grid_ptr->signal_synced) {
 	strcat (strg, "Synced to ");

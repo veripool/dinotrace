@@ -117,9 +117,9 @@ void draw_grid_line (
     Boolean_t	*textoccupied,
     const Grid	*grid_ptr,		/* Grid information */
     DTime	xtime,
-    Position	y0,
-    Position	y1,
-    Position	y2)
+    Position	ytop,
+    Position	ymid,
+    Position	ybot)
 {
     Position	x2;			/* Coordinate of current time */
     char 	strg[MAXTIMELEN];	/* String value to print out */
@@ -128,15 +128,15 @@ void draw_grid_line (
 
     /* if the grid is visible, draw a vertical dashed line */
     XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0, 0);
-    XDrawLine     (global->display, trace->pixmap,trace->gc,   x2, y1,   x2, y2);
+    XDrawLine     (global->display, trace->pixmap,trace->gc,   x2, ymid,   x2, ybot);
     if (grid_ptr->wide_line) {
-	XDrawLine (global->display, trace->pixmap,trace->gc, 1+x2, y1, 1+x2, y2);
+	XDrawLine (global->display, trace->pixmap,trace->gc, 1+x2, ymid, 1+x2, ybot);
     }
 
     XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
-    XDrawLine     (global->display, trace->pixmap,trace->gc, x2,   y0,   x2, y1);
+    XDrawLine     (global->display, trace->pixmap,trace->gc, x2,   ytop,   x2, ymid);
     if (grid_ptr->wide_line) {
-	XDrawLine (global->display, trace->pixmap,trace->gc, 1+x2, y0, 1+x2, y1);
+	XDrawLine (global->display, trace->pixmap,trace->gc, 1+x2, ytop, 1+x2, ymid);
     }
 
     /* compute the time value and draw it if it fits */
@@ -152,7 +152,7 @@ void draw_grid (
     char 	primary_dash[4];	/* Dash pattern */
     int		end_time;
     DTime	xtime;
-    Position	y0,y1,y2;
+    Position	ytop,ymid,ybot;
 
     if (grid_ptr->period < 1) return;
 
@@ -165,11 +165,6 @@ void draw_grid (
     primary_dash[0] = PDASH_HEIGHT;
     primary_dash[1] = global->sighgt - primary_dash[0];
 
-    /* Other coordinates */
-    y0 = trace->ystart - Y_GRID_TOP;
-    y1 = trace->ystart - Y_DASH_TOP;
-    y2 = trace->yend + Y_GRID_BOTTOM;
-    
     /* set the line attributes as the specified dash pattern */
     XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0, 0);
     XSetDashes (global->display, trace->gc, 0, primary_dash, 2);
@@ -178,6 +173,11 @@ void draw_grid (
     /* Set color */
     XSetForeground (global->display, trace->gc, trace->xcolornums[grid_ptr->color]);
 
+    /* Other coordinates */
+    ytop = trace->ystart - Y_GRID_TOP;
+    ymid = trace->ystart - Y_DASH_TOP;
+    ybot = trace->yend + Y_GRID_BOTTOM;
+    
     /* Start to left of right edge */
     xtime = global->time;
     end_time = global->time + TIME_WIDTH (trace);
@@ -206,7 +206,7 @@ void draw_grid (
 
 	/* Loop through grid times */
 	for ( ; xtime <= end_time; xtime += grid_ptr->period) {
-	    draw_grid_line (trace, textoccupied, grid_ptr, xtime, y0, y1, y2);
+	    draw_grid_line (trace, textoccupied, grid_ptr, xtime, ytop, ymid, ybot);
 	}
 
 	break;
@@ -245,7 +245,7 @@ void draw_cursors (
     int		last_drawn_xright;
     char 	strg[MAXTIMELEN];		/* String value to print out */
     DCursor 	*csr_ptr;			/* Current cursor being printed */
-    Position	x1,mid,x2;
+    Position	x1,mid;
     Position	ytop,ybot,ydelta;
     Dimension m_time_height = global->time_font->ascent;
 
@@ -253,18 +253,17 @@ void draw_cursors (
 
     XSetFont (global->display, trace->gc, global->time_font->fid);
 
-    end_time = global->time + TIME_WIDTH (trace);
-
     /* initial the y colors for drawing */
     ytop = trace->ystart - Y_CURSOR_TOP;
     ybot = trace->ycursortimeabs - m_time_height - Y_TEXT_SPACE;
     ydelta = trace->ycursortimerel - m_time_height/2;
     last_drawn_xright = -1;
+    end_time = global->time + TIME_WIDTH (trace);
     
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
-	
 	/* check if cursor is on the screen */
-	if ((csr_ptr->time >= global->time) && (csr_ptr->time <= end_time)) {
+	if (csr_ptr->time > end_time) break;
+	if (csr_ptr->time >= global->time) {
 	    
 	    /* Change color */
 	    XSetForeground (global->display, trace->gc,
@@ -293,6 +292,7 @@ void draw_cursors (
 	    
 	    /* if there is a previous visible cursor, draw delta line */
 	    if ( csr_ptr->prev && (csr_ptr->prev->time > global->time) ) {
+		Position x2;
 		
 		x2 = TIME_TO_XPOS (csr_ptr->prev->time);
 		time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
@@ -435,9 +435,9 @@ void draw_trace (
 	XSetFont (global->display, trace->gc, global->value_font->fid);
 	
 	/* Compute starting points for signal */
-	cptr = sig_ptr->cptr;
 	cnt = 0;
 	xright = global->xstart;
+	cptr = sig_ptr->cptr;
 
 	/* Loop as long as the time and end of trace are in current screen */
 	for (; (CPTR_TIME(cptr) != EOT && xright < xend);
@@ -536,7 +536,7 @@ void draw_trace (
 		pts[6].x = xleft;		pts[6].y = ymdpt;
 		XFillPolygon (global->display, trace->pixmap, trace->gc,
 			      pts, 7, Convex, CoordModeOrigin);
-		/* Don't need to draw lines, since we illed region */
+		/* Don't need to draw lines, since we filled region */
 	    } else {
 		if (dr_mask & DR_LOW) {
 		    if (xsigrfleft)
@@ -640,15 +640,10 @@ void draw_trace_signame (
     Dimension m_sig_width = XTextWidth (global->signal_font,"m",1);
     int truncchars;
 
-    basename = strrchr ((sig_ptr->signame_buspos ?
-			 sig_ptr->signame_buspos : sig_ptr->signame),
-			trace->hierarchy_separator);
-    if (NULL==basename) {
-	basename = sig_ptr->signame;
-    }
+    basename = sig_basename (trace, sig_ptr);
 
     /* calculate the location to draw the signal name and draw it */
-    x1 = global->xstart - XSTART_MARGIN	/* leftmost character position */
+    x1 = global->xstart - XSTART_MARGIN	/* rightmost character position */
 	- m_sig_width * strlen (sig_ptr->signame)  /* fit in whole signal */
 	- m_sig_width * (global->namepos_base - strlen (basename)) /* extra chars to align basename */
 	+ m_sig_width * global->namepos;	/* Scroll position */
@@ -689,9 +684,7 @@ void	draw_update_sigstart ()
     widest_base = 0;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	for (sig_ptr = (Signal *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    if (NULL==(basename = strrchr (sig_ptr->signame, '.'))) {
-		basename = sig_ptr->signame;
-	    }
+	    basename = sig_basename (trace, sig_ptr);
  	    /* if (DTPRINT) printf ("Signal = '%s'  xstart=%d\n",t1,widest_sig); */
 	    widest_hier = MAX(widest_hier, (strlen (sig_ptr->signame) - strlen(basename)));
 	    widest_base = MAX(widest_base, (strlen (basename)));
