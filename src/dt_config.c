@@ -58,6 +58,7 @@
 !	signal_highlight <color> <signal_name>
  *	
  */
+static char rcsid[] = "$Id$";
 
 
 #include <stdio.h>
@@ -488,16 +489,16 @@ void	config_process_line (trace, line, readfp)
 	}
     else if (!strcmp(cmd, "PRINT")) {
 	value=DTPRINT;
-	line += config_read_int (line, &value);
 	if (toupper(line[0])=='O' && toupper(line[0])=='N') DTPRINT = -1;
 	if (toupper(line[0])=='O' && toupper(line[0])=='F') DTPRINT = 0;
-	if (DTPRINT) printf ("Config: DTPRINT=%d\n",value);
 	if (value >= 0) {
+	    sscanf (line, "%lx", &value);
 	    DTPRINT=value;
 	    }
 	else {
 	    config_error_ack (trace, "Print must be set ON or OFF\n");
 	    }
+	if (DTPRINT) printf ("Config: DTPRINT=0x%x\n",value);
 	}
     else if (!strcmp(cmd, "SAVE_ENABLES")) {
 	value=global->save_enables;
@@ -816,32 +817,34 @@ void config_read_defaults (trace, report_errors)
     /* Erase old cursors */
     cur_delete_of_type (CONFIG);
 
+    if (!global->suppress_config) {
 #ifdef VMS
-    config_read_file (trace, "DINODISK:DINOTRACE.DINO", FALSE, report_errors);
-    config_read_file (trace, "SYS$LOGIN:DINOTRACE.DINO", FALSE, report_errors);
+	config_read_file (trace, "DINODISK:DINOTRACE.DINO", FALSE, report_errors);
+	config_read_file (trace, "SYS$LOGIN:DINOTRACE.DINO", FALSE, report_errors);
 #else
-    newfilename[0] = '\0';
-    if (NULL != (pchar = getenv ("DINODISK"))) strcpy (newfilename, pchar);
-    if (newfilename[0]) strcat (newfilename, "/");
-    strcat (newfilename, "dinotrace.dino");
-    config_read_file (trace, newfilename, FALSE, report_errors);
-
-    newfilename[0] = '\0';
-    if (NULL != (pchar = getenv ("HOME"))) strcpy (newfilename, pchar);
-    if (newfilename[0]) strcat (newfilename, "/");
-    strcat (newfilename, "dinotrace.dino");
-    config_read_file (trace, newfilename, FALSE, report_errors);
-#endif
-
-    /* Same directory as trace, dinotrace.dino */
-    if (trace->filename != '\0') {
-	strcpy (newfilename, trace->filename);
-	file_directory (newfilename);
+	newfilename[0] = '\0';
+	if (NULL != (pchar = getenv ("DINODISK"))) strcpy (newfilename, pchar);
+	if (newfilename[0]) strcat (newfilename, "/");
 	strcat (newfilename, "dinotrace.dino");
 	config_read_file (trace, newfilename, FALSE, report_errors);
+	
+	newfilename[0] = '\0';
+	if (NULL != (pchar = getenv ("HOME"))) strcpy (newfilename, pchar);
+	if (newfilename[0]) strcat (newfilename, "/");
+	strcat (newfilename, "dinotrace.dino");
+	config_read_file (trace, newfilename, FALSE, report_errors);
+#endif
+	
+	/* Same directory as trace, dinotrace.dino */
+	if (trace->filename != '\0') {
+	    strcpy (newfilename, trace->filename);
+	    file_directory (newfilename);
+	    strcat (newfilename, "dinotrace.dino");
+	    config_read_file (trace, newfilename, FALSE, report_errors);
+	    }
 	}
-    
-    /* Same directory as trace, same file, but .dino extension */
+
+    /* Same file as trace, but .dino extension */
     if (trace->filename != '\0') {
 	strcpy (newfilename, trace->filename);
 	if ((pchar=strrchr(newfilename,'.')) != NULL )
