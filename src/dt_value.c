@@ -833,11 +833,13 @@ void    val_examine_popup (
 	    
 	
     XtSetArg (arglist[0], XmNentryAlignment, XmALIGNMENT_CENTER);
-    trace->examine.popup = XmCreatePopupMenu (trace->main, "examinepopup", arglist, 1);
+    XtSetArg (arglist[1], XmNinput, FALSE);
+    trace->examine.popup = XmCreatePopupMenu (trace->main, "examinepopup", arglist, 2);
   
     xs = string_create_with_cr (strg);
     XtSetArg (arglist[0], XmNlabelString, xs);
-    trace->examine.label = XmCreateLabel (trace->examine.popup,"popuplabel",arglist,1);
+    XtSetArg (arglist[1], XmNinput, FALSE);
+    trace->examine.label = XmCreateLabel (trace->examine.popup,"popuplabel",arglist,2);
     DManageChild (trace->examine.label, trace, MC_GLOBALKEYS);
     XmStringFree (xs);
 

@@ -31,6 +31,9 @@
 
 /* Note: VMS doesn't use configure, so force values as appropriate */
 
+/**********************************************************************/
+/**** Version and host name */
+
 #define DTVERSION	"Dinotrace V9.0a"
 
 /* When this version will expire */
@@ -56,12 +59,19 @@
 #define	INLINE inline
 #endif
 
+/**********************************************************************/
+/**** Functions */
 /* Set define if we have function: strdup (string) */
 #define HAVE_STRDUP 0
 
 /* Set define if we have function: gethostname */
 #define HAVE_GETHOSTNAME 0
 
+/* Set define if we have function: strcasecmp */
+#define HAVE_STRCASECMP 0
+
+/**********************************************************************/
+/**** Headers */
 /* Set define if we have header: <fcntl.h> */
 #define HAVE_FCNTL_H 0
 
@@ -74,6 +84,8 @@
 /* Set define if `time.h' does not define `struct tm' */
 #define TM_IN_SYS_TIME 0
 
+/**********************************************************************/
+/**** System Information */
 /* Set define if words are stored with the most significant byte first */
 /* (like Motorola and SPARC, but not Intel and VAX, CPUs) */
 #define WORDS_BIGENDIAN 0
@@ -85,6 +97,8 @@
 #define HAVE_SOCKETS 0
 #endif
 
+/**********************************************************************/
+/**** Compile options */
 /* Set define if documentation is inlinable (need perl) */
 #define HAVE_DINODOC_H 1
 #ifdef VMS
