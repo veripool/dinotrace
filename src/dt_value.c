@@ -640,6 +640,37 @@ void	val_update_search ()
     set_cursor (prev_cursor);
 }
 
+void	val_transition_cnt (Signal_t* sig_ptr, Value_t* stop_cptr, int* negedgesp, int* posedgesp)
+{
+    Value_t*	cptr;
+    int		posedges = 0;
+    int		negedges = 0;
+    int		last_state = -1;
+    for (cptr = sig_ptr->bptr; (CPTR_TIME(cptr) != EOT); cptr = CPTR_NEXT(cptr)) {
+	if (last_state>=0) {
+	    /**/
+	    switch (cptr->siglw.stbits.state) {
+	    case STATE_0:
+		if (last_state==STATE_1) negedges++;
+		break;
+	    case STATE_1:
+		if (last_state==STATE_0) posedges++;
+		break;
+	    case STATE_Z:
+	    case STATE_B32:
+	    case STATE_B128:
+	    case STATE_F32:
+	    case STATE_F128:
+		break;
+	    }
+	}
+	last_state = cptr->siglw.stbits.state;
+	if (cptr == stop_cptr) break;
+    }
+    *negedgesp = negedges;
+    *posedgesp = posedges;
+}
+
 /****************************** RADIXS ******************************/
 
 Radix_t *val_radix_find (
@@ -883,6 +914,19 @@ char *val_examine_string (
 	}
     }
 	
+    if (sig_ptr->bits == 1) {
+	int	posedges = 0;
+	int	negedges = 0;
+	val_transition_cnt (sig_ptr, cptr, &negedges, &posedges);
+	if (posedges && posedges>negedges) {
+	    sprintf (strg2, "Posedge # %d\n", posedges);
+	    strcat (strg, strg2);
+	} else if (negedges) {
+	    sprintf (strg2, "Negedge # %d\n", negedges);
+	    strcat (strg, strg2);
+	}
+    }
+
     /* Debugging information */
     if (DTDEBUG) {
 	strcat (strg, "\n");
