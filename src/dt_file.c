@@ -602,7 +602,10 @@ void read_make_busses (trace, not_tempest)
 	    /* Combine signals with same base name, if */
 	    /*  are a vector */
 	    if (sig_ptr->msb_index >= 0
+		/* Signal name */
 		&& !strcmp (sig_ptr->signame, bus_sig_ptr->signame)
+		/* Signal name following bus seperator */
+		&& (sig_ptr->signame_buspos==NULL || !strcmp (sig_ptr->signame_buspos, bus_sig_ptr->signame_buspos))
 		/*  & the result would have < 128 bits */
 		&& (ABS(bus_sig_ptr->msb_index - sig_ptr->lsb_index) < 128 )
 		/* 	& have subscripts that are different by 1  (<20:10> and <9:5> are seperated by 10-9=1) */
