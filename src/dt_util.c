@@ -440,12 +440,14 @@ void    remove_all_events (
     remove_event (ButtonPressMask, cur_add_ev);
     remove_event (ButtonPressMask, cur_move_ev);
     remove_event (ButtonPressMask, cur_delete_ev);
+    remove_event (ButtonPressMask, cur_note_ev);
     remove_event (ButtonPressMask, cur_highlight_ev);
     
     /* remove all possible events due to signal options */ 
     remove_event (ButtonPressMask, sig_add_ev);
     remove_event (ButtonPressMask, sig_move_ev);
     remove_event (ButtonPressMask, sig_copy_ev);
+    remove_event (ButtonPressMask, sig_note_ev);
     remove_event (ButtonPressMask, sig_delete_ev);
     remove_event (ButtonPressMask, sig_highlight_ev);
     remove_event (ButtonPressMask, sig_radix_ev);

@@ -251,6 +251,7 @@ extern void     cur_highlight (DCursor_t *csr_ptr, ColorNum_t color);
 extern void	cur_add_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern void	cur_move_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern void	cur_delete_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
+extern void	cur_note_ev (Widget w, Trace_t* trace, XButtonPressedEvent* ev);
 extern DCursor_t *cur_id_to_cursor (int id);
 
 /* dt_config.c routines */

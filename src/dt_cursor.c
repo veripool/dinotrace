@@ -61,8 +61,6 @@
 
 #include <assert.h>
 
-static void cur_note_ev (Widget w, Trace_t* trace, XButtonPressedEvent*	ev);
-
 /****************************** UTILITIES ******************************/
 
 void    cur_free (
