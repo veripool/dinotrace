@@ -261,6 +261,7 @@ void sig_new_file (
     Signal_t 	*new_sig_ptr;
     char	*endcp, *sep, *bbeg;
     char	*signame_buspos;	/* Text after the bus information */
+    int		tempest_adjust = 0;
 
     if (DTPRINT_BUSSES) printf ("sig_new_file    (%s, %d, (%d)%d-%d )\n", signame, file_pos, bits,msb,lsb);
 
@@ -379,8 +380,13 @@ void sig_new_file (
 	}
     }
 
+    if (trace->dfile.fileformat == FF_TEMPEST) {
+	tempest_adjust = bits;
+    }
+
     while (bits) {
 	/* May need multiple signals if there are > 128 bits to be added */
+	/* Tempest stores LW0 in position 0, LW1 in position 32, .... so we need to adjust for that */
 	int bits_this = bits;
 	int msb_this = msb;
 	int file_pos_this = file_pos;
@@ -388,8 +394,8 @@ void sig_new_file (
 	    int chop = bits % 128;
 	    if (chop==0) chop = 128;
 	    bits_this = chop;
-	    bits = bits - chop;
-	    msb = msb - chop;
+	    bits -= chop;
+	    msb -= chop;
 	    file_pos += chop;
 	} else {
 	    bits = 0;
@@ -407,7 +413,11 @@ void sig_new_file (
 	} else {
 	    new_sig_ptr->radix = global->radixs[0];
 	}
-	new_sig_ptr->file_pos = file_pos_this;
+	if (tempest_adjust) {
+	    new_sig_ptr->file_pos = tempest_adjust - file_pos_this;
+	} else {
+	    new_sig_ptr->file_pos = file_pos_this;
+	}
 	new_sig_ptr->file_code = file_code;	/* Codes are constant, so don't change with bit loop */
 	new_sig_ptr->bits = bits_this;
 	new_sig_ptr->msb_index = msb_this;

@@ -9,7 +9,10 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 * Changes in Dinotrace 9.0k  7/13/2000
 
-****	Fixed bug with $comment after $enddefinitions [Harunobu Miyashita].
+****	Fixed bug with $comment after $enddefinitions. [Harunobu Miyashita]
+
+****	Fixed bug with Tempest signals over 128 bits. [Ta-Chung Chang]
+	This bug was introduced in 9.0i.
 
 
 * Changes in Dinotrace 9.0i  5/1/2000
