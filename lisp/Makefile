@@ -19,4 +19,4 @@ maintainer-clean::
 	-rm -f installer.el dinotrace.el sim-log.el
 
 maintainer-copy::
-	cp -f $(SL)/installer.el $(SL)/dinotrace.el $(SL)/sim-log.el .
+	cp -f $(SL)/local/installer.el $(SL)/local/dinotrace.el $(SL)/local/sim-log.el .
