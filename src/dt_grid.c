@@ -54,8 +54,8 @@ void	grid_calc_auto (trace, grid_ptr)
 {
     SIGNAL	*sig_ptr;
     SIGNAL_LW	*cptr;
-    int		rise1=0, rise2=0, rise3=0;
-    int		fall1=0, fall2=0, fall3=0;
+    int		rise1=0, rise2=0;
+    int		fall1=0, fall2=0;
 
     if (DTPRINT_ENTRY) printf ("In grid_calc_auto\n");
 
@@ -77,32 +77,29 @@ void	grid_calc_auto (trace, grid_ptr)
     }
 
     cptr = sig_ptr->cptr;
-    /* Skip first one, as is often not representative of period */
-    if ( cptr->sttime.time != EOT) cptr += sig_ptr->lws;
+    /* Skip to end */
+    while ( cptr->sttime.time != EOT) cptr += sig_ptr->lws;
 
-    while ( cptr->sttime.time != EOT) {
+    /* Move back 3 grids, if we can */
+    while ( cptr != sig_ptr->cptr) {
+	cptr -= sig_ptr->lws;
 	switch (cptr->sttime.state) {
 	  case STATE_1:
-	    if (!rise1) rise1 = cptr->sttime.time;
-	    else if (!rise2) rise2 = cptr->sttime.time;
-	    else if (!rise3) rise3 = cptr->sttime.time;
+	    if (!rise2) rise2 = cptr->sttime.time;
+	    else if (!rise1) rise1 = cptr->sttime.time;
 	    break;
 	  case STATE_0:
-	    if (!fall1) fall1 = cptr->sttime.time;
-	    else if (!fall2) fall2 = cptr->sttime.time;
-	    else if (!fall3) fall3 = cptr->sttime.time;
+	    if (!fall2) fall2 = cptr->sttime.time;
+	    else if (!fall1) fall1 = cptr->sttime.time;
 	    break;
 	  case STATE_B32:
 	  case STATE_B128:
-	    if (!rise1) rise1 = cptr->sttime.time;
-	    else if (!rise2) rise2 = cptr->sttime.time;
-	    else if (!rise3) rise3 = cptr->sttime.time;
-	    if (!fall1) fall1 = cptr->sttime.time;
-	    else if (!fall2) fall2 = cptr->sttime.time;
-	    else if (!fall3) fall3 = cptr->sttime.time;
+	    if (!rise2) rise2 = cptr->sttime.time;
+	    else if (!rise1) rise1 = cptr->sttime.time;
+	    if (!fall2) fall2 = cptr->sttime.time;
+	    else if (!fall1) fall1 = cptr->sttime.time;
 	    break;
 	}
-	cptr += sig_ptr->lws;
     }
     
     /* Set defaults based on changes */
@@ -128,8 +125,8 @@ void	grid_calc_auto (trace, grid_ptr)
     
     if (DTPRINT_FILE) printf ("grid autoset signal %s align=%d %d\n", sig_ptr->signame,
        grid_ptr->align_auto, grid_ptr->period_auto);
-    if (DTPRINT_FILE) printf ("grid rises=%d,%d,%d, falls=%d,%d,%d, period=%d, align=%d\n",
-       rise1,rise2,rise3, fall1,fall2,fall3,
+    if (DTPRINT_FILE) printf ("grid rises=%d,%d, falls=%d,%d, period=%d, align=%d\n",
+       rise1,rise2, fall1,fall2,
        grid_ptr->period, grid_ptr->alignment);
 }
 
