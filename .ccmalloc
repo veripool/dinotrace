@@ -1,4 +1,4 @@
-% $Revision$$Date$$Author$
+% $Id:$
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 %%%% generic configureation file for %%%%
                 %%%%  the ccmalloc memory profiler   %%%%
@@ -10,7 +10,7 @@
 
 ##############################################################################
 ## (C) 1997-1998 Armin Biere, 1998 Johannes Keukelaar
-## $Revision$$Date$$Author$
+## $Id:$
 ##############################################################################
 
 %%% `%' and `#' are comments !!!!!!!
