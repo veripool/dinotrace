@@ -12,7 +12,7 @@
  *
  * Some of the code in this file was originally developed for Digital
  * Semiconductor, a division of Digital Equipment Corporation.  They
- * gratefuly have agreed to share it, and thus the bas version has been
+ * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
  * 
@@ -78,7 +78,7 @@ struct st_filetypes filetypes[FF_NUMFORMATS] = {
     { 0, "Auto",		"?",	"*.*"		},
     { 1, "DECSIM",		"TRA",	"*.tra*"	},
     { 1, "Tempest CCLI",	"BT",	"*.bt*"		},
-    { 1, "Verilog VCD",		"DMP",	"*.dmp*"	},
+    { 1, "Verilog VCD",		"DMP",	"*.d*mp*"	},
     { 1, "Verilog VPD+",	"VPD",	"*.vpd*"	},
     { 0, "DECSIM Binary",	"TRA",	"*.tra*"	},
     { 0, "DECSIM Ascii",	"TRA",	"*.tra*"	},
