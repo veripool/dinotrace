@@ -236,8 +236,12 @@ char	*help_message ()
 	     "%s\n\
 Compiled %s for %s\n\
 \n\
-Version 4.3 up by Wilson Snyder, RICKS::SNYDER\n\
-Prior versions by Allen Gallotta.\n\
+Written by Wilson Snyder\n\
+snyder@ricks.enet.dec.com or RICKS::SNYDER\n\
+Versions before 4.3 by Allen Gallotta.\n\
+\n\
+Copyright 1993,1994,1995,1996 by Digital Equipment Corporation.\n\
+All Rights Reserved.  For Internal Use Only.\n\
 \n\
 Please see %sDINOTRACE.TXT for documentation.\n\
 \n\
