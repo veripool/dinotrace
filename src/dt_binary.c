@@ -277,6 +277,12 @@ static void	fil_decsim_binary_add_cptr (
     fil_add_cptr (sig_ptr, &value, nocheck);
 }
 
+#ifndef VMS
+void never_just_to_avoid_unused (void) {
+    fil_decsim_binary_add_cptr (NULL, NULL, 0, 0);
+}
+#endif
+
 #ifdef VMS
 void decsim_read_binary (
     Trace	*trace,
