@@ -345,6 +345,146 @@ void    val_highlight_cb (
 
 /****************************** EVENTS ******************************/
 
+char *val_examine_popup_string (
+    /* Return string with examine information in it */
+    TRACE	*trace,
+    DTime	time,
+    SIGNAL	*sig_ptr)
+{
+    SIGNAL_LW	*cptr;
+    static char	strg[2000];
+    char	strg2[2000];
+    int		value[4];
+    int		rows, cols, bit, bit_value, row, col, par;
+    char	*format;
+    
+    if (DTPRINT_ENTRY) printf ("\ttime = %d, signal = %s\n", time, sig_ptr->signame);
+
+    /* Get information */
+    cptr = cptr_at_time (sig_ptr, time);
+    
+    strcpy (strg, sig_ptr->signame);
+	
+    if (cptr->sttime.time == EOT) {
+	strcat (strg, "\nValue at EOT:\n");
+    }
+    else {
+	strcat (strg, "\nValue at times ");
+	time_to_string (trace, strg2, cptr->sttime.time, FALSE);
+	strcat (strg, strg2);
+	strcat (strg, " - ");
+	if (((cptr + sig_ptr->lws)->sttime.time) == EOT) {
+	    strcat (strg, "EOT:\n");
+	}
+	else {
+	    time_to_string (trace, strg2, (cptr + sig_ptr->lws)->sttime.time, FALSE);
+	    strcat (strg, strg2);
+	    strcat (strg, ":\n");
+	}
+    }
+    
+    cptr_to_search_value (cptr, value);
+    
+    switch (cptr->sttime.state) {
+    case STATE_0:
+    case STATE_1:
+	sprintf (strg2, "= %d\n", value[0]);
+	strcat (strg, strg2);
+	break;
+	
+    case STATE_Z:
+	sprintf (strg2, "= Z\n");
+	strcat (strg, strg2);
+	break;
+	
+    case STATE_U:
+	sprintf (strg2, "= U\n");
+	strcat (strg, strg2);
+	break;
+	
+    case STATE_B32:
+    case STATE_B128:
+	strcat (strg, "= ");
+	value_to_string (trace, strg2, value, ' ');
+	strcat (strg, strg2);
+	if ( (sig_ptr->decode != NULL) 
+	     && (cptr->sttime.state == STATE_B32)
+	     && (value[0] < sig_ptr->decode->numstates)
+	     && (sig_ptr->decode->statename[value[0]][0] != '\0') ) {
+	    sprintf (strg2, " = %s\n", sig_ptr->decode->statename[value[0]] );
+	    strcat (strg, strg2);
+	}
+	else strcat (strg, "\n");
+	
+	/* Bitwise information */
+	rows = ceil (sqrt ((double)(sig_ptr->bits + 1)));
+	cols = ceil ((double)(rows) / 4.0) * 4;
+	rows = ceil ((double)(sig_ptr->bits + 1)/ (double)cols);
+	
+	format = "<%01d>=%d ";
+	if (sig_ptr->bits >= 10)  format = "<%02d>=%d ";
+	if (sig_ptr->bits >= 100) format = "<%03d>=%d ";
+	
+	bit = 0;
+	for (row=rows - 1; row >= 0; row--) {
+	    for (col = cols - 1; col >= 0; col--) {
+		bit = (row * cols + col);
+		
+		if (bit<32) bit_value = ( value[0] >> bit ) & 1;
+		else if (bit<64) bit_value = ( value[1] >> (bit-32) ) & 1;
+		else if (bit<96) bit_value = ( value[2] >> (bit-64) ) & 1;
+		else  bit_value = ( value[3] >> (bit-96) ) & 1;
+		
+		if ((bit>=0) && (bit <= sig_ptr->bits)) {
+		    sprintf (strg2, format, sig_ptr->msb_index +
+			     ((sig_ptr->msb_index >= sig_ptr->lsb_index)
+			      ? (bit - sig_ptr->bits) : (sig_ptr->bits - bit)),
+			     bit_value);
+		    strcat (strg, strg2);
+		    if (col==4 || col==8) strcat (strg, "  ");
+		}
+	    }
+	    strcat (strg, "\n");
+	}
+	
+	if (sig_ptr->bits > 2) {
+	    par = 0;
+	    for (bit=0; bit<=sig_ptr->bits; bit++) {
+		if (bit<32) bit_value = ( value[0] >> bit ) & 1;
+		else if (bit<64) bit_value = ( value[1] >> (bit-32) ) & 1;
+		else if (bit<96) bit_value = ( value[2] >> (bit-64) ) & 1;
+		else  bit_value = ( value[3] >> (bit-96) ) & 1;
+		
+		par ^= bit_value;
+	    }
+	    if (par) strcat (strg, "Odd Parity\n");
+	    else  strcat (strg, "Even Parity\n");
+	}
+	
+	break;
+    } /* Case */
+    
+    /* Debugging information */
+    if (DTDEBUG) {
+	sprintf (strg2, "\nState %d\n", cptr->sttime.state);
+	strcat (strg, strg2);
+	sprintf (strg2, "Type %d   Lws %d   Blocks %ld\n",
+		 sig_ptr->type, sig_ptr->lws, sig_ptr->blocks);
+	strcat (strg, strg2);
+	sprintf (strg2, "Bits %d   Index %d - %d  Srch_ena %p\n",
+		 sig_ptr->bits, sig_ptr->msb_index, sig_ptr->lsb_index, sig_ptr->srch_ena);
+	strcat (strg, strg2);
+	sprintf (strg2, "File_type %x  File_Pos %d-%d  Mask %08x\n",
+		 sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->file_end_pos, sig_ptr->pos_mask);
+	strcat (strg, strg2);
+	sprintf (strg2, "Value_mask %08x %08x %08x %08x\n",
+		 sig_ptr->value_mask[3], sig_ptr->value_mask[2], sig_ptr->value_mask[1], sig_ptr->value_mask[0]);
+	strcat (strg, strg2);
+    }
+    
+    return (strg);
+}
+	
 void    val_examine_popup (
     /* Create the popup menu for val_examine, based on cursor position x,y */
     TRACE	*trace,
@@ -354,161 +494,34 @@ void    val_examine_popup (
 {
     DTime	time;
     SIGNAL	*sig_ptr;
-    SIGNAL_LW	*cptr;
-    char	strg[2000];
-    char	strg2[2000];
+    char	*strg = "No information here";
     XmString	xs;
-    int		value[4];
-    int		rows, cols, bit, bit_value, row, col, par;
-    char	*format;
     
     time = posx_to_time (trace, x);
     sig_ptr = posy_to_signal (trace, y);
     
-    if (trace->examine.popup) {
+    if (trace->examine.popup && XtIsManaged(trace->examine.popup)) {
 	XtUnmanageChild (trace->examine.popup);
 	/* XtUnmanageChild (trace->examine.label); */
 	trace->examine.popup = NULL;
     }
-    
+      
     if (time && sig_ptr) {
 	/* Get information */
-	cptr = cptr_at_time (sig_ptr, time);
-	
-	strcpy (strg, sig_ptr->signame);
-	
-	if (cptr->sttime.time == EOT) {
-	    strcat (strg, "\nValue at EOT:\n");
-	}
-	else {
-	    strcat (strg, "\nValue at times ");
-	    time_to_string (trace, strg2, cptr->sttime.time, FALSE);
-	    strcat (strg, strg2);
-	    strcat (strg, " - ");
-	    if (((cptr + sig_ptr->lws)->sttime.time) == EOT) {
-		strcat (strg, "EOT:\n");
-	    }
-	    else {
-		time_to_string (trace, strg2, (cptr + sig_ptr->lws)->sttime.time, FALSE);
-		strcat (strg, strg2);
-		strcat (strg, ":\n");
-	    }
-	}
-	
-	cptr_to_search_value (cptr, value);
-
-	switch (cptr->sttime.state) {
-	  case STATE_0:
-	  case STATE_1:
-	    sprintf (strg2, "= %d\n", value[0]);
-	    strcat (strg, strg2);
-	    break;
-	  
-	  case STATE_Z:
-	    sprintf (strg2, "= Z\n");
-	    strcat (strg, strg2);
-	    break;
-	  
-	  case STATE_U:
-	    sprintf (strg2, "= U\n");
-	    strcat (strg, strg2);
-	    break;
-	  
-	  case STATE_B32:
-	  case STATE_B128:
-	    strcat (strg, "= ");
-	    value_to_string (trace, strg2, value, ' ');
-	    strcat (strg, strg2);
-	    if ( (sig_ptr->decode != NULL) 
-		&& (cptr->sttime.state == STATE_B32)
-		&& (value[0] < sig_ptr->decode->numstates)
-                && (sig_ptr->decode->statename[value[0]][0] != '\0') ) {
-		sprintf (strg2, " = %s\n", sig_ptr->decode->statename[value[0]] );
-		strcat (strg, strg2);
-	    }
-	    else strcat (strg, "\n");
-
-	    /* Bitwise information */
-	    rows = ceil (sqrt ((double)(sig_ptr->bits + 1)));
-	    cols = ceil ((double)(rows) / 4.0) * 4;
-	    rows = ceil ((double)(sig_ptr->bits + 1)/ (double)cols);
-
-	    format = "<%01d>=%d ";
-	    if (sig_ptr->bits >= 10)  format = "<%02d>=%d ";
-	    if (sig_ptr->bits >= 100) format = "<%03d>=%d ";
-
-	    bit = 0;
-	    for (row=rows - 1; row >= 0; row--) {
-		for (col = cols - 1; col >= 0; col--) {
-		    bit = (row * cols + col);
-
-		    if (bit<32) bit_value = ( value[0] >> bit ) & 1;
-		    else if (bit<64) bit_value = ( value[1] >> (bit-32) ) & 1;
-		    else if (bit<96) bit_value = ( value[2] >> (bit-64) ) & 1;
-		    else  bit_value = ( value[3] >> (bit-96) ) & 1;
-
-		    if ((bit>=0) && (bit <= sig_ptr->bits)) {
-			sprintf (strg2, format, sig_ptr->msb_index +
-				 ((sig_ptr->msb_index >= sig_ptr->lsb_index)
-				  ? (bit - sig_ptr->bits) : (sig_ptr->bits - bit)),
-				 bit_value);
-			strcat (strg, strg2);
-			if (col==4 || col==8) strcat (strg, "  ");
-		    }
-		}
-		strcat (strg, "\n");
-	    }
-
-	    if (sig_ptr->bits > 2) {
-		par = 0;
-		for (bit=0; bit<=sig_ptr->bits; bit++) {
-		    if (bit<32) bit_value = ( value[0] >> bit ) & 1;
-		    else if (bit<64) bit_value = ( value[1] >> (bit-32) ) & 1;
-		    else if (bit<96) bit_value = ( value[2] >> (bit-64) ) & 1;
-		    else  bit_value = ( value[3] >> (bit-96) ) & 1;
-
-		    par ^= bit_value;
-		}
-		if (par) strcat (strg, "Odd Parity\n");
-		else  strcat (strg, "Even Parity\n");
-	    }
-
-            break;
-	} /* Case */
-
-	/* Debugging information */
-	if (DTDEBUG) {
-	    sprintf (strg2, "\nState %d\n", cptr->sttime.state);
-	    strcat (strg, strg2);
-	    sprintf (strg2, "Type %d   Lws %d   Blocks %ld\n",
-		     sig_ptr->type, sig_ptr->lws, sig_ptr->blocks);
-	    strcat (strg, strg2);
-	    sprintf (strg2, "Bits %d   Index %d - %d  Srch_ena %d\n",
-		     sig_ptr->bits, sig_ptr->msb_index, sig_ptr->lsb_index, sig_ptr->srch_ena);
-	    strcat (strg, strg2);
-	    sprintf (strg2, "File_type %x  File_Pos %d-%d  Mask %08x\n",
-		     sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->file_end_pos, sig_ptr->pos_mask);
-	    strcat (strg, strg2);
-	    sprintf (strg2, "Value_mask %08x %08x %08x %08x\n",
-		     sig_ptr->value_mask[3], sig_ptr->value_mask[2], sig_ptr->value_mask[1], sig_ptr->value_mask[0]);
-	    strcat (strg, strg2);
-	}
-	
-        /* Create */
-        if (DTPRINT_ENTRY) printf ("\ttime = %d, signal = %s\n", time, sig_ptr->signame);
-
-	XtSetArg (arglist[0], XmNentryAlignment, XmALIGNMENT_BEGINNING);
-	trace->examine.popup = XmCreatePopupMenu (trace->main, "examinepopup", arglist, 1);
-
-	xs = string_create_with_cr (strg);
-	XtSetArg (arglist[0], XmNlabelString, xs);
-	trace->examine.label = XmCreateLabel (trace->examine.popup,"popuplabel",arglist,1);
-	XtManageChild (trace->examine.label);
-	XmStringFree (xs);
-
-	XmMenuPosition (trace->examine.popup, ev);
-	XtManageChild (trace->examine.popup);
+	strg = val_examine_popup_string (trace, time, sig_ptr);
     }
+	
+    XtSetArg (arglist[0], XmNentryAlignment, XmALIGNMENT_BEGINNING);
+    trace->examine.popup = XmCreatePopupMenu (trace->main, "examinepopup", arglist, 1);
+  
+    xs = string_create_with_cr (strg);
+    XtSetArg (arglist[0], XmNlabelString, xs);
+    trace->examine.label = XmCreateLabel (trace->examine.popup,"popuplabel",arglist,1);
+    XtManageChild (trace->examine.label);
+    XmStringFree (xs);
+
+    XmMenuPosition (trace->examine.popup, ev);
+    XtManageChild (trace->examine.popup);
 }
 	
 void    val_examine_unpopup_act (
