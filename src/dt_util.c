@@ -573,6 +573,8 @@ void get_geometry (
     uint_t	pixmap_width,pixmap_height;
     Dimension m_time_height = global->time_font->ascent;
     
+    float old_res_per_pixel = global->res / (trace->width - global->xstart - XMARGIN);
+
     XGetGeometry ( global->display, trace->pixmap, (Window *)&dret,
 		   &x, &y, &pixmap_width, &pixmap_height, &dret, &depth);
 
@@ -586,7 +588,9 @@ void get_geometry (
 				       width, height, depth);
     }
 
+    /* Update width and resolution */
     trace->width = MIN(width, (uint_t)MAXSCREENWIDTH-2);
+    global->res = old_res_per_pixel * (trace->width - global->xstart - XMARGIN);
 
     /* See comment in dinotrace.h about y layout */
     trace->height = height;

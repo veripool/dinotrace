@@ -9,6 +9,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 * Changes in Dinotrace *****
 
+****	When window is resized, keep same percentage of trace visible.
+
 ****	Fix File Reread with identically named signals.
 
 ****	Fix dropping of 0s on signals > 32 bits. [Jason Mancini]
