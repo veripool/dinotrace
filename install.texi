@@ -268,8 +268,8 @@ Dinotrace can be built for Windows under the Cygwin32 environment.
 
 @subsection Binary Installation
 
-Dinotrace is still a X11 program, even under Windows-NT.  Thus several
-packages need to be installed under NT to provide X11 services.
+Dinotrace is still a X11 program, even under Windows-NT.  Thus you must
+add several packages to Cygwin.
 
 @enumerate
 @item
@@ -280,42 +280,11 @@ work with Cygwin Beta 20.1,
 
 @enumerate
 @item
-After downloading, click on the executable and install, preferably
-accepting the default location of @file{C:/Cygnus/B20}.
+After downloading, click on the executable and install.
 @item
-Cygwin now comes with XFree86 as a option, you'll want it.
-@item
-As in the Cygwin readme, be sure to setup ld.exe and sh.exe:
-@example
-mkdir /bin
-cp /Cygnus/B20/cygwin-b20/H-i586-cygwin/bin/ld.exe /bin
-cp /Cygnus/B20/cygwin-b20/H-i586-cygwin/bin/sh.exe /bin
+Cygwin now comes with XFree86 and LessTif as options, you'll want to select both.  Also select
+the XFree86-prog (headers) package.
 @end example
-@end enumerate
-
-@item
-Install LessTIF.  A port that works with Cygwin32 is available at
-@uref{ftp://ftp.lesstif.org/pub/hungry/lesstif/srcdist/}.  At last
-count it was called something like @file{lesstif-0.93.34.tar.bz2}.
-Place it into @file{/cygwin}.
-
-@enumerate
-@item
-After downloading, enter the cygwin shell.  From the LessTif INSTALL.TXT:
-@example
-cd /
-bunzip2 lesstif-0.93.34.tar.bz2
-tar xvf lesstif-0.93.34.tar
-@end example
-
-@item
-Configure make and install.
-@example
-./configure
-make
-make install
-@end example
-
 @end enumerate
 
 @item
@@ -343,6 +312,7 @@ Reboot or restart the shells to pick up the new environment variables.
 @item
 Make and install dinotrace.
 @example
+cd {where_you_put_dinotrace}
 ./configure
 make
 make install
@@ -357,13 +327,6 @@ command line instead of using the requestor.
 Finally, see the Dinotrace manual for configuring Dinotrace for your site.
 
 @end enumerate
-
-@subsection Source Installation
-
-Normally the executable distributed with Dinotrace is sufficient.  You
-may rebuild the kit from the source code by downloading and installing
-the same Cygwin32 and X11R6 packages as above, then following the Unix
-installation instructions.
 
 @node VMS Installation,  , Unix Installation
 @section VMS Installation
