@@ -248,7 +248,7 @@ void draw_cursors (
     Position	x1,mid,x2;
     Position	ytop,ybot,ydelta;
     char 	nonuser_dash[2];		/* Dashed line for nonuser cursors */
-    Dimension m_time_height = global->time_font->ascent + global->time_font->descent;
+    Dimension m_time_height = global->time_font->ascent;
 
     nonuser_dash[0]=2;	nonuser_dash[1]=2;	/* Can't auto-init in ultrix compiler */
 
@@ -325,18 +325,7 @@ void draw_cursors (
     XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
 }
 
-/*
- *
- * Basic DRAW Algorithm:
- *
- * 1) Select Start Point
- * 2) WHILE next_state != EOS and current_location < end_of_screen DO
- *     2a) Draw Transition
- *     2b) Draw State to next_state
- *
- *****************************************************************************
- *
- *
+/*****************************************************************************
  *
  *      _____________A
  *                   ^\  1) draw from previous pt A to
@@ -352,43 +341,17 @@ void draw_cursors (
  *                   |
  *        (Pts[cnt].x,Pts[cnt].y)
  *
- *
- *                                              /
- *                                             /
- *                   _________________________/
- *                ^         ^
- *                |         |
- *                |     Y_SIG_SPACE
- *                |         |
- *                |         v
- *                |   _________________\
- *                |                     \
- *                |                      \
- *           trace->sighgt                \
- *                |                        \
- *                |                         \
- *                |                          \
- *                |                           \_____________________
- *                |          ^
- *                |          |
- *                |       Y_SIG_SPACE
- *                |          |
- *                v          v
- *              _______________________\
- *                                      \
- *                                       \
- *
- *
  */                          
 
 
 void draw_trace (
     Trace	*trace)
 {         
-    int c=0,i,cnt,ymdpt,xloc,xloclast,xend,du,len,mid,yfntloc;
+    int i,cnt,ymdpt,xloc,xloclast,xend,du,len,mid,yvalfntloc,ysigfntloc;
+    int yspace;
     int last_drawn_xloc;
     uint_t last_drawn_state=EOT;
-    int	y1,y2;
+    int	yhigh,ylow;
     uint_t numprt;			/* Number of signals printed out on screen */
     int srch_this_color;		/* Color to print signal if matches search value */
     XPoint Pts[MAXCNT+100];		/* Array of points to plot */
@@ -410,10 +373,6 @@ void draw_trace (
     
     star_width = XTextWidth (global->value_font,"*",1);
 
-    /* calculate the font y location */
-    yfntloc = global->value_font->max_bounds.ascent + global->value_font->max_bounds.descent;
-    yfntloc = (trace->sighgt - yfntloc - Y_SIG_SPACE)/2;
-    
     xend = trace->width - XMARGIN;
     end_time = global->time + TIME_WIDTH (trace);
     
@@ -424,47 +383,40 @@ void draw_trace (
 	 sig_ptr = sig_ptr->forward, numprt++) {
 	/*if (DTPRINT_DRAW) printf ("draw %s\n",sig_ptr->signame);*/
 
-	/* Print the green bars */
-	if ( (c & 1) ^ (trace->numsigstart & 1) ) {
-	    y1 = trace->ystart + c * trace->sighgt + Y_SIG_SPACE;
-	    y2 = y1 + trace->sighgt - 2*Y_SIG_SPACE;
+	/* Calculate line position */
+	yhigh = trace->ystart + numprt * trace->sighgt;
+	ylow = yhigh + trace->sighgt - Y_SIG_SPACE;
+	/* Steal space from Y_SIG_SPACE if we can, down to 2 pixels */
+	yspace = trace->sighgt - global->signal_font->max_bounds.ascent;
+	yspace = MIN( yspace, Y_SIG_SPACE);  /* Bound reasonably */
+	yspace = MAX( yspace, 2);  /* Bound reasonably */
+	ymdpt = (yhigh + ylow)/2;
+	ysigfntloc = ymdpt + (global->signal_font->max_bounds.ascent / 2);
+	yvalfntloc = ymdpt + (global->value_font->max_bounds.ascent / 2);
 
+	/* Print the green bars */
+	if ( (numprt & 1) ^ (trace->numsigstart & 1) ) {
 	    XSetForeground (global->display, trace->gc, trace->barcolornum);
 	    XFillRectangle (global->display, trace->pixmap, trace->gc,
-			    0, y1, trace->width - XMARGIN, y2-y1);
+			    0, yhigh, trace->width - XMARGIN, ylow-yhigh);
 	}
 	
-	/* Grab the color we want */
+	/* Grab the signal color and font, draw the signal*/
 	XSetFont (global->display, trace->gc, global->signal_font->fid);
 	XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
+	draw_trace_signame (trace, sig_ptr, ysigfntloc);
 
-	/*
-	if (temp_color > 9) temp_color = 0;
-	XSetForeground (global->display, trace->gc, trace->xcolornums[temp_color++]);
-	sprintf (temp_strg, "%d", temp_color);
-	XSetForeground (global->display, trace->gc, temp_color++);
-	*/
-
-	/* calculate the location to draw the signal name and draw it */
-	y1 = trace->ystart + (c+1) * trace->sighgt - Y_SIG_SPACE - yfntloc;
-	draw_trace_signame (trace, sig_ptr, y1);
-
+	/* Prepare for value drawing */
 	XSetFont (global->display, trace->gc, global->value_font->fid);
-
-	/* Calculate line position */
-	y1 = trace->ystart + c * trace->sighgt + Y_SIG_SPACE;
-	ymdpt = y1 + (int)(trace->sighgt/2) - Y_SIG_SPACE;
-	y2 = y1 + trace->sighgt - 2*Y_SIG_SPACE;
-	cptr = sig_ptr->cptr;
-	cnt = 0;
-	c++;
 	
 	/* Compute starting points for signal */
+	cptr = sig_ptr->cptr;
+	cnt = 0;
 	Pts[cnt].x = global->xstart - trace->sigrf;
 	last_drawn_xloc = -1;
 	switch ( cptr->siglw.stbits.state ) {
-	  case STATE_0: Pts[cnt].y = y2; break;
-	  case STATE_1: Pts[cnt].y = y1; break;
+	  case STATE_0: Pts[cnt].y = ylow; break;
+	  case STATE_1: Pts[cnt].y = yhigh; break;
 	  case STATE_U: Pts[cnt].y = ymdpt; break;
 	  case STATE_Z: Pts[cnt].y = ymdpt; break;
 	  case STATE_B32: Pts[cnt].y = ymdpt; break;
@@ -504,18 +456,18 @@ void draw_trace (
 	    switch ( cptr->siglw.stbits.state ) {
 	      case STATE_0:
 		if ( xloc > xend ) xloc = xend;
-		Pts[cnt].x = xloclast+trace->sigrf;   Pts[cnt].y = y2;
-		Pts[cnt+1].x = xloc;                  Pts[cnt+1].y = y2;
+		Pts[cnt].x = xloclast+trace->sigrf;   Pts[cnt].y = ylow;
+		Pts[cnt+1].x = xloc;                  Pts[cnt+1].y = ylow;
 		cnt += 2;
 		break;
 		
 	      case STATE_1:
 		if ( xloc > xend ) xloc = xend;
-		Pts[cnt].x = xloclast+trace->sigrf;   Pts[cnt].y = y1;
-		Pts[cnt+1].x = xloc;                  Pts[cnt+1].y = y1;
-		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y1+1;
-		Pts[cnt+3].x = xloclast+trace->sigrf; Pts[cnt+3].y = y1+1;
-		Pts[cnt+4].x = xloc;                  Pts[cnt+4].y = y1+1; /* extranious, just to get endpoint right */
+		Pts[cnt].x = xloclast+trace->sigrf;   Pts[cnt].y = yhigh;
+		Pts[cnt+1].x = xloc;                  Pts[cnt+1].y = yhigh;
+		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = yhigh+1;
+		Pts[cnt+3].x = xloclast+trace->sigrf; Pts[cnt+3].y = yhigh+1;
+		Pts[cnt+4].x = xloc;                  Pts[cnt+4].y = yhigh+1; /* extranious, just to get endpoint right */
 		cnt += 5;
 		break;
 		
@@ -525,21 +477,21 @@ void draw_trace (
 		if ( xloc > xend ) xloc = xend;
 		if ( xloc - xloclast < DELU2) {
 		    du = xloc - xloclast;
-		    Pts[cnt+0].x=xloclast+du/2;	Pts[cnt].y = y2;
+		    Pts[cnt+0].x=xloclast+du/2;	Pts[cnt].y = ylow;
 		    Pts[cnt+1].x=xloclast+du;	Pts[cnt+1].y = ymdpt;
-		    Pts[cnt+2].x=xloclast+du/2;	Pts[cnt+2].y = y1;
+		    Pts[cnt+2].x=xloclast+du/2;	Pts[cnt+2].y = yhigh;
 		    Pts[cnt+3].x=xloclast;	Pts[cnt+3].y = ymdpt;
-		    Pts[cnt+4].x=xloclast+du/2;	Pts[cnt+4].y = y1;
+		    Pts[cnt+4].x=xloclast+du/2;	Pts[cnt+4].y = yhigh;
 		    Pts[cnt+5].x=xloclast+du;	Pts[cnt+5].y = ymdpt;
 		    cnt += 6;
 		    }
 		else {
 		    while ( xloclast < xloc - DELU ) {
-                        Pts[cnt+0].x=xloclast+DELU;  Pts[cnt+0].y = y2;
+                        Pts[cnt+0].x=xloclast+DELU;  Pts[cnt+0].y = ylow;
                         Pts[cnt+1].x=xloclast+DELU2; Pts[cnt+1].y = ymdpt;
-                        Pts[cnt+2].x=xloclast+DELU;  Pts[cnt+2].y = y1;
+                        Pts[cnt+2].x=xloclast+DELU;  Pts[cnt+2].y = yhigh;
                         Pts[cnt+3].x=xloclast;       Pts[cnt+3].y = ymdpt;
-                        Pts[cnt+4].x=xloclast+DELU;  Pts[cnt+4].y = y1;
+                        Pts[cnt+4].x=xloclast+DELU;  Pts[cnt+4].y = yhigh;
                         Pts[cnt+5].x=xloclast+DELU2; Pts[cnt+5].y = ymdpt;
                         cnt += 6;
                         xloclast+=DELU2;
@@ -604,41 +556,46 @@ void draw_trace (
 		}
 
 		/* calculate positional parameters */
-		if (xloc-xloclast >= 6) {  /* if less definately no space for value */
-		    len = XTextWidth (global->value_font,strg,strlen (strg));
-		
-		    if (xloc-xloclast-2 < len) {
-			/* Value won't fit, try star */
-			len = star_width;
-			strg[0] = '*';  strg[1] = '\0';
+		if (star_width < (xloc-xloclast-2)) {  /* if less definately no space for value */
+		    int charlen = MIN ((xloc-xloclast-2) / star_width, strlen(strg));
+		    char *plotstrg;
+		    while (1) {
+			plotstrg = strg + strlen(strg) - charlen;
+			if (plotstrg > strg) *plotstrg = '*';
+			len = XTextWidth (global->value_font,plotstrg,charlen);
+			if (len < (xloc-xloclast-2)) {
+			    /* Fits */
+			    break;
+			}
+			charlen--;
 		    }
 
 		    /* write the bus value if it fits */
-		    if ( xloc-xloclast-2 >= len ) {
+		    if (charlen>0) {
 			mid = xloclast + (int)( (xloc-xloclast)/2 );
 			if (srch_this_color) {
 			    /* Grab the color we want */
 			    XSetForeground (global->display, trace->gc, trace->xcolornums[srch_this_color]);
 			    XDrawString (global->display, trace->pixmap,
-					 trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
+					 trace->gc, mid-len/2, yvalfntloc, plotstrg, charlen );
 			    XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
 			}
 			else {
 			    XDrawString (global->display, trace->pixmap,
-					 trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
+					 trace->gc, mid-len/2, yvalfntloc, plotstrg, charlen );
 			}
 		    }
 		}
 
 		/* Plot points */
-		Pts[cnt+0].x=xloclast+trace->sigrf; 	Pts[cnt+0].y=y2;
-		Pts[cnt+1].x=xloc-trace->sigrf;     	Pts[cnt+1].y=y2;
+		Pts[cnt+0].x=xloclast+trace->sigrf; 	Pts[cnt+0].y=ylow;
+		Pts[cnt+1].x=xloc-trace->sigrf;     	Pts[cnt+1].y=ylow;
 		Pts[cnt+2].x=xloc;                  	Pts[cnt+2].y=ymdpt;
-		Pts[cnt+3].x=xloc-trace->sigrf;     	Pts[cnt+3].y=y1;
-		Pts[cnt+4].x=xloclast+trace->sigrf; 	Pts[cnt+4].y=y1;
+		Pts[cnt+3].x=xloc-trace->sigrf;     	Pts[cnt+3].y=yhigh;
+		Pts[cnt+4].x=xloclast+trace->sigrf; 	Pts[cnt+4].y=yhigh;
 		Pts[cnt+5].x=xloclast;              	Pts[cnt+5].y=ymdpt;
-		Pts[cnt+6].x=xloclast+trace->sigrf; 	Pts[cnt+6].y=y1;
-		Pts[cnt+7].x=xloc-trace->sigrf;       	Pts[cnt+7].y=y1;
+		Pts[cnt+6].x=xloclast+trace->sigrf; 	Pts[cnt+6].y=yhigh;
+		Pts[cnt+7].x=xloc-trace->sigrf;       	Pts[cnt+7].y=yhigh;
 		Pts[cnt+8].x=xloc;                  	Pts[cnt+8].y=ymdpt;
 		cnt += 9;
 		break;
