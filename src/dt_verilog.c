@@ -375,7 +375,7 @@ void	verilog_read_data (trace, readfp)
 	line_num++;
 	line = new_line;
 	if (feof(readfp)) break;
-	/*FIX  if (line_num % 5000 == 0) printf ("Line %d\n", line_num);*/
+	/*if (line_num % 5000 == 0) printf ("Line %d\n", line_num);*/
 	if (DTPRINT_FILE) {
 	    line[strlen(line)-1]= '\0';
 	    printf ("line='%s'\n",line);
