@@ -17,21 +17,27 @@
  * Modification History:
  *     AAG	14-Aug-90	Original Version
  *     AAG	22-Aug-90	Base Level V4.1
+ *     AAG	 6-Nov-90	Changed get_geometry to calculate numsigvis
+ *				correctly when cursors are added
+ *     AAG	29-Apr-91	Use X11, removed '#include descrip', removed
+ *				 '&' in hit_return() param list for Ultrix
+ *				 support
+ *     AAG	 8-Jul-91	Adding call to read hlo binary trace files,
+ *				 added XSync after unmanaging file select
+ *				 window, fixed vscroll 'Value' parameter
  *
  */
 
 
-#include stdio
-#include descrip
+#include <stdio.h>
 
-#include <decw$include/DECwDwtApplProg.h>
-#include <decw$include/Xlib.h>
+#include <X11/DECwDwtApplProg.h>
+#include <X11/Xlib.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
 
 
-
 void
 cancel_all_events(w,ptr,cb)
 Widget			w;
@@ -92,7 +98,7 @@ SIGNAL_SB	*sig_ptr;
     }
 
     pshort = ptr->bus;
-    sig_ptr = ptr->sig.forward;
+    sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
 
     for (i=0; i<ptr->numsig-ptr->numsigdel; i++)
     {
@@ -117,7 +123,7 @@ if (DTPRINT)
 
 /* increment to next signal */
 
-    sig_ptr = sig_ptr->forward;
+    sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
     }
 }
 
@@ -134,11 +140,16 @@ DISPLAY_SB	*ptr;
 
     /* calulate the number of signals possibly visible on the screen */
     max_y = (int)((ptr->height-ptr->ystart)/ptr->sighgt);
-    ptr->numsigvis = MIN(ptr->numsig - ptr->numsigdel,max_y);
+    ptr->numsigvis = MIN(ptr->numsig - ptr->numsigdel - ptr->sigstart,max_y);
 
     /* if there are cursors showing, subtract one to make room for cursor */
-    if (ptr->numcursors > 0 && ptr->cursor_vis && ptr->numsigvis > 1)
+    if ( ptr->numcursors > 0 &&
+	 ptr->cursor_vis &&
+	 ptr->numsigvis > 1 &&
+	 ptr->numsigvis >= max_y )
+    {
 	ptr->numsigvis--;
+    }
 
     XtSetArg(arglist[0], DwtNminValue, ptr->start_time);
     XtSetArg(arglist[1], DwtNmaxValue, ptr->end_time);
@@ -151,10 +162,9 @@ DISPLAY_SB	*ptr;
 
     XtSetArg(arglist[0], DwtNminValue, 0);
     XtSetArg(arglist[1], DwtNmaxValue, ptr->numsig);
-    XtSetArg(arglist[2], DwtNvalue, 0);
+    XtSetArg(arglist[2], DwtNvalue, ptr->sigstart);
     XtSetArg(arglist[3], DwtNinc, 1);
-    XtSetArg(arglist[4], DwtNshown,
-	(int)((ptr->height-ptr->ystart)/ptr->sighgt));
+    XtSetArg(arglist[4], DwtNshown,ptr->numsigvis); 
     XtSetValues(ptr->vscroll, arglist, 5);
 
     if (DTPRINT)
@@ -184,11 +194,14 @@ DISPLAY_SB	*ptr;
 
     if (!ptr->fileselect)
     {
+	fil_ok_cb[0].tag = (int)ptr;
+	fil_can_cb[0].tag = (int)ptr;
 	XtSetArg(arglist[0], DwtNactivateCallback, fil_ok_cb);
 	XtSetArg(arglist[1], DwtNcancelCallback, fil_can_cb);
-	fil_ok_cb[0].tag = ptr;
-	fil_can_cb[0].tag = ptr;
-	XtSetArg(arglist[2], DwtNdirMask, DwtLatin1String("*.tra") );
+	if ( trace_format == DECSIM )
+	    XtSetArg(arglist[2], DwtNdirMask, DwtLatin1String("*.tra") );
+	else if ( trace_format == HLO_TEMPEST )
+	    XtSetArg(arglist[2], DwtNdirMask, DwtLatin1String("*.bt") );
 	XtSetArg(arglist[3], DwtNdirectionRToL, TRUE);
 	XtSetArg(arglist[4], DwtNdefaultPosition, TRUE);
 	XtSetArg(arglist[5], DwtNcols, 50);
@@ -208,35 +221,69 @@ Widget		widget;
 DISPLAY_SB	*ptr;
 DwtFileSelectionCallbackStruct *reason;
 {
-    int d;
-    char *tmp, title[100];
+    int d,status,charset,direction,language,rendition;
+    char *tmp, title[300];
     DwtCompStringContext context;
 
     if (DTPRINT) printf("In cb_fil_ok ptr=%d\n",ptr);
 
-    DwtInitGetSegment(&context, reason->value);
-    DwtGetNextSegment(&context, &tmp, &d, &d, &d, &d);
+    /*
+    ** Unmanage the file select widget here and wait for sync so
+    ** the window goes away before the read process begins in case
+    ** the ile is very big.
+    */
+    XtUnmanageChild(ptr->fileselect);
+    XSync(ptr->disp,0);
+
+    if ( DwtInitGetSegment(&context, reason->value) == DwtSuccess )
+    {
+	if ( DwtGetNextSegment(&context, &tmp, &charset, &direction,
+			&language, &rendition) == DwtSuccess )
+	{
+	    if (DTPRINT) printf("filename=%s\n",tmp);
+	}
+	else
+	{
+	    printf("failure (GetNext)\n");
+	}
+    }
+    else
+    {
+	printf("failure (InitNext)\n");
+    }
+
     sprintf(ptr->filename,"%s",tmp);
+
+    XtFree(tmp);
 
     if (DTPRINT) printf("In cb_fil_ok Filename=%s\n",ptr->filename);
 
-    /* remove the file select widget */
-    XtUnmanageChild(ptr->fileselect);
+    /*
+    ** Read in the trace file using the format selected by the user
+    */
+    if (trace_format == DECSIM)
+	read_DECSIM(ptr);
+    else if (trace_format == HLO_TEMPEST)
+	read_HLO_TEMPEST(ptr);
 
-    /* read in the DECSIM trace file */
-    read_DECSIM(ptr);
-
-    /* change the name on title bar to filename */
+    /*
+    ** Change the name on title bar to filename
+    */
     sprintf(title,DTVERSION);
     strcat(title," - ");
     strcat(title,ptr->filename);
     XtSetArg(arglist[0], DwtNtitle, title);
     XtSetValues(toplevel,arglist,1);
 
-    /* clear the number of deleted signals */
+    /*
+    ** Clear the number of deleted signals and the starting signal
+    */
     ptr->numsigdel = 0;
+    ptr->sigstart = 0;
 
-    /* draw the screen */
+    /*
+    ** Clear the window and draw the screen with the new file
+    */
     get_geometry(ptr);
     XClearWindow(ptr->disp,ptr->wind);
     draw(ptr);
@@ -377,7 +424,7 @@ DwtFileSelectionCallbackStruct *reason;
 
     num = 2;
  
-    hit_return(w,NULL,&list,&num);
+    hit_return(w,NULL,list,&num);
 
     return;
 }
@@ -401,17 +448,20 @@ XEvent		*event;
 char		**params;
 int		*numparams;
 {
-    char	*tmp,data[20],string[20]={"\0"};
+    char	*tmp,data[20],string[20];
     DISPLAY_SB	*ptr;
     int		type,tempi;
     float	tempf;
+
+    /* initialize to NULL string */
+    string[0] = '\0';
 
     if (DTPRINT) printf("in hit return!\n");
 
     if (DTPRINT) printf("*numparams=%d\n",*numparams);
 
     /* obtain the ptr */
-    ptr = atoi(params[0]);
+    ptr = (DISPLAY_SB *)atoi(params[0]);
     if (DTPRINT) printf("ptr=%d\n",ptr);
 
     /* obtain the type */
@@ -527,7 +577,7 @@ char		*msg;
     if (!MAPPED)
     {
 	cb_arglist[0].proc = message_ack;
-	cb_arglist[0].tag = message;
+	cb_arglist[0].tag = (int)message;
 	cb_arglist[1].proc = NULL;
 	XtSetArg(arglist[0], DwtNyesCallback, cb_arglist);
 	XtSetArg(arglist[1], DwtNdefaultPosition, TRUE);
@@ -647,13 +697,13 @@ DISPLAY_SB	*ptr;
     adj = ptr->time * ptr->res - ptr->xstart;
     printf("Adjustment value is %d\n",adj);
 
-    sig_ptr = ptr->startsig;
+    sig_ptr = (SIGNAL_SB *)ptr->startsig;
     for (i=0; i<num; i++)
     {
-	sig_ptr = sig_ptr->forward;	
+	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;	
     }
 
-    cptr = sig_ptr->cptr;
+    cptr = (SIGNAL_LW *)sig_ptr->cptr;
 
     printf("Signal %s starts at %d with a value of ",sig_ptr->signame,cptr->time);
     DINO_NUMBER_TO_VALUE(cptr->state);
