@@ -25,6 +25,7 @@
  *     AAG	 9-Jul-91	Added trace format support
  *
  */
+static char rcsid[] = "$Id$";
 
 
 #include <stdio.h>
@@ -76,6 +77,7 @@ int    main (argc, argv)
     
     /* Create global structure */
     global = XtNew (GLOBAL);
+    memset (global, 0, sizeof (GLOBAL));
     global->trace_head = NULL;
     global->directory[0] = '\0';
     global->res = RES_SCALE/ (float)(250);
@@ -124,6 +126,9 @@ int    main (argc, argv)
             sscanf (argv[++i],"%f",&res);
 	    global->res = RES_SCALE/ (float)res;
 	    global->res_default = FALSE;
+	    }
+        else if ( !strcmp (argv[i], "-noconfig") ) {
+	    global->suppress_config = TRUE;
 	    }
         else if ( argv[i][0]!='-' && argc== (i+1)) {
 	    start_filename = argv[i];
