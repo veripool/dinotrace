@@ -374,8 +374,11 @@ static void draw_cursors (
        DRAW_SEGS; \
        XSetForeground (global->display, trace->gc, col);}}
 
-static void draw_trace (
-    Trace_t	*trace)
+static void draw_signal (
+    Trace_t	*trace,
+    const Signal_t *sig_ptr,
+    uint_t 	numprt		/* Number of signals printed out on screen */
+    )
 {         
     int cnt=0, cntd=0;
     int ymdpt;		/* Y Midpoint of signal, where Z line is */
@@ -383,15 +386,235 @@ static void draw_trace (
     int xend;
     int xsigrf,xsigrfleft, xsigrfright;		/* X rise-fall time, left edge and right edge */
     int xleft, xright;
-    uint_t numprt;			/* Number of signals printed out on screen */
     XSegment segs[MAXCNT+100];		/* Array of line segments to plot */
     XSegment segsd[MAXCNT+100];		/* Array of line segments to plot */
     char strg[MAXVALUELEN];		/* String value to print out */
     const Value_t *cptr,*nptr;		/* Current value pointer and next value pointer */
-    const Signal_t *sig_ptr;		/* Current signal being printed */
     int star_width;			/* Width of '*' character */
     int colornum_last = -1;
     int colornum_sig;
+    
+    int yhigh, ylow;
+     /*if (DTPRINT_DRAW) printf ("draw %s\n",sig_ptr->signame);*/
+
+    /* Overall coordinates */
+    star_width = XTextWidth (global->value_font,"*",1);
+    xend = trace->width - XMARGIN;
+    xsigrf = MAX(1,global->sigrf);
+    
+    /* All drawing is from the midpoint of the X in _B32s ( ===X=== ) */
+
+    /* Calculate line position */
+    yhigh = trace->ystart + numprt * global->sighgt;
+    ylow = yhigh + global->sighgt - Y_SIG_SPACE;
+    /* Steal space from Y_SIG_SPACE if we can, down to 2 pixels */
+    yspace = global->sighgt - global->signal_font->max_bounds.ascent;
+    yspace = MIN( yspace, Y_SIG_SPACE);  /* Bound reasonably */
+    yspace = MAX( yspace, 2);  /* Bound reasonably */
+    ymdpt = (yhigh + ylow)/2;
+    ysigfntloc = ymdpt + (global->signal_font->max_bounds.ascent / 2);
+    yvalfntloc = ymdpt + (global->value_font->max_bounds.ascent / 2);
+    
+    /* Grab the signal color and font, draw the signal*/
+    XSetFont (global->display, trace->gc, global->signal_font->fid);
+    colornum_sig = trace->xcolornums[sig_ptr->color];
+    SET_FOREGROUND (colornum_sig);
+    draw_trace_signame (trace, sig_ptr, ysigfntloc);
+    
+    /* Prepare for value drawing */
+    XSetFont (global->display, trace->gc, global->value_font->fid);
+    
+    /* Compute starting points for signal */
+    cnt = 0;
+    xright = global->xstart;
+    cptr = sig_ptr->cptr;
+    
+    /* Loop as long as the time and end of trace are in current screen */
+    for (; (CPTR_TIME(cptr) != EOT && xright < xend);
+	 cptr = nptr) {
+	uint_t dr_mask = 0;	/* Bitmask of how to draw transitions */
+#define DR_HIGH		0x01
+#define DR_HIGHHIGH	0x02	/* wide high line */
+#define DR_LOW		0x04
+#define DR_Z		0x08
+#define DR_U		0x10
+	int len;
+	int color_value;
+	
+	/* find the next transition */
+	nptr = CPTR_NEXT(cptr);
+	
+	/* if next transition is the end, don't draw */
+	if (CPTR_TIME(nptr) == EOT) break;
+	
+	/* find the x location for the left and right of this segment */
+	xleft = TIME_TO_XPOS (CPTR_TIME(cptr));
+	xleft = MIN (xleft, xend);
+	xleft = MAX (xleft, xright);
+	
+	xright = TIME_TO_XPOS (CPTR_TIME(nptr));
+	xright = MIN (xright, xend);
+	
+	color_value = cptr->siglw.stbits.color;
+	if (cptr->siglw.stbits.allhigh) dr_mask |= DR_HIGHHIGH;
+	switch (cptr->siglw.stbits.state) {
+	case STATE_0:	dr_mask |= DR_LOW; break;
+	case STATE_1:	dr_mask |= DR_HIGHHIGH; break;
+	case STATE_U:	dr_mask |= DR_U; break;
+	case STATE_F32:	dr_mask |= DR_U; break;
+	case STATE_F128:	dr_mask |= DR_U; break;
+	case STATE_Z:	dr_mask |= DR_Z; break;
+	default:		dr_mask |= DR_LOW | DR_HIGH; break;
+	}
+	
+	/*printf ("cptr %s t %d x %d xl %d xr %d xe %d\n",
+	  sig_ptr->signame, (int)CPTR_TIME(cptr), (int)TIME_TO_XPOS(CPTR_TIME(cptr)),
+	  xleft, xright, xend );
+	  printf (" nptr    t %d x %d xl %d xr %d xe %d\n",
+	  (int)CPTR_TIME(nptr), (int)TIME_TO_XPOS(CPTR_TIME(nptr)),
+	  xleft, xright, xend ); */
+	
+	/* Compress invisible transitions into a glitch */
+	if ((xright - xleft) <= (xsigrf*2)) {
+	    int xleft_ok_next = MIN(xend, xleft + xsigrf*2);	/* May pass xend.. looks better then truncating */
+	    const Value_t *nnptr;
+	    xright = xleft + xsigrf*2;
+	    /*printf (" glitch %d\n", xleft_ok_next);*/
+	    /* Too tight for drawing, compress transitions in this space */
+	    /* Scan forward nptrs till find end of compression point */
+	    while (1) {
+		nnptr = CPTR_NEXT(nptr);
+		if ((CPTR_TIME(nnptr) == EOT
+		     || (TIME_TO_XPOS (CPTR_TIME(nnptr)) > xleft_ok_next))) {
+		    break;
+		}
+		/*printf ("nnptr    t %d %s x %d xl %d xr %d xe %d  *hunt %x\n",
+		  (int)CPTR_TIME(nnptr), (int)TIME_TO_XPOS(CPTR_TIME(nnptr)),
+		  xleft, xright, xend, xleft_ok_next );*/
+		/* Build combination image, which is overlay of all values in space */
+		switch (nptr->siglw.stbits.state) {
+		case STATE_0:	dr_mask |= DR_LOW; break;
+		case STATE_1:	dr_mask |= DR_HIGHHIGH; break;
+		case STATE_U:	dr_mask |= DR_U; break;
+		case STATE_F32:	dr_mask |= DR_U; break;
+		case STATE_F128:	dr_mask |= DR_U; break;
+		case STATE_Z:	dr_mask |= DR_Z; break;
+		default:		dr_mask |= DR_LOW | DR_HIGH; break;
+		}
+		color_value = MAX(color_value, nptr->siglw.stbits.color);
+		xright = MAX(xright, TIME_TO_XPOS (CPTR_TIME(nnptr)));
+		nptr = nnptr;
+	    }
+	    xright = MIN (xright, xend);
+	}
+	
+	/* Color selection */
+	if (color_value == 0) {SET_FOREGROUND (colornum_sig);}
+	else {SET_FOREGROUND (trace->xcolornums[color_value]);}
+	
+	/* Draw the transition lines */
+	xsigrfleft = (xleft==global->xstart)?0:xsigrf;
+	xsigrfright = (xright==xend)?0:xsigrf;
+	if (dr_mask & DR_U) {
+	    XPoint pts[10];
+	    pts[0].x = xleft;		pts[0].y = ymdpt;
+	    pts[1].x = xleft+xsigrfleft;	pts[1].y = ylow;
+	    pts[2].x = xright-xsigrfright;	pts[2].y = ylow;
+	    pts[3].x = xright;		pts[3].y = ymdpt;
+	    pts[4].x = xright-xsigrfright;	pts[4].y = yhigh;
+	    pts[5].x = xleft+xsigrfleft;	pts[5].y = yhigh;
+	    pts[6].x = xleft;		pts[6].y = ymdpt;
+	    XFillPolygon (global->display, trace->pixmap, trace->gc,
+			  pts, 7, Convex, CoordModeOrigin);
+	    /* Don't need to draw lines, since we filled region */
+	} else {
+	    if (dr_mask & DR_LOW) {
+		if (xsigrfleft)
+		    ADD_SEG (xleft, ymdpt, xleft+xsigrfleft, ylow);
+		ADD_SEG (xleft+xsigrfleft, ylow,  xright-xsigrfright, ylow);
+		if (xsigrfright)
+		    ADD_SEG (xright-xsigrfright, ylow,  xright, ymdpt);
+	    }
+	    if (dr_mask & (DR_HIGH | DR_HIGHHIGH)) {
+		if (xsigrfleft)
+		    ADD_SEG (xleft, ymdpt, xleft+xsigrfleft, yhigh);
+		ADD_SEG (xleft+xsigrfleft, yhigh, xright-xsigrfright, yhigh);
+		if (xsigrfright)
+		    ADD_SEG (xright-xsigrfright, yhigh, xright, ymdpt);
+		if (dr_mask & DR_HIGHHIGH)
+		    ADD_SEG (xleft+xsigrfleft, yhigh+1, xright-xsigrfright, yhigh+1);
+	    }
+	    if (dr_mask & DR_Z) {
+		ADD_SEG_DASH (xleft, ymdpt, xright, ymdpt);
+	    }
+	}
+	
+	/* Plot value */
+	if (sig_ptr->bits>1
+	    && cptr->siglw.stbits.state != STATE_U
+	    && cptr->siglw.stbits.state != STATE_Z
+	    ) {
+	    uint_t num0 = 0;
+	    if (cptr->siglw.stbits.state != STATE_0) num0 = cptr->number[0];
+	    /* Below evaluation left to right important to prevent error */
+	    if ((cptr->siglw.stbits.state == STATE_B32
+		 || cptr->siglw.stbits.state == STATE_0) &&
+		(sig_ptr->decode != NULL) &&
+		(num0 < sig_ptr->decode->numstates) &&
+		(sig_ptr->decode->statename[num0][0] != '\0')) {
+		strcpy (strg, sig_ptr->decode->statename[num0]);
+		len = XTextWidth (global->value_font,strg,strlen(strg));
+		if ( len < xright-xleft-2 ) {
+		    /* fits, don't try number */
+		    goto state_plot;
+		}
+	    }
+	    if (cptr->siglw.stbits.state != STATE_0) {
+		
+		val_to_string (sig_ptr->radix, strg, cptr, TRUE);
+		
+	      state_plot:
+		/* calculate positional parameters */
+		if (star_width < (xright-xleft-2)) {  /* if less definately no space for value */
+		    int charlen = MIN ((xright-xleft-2) / star_width, strlen(strg));
+		    char *plotstrg;
+		    while (1) {
+			plotstrg = strg + strlen(strg) - charlen;
+			if (plotstrg > strg) *plotstrg = '*';
+			len = XTextWidth (global->value_font,plotstrg,charlen);
+			if (len < (xright-xleft-2)) {
+				/* Fits */
+			    break;
+			}
+			charlen--;
+		    }
+		    
+		    /* write the bus value if it fits */
+		    if (charlen>0) {
+			int mid = xleft + (int)( (xright-xleft)/2 );
+			XDrawString (global->display, trace->pixmap,
+				     trace->gc, mid-len/2, yvalfntloc, plotstrg, charlen );
+		    }
+		}
+	    }
+	} /* if bus */
+    } /* for cptr */
+    
+    /* draw the lines, if any to be done */
+    DRAW_SEGS;
+} /* End of DRAW */
+
+
+static void draw_trace (
+    Trace_t	*trace)
+{         
+    int cnt=0, cntd=0;
+    uint_t numprt;			/* Number of signals printed out on screen */
+    XSegment segs[MAXCNT+100];		/* Array of line segments to plot */
+    XSegment segsd[MAXCNT+100];		/* Array of line segments to plot */
+    const Signal_t *sig_ptr;		/* Current signal being printed */
+    int star_width;			/* Width of '*' character */
+    int colornum_last = -1;
     
     if (DTPRINT_ENTRY) printf ("In draw_trace, xstart=%d\n", global->xstart);
     
@@ -420,8 +643,6 @@ static void draw_trace (
 
     /* Overall coordinates */
     star_width = XTextWidth (global->value_font,"*",1);
-    xend = trace->width - XMARGIN;
-    xsigrf = MAX(1,global->sigrf);
     
     /* Preset dash pattern for STATE_Z's */
     XSetDashes (global->display, trace->gc, 0, "\001\001", 2);
@@ -429,209 +650,7 @@ static void draw_trace (
     /* Loop and draw each signal individually */
     for (sig_ptr = trace->dispsig, numprt = 0; sig_ptr && numprt<trace->numsigvis;
 	 sig_ptr = sig_ptr->forward, numprt++) {
-	int yhigh, ylow;
-	/*if (DTPRINT_DRAW) printf ("draw %s\n",sig_ptr->signame);*/
-
-	/* All drawing is from the midpoint of the X in _B32s ( ===X=== ) */
-
-	/* Calculate line position */
-	yhigh = trace->ystart + numprt * global->sighgt;
-	ylow = yhigh + global->sighgt - Y_SIG_SPACE;
-	/* Steal space from Y_SIG_SPACE if we can, down to 2 pixels */
-	yspace = global->sighgt - global->signal_font->max_bounds.ascent;
-	yspace = MIN( yspace, Y_SIG_SPACE);  /* Bound reasonably */
-	yspace = MAX( yspace, 2);  /* Bound reasonably */
-	ymdpt = (yhigh + ylow)/2;
-	ysigfntloc = ymdpt + (global->signal_font->max_bounds.ascent / 2);
-	yvalfntloc = ymdpt + (global->value_font->max_bounds.ascent / 2);
-
-	/* Grab the signal color and font, draw the signal*/
-	XSetFont (global->display, trace->gc, global->signal_font->fid);
-	colornum_sig = trace->xcolornums[sig_ptr->color];
-	SET_FOREGROUND (colornum_sig);
-	draw_trace_signame (trace, sig_ptr, ysigfntloc);
-
-	/* Prepare for value drawing */
-	XSetFont (global->display, trace->gc, global->value_font->fid);
-	
-	/* Compute starting points for signal */
-	cnt = 0;
-	xright = global->xstart;
-	cptr = sig_ptr->cptr;
-
-	/* Loop as long as the time and end of trace are in current screen */
-	for (; (CPTR_TIME(cptr) != EOT && xright < xend);
-	     cptr = nptr) {
-	    uint_t dr_mask = 0;	/* Bitmask of how to draw transitions */
-#define DR_HIGH		0x01
-#define DR_HIGHHIGH	0x02	/* wide high line */
-#define DR_LOW		0x04
-#define DR_Z		0x08
-#define DR_U		0x10
-	    int len;
-	    int color_value;
-
-	    /* find the next transition */
-	    nptr = CPTR_NEXT(cptr);
-	    
-	    /* if next transition is the end, don't draw */
-	    if (CPTR_TIME(nptr) == EOT) break;
-
-	    /* find the x location for the left and right of this segment */
-	    xleft = TIME_TO_XPOS (CPTR_TIME(cptr));
-	    xleft = MIN (xleft, xend);
-	    xleft = MAX (xleft, xright);
-
-	    xright = TIME_TO_XPOS (CPTR_TIME(nptr));
-	    xright = MIN (xright, xend);
-
-	    color_value = cptr->siglw.stbits.color;
-	    if (cptr->siglw.stbits.allhigh) dr_mask |= DR_HIGHHIGH;
-	    switch (cptr->siglw.stbits.state) {
-	    case STATE_0:	dr_mask |= DR_LOW; break;
-	    case STATE_1:	dr_mask |= DR_HIGHHIGH; break;
-	    case STATE_U:	dr_mask |= DR_U; break;
-	    case STATE_F32:	dr_mask |= DR_U; break;
-	    case STATE_F128:	dr_mask |= DR_U; break;
-	    case STATE_Z:	dr_mask |= DR_Z; break;
-	    default:		dr_mask |= DR_LOW | DR_HIGH; break;
-	    }
-
-	    /*printf ("cptr %s t %d x %d xl %d xr %d xe %d\n",
-	      sig_ptr->signame, (int)CPTR_TIME(cptr), (int)TIME_TO_XPOS(CPTR_TIME(cptr)),
-	      xleft, xright, xend );
-	      printf (" nptr    t %d x %d xl %d xr %d xe %d\n",
-	      (int)CPTR_TIME(nptr), (int)TIME_TO_XPOS(CPTR_TIME(nptr)),
-	      xleft, xright, xend ); */
-
-	    /* Compress invisible transitions into a glitch */
-	    if ((xright - xleft) <= (xsigrf*2)) {
-		int xleft_ok_next = MIN(xend, xleft + xsigrf*2);	/* May pass xend.. looks better then truncating */
-		const Value_t *nnptr;
-		xright = xleft + xsigrf*2;
-		/*printf (" glitch %d\n", xleft_ok_next);*/
-		/* Too tight for drawing, compress transitions in this space */
-		/* Scan forward nptrs till find end of compression point */
-		while (1) {
-		    nnptr = CPTR_NEXT(nptr);
-		    if ((CPTR_TIME(nnptr) == EOT
-			 || (TIME_TO_XPOS (CPTR_TIME(nnptr)) > xleft_ok_next))) {
-			break;
-		    }
-		    /*printf ("nnptr    t %d %s x %d xl %d xr %d xe %d  *hunt %x\n",
-		      (int)CPTR_TIME(nnptr), (int)TIME_TO_XPOS(CPTR_TIME(nnptr)),
-		      xleft, xright, xend, xleft_ok_next );*/
-		    /* Build combination image, which is overlay of all values in space */
-		    switch (nptr->siglw.stbits.state) {
-		    case STATE_0:	dr_mask |= DR_LOW; break;
-		    case STATE_1:	dr_mask |= DR_HIGHHIGH; break;
-		    case STATE_U:	dr_mask |= DR_U; break;
-		    case STATE_F32:	dr_mask |= DR_U; break;
-		    case STATE_F128:	dr_mask |= DR_U; break;
-		    case STATE_Z:	dr_mask |= DR_Z; break;
-		    default:		dr_mask |= DR_LOW | DR_HIGH; break;
-		    }
-		    color_value = MAX(color_value, nptr->siglw.stbits.color);
-		    xright = MAX(xright, TIME_TO_XPOS (CPTR_TIME(nnptr)));
-		    nptr = nnptr;
-		}
-		xright = MIN (xright, xend);
-	    }
-	    
-	    /* Color selection */
-	    if (color_value == 0) {SET_FOREGROUND (colornum_sig);}
-	    else {SET_FOREGROUND (trace->xcolornums[color_value]);}
-
-	    /* Draw the transition lines */
-	    xsigrfleft = (xleft==global->xstart)?0:xsigrf;
-	    xsigrfright = (xright==xend)?0:xsigrf;
-	    if (dr_mask & DR_U) {
-		XPoint pts[10];
-		pts[0].x = xleft;		pts[0].y = ymdpt;
-		pts[1].x = xleft+xsigrfleft;	pts[1].y = ylow;
-		pts[2].x = xright-xsigrfright;	pts[2].y = ylow;
-		pts[3].x = xright;		pts[3].y = ymdpt;
-		pts[4].x = xright-xsigrfright;	pts[4].y = yhigh;
-		pts[5].x = xleft+xsigrfleft;	pts[5].y = yhigh;
-		pts[6].x = xleft;		pts[6].y = ymdpt;
-		XFillPolygon (global->display, trace->pixmap, trace->gc,
-			      pts, 7, Convex, CoordModeOrigin);
-		/* Don't need to draw lines, since we filled region */
-	    } else {
-		if (dr_mask & DR_LOW) {
-		    if (xsigrfleft)
-			ADD_SEG (xleft, ymdpt, xleft+xsigrfleft, ylow);
-		    ADD_SEG (xleft+xsigrfleft, ylow,  xright-xsigrfright, ylow);
-		    if (xsigrfright)
-			ADD_SEG (xright-xsigrfright, ylow,  xright, ymdpt);
-		}
-		if (dr_mask & (DR_HIGH | DR_HIGHHIGH)) {
-		    if (xsigrfleft)
-			ADD_SEG (xleft, ymdpt, xleft+xsigrfleft, yhigh);
-		    ADD_SEG (xleft+xsigrfleft, yhigh, xright-xsigrfright, yhigh);
-		    if (xsigrfright)
-			ADD_SEG (xright-xsigrfright, yhigh, xright, ymdpt);
-		    if (dr_mask & DR_HIGHHIGH)
-			ADD_SEG (xleft+xsigrfleft, yhigh+1, xright-xsigrfright, yhigh+1);
-		}
-		if (dr_mask & DR_Z) {
-		    ADD_SEG_DASH (xleft, ymdpt, xright, ymdpt);
-		}
-	    }
-
-	    /* Plot value */
-	    if (sig_ptr->bits>1
-		&& cptr->siglw.stbits.state != STATE_U
-		&& cptr->siglw.stbits.state != STATE_Z
-		) {
-		uint_t num0 = 0;
-		if (cptr->siglw.stbits.state != STATE_0) num0 = cptr->number[0];
-		/* Below evaluation left to right important to prevent error */
-		if ((cptr->siglw.stbits.state == STATE_B32
-		     || cptr->siglw.stbits.state == STATE_0) &&
-		    (sig_ptr->decode != NULL) &&
-		    (num0 < sig_ptr->decode->numstates) &&
-		    (sig_ptr->decode->statename[num0][0] != '\0')) {
-		    strcpy (strg, sig_ptr->decode->statename[num0]);
-		    len = XTextWidth (global->value_font,strg,strlen(strg));
-		    if ( len < xright-xleft-2 ) {
-			/* fits, don't try number */
-			goto state_plot;
-		    }
-		}
-		if (cptr->siglw.stbits.state != STATE_0) {
-
-		    val_to_string (sig_ptr->radix, strg, cptr, TRUE);
-
-		  state_plot:
-		    /* calculate positional parameters */
-		    if (star_width < (xright-xleft-2)) {  /* if less definately no space for value */
-			int charlen = MIN ((xright-xleft-2) / star_width, strlen(strg));
-			char *plotstrg;
-			while (1) {
-			    plotstrg = strg + strlen(strg) - charlen;
-			    if (plotstrg > strg) *plotstrg = '*';
-			    len = XTextWidth (global->value_font,plotstrg,charlen);
-			    if (len < (xright-xleft-2)) {
-				/* Fits */
-				break;
-			    }
-			    charlen--;
-			}
-
-			/* write the bus value if it fits */
-			if (charlen>0) {
-			    int mid = xleft + (int)( (xright-xleft)/2 );
-			    XDrawString (global->display, trace->pixmap,
-					 trace->gc, mid-len/2, yvalfntloc, plotstrg, charlen );
-			}
-		    }
-		}
-	    } /* if bus */
-	} /* for cptr */
-	
-	/* draw the lines, if any to be done */
-	DRAW_SEGS;
+	draw_signal (trace, sig_ptr, numprt);
     } /* for sig_ptr */
     
     if (DTPRINT_DRAW) printf ("Draw done.\n");
