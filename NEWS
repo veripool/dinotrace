@@ -30,6 +30,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****	Speedup when rereading large files with lots of deleted signals.
 
+****    Fixed read followed by reread keep appending scope names. [George
+	Varughese]
 
 * Changes in Dinotrace 9.0f  9/29/1999
 

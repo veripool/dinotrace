@@ -930,6 +930,7 @@ void verilog_read (
     last_sig_ptr = NULL;
     trace->firstsig = NULL;
     signal_by_pos = NULL;
+    scope_level = 0;
 
     current_file = trace->dfile.filename;
     verilog_gets_init (read_fd);
