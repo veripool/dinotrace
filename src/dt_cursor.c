@@ -143,6 +143,36 @@ void cur_print (FILE *writefp)
 	}
     }
 
+DTime cur_time_first (trace)
+    TRACE 	*trace;
+    /* Return time of the first cursor, or BOT if none */
+{
+    CURSOR	*csr_ptr;
+
+    csr_ptr = global->cursor_head;
+    if (csr_ptr) {
+	return (csr_ptr->time);
+    }
+    else {
+	return (trace->start_time);
+    }
+}
+
+DTime cur_time_last (trace)
+    TRACE 	*trace;
+    /* Return time of the last cursor, or EOT if none */
+{
+    CURSOR	*csr_ptr;
+
+    for (csr_ptr = global->cursor_head; csr_ptr && csr_ptr->next; csr_ptr = csr_ptr->next) ;
+    if (csr_ptr) {
+	return (csr_ptr->time);
+    }
+    else {
+	return (trace->end_time);
+    }
+}
+
 
 /****************************** MENU OPTIONS ******************************/
 
