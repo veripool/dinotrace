@@ -26,19 +26,20 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V6.5"
-#define EXPIRATION	(60*60*24*30)	/* In seconds - Comment out define for no expiration dates */
+#define DTVERSION	"Dinotrace V6.6"
+/*#define EXPIRATION	(60*60*24*30)	/ * In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
 /* Turn off alignment for any structures that will be read/written onto Disk! */
+#ifndef __alpha
 #pragma member_alignment
+#endif __alpha
 
 #define MAXSIGLEN	128	/* Maximum length of signal names */
 #define MAXFNAMELEN	200	/* Maximum length of file names */
-#define MAXSTATENAMES	96	/* Maximum number of state name translations */
+#define MAXSTATENAMES	130	/* Maximum number of state name translations */
 #define MAXSTATELEN	32	/* Maximum length of state names */
 #define MAX_SRCH	9	/* Maximum number of search values */
-#define MAX_SIG		512	/* Maximum number of signals */
 #define	MIN_GRID_RES	512.0	/* Minimum grid resolution */
 #define BLK_SIZE	512	/* Trace data block size */
 #define	CLICKCLOSE	20	/* Number of pixels that are "close" for click-to-edges */
@@ -104,6 +105,14 @@ typedef enum {
     TIMEREP_CYC
 	} TimeRep;
 
+/* Print page sizes */
+typedef enum {
+    PRINTSIZE_A,		/* Must be zero */
+    PRINTSIZE_B,
+    PRINTSIZE_EPSPORT,
+    PRINTSIZE_EPSLAND
+	} PrintSize;
+
 #define IO_GRIDRES	1
 #define IO_RES		3
 
@@ -116,17 +125,36 @@ typedef enum {
 
 /* Utilities */
 #ifndef MAX
-#define MAX(_a_,_b_) ( ( ( _a_ ) > ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
+# if __GNUC__
+#   define MAX(a,b) \
+       ({typedef _ta = (a), _tb = (b);  \
+         _ta _a = (a); _tb _b = (b);     \
+         _a > _b ? _a : _b; })
+# else
+#  define MAX(_a_,_b_) ( ( ( _a_ ) > ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
+# endif __GNUC__
 #endif
+
 #ifndef MIN
-#define MIN(_a_,_b_) ( ( ( _a_ ) < ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
+# if __GNUC__
+#   define MIN(a,b) \
+       ({typedef _ta = (a), _tb = (b);  \
+         _ta _a = (a); _tb _b = (b);     \
+         _a < _b ? _a : _b; })
+# else
+#   define MIN(_a_,_b_) ( ( ( _a_ ) < ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
+# endif __GNUC__
 #endif
+
+/* Avoid binding error messages on XtFree */
+#define DFree(ptr) XtFree((char *)ptr)
 
 typedef	long 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
 typedef	int	ColorNum;
 
 extern Boolean	DTDEBUG,		/* Debugging mode */
 		DTPRINT;		/* Information printing mode */
+extern int	DebugTemp;		/* Temp value for trying things */
 
 /* File formats.  See also hardcoded case statement in dinotrace.c */
 #define	FF_AUTO		0		/* Automatic selection */
@@ -206,9 +234,12 @@ typedef struct {
 
 typedef struct {
     Widget customize;
-    Widget rsize;
-    Widget rsizea;
-    Widget rsizeb;
+    Widget size_menu;
+    Widget size_option;
+    Widget sizea;
+    Widget sizeb;
+    Widget sizeep;
+    Widget sizeel;
     Widget text;
     Widget label;
     Widget notetext;
@@ -307,7 +338,7 @@ typedef struct st_valsearch {
 /* Signal searching structure */
 typedef struct st_sigsearch {
     ColorNum		color;		/* Color number (index into trace->xcolornum) 0=OFF*/
-    int			string[MAXSIGLEN];	/* Signal to search for */
+    char 		string[MAXSIGLEN];	/* Signal to search for */
     } SIGSEARCH;
 
 /* Cursor information structure (one per cursor) */
@@ -401,6 +432,7 @@ typedef struct st_trace {
 
     Window		wind;		/* X window */
     Pixel		xcolornums[11];	/* X color numbers (pixels) for normal/highlight */
+    Pixel		barcolornum;	/* X color number for the signal bar background */
     XFontStruct		*text_font;	/* Display's Text font */
     GC                  gc;
     GC                  hscroll_gc;
@@ -484,12 +516,14 @@ typedef struct {
 
     ColorNum		highlight_color; /* Color selected for sig/cursor highlight */
     ColorNum		goto_color;	/* Cursor color to place on a 'GOTO' -1=none */
+    char *		color_names[11];	/* Names of the colors from the user */
+    char *		barcolor_name;	/* name of the signal bar color */
 
     GEOMETRY		start_geometry;	/* Geometry to open first trace with */
     GEOMETRY		open_geometry;	/* Geometry to open later traces with */
     GEOMETRY		shrink_geometry; /* Geometry to shrink trace->open traces with */
 
-    Boolean		bsized;		/* True if b-sized printing in dt_printscreen */
+    PrintSize		print_size;	/* Size of paper for dt_printscreen */
     Boolean		click_to_edge;	/* True if clicking to edges is enabled */
     TimeRep		time_precision;	/* Time precision = TIMEREP_NS/TIMEREP_CYC */
     char		time_format[12]; /* Time format = printf format or *NULL */

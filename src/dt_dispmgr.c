@@ -26,11 +26,13 @@
  *				Additional gadget support, title in icon
  */
 
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
+#include <X11/StringDefs.h>
 #include <Xm/Xm.h>
 #include <Xm/Form.h>
 #include <Xm/PushB.h>
@@ -46,6 +48,34 @@
 #include "callbacks.h"
 #include "dino.bit"
 #include "bigdino.bit"
+
+/* Application Resources */
+/* Colors:
+   Black, White, Aquamarine, Blue, BlueViolet, Brown, CadetBlue, Coral,
+   CornflowerBlue, Cyan, DarkGreen, DarkOliveGreen, DarkOrchid, DarkSlateBlue,
+   DarkSlateGrey, DarkTurquoise, Firebrick, ForestGreen, Gold, Goldenrod, Green,
+   GreenYellow, IndianRed, Khaki, LightBlue, LightGrey, LightSteelBlue, LimeGreen,
+   Magenta, Maroon, MediumAquamarine, MediumForestGreen, MediumGoldenrod,
+   MediumOrchid, MediumSeaGreen, MediumSlateBlue, MediumSpringGreen,
+   MediumTurquoise, MidnightBlue, NavyBlue, Orange, OrangeRed, Orchid, PaleGreen,
+   Pink, Plum, Red, Salmon, SeaGreen, Sienna, SkyBlue, SlateBlue, SpringGreen,
+   SteelBlue, Tan, Thistle, Turquoise, Violet, VioletRed, Wheat, Yellow,
+   YellowGreen */
+
+#define Offset(field) XtOffsetOf(GLOBAL, field)
+XtResource resources[] = {
+    {"barcolor", "Barcolor", XtRString, sizeof(String), Offset(barcolor_name), XtRImmediate, (XtPointer) NULL},
+    {"color1", "Color1", XtRString, sizeof(String), Offset(color_names[1]), XtRImmediate, (XtPointer) "White"},
+    {"color2", "Color2", XtRString, sizeof(String), Offset(color_names[2]), XtRImmediate, (XtPointer) "Red"},
+    {"color3", "Color3", XtRString, sizeof(String), Offset(color_names[3]), XtRImmediate, (XtPointer) "ForestGreen"},
+    {"color4", "Color4", XtRString, sizeof(String), Offset(color_names[4]), XtRImmediate, (XtPointer) "Blue"},
+    {"color5", "Color5", XtRString, sizeof(String), Offset(color_names[5]), XtRImmediate, (XtPointer) "Magenta"},
+    {"color6", "Color6", XtRString, sizeof(String), Offset(color_names[6]), XtRImmediate, (XtPointer) "Cyan"},
+    {"color7", "Color7", XtRString, sizeof(String), Offset(color_names[7]), XtRImmediate, (XtPointer) "Yellow"},
+    {"color8", "Color8", XtRString, sizeof(String), Offset(color_names[8]), XtRImmediate, (XtPointer) "Salmon"},
+    {"color9", "Color9", XtRString, sizeof(String), Offset(color_names[9]), XtRImmediate, (XtPointer) "NavyBlue"}
+    };
+#undef Offset
 
 
 void set_cursor (trace, cursor_num)
@@ -138,7 +168,7 @@ void trace_close_cb (w,trace)
     /* destroy all the widgets created for the screen */
     XtDestroyWidget (trace->toplevel);
     /* free the display structure */
-    XtFree (trace);
+    DFree (trace);
 
     /* relink pointers to ignore this trace */
     if (trace == global->trace_head)
@@ -195,7 +225,7 @@ void trace_exit_cb (w,trace)
 	trace = trace_next;
 	}
 
-    XtFree (global);
+    DFree (global);
 
     /* all done */
     exit (1);
@@ -235,6 +265,9 @@ void init_globals ()
     global->res_default = TRUE;
 
     for (i=0; i<MAX_SRCH; i++) {
+	/* Colors */
+	global->color_names[i] = NULL;
+
 	/* Value */
 	global->val_srch[i].color = global->val_srch[i].cursor =
 	    global->val_srch[i].value[0] = global->val_srch[i].value[1] =
@@ -246,12 +279,14 @@ void init_globals ()
 	}
     }
 
-void create_globals (argc,argv)
+void create_globals (argc, argv, sync)
     int		argc;
     char	**argv;
+    Boolean	sync;
 {
     int		argc_copy;
     char	**argv_copy;
+    char	display_name[512];
 
     /* alloc variables */
     global->argc = argc;
@@ -267,12 +302,15 @@ void create_globals (argc,argv)
     memcpy (argv_copy, global->argv, global->argc * sizeof (char *));
 
     global->display = XtOpenDisplay (global->appcontext, NULL, NULL, "Dinotrace",
-				    NULL, 0, &argc_copy, &argv_copy);
+				    NULL, 0, &argc_copy, argv_copy);
 
     if (global->display==NULL) {
-	printf ("Can't open display\n");
+	printf ("Can't open display '%s'\n", XDisplayName (display_name));
 	exit (0);
 	}
+
+    XSynchronize (global->display, sync);
+    if (DTPRINT) printf ("in create_globals, syncronization is %d\n", sync);
 
     /*
      * Editor's Note: Thanks go to Sally C. Barry, former employee of DEC,
@@ -287,7 +325,7 @@ void create_globals (argc,argv)
     /*** create big dino pixmap from data ***/
     global->bdpm = make_icon (global->display, DefaultRootWindow (global->display),
 			     bigdino_icon_bits,bigdino_icon_width,bigdino_icon_height);    
-    
+
     /* Define cursors */
     global->xcursors[0] = XCreateFontCursor (global->display, XC_top_left_arrow);
     global->xcursors[1] = XCreateFontCursor (global->display, XC_watch);
@@ -346,7 +384,10 @@ TRACE *create_trace (xs,ys,xp,yp)
     /* printf ("&& && trace %d, top=%d\n", trace, trace->toplevel); */
 
     change_title (trace);
-    
+
+    XtGetApplicationResources (trace->toplevel, (XtPointer) global, resources,
+			      XtNumber (resources), (Arg *) NULL, 0);
+
     /*** add pixmap and position trace->toplevel widget ***/
     XtSetArg (arglist[0], XtNallowShellResize, TRUE);
     XtSetArg (arglist[1], XtNiconPixmap, global->bdpm);
@@ -364,51 +405,38 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg (arglist[1], XmNy, 350);
     /*CCCCCC XtSetArg (arglist[4], XmNacceptFocus, TRUE); */
     trace->main = XmCreateMainWindow (trace->toplevel,"main", arglist, 2);
-#ifdef NOTDONE
-    XtAddCallback (trace->main, XmNfocusCallback, win_focus_cb, trace);
-#endif
+    /*XtAddCallback (trace->main, XmNfocusCallback, win_focus_cb, trace);*/
     
-    /* Colors:
-	Black, White, Aquamarine, Blue, BlueViolet, Brown, CadetBlue, Coral,
-	CornflowerBlue, Cyan, DarkGreen, DarkOliveGreen, DarkOrchid, DarkSlateBlue,
-	DarkSlateGrey, DarkTurquoise, Firebrick, ForestGreen, Gold, Goldenrod, Green,
-	GreenYellow, IndianRed, Khaki, LightBlue, LightGrey, LightSteelBlue, LimeGreen,
-	Magenta, Maroon, MediumAquamarine, MediumForestGreen, MediumGoldenrod,
-	MediumOrchid, MediumSeaGreen, MediumSlateBlue, MediumSpringGreen,
-	MediumTurquoise, MidnightBlue, NavyBlue, Orange, OrangeRed, Orchid, PaleGreen,
-	Pink, Plum, Red, Salmon, SeaGreen, Sienna, SkyBlue, SlateBlue, SpringGreen,
-	SteelBlue, Tan, Thistle, Turquoise, Violet, VioletRed, Wheat, Yellow,
-	YellowGreen */
-
+    /* Find the colors to use */
     XtSetArg (arglist[0], XmNcolormap, &cmap);
     XtSetArg (arglist[1], XmNforeground, &(trace->xcolornums[0]));
-    XtGetValues (trace->main, arglist, 2);
-    trace->xcolornums[1] = XWhitePixel (global->display, 0);
-    if (XAllocNamedColor (global->display, cmap, "Red", &xcolor, &xcolor2))
-	trace->xcolornums[2] = xcolor.pixel;	else trace->xcolornums[2] = trace->xcolornums[1];
-    if (XAllocNamedColor (global->display, cmap, "ForestGreen", &xcolor, &xcolor2))
-	trace->xcolornums[3] = xcolor.pixel;	else trace->xcolornums[3] = trace->xcolornums[1];
-    if (XAllocNamedColor (global->display, cmap, "Blue", &xcolor, &xcolor2))
-	trace->xcolornums[4] = xcolor.pixel;	else trace->xcolornums[4] = trace->xcolornums[1];
-    if (XAllocNamedColor (global->display, cmap, "Magenta", &xcolor, &xcolor2))
-	trace->xcolornums[5] = xcolor.pixel;	else trace->xcolornums[5] = trace->xcolornums[1];
-    if (XAllocNamedColor (global->display, cmap, "Cyan", &xcolor, &xcolor2))
-	trace->xcolornums[6] = xcolor.pixel;	else trace->xcolornums[6] = trace->xcolornums[1];
-    if (XAllocNamedColor (global->display, cmap, "Yellow", &xcolor, &xcolor2))
-	trace->xcolornums[7] = xcolor.pixel;	else trace->xcolornums[7] = trace->xcolornums[1];
-    if (XAllocNamedColor (global->display, cmap, "Salmon", &xcolor, &xcolor2))
-	trace->xcolornums[8] = xcolor.pixel;	else trace->xcolornums[8] = trace->xcolornums[1];
-    if (XAllocNamedColor (global->display, cmap, "NavyBlue", &xcolor, &xcolor2))
-	trace->xcolornums[9] = xcolor.pixel;	else trace->xcolornums[9] = trace->xcolornums[1];
+    XtSetArg (arglist[2], XmNbackground, &(trace->barcolornum));
+    XtGetValues (trace->main, arglist, 3);
 
-    /*
-    for (i=0; i<63; i++) {
-	xcolor.pixel = i;
-	XQueryColor (global->display, cmap, &xcolor);
-	printf ("%d) = %x, %x, %x\n", i, xcolor.red, xcolor.green, xcolor.blue);
+    for (i=1; i<=9; i++) {
+	if (DTPRINT) printf ("%d = '%s'\n", i, global->color_names[i] ? global->color_names[i]:"NULL");
+	if ( (global->color_names[i] != NULL)	
+	    && (XAllocNamedColor (global->display, cmap, global->color_names[i], &xcolor, &xcolor2)))
+	    trace->xcolornums[i] = xcolor.pixel;
+	else trace->xcolornums[i] = XWhitePixel (global->display, 0);
 	}
-	*/
 
+    if (global->barcolor_name == NULL || global->barcolor_name[0]=='\0') {
+	/* Default is 7% green above background */
+	xcolor.pixel = trace->barcolornum;
+	XQueryColor (global->display, cmap, &xcolor);
+	if (xcolor.green < 58590) 
+	    xcolor.green += xcolor.green * 0.07;
+	else xcolor.green -= xcolor.green * 0.07;
+	if (DTPRINT) printf (" = %x, %x, %x \n", xcolor.red, xcolor.green, xcolor.blue);
+	if (XAllocColor (global->display, cmap, &xcolor))
+	    trace->barcolornum = xcolor.pixel;
+	}
+    else {
+	if (XAllocNamedColor (global->display, cmap, global->barcolor_name, &xcolor, &xcolor2))
+	    trace->barcolornum = xcolor.pixel;
+	}
+	    
     /****************************************
      * create the menu bar
      ****************************************/
@@ -537,6 +565,8 @@ TRACE *create_trace (xs,ys,xp,yp)
 	dt_menu_entry	("Print Signal Info (Screen Only)", 'I', print_screen_traces);
 	dt_menu_entry	("Integrity Check", 'I', debug_integrity_check_cb);
 	dt_menu_entry	("Toggle Print", 'P', debug_toggle_print_cb);
+	dt_menu_entry	("Increase DebugTemp", '+', debug_increase_debugtemp_cb);
+	dt_menu_entry	("Decrease DebugTemp", '-', debug_decrease_debugtemp_cb);
 	}
 
     dt_menu_title ("Help", 'H');
@@ -710,10 +740,10 @@ TRACE *create_trace (xs,ys,xp,yp)
     trace->signalstate_head = NULL;
     config_restore_defaults (trace);
     
-    XGetGeometry (global->display, XtWindow (trace->work), &x1, &x1,
+    XGetGeometry (global->display, XtWindow (trace->work), (Window*) &x1, &x1,
 		 &x1, &x2, &x1, &x1, &x1);
 
-    trace->gc = XCreateGC (global->display,trace->wind, NULL, NULL);
+    trace->gc = XCreateGC (global->display, trace->wind, 0, NULL);
 
     /* get font information */
     trace->text_font = XQueryFont (global->display,XGContextFromGC (trace->gc));

@@ -38,6 +38,7 @@
 #include <Xm/Text.h>
 #include <Xm/List.h>
 #include <Xm/BulletinB.h>
+#include <Xm/Label.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
@@ -85,11 +86,11 @@ void sig_free (trace, sig_ptr, select, recursive)
 	
 	    /* free the signal structure */
 	    if (del_sig_ptr->copyof == NULL) {
-		XtFree (del_sig_ptr->bptr);
-		XtFree (del_sig_ptr->signame);
-		XtFree (del_sig_ptr->xsigname);
+		DFree (del_sig_ptr->bptr);
+		DFree (del_sig_ptr->signame);
+		DFree (del_sig_ptr->xsigname);
 		}
-	    XtFree (del_sig_ptr);
+	    DFree (del_sig_ptr);
 	    }
 	else {
 	    sig_ptr = sig_ptr->forward;
@@ -969,8 +970,8 @@ void    sig_sel_update_pattern (w, head_sig_ptr, pattern, xs_list, xs_sigs, xs_s
 	*xs_size = sel_count;
 	}
     else if (*xs_size < sel_count) {
-	*xs_list = (XmString *)XtRealloc (*xs_list, sel_count * sizeof (XmString));
-	*xs_sigs = (SIGNAL **)XtRealloc (*xs_sigs, sel_count * sizeof (SIGNAL *));
+	*xs_list = (XmString *)XtRealloc ((char*)*xs_list, sel_count * sizeof (XmString));
+	*xs_sigs = (SIGNAL **)XtRealloc ((char*)*xs_sigs, sel_count * sizeof (SIGNAL *));
 	*xs_size = sel_count;
 	}
 

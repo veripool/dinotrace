@@ -170,7 +170,7 @@ int	config_read_int (line, out)
 {
     int outlen=0;
 
-    while (*line && !isalnum(*line)) {
+    while (*line && !isalnum(*line) && *line!='-') {
 	line++;
 	outlen++;
 	}
@@ -281,7 +281,7 @@ void	free_signal_states (trace)
     sstate_ptr = trace->signalstate_head;
     while (sstate_ptr) {
 	last_ptr = sstate_ptr->next;
-	XtFree (sstate_ptr);
+	DFree (sstate_ptr);
 	sstate_ptr = last_ptr;
 	}
     trace->signalstate_head = NULL;
@@ -593,13 +593,18 @@ void	config_process_line (trace, line, readfp)
     else if (!strcmp(cmd, "PRINT_SIZE")) {
 	switch (toupper(line[0])) {
 	  case 'A':
-	    global->bsized = FALSE;
+	    global->print_size = PRINTSIZE_A;
 	    break;
 	  case 'B':
-	    global->bsized = TRUE;
+	    global->print_size = PRINTSIZE_B;
+	    break;
+	  case 'E':
+	    if (strchr (cmd, 'L'))
+		global->print_size = PRINTSIZE_EPSLAND;
+	    else global->print_size = PRINTSIZE_EPSPORT;
 	    break;
 	  default:
-	    sprintf (message, "Print_Size must be A, or B\non line %d of %s\n",
+	    sprintf (message, "Print_Size must be A, B, EPSLAND, or EPSPORT\non line %d of %s\n",
 		     line_num, current_file);
 	    dino_error_ack(trace,message);
 	    }

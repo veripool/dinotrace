@@ -36,6 +36,7 @@
 #include <Xm/SelectioB.h>
 #include <Xm/Text.h>
 #include <Xm/Scale.h>
+#include <Xm/Label.h>
 #include <Xm/BulletinB.h>
 
 #include "dinotrace.h"
@@ -338,7 +339,7 @@ void	cus_ok_cb (w,trace,cb)
 {
     if (DTPRINT) printf ("In cus_ok_cb - trace=%d\n",trace);
     
-    XmScaleGetValue (trace->custom.s1, & (trace->sighgt));
+    XmScaleGetValue (trace->custom.s1, (int*) &(trace->sighgt));
     trace->grid_vis = XmToggleButtonGetState (trace->custom.grid_state);
     trace->cursor_vis = XmToggleButtonGetState (trace->custom.cursor_state);
     global->click_to_edge = XmToggleButtonGetState (trace->custom.click_to_edge);

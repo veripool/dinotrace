@@ -105,7 +105,7 @@ void	verilog_read_timescale (line, readfp)
 	}
 
     while (isspace (*line)) line++;
-    time_scale = atoi (line);
+    time_scale = atol (line);
     while (isdigit (*line)) line++;
     switch (*line) {
       case 's':
@@ -370,8 +370,8 @@ void	verilog_read_data (trace, readfp)
 	    break;
 	  case '#':	/* Time stamp */
 	    verilog_enter_busses (trace, first_data, time);
-	    time = (atoi (line) * time_scale) / time_divisor;
-	    if (DTPRINT) printf (" %d * ( %d / %d )\n", atoi(line), time_scale, time_divisor);
+	    time = (atol (line) * time_scale) / time_divisor;
+	    if (DTPRINT) printf (" %d * ( %d / %d )\n", atol(line), time_scale, time_divisor);
 	    if (DTPRINT) printf ("Time %d start %d first %d got %d\n", time, trace->start_time, first_data, got_data);
 	    if (first_data) {
 		if (got_time) {
@@ -645,7 +645,7 @@ void verilog_read (trace, read_fd)
 	}
 
     /* Free up */
-    XtFree (signal_by_pos);
+    DFree (signal_by_pos);
 
     /* Now add EOT to each signal and reset the cptr */
     read_trace_end (trace);

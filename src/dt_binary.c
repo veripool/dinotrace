@@ -92,7 +92,9 @@ int	EXTRACT_2STATE (buf,pos)
     }
 #endif
 
+#ifndef __alpha
 #pragma inline (read_4state_to_value)
+#endif
 int	read_4state_to_value (sig_ptr, buf, value_ptr)
     SIGNAL	*sig_ptr;
     char	*buf;
@@ -179,7 +181,9 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
     return (state);
     }
 
+#ifndef __alpha
 #pragma inline (read_2state_to_value)
+#endif
 int	read_2state_to_value (sig_ptr, buf, value_ptr)
     SIGNAL	*sig_ptr;
     char	*buf;
@@ -214,7 +218,9 @@ int	read_2state_to_value (sig_ptr, buf, value_ptr)
 
 
 
+#ifndef __alpha
 #pragma inline (fil_decsim_binary_to_value)
+#endif
 void	fil_decsim_binary_to_value (sig_ptr, buf, value_ptr)
     /* Returns state and value corresponding to the decsim value for this signal */
     SIGNAL	*sig_ptr;
@@ -263,7 +269,9 @@ void	fil_decsim_binary_to_value (sig_ptr, buf, value_ptr)
     value_ptr->siglw.sttime.state = state;
     }
 
+#ifndef __alpha
 #pragma inline (fil_tempest_binary_to_value)
+#endif
 void	fil_tempest_binary_to_value (sig_ptr, buf, value_ptr)
     /* Returns state and value corresponding to the tempest value for this signal */
     SIGNAL	*sig_ptr;

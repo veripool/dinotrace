@@ -42,6 +42,7 @@
 
 Boolean		DTDEBUG=FALSE,		/* Debugging mode */
 		DTPRINT=FALSE;		/* Information printing mode */
+int		DebugTemp=0;		/* Temp value for trying things */
 int		file_format=FF_DECSIM;	/* Type of trace to support */
 char		message[100];		/* generic string for messages */
 XGCValues	xgcv;
@@ -67,11 +68,12 @@ int    main (argc, argv)
     char		**argv;
 {
     int		i;
+    Boolean	sync = FALSE;
     char	*start_filename = NULL;
     TRACE	*trace;
     
     /* Create global structure */
-    global = (GLOBAL *)XtMalloc ( sizeof (GLOBAL) );
+    global = XtNew (GLOBAL);
     global->trace_head = NULL;
     global->directory[0] = '\0';
     global->res = RES_SCALE/ (float)(250);
@@ -97,21 +99,24 @@ int    main (argc, argv)
         else if ( !strcmp (argv[i], "-decsim_z") ) {
             file_format = FF_DECSIM_Z;
 	    }
+        else if ( !strcmp (argv[i], "-sync") ) {
+            sync = TRUE;
+	    }
         else if ( !strcmp (argv[i], "-geometry") ) {
 	    config_parse_geometry (argv[++i], & (global->start_geometry));
 	    }
         else if ( !strcmp (argv[i], "-siz") ) {
-            sscanf (argv[++i],"%d", & (global->start_geometry.width) );
-            sscanf (argv[++i],"%d", & (global->start_geometry.height) );
+            sscanf (argv[++i], "%hd", & (global->start_geometry.width) );
+            sscanf (argv[++i], "%hd", & (global->start_geometry.height) );
 	    }
         else if ( !strcmp (argv[i], "-pos") ) {
-            sscanf (argv[++i],"%d", & (global->start_geometry.x) );
-            sscanf (argv[++i],"%d", & (global->start_geometry.y) );
+            sscanf (argv[++i], "%hd", & (global->start_geometry.x) );
+            sscanf (argv[++i], "%hd", & (global->start_geometry.y) );
 	    }
         else if ( !strcmp (argv[i], "-res") ) {
 	    float res;
 
-            sscanf (argv[++i],"%d",&res);
+            sscanf (argv[++i],"%f",&res);
 	    global->res = RES_SCALE/ (float)res;
 	    global->res_default = FALSE;
 	    }
@@ -120,8 +125,8 @@ int    main (argc, argv)
 	    }
         else {
             printf ("Invalid %s Option: %s\n", DTVERSION, argv[i]);
-            printf ("DINOTRACE\t[-debug] [-print] [-tempest] [-screen #] [-size #,#]\n");
-            printf ("\t\t[-pos #,#] [-res #]   file_name\n");
+            printf ("DINOTRACE\t[-debug] [-print] [-tempest] [-screen #] [-siz # #]\n");
+            printf ("\t\t[-pos # #] [-res #]   file_name\n");
             printf ("\n%s\n", help_message ());
             exit (-1);
 	    }
@@ -144,13 +149,13 @@ int    main (argc, argv)
 #endif
 
     /* create global information */
-    create_globals (0, argv);
+    create_globals (0, argv, sync);
 
     /* Load config options (such as file_format) */
     /* Create a temporary trace structure for this, as config will want to write to the trace structure */
     trace = malloc_trace ();
     config_read_defaults (trace);
-    XtFree (trace);
+    DFree (trace);
     global->trace_head = NULL;
 
     /* create the main dialog window */
@@ -176,6 +181,8 @@ See the Help menu for more information.");
 
     /* loop forever */
     XtAppMainLoop (global->appcontext);
+
+    return(0);	/* to please lint */
     }
 
 char	*help_message ()
@@ -184,7 +191,7 @@ char	*help_message ()
 
     sprintf (msg,
 	     "%s\n\
-Compiled %s\n\
+Compiled %s for %s\n\
 \n\
 Version 4.3 up by Wilson Snyder, RICKS::SNYDER\n\
 Prior versions by Allen Gallotta.\n\
@@ -201,6 +208,20 @@ For configuration information, Dinotrace reads:\n\
      %sCURRENT_TRACE_NAME.dino\n",
 	     DTVERSION,
 	     COMPILE_DATE_STRG,
+#ifdef VMS
+	     "VAX VMS",
+#else
+#ifdef __alpha
+	     "Alpha OSF",
+#else
+#ifdef __mips
+	     "MIPS",
+#else
+	     "Unknown OS",
+#endif __mips
+#endif __alpha
+#endif VMS
+
 #ifdef VMS
 	     "DINODISK:",
 	     "DINODISK:",

@@ -1,9 +1,5 @@
 
-char dinopost[] = "%\n\
-%\n\
-% DinoTrace Version 6.5 Postscript\n\
-% Last Modified 12/2/93 by Wilson Snyder, RICKS::SNYDER\n\
-%\n\
+char dinopost[] = "% Header last modified 5/11/94 by Wilson Snyder, RICKS::SNYDER\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
 \n\
@@ -23,7 +19,23 @@ char dinopost[] = "%\n\
   /DELU2 { 10 XADJ } def	% define DELU2\n\
 } def \n\
 \n\
-/PAGEHDR      % stack: dtversion pagenum file date signum res st_end_time\n\
+/EPSPHDR      % stack: dtversion pagenum file note date res st_end_time\n\
+{ newpath			% clear current path\n\
+  pop pop pop pop pop pop pop\n\
+  1 setlinecap 1 setlinejoin 1 setlinewidth     % set line char\n\
+  /Times-Roman findfont 8 scalefont setfont\n\
+  } def\n\
+\n\
+/EPSLHDR      % stack: dtversion pagenum file note date res st_end_time\n\
+{ newpath			% clear current path\n\
+  90 rotate			% rotates to landscape\n\
+  0 PG_HGT neg translate	% translates so you can see the image\n\
+  pop pop pop pop pop pop pop\n\
+  1 setlinecap 1 setlinejoin 1 setlinewidth     % set line char\n\
+  /Times-Roman findfont 8 scalefont setfont\n\
+  } def\n\
+\n\
+/PAGEHDR      % stack: dtversion pagenum file note date res st_end_time\n\
 { newpath			% clear current path\n\
   90 rotate			% rotates to landscape\n\
   0 PG_HGT neg translate	% translates so you can see the image\n\

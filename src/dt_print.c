@@ -37,15 +37,19 @@
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
 #include <Xm/PushB.h>
+#include <Xm/PushBG.h>
 #include <Xm/RowColumn.h>
 #include <Xm/ToggleB.h>
 #include <Xm/Text.h>
 #include <Xm/BulletinB.h>
 #include <Xm/Scale.h>
+#include <Xm/Label.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
 #include "dinopost.h"
+
+extern void	ps_drawsig(), ps_draw();
 
 
 
@@ -94,6 +98,8 @@ void    ps_dialog (w,trace,cb)
 	XtSetArg (arglist[6], XmNeditMode, XmSINGLE_LINE_EDIT);
 	trace->prntscr.text = XmCreateText (trace->prntscr.customize,"",arglist,7);
 	XtManageChild (trace->prntscr.text);
+	/* what about print/printall choice? */
+	XtAddCallback (trace->prntscr.text, XmNactivateCallback, ps_print, trace);
 	
 	/* create label widget for notetext widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Note") );
@@ -123,7 +129,7 @@ void    ps_dialog (w,trace,cb)
 	XtSetArg (arglist[0], XmNshowValue, 1);
 	XtSetArg (arglist[1], XmNx, 20);
 	XtSetArg (arglist[2], XmNy, 170);
-	XtSetArg (arglist[3], XmNwidth, 150);
+	XtSetArg (arglist[3], XmNwidth, 120);
 	XtSetArg (arglist[4], XmNvalue, trace->numpag);
 	XtSetArg (arglist[5], XmNminimum, 1);
 	XtSetArg (arglist[6], XmNmaximum, 50);
@@ -134,20 +140,30 @@ void    ps_dialog (w,trace,cb)
 	XtManageChild (trace->prntscr.s1);
 	
 	/* Create radio box for page size */
-	XtSetArg (arglist[0], XmNx, 200);
-	XtSetArg (arglist[1], XmNy, 150);
-	XtSetArg (arglist[2], XmNspacing, 2);
-	trace->prntscr.rsize = XmCreateRadioBox (trace->prntscr.customize,"rsize",arglist,3);
+	trace->prntscr.size_menu = XmCreatePulldownMenu (trace->prntscr.customize,"size",arglist,0);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("A-Sized"));
-	trace->prntscr.rsizea = XmCreateToggleButton (trace->prntscr.rsize,"rsizea",arglist,1);
-	XtManageChild (trace->prntscr.rsizea);
-	
+	trace->prntscr.sizea = XmCreatePushButtonGadget (trace->prntscr.size_menu,"sizea",arglist,1);
+	XtManageChild (trace->prntscr.sizea);
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("B-Sized"));
-	trace->prntscr.rsizeb = XmCreateToggleButton (trace->prntscr.rsize,"tsizeb",arglist,1);
-	XtManageChild (trace->prntscr.rsizeb);
+	trace->prntscr.sizeb = XmCreatePushButtonGadget (trace->prntscr.size_menu,"sizeb",arglist,1);
+	XtManageChild (trace->prntscr.sizeb);
 	
-	XtManageChild (trace->prntscr.rsize);
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("EPS Portrait"));
+	trace->prntscr.sizeep = XmCreatePushButtonGadget (trace->prntscr.size_menu,"sizeep",arglist,1);
+	XtManageChild (trace->prntscr.sizeep);
+	
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("EPS Landscape"));
+	trace->prntscr.sizeel = XmCreatePushButtonGadget (trace->prntscr.size_menu,"sizeel",arglist,1);
+	XtManageChild (trace->prntscr.sizeel);
+	
+	XtSetArg (arglist[0], XmNx, 160);
+	XtSetArg (arglist[1], XmNy, 180);
+	XtSetArg (arglist[2], XmNlabelString, XmStringCreateSimple ("Layout"));
+	XtSetArg (arglist[3], XmNsubMenuId, trace->prntscr.size_menu);
+	trace->prntscr.size_option = XmCreateOptionMenu (trace->prntscr.customize,"sizeo",arglist,4);
+	XtManageChild (trace->prntscr.size_option);
 
 	/* Create Print button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Print") );
@@ -159,7 +175,7 @@ void    ps_dialog (w,trace,cb)
 	
 	/* Create Print All button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Print All") );
-	XtSetArg (arglist[1], XmNx, 60 );
+	XtSetArg (arglist[1], XmNx, 80 );
 	XtSetArg (arglist[2], XmNy, 220 );
 	trace->prntscr.b2 = XmCreatePushButton (trace->prntscr.customize, "printall",arglist,3);
 	XtAddCallback (trace->prntscr.b2, XmNactivateCallback, ps_print_all, trace);
@@ -167,7 +183,7 @@ void    ps_dialog (w,trace,cb)
 	
 	/* create cancel button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
-	XtSetArg (arglist[1], XmNx, 135 );
+	XtSetArg (arglist[1], XmNx, 170 );
 	XtSetArg (arglist[2], XmNy, 220 );
 	trace->prntscr.b3 = XmCreatePushButton (trace->prntscr.customize,"cancel",arglist,3);
 	XtAddCallback (trace->prntscr.b3, XmNactivateCallback, unmanage_cb, trace->prntscr.customize);
@@ -180,17 +196,29 @@ void    ps_dialog (w,trace,cb)
     XtSetValues (trace->prntscr.s1,arglist,1);
     
     /* reset page size */
-    XtSetArg (arglist[0], XmNset, ! (global->bsized));
-    XtSetValues (trace->prntscr.rsizea,arglist,1);
-    XtSetArg (arglist[0], XmNset, (global->bsized));
-    XtSetValues (trace->prntscr.rsizeb,arglist,1);
+    switch (global->print_size) {
+      default:
+      case PRINTSIZE_A:
+	XtSetArg (arglist[0], XmNmenuHistory, trace->prntscr.sizea);
+	break;
+      case PRINTSIZE_B:
+	XtSetArg (arglist[0], XmNmenuHistory, trace->prntscr.sizeb);
+	break;
+      case PRINTSIZE_EPSPORT:
+	XtSetArg (arglist[0], XmNmenuHistory, trace->prntscr.sizeep);
+	break;
+      case PRINTSIZE_EPSLAND:
+	XtSetArg (arglist[0], XmNmenuHistory, trace->prntscr.sizeel);
+	break;
+	}
+    XtSetValues (trace->prntscr.size_option, arglist, 1);
 
     /* reset file note */
     XtSetArg (arglist[0], XmNvalue, global->printnote);
     XtSetValues (trace->prntscr.notetext,arglist,1);
     
     /* if a file has been read in, make printscreen buttons active */
-    XtSetArg (arglist[0],XmNsensitive, (trace->loaded==NULL)?FALSE:TRUE);
+    XtSetArg (arglist[0],XmNsensitive, (trace->loaded)?TRUE:FALSE);
     XtSetValues (trace->prntscr.b1,arglist,1);
     XtSetValues (trace->prntscr.b2,arglist,1);
     
@@ -230,11 +258,20 @@ void    ps_print (w,trace,cb)
     DTime	pagetime;
     char	*psfilename;
     char	*timeunits;
+    int		encapsulated;
+    Widget	clicked;
     
     if (DTPRINT) printf ("In ps_print - trace=%d\n",trace);
     
-    /* get page size */
-    global->bsized = XmToggleButtonGetState (trace->prntscr.rsizeb);
+    XtSetArg (arglist[0], XmNmenuHistory, &clicked);
+    XtGetValues (trace->prntscr.size_option, arglist, 1);
+    if (clicked == trace->prntscr.sizeep)
+	global->print_size = PRINTSIZE_EPSPORT;
+    else if (clicked == trace->prntscr.sizeel)
+	global->print_size = PRINTSIZE_EPSLAND;
+    else if (clicked == trace->prntscr.sizeb)
+	global->print_size = PRINTSIZE_B;
+    else global->print_size = PRINTSIZE_A;
     
     /* open output file */
     psfilename = XmTextGetString (trace->prntscr.text);
@@ -264,6 +301,26 @@ void    ps_print (w,trace,cb)
     set_cursor (trace, DC_BUSY);
     XSync (global->display,0);
     
+    /* encapsulated? */
+    encapsulated = (global->print_size==PRINTSIZE_EPSPORT)
+	|| (global->print_size==PRINTSIZE_EPSLAND);
+    
+    /* File header information */
+    fprintf (psfile, "%%!PS-Adobe-1.0\n");
+    fprintf (psfile, "%%%%Title: %s\n", psfilename);
+    fprintf (psfile, "%%%%Creator: %s %sPostscript\n", DTVERSION,
+	     encapsulated ? "Encapsulated ":"");
+    fprintf (psfile, "%%%%CreationDate: %s\n", date_string());
+    fprintf (psfile, "%%%%Pages: %d\n", encapsulated ? 0 : trace->numpag );
+    /* Took page size, subtracted 50 to loose title information */
+    if (encapsulated) {
+	if (global->print_size==PRINTSIZE_EPSLAND)
+	    fprintf (psfile, "%%%%BoundingBox: 0 0 569 792\n");
+	else fprintf (psfile, "%%%%BoundingBox: 0 0 792 569\n");
+	}
+    fprintf (psfile, "%%%%EndComments\n");
+    if (encapsulated) fprintf (psfile,"save\n");
+
     /* include the postscript macro information */
     fputs (dinopost,psfile);
     
@@ -278,12 +335,12 @@ void    ps_print (w,trace,cb)
 	/* output the page scaling and rf time */
 	fprintf (psfile,"%d %d %d %d %d PAGESCALE\n",
 		trace->height, trace->width, trace->sigrf,
-		(int) ( ( global->bsized ? 11.0 :  8.5) * 72.0),
-		(int) ( ( global->bsized ? 17.0 : 11.0) * 72.0)
+		(int) ( ( (global->print_size==PRINTSIZE_B) ? 11.0 :  8.5) * 72.0),
+		(int) ( ( (global->print_size==PRINTSIZE_B) ? 17.0 : 11.0) * 72.0)
 		);
 	
 	/* output the page header macro */
-	fprintf (psfile, "(%d-%d %s) (%d %s/page) (%s) (%s) (%s) %d (%s) PAGEHDR\n",
+	fprintf (psfile, "(%d-%d %s) (%d %s/page) (%s) (%s) (%s) %d (%s) %s\n",
 		 global->time + pagetime,	/* end time */
 		 global->time,			/* start time */
 		 timeunits,
@@ -293,7 +350,11 @@ void    ps_print (w,trace,cb)
 		 global->printnote,		/* filenote */
 		 trace->filename,		/* filename */
 		 i+1,				/* page number */
-		 DTVERSION			/* version (for title) */
+		 DTVERSION,			/* version (for title) */
+		 ( (global->print_size==PRINTSIZE_EPSPORT)
+		  ? "EPSPHDR" :
+		  ( (global->print_size==PRINTSIZE_EPSLAND)
+		   ? "EPSLHDR" : "PAGEHDR"))	/* which macro to use */
 		 );
 	
 	/* draw the signal names and the traces */
@@ -301,7 +362,9 @@ void    ps_print (w,trace,cb)
 	ps_draw (trace,psfile);
 	
 	/* print the page */
-	fprintf (psfile,"stroke\nshowpage\n");
+	if (encapsulated)
+	    fprintf (psfile,"stroke\nrestore\n");
+	else fprintf (psfile,"stroke\nshowpage\n");
 	
 	/* if not the last page, draw the next page */
 	if (i < trace->numpag-1) {
@@ -315,7 +378,7 @@ void    ps_print (w,trace,cb)
 	}
     
     /* free the memory from getting the filename */
-    XtFree (psfilename);
+    DFree (psfilename);
     
     /* close output file */
     fclose (psfile);
@@ -360,7 +423,7 @@ void    ps_reset (w,trace,cb)
     /* ADD RESET CODE !!! */
     }
 
-ps_draw (trace,psfile)
+void ps_draw (trace,psfile)
     TRACE		*trace;
     FILE		*psfile;
 {
@@ -601,7 +664,7 @@ ps_draw (trace,psfile)
 	}
     } /* End of DRAW */
 
-int    ps_drawsig (trace,psfile)
+void ps_drawsig (trace,psfile)
     TRACE	*trace;
     FILE	*psfile;
 {

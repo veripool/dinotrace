@@ -113,6 +113,9 @@ void draw (trace)
     /* int temp_color=0; */
     /* char temp_strg[20]; */
     int end_time;
+    int oldpix;
+    XColor	xcolor;
+    Colormap	cmap;
     
     if (DTPRINT) printf ("In draw - filename=%s\n",trace->filename);
     
@@ -136,6 +139,16 @@ void draw (trace)
     for (sig_ptr = trace->dispsig, numprt = 0; sig_ptr && numprt<trace->numsigvis;
 	 sig_ptr = sig_ptr->forward, numprt++) {
 
+	/* Print the green bars */
+	if ( (c & 1) ^ (trace->numsigstart & 1) ) {
+	    y1 = trace->ystart + c * trace->sighgt + SIG_SPACE;
+	    y2 = y1 + trace->sighgt - 2*SIG_SPACE;
+
+	    XSetForeground (global->display, trace->gc, trace->barcolornum);
+	    XFillRectangle (global->display, trace->wind, trace->gc,
+			    0, y1, trace->width - XMARGIN, y2-y1);
+	    }
+	
 	/* Grab the color we want */
 	XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
 

@@ -1,4 +1,4 @@
-/******************************************************************************
+/******************************************************************************a
  *
  * Filename:
  *     dt_file.c
@@ -35,13 +35,18 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #ifdef VMS
-#include <file.h>
-#include <unixio.h>
+# include <file.h>
+# include <unixio.h>
 #endif VMS
+
+#ifdef __alpha
+# include <sys/fcntl.h>
+#endif __alpha
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
@@ -50,6 +55,7 @@
 #include "callbacks.h"
 
 Boolean	separator=FALSE;		/* File temporary, true if | in trace file */
+int fil_line_num=0;
 
 /****************************** UTILITIES ******************************/
 
@@ -186,6 +192,16 @@ void fil_read_cb (trace)
 
     /* Open file and copy descriptor information */
     read_fd = open (trace->filename, O_RDONLY, 0);
+    if (read_fd>0) {
+	fstat (read_fd, &(trace->filestat));
+#ifndef VMS
+	if (! S_ISREG(trace->filestat.st_mode)) {
+	    /* Not regular file */
+	    close (read_fd);
+	    read_fd = -1;
+	    }
+#endif
+	}
     if (read_fd<1) {
 	/* Similar code below! */
 	if (DTPRINT) printf ("Can't Open File %s\n", trace->filename);
@@ -197,7 +213,6 @@ void fil_read_cb (trace)
 	set_cursor (trace, DC_NORMAL);
 	return;
 	}
-    fstat (read_fd, &(trace->filestat));
 
 #ifndef VMS
     /* If compressed, close the file and open as uncompressed */
@@ -342,7 +357,7 @@ void	fil_string_to_value (sig_ptr, value_strg, value_ptr)
 	  case 'Z': 
 	  case 'z': state = STATE_Z; break;
 	  default: 
-	    printf ("%%E, Unknown state character '%c' in fil_string_to_value\n", *value_strg);
+	    printf ("%%E, Unknown state character '%c' at line %d\n", *value_strg, fil_line_num);
 	    }
 	}
 
@@ -420,7 +435,8 @@ void	fil_add_cptr (sig_ptr, value_ptr, check)
     diff = sig_ptr->cptr - sig_ptr->bptr;
     if (diff > BLK_SIZE / 4 * sig_ptr->blocks - 4) {
 	sig_ptr->blocks++;
-	sig_ptr->bptr = (SIGNAL_LW *)XtRealloc (sig_ptr->bptr, sig_ptr->blocks*BLK_SIZE);
+	sig_ptr->bptr = (SIGNAL_LW *)XtRealloc ((char*)sig_ptr->bptr,
+						sig_ptr->blocks*BLK_SIZE);
 	sig_ptr->cptr = sig_ptr->bptr+diff;
 	}
        
@@ -500,6 +516,16 @@ void read_make_busses (trace)
 	    }
 	}
 
+    /* Remove signals with NULL names */
+    for (sig_ptr = trace->firstsig; sig_ptr;) {
+	bus_sig_ptr = sig_ptr;
+	if (sig_ptr->signame[0]=='\0') {
+	    /* Null, remove this signal */
+	    sig_free (trace, sig_ptr, FALSE, FALSE);
+	    }
+	sig_ptr = bus_sig_ptr->forward;
+	}
+    
     /* Vectorize signals */
     bus_sig_ptr = NULL;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -742,6 +768,28 @@ void	update_signal_states (trace)
 
 /****************************** DECSIM ASCII ******************************/
 
+#define FIL_SIZE_INC	200	/* Characters to increase length by */
+
+void fgets_dynamic (line_pptr, length_ptr, readfp)
+    /* fgets a line, with dynamically allocated line storage */
+    char **line_pptr;	/* & Line pointer */
+    int	*length_ptr;	/* & Length of the buffer */
+    FILE *readfp;
+{
+    fgets ((*line_pptr), (*length_ptr), readfp);
+    
+    /* Did fgets overflow the string? */
+    while (*((*line_pptr) + *length_ptr - 2)!='\n'
+	   && strlen(*line_pptr)==(*length_ptr - 1)) {
+	/* Alloc more */
+	*length_ptr += FIL_SIZE_INC;
+	*line_pptr = XtRealloc (*line_pptr, *length_ptr);
+	/* Read remainder */
+	fgets (((*line_pptr) + *length_ptr - 2) + 1 - FIL_SIZE_INC,
+	       FIL_SIZE_INC+1, readfp);
+	}
+    }
+
 void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
     TRACE	*trace;
     int		read_fd;
@@ -749,14 +797,16 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 {
     FILE	*readfp;
     int		first_data;
-    char	inline[MAX_SIG+20];
-    char	*sp8 = "        ";
+    char	*line_in;
+    int		line_length=0;
     int		i,k;
     SIGNAL	*sig_ptr,*last_sig_ptr=NULL;
     int		time;
     VALUE	value;
     char	*pchar;
     DTime	time_divisor;
+    int		ch;
+    int		chango_format;
 
     separator = FALSE;
     time_divisor = time_units_to_multiplier (global->time_precision);
@@ -773,14 +823,33 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	readfp = decsim_z_readfp;
 	}
 
+    /* Dynamically maintain the line buffer so we are not limited
+       by the number of signals */
+    line_length=FIL_SIZE_INC;
+    line_in = (char *)XtMalloc (FIL_SIZE_INC);
+
     /* Check if header lines are present - if so, ignore */
-    fgets (inline,MAX_SIG,readfp);
-    while ( strncmp (&inline[1],sp8,8) ) {
-	fgets (inline,MAX_SIG+10,readfp);
+    fgets_dynamic (&line_in, &line_length, readfp);
+    fil_line_num=1;
+
+    /* Ship first set of !'s for DECSIM, chango doesn't have a header on first line */
+    while (line_in[0]=='!') {
+	if (DTPRINT) printf ("Header: '%s'\n");
+	fgets_dynamic (&line_in, &line_length, readfp);
+	fil_line_num++;
+        }
+    while (!line_in[0] || line_in[0]=='\n') {
+	if (DTPRINT) printf ("Header2: '%s'\n");
+	fgets_dynamic (&line_in, &line_length, readfp);
+	fil_line_num++;
         }
 
-    /* INLINE contains 1st signal line - use for signal number */
-    trace->numsig = strlen (&inline[9]) - 1;
+    /* Allocate another 100 chars and assume that that lines won't grow */
+    line_length += FIL_SIZE_INC;
+    line_in = XtRealloc (line_in, line_length);
+
+    /* LINE_IN contains 1st signal line - use for signal number */
+    trace->numsig = strlen (line_in) - 1;
 
     /* Make a signal structure for each signal */
     trace->firstsig = NULL;
@@ -807,17 +876,18 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 
     /* Read Signal Names Into Structure */
     k=0;
-    while ( inline[0] == '!' ) {
+    while ( line_in[0] == '!' ) {
 	/*** i=char read - j=char written - k=#lines read ***/
 	for (i=0, sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward, i++) {
 	    if (separator) i++;
-	    sig_ptr->signame[k] = inline[9+i];
+	    sig_ptr->signame[k] = line_in[1+i];
 	    }
 	if (++k >= MAXSIGLEN) {
 	    dino_error_ack (trace,"Signal Lengths > MAXSIGLEN");
 	    k--;
 	    }
-	fgets (inline,MAX_SIG+10,readfp);
+	fgets (line_in, line_length, readfp);
+	fil_line_num++;
 	}
 
     /* Add EOS delimiter to each signal name */
@@ -828,27 +898,43 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
     /* Assign position and bit information for each signal */
     for (i=0, sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward, i++) {
 	sig_ptr->file_type.flags = 0;
-	sig_ptr->file_pos = i + 9;	/* 9 characters are for the time, then signal one */
+	sig_ptr->file_pos = i + 1;
 	sig_ptr->bits = 0;	/* = buf->TRA$W_BITLEN; */
 	if (separator) i++;
 	}
 
     /* Make the busses */
+    /* Any lines that were all spaces will be pulled off.  This will strip off the time section of the lines */
     read_make_busses (trace);
+
+    /* Is this chango format?  It doesn't have any timestamps */
+    chango_format = (trace->firstsig
+		     && (trace->firstsig->file_pos < 2) );
+    time = -100;	/* so increment makes it 0 */
 
     /* Loop to read trace data and reformat */
     first_data = TRUE;
     while (!feof (readfp)) {
-	fgets (inline, MAX_SIG+10, readfp);
+	fgets (line_in, line_length, readfp);
+	fil_line_num++;
 
 	/* Remove leading hash mark (old fil_remove_hash) */
-	while ( (pchar=strchr (inline,'#')) != 0 ) {
+	while ( (pchar=strchr (line_in,'#')) != 0 ) {
 	    *pchar = '\0';
-	    strcat (inline, pchar+2);
+	    strcat (line_in, pchar+2);
 	    }
 
-	if ( inline[0] && (inline[0] != '!') && (inline[0] != '\n') ) {
-	    time = (atoi (inline) * 1000) / time_divisor;	/* ASCII traces are always in NS */
+	if ( line_in[0] && (line_in[0] != '!') && (line_in[0] != '\n') ) {
+	    if (chango_format) {
+		time += 100;
+		}
+	    else {
+		/* Be careful of round off error making us overflow the time */
+		time = (atof (line_in) * 1000.0) / ((float)time_divisor);	/* ASCII traces are always in NS */
+		if (time<0) {
+		    printf ("%%E, Time underflow!\n");
+		    }
+		}
 	    
 	    if (first_data) {
 		trace->start_time = time;
@@ -857,7 +943,7 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 
 	    /* save information on each signal */
 	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-		fil_string_to_value (sig_ptr, inline + sig_ptr->file_pos, &value);
+		fil_string_to_value (sig_ptr, line_in + sig_ptr->file_pos, &value);
 		value.siglw.sttime.time = time;
 		/*
 		if (DTPRINT) printf ("time %d sig %s state %d\n", time, sig_ptr->signame, 
@@ -869,6 +955,8 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	    first_data = FALSE;
 	    }
 	}
+
+    XtFree (line_in);
 
     if (first_data) {
 	dino_error_ack (trace,"No data in trace file");

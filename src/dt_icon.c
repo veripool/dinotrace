@@ -21,6 +21,7 @@
  *
  */
 
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -32,13 +33,13 @@
 Pixmap    make_icon (display, root, data, width, height) 
     Display		*display;
     Drawable		root;
-    short		*data;
+    char		*data;
     Dimension		width,height;
 {
     XImage		ximage;
     GC			pgc;
     XGCValues		gcv;
-    Pixmap		pid;
+    Drawable		pid;
     
     /* create the pixmap */
     pid = XCreatePixmap (display, root, width, height,
@@ -61,10 +62,10 @@ Pixmap    make_icon (display, root, data, width, height)
     ximage.bitmap_pad = 16;
     ximage.bytes_per_line = (width+15)/16 * 2;
     ximage.depth = 1;
+    ximage.bits_per_pixel = 1;
     
-    /* put image into the pixmap */
     XPutImage (display, pid, pgc, &ximage, 0, 0, 0, 0, width, height);
-    
+
     /* free gc */
     XFreeGC (display, pgc);
     

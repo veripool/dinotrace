@@ -244,9 +244,8 @@ void vscroll_drag (w,trace,cb)
 
     if (DTPRINT) printf ("In vscroll_drag trace=%d\n",trace);
 
-    arglist[0].name = XmNvalue;
-    arglist[0].value = (int)&inc;
-    XtGetValues (trace->vscroll,arglist,1);
+    XtSetArg (arglist[0], XmNvalue, &inc);
+    XtGetValues (trace->vscroll, arglist, 1);
 
     /*
     ** The sig pointer is reset to the start and the loop will set

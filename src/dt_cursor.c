@@ -32,8 +32,8 @@
 /****************************** UTILITIES ******************************/
 
 void    remove_cursor (csr_ptr)
-    CURSOR	*csr_ptr;	/* Cursor to remove */
     /* Cursor is removed from list, but not freed! */
+    CURSOR	*csr_ptr;	/* Cursor to remove */
 {
     CURSOR	*next_csr_ptr, *prev_csr_ptr;
     
@@ -157,7 +157,7 @@ void    cur_clr_cb (w, trace, cb)
     while ( global->cursor_head ) {
 	csr_ptr = global->cursor_head;
 	global->cursor_head = csr_ptr->next;
-	XtFree (csr_ptr);
+	DFree (csr_ptr);
 	}
     
     /* cancel the button actions */
@@ -326,7 +326,7 @@ void    cur_delete_ev (w, trace, ev)
     
     /* delete the cursor */
     remove_cursor (csr_ptr);
-    XtFree (csr_ptr);
+    DFree (csr_ptr);
     
     /* redraw the screen with new cursors */
     redraw_all (trace);

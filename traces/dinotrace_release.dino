@@ -14,7 +14,7 @@
 !	file_format	DECSIM | TEMPEST | VERILOG | DECSIM_Z
 !	cursor		ON | OFF
 !	click_to_edge	ON | OFF
-!	print_size	A | B
+!	print_size	A | B | EPSPORT | EPSLAND
 !	vector_seperator "<char>"
 !	start_geometry	<width>x<height>+<xoffset>+<yoffset>
 !	open_geometry	<width>[%]x<height>[%]+<xoffset>[%]+<yoff>[%]

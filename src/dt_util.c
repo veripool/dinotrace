@@ -279,7 +279,7 @@ void get_geometry ( trace )
 {
     int		x,y,width,height,dret,max_y;
     
-    XGetGeometry ( global->display, XtWindow (trace->work), &dret,
+    XGetGeometry ( global->display, XtWindow (trace->work), (Window *)&dret,
 		 &x, &y, &width, &height, &dret, &dret);
     
     trace->width = width;
@@ -428,7 +428,7 @@ void fil_ok_cb (w, trace, cb)
     
     strcpy (trace->filename, tmp);
     
-    XtFree (tmp);
+    DFree (tmp);
     
     if (DTPRINT) printf ("In fil_ok_cb Filename=%s\n",trace->filename);
     fil_read_cb (trace);
@@ -483,7 +483,7 @@ void    prompt_ok_cb (w, trace, cb)
     /* unmanage the popup window */
     XtUnmanageChild (trace->prompt_popup);
     
-    if (time < 0) {
+    if (time <= 0) {
 	sprintf (message,"Value %d out of range", time);
 	dino_error_ack (trace,message);
 	return;
@@ -716,6 +716,27 @@ void    debug_integrity_check_cb (w,trace,cb)
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	debug_signal_integrity (trace->firstsig, "Trace");
 	}
+    }
+
+
+void    debug_increase_debugtemp_cb (w,trace,cb)
+    Widget		w;
+    TRACE	       	*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    DebugTemp++;
+    printf ("New DebugTemp = %d\n", DebugTemp);
+    redraw_all (trace);
+    }
+
+void    debug_decrease_debugtemp_cb (w,trace,cb)
+    Widget		w;
+    TRACE	       	*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    DebugTemp--;
+    printf ("New DebugTemp = %d\n", DebugTemp);
+    redraw_all (trace);
     }
 
 

@@ -129,6 +129,8 @@ extern void
     res_zoom_click_ev(),
     debug_toggle_print_cb(),
     debug_integrity_check_cb(),
+    debug_increase_debugtemp_cb(),
+    debug_decrease_debugtemp_cb(),
     hscroll_unitinc(), hscroll_unitdec(), hscroll_drag(), 
     hscroll_pageinc(), hscroll_pagedec(), 
     hscroll_bot(), hscroll_top(), 
@@ -145,7 +147,7 @@ extern void
     drawsig();
 
 /* dt_icon */
-extern Pixmap	make_icon();
+extern Pixmap	make_icon (Display *, Drawable, char *, Dimension, Dimension);
 
 /* dt_verilog */
 extern void	verilog_read();

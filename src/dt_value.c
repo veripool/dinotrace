@@ -32,6 +32,7 @@
 #include <Xm/Text.h>
 #include <Xm/BulletinB.h>
 #include <Xm/RowColumn.h>
+#include <Xm/Label.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
@@ -200,7 +201,7 @@ void	val_update_search ()
 	csr_ptr = csr_ptr->next;
 	if (new_csr_ptr->search==-1) {
 	    remove_cursor (new_csr_ptr);
-	    XtFree (new_csr_ptr);
+	    DFree (new_csr_ptr);
 	    }
 	}
     }
