@@ -572,9 +572,9 @@ void draw_trace (
 		else {
 		  value_rep:
 
-		    if (trace->busrep == HBUS)
+		    if (trace->busrep == BUSREP_HEX_UN)
 			sprintf (strg,"%x", value);
-		    else if (trace->busrep == OBUS)
+		    else if (trace->busrep == BUSREP_OCT_UN)
 			sprintf (strg,"%o", value);
 		    else 
 			sprintf (strg,"%d", value);

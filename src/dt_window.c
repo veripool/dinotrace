@@ -128,13 +128,13 @@ void hscroll_pageinc_cb (
     if (DTPRINT_ENTRY) printf ("In hscroll_pageinc - trace=%p  old_time=%d",trace,global->time);
 
     switch ( global->pageinc ) {
-      case QPAGE:
+      case PAGEINC_QUARTER:
 	global->time += (int) ( TIME_WIDTH (trace) /4);
 	break;
-      case HPAGE:
+      case PAGEINC_HALF:
 	global->time += (int) ( TIME_WIDTH (trace) /2);
 	break;
-      case FPAGE:
+      case PAGEINC_FULL:
 	global->time += (int) ( TIME_WIDTH (trace)   );
 	break;
     }
@@ -151,13 +151,13 @@ void hscroll_pagedec_cb (
     if (DTPRINT_ENTRY) printf ("In hscroll_pagedec - trace=%p  old_time=%d pageinc=%d",trace,global->time,global->pageinc);
 
     switch ( global->pageinc ) {
-      case QPAGE:
+      case PAGEINC_QUARTER:
 	global->time -= (int) ( TIME_WIDTH (trace) /4);
 	break;
-      case HPAGE:
+      case PAGEINC_HALF:
 	global->time -= (int) ( TIME_WIDTH (trace) /2);
 	break;
-      case FPAGE:
+      case PAGEINC_FULL:
 	global->time -= (int) ( TIME_WIDTH (trace)   );
 	break;
     }

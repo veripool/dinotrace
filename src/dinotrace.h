@@ -189,18 +189,18 @@ typedef enum {
 } MCKeys_t;
 
 /* Half/Quarter/Full page enums */
-#define QPAGE 4
-#define HPAGE 2
-#define FPAGE 1
-typedef uint_t PageInc;
+typedef enum {
+    PAGEINC_FULL=1,
+    PAGEINC_HALF=2,
+    PAGEINC_QUARTER=4
+} PageInc_t;
 
 /* Bus representation enums */
-#define IBUS 1
-#define BBUS 2
-#define OBUS 3
-#define HBUS 4
-#define DBUS 5
-typedef uint_t BusRep;
+typedef enum {
+    BUSREP_OCT_UN=1,
+    BUSREP_HEX_UN=2,
+    BUSREP_DEC_UN=3
+} BusRep_t;
 
 /* Time representation enums */
 #define TIMEREP_PS 1.0
@@ -690,7 +690,7 @@ struct st_trace {
     Dimension		height;		/* Screen height */
 
     uint_t		sigrf;		/* Signal rise/fall time spec */
-    BusRep		busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS/DBUS */
+    BusRep_t		busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS/DBUS */
     TimeRep		timerep;	/* Time representation = TIMEREP_NS/TIMEREP_CYC */
 
     Grid		grid[MAXGRIDS];	/* Grid information */
@@ -751,7 +751,7 @@ typedef struct {
     char		anno_filename[MAXFNAMELEN]; /* Annotation file name */
     char		anno_socket[MAXFNAMELEN];	/* Annotation socket number */
 
-    PageInc		pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
+    PageInc_t		pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
     Boolean		click_to_edge;	/* True if clicking to edges is enabled */
     TimeRep		time_precision;	/* Time precision = TIMEREP_NS/TIMEREP_CYC */
     char		time_format[12]; /* Time format = printf format or *NULL */

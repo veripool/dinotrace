@@ -79,33 +79,33 @@ void    value_to_string (
     char seperator)		/* What to print between the values */
 {
     if (cptr[3]) {
-	if (trace->busrep == HBUS)
+	if (trace->busrep == BUSREP_HEX_UN)
 	    sprintf (strg,"%x%c%08x%c%08x%c%08x", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
-	else if (trace->busrep == OBUS)
+	else if (trace->busrep == BUSREP_OCT_UN)
 	    sprintf (strg,"%o%c%010o%c%010o%c%010o", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	else
 	    sprintf (strg,"%d%c%010d%c%010d%c%010d", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
     }
     else if (cptr[2]) {
-	if (trace->busrep == HBUS)
+	if (trace->busrep == BUSREP_HEX_UN)
 	    sprintf (strg,"%x%c%08x%c%08x", cptr[2], seperator, cptr[1], seperator, cptr[0]);
-	else if (trace->busrep == OBUS)
+	else if (trace->busrep == BUSREP_OCT_UN)
 	    sprintf (strg,"%o%c%010o%c%010o", cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	else
 	    sprintf (strg,"%d%c%010d%c%010d", cptr[2], seperator, cptr[1], seperator, cptr[0]);
     }
     else if (cptr[1]) {
-	if (trace->busrep == HBUS)
+	if (trace->busrep == BUSREP_HEX_UN)
 	    sprintf (strg,"%x%c%08x", cptr[1], seperator, cptr[0]);
-	else if (trace->busrep == OBUS)
+	else if (trace->busrep == BUSREP_OCT_UN)
 	    sprintf (strg,"%o%c%010o", cptr[1], seperator, cptr[0]);
 	else
 	    sprintf (strg,"%d%c%010d", cptr[1], seperator, cptr[0]);
     }
     else {
-	if (trace->busrep == HBUS)
+	if (trace->busrep == BUSREP_HEX_UN)
 	    sprintf (strg,"%x", cptr[0]);
-	else if (trace->busrep == OBUS)
+	else if (trace->busrep == BUSREP_OCT_UN)
 	    sprintf (strg,"%o", cptr[0]);
 	else
 	    sprintf (strg,"%d", cptr[0]);
@@ -133,20 +133,20 @@ void    string_to_value (
 	else if (*cp >= 'a' && *cp <= 'f')
 	    value = *cp - ('a' - 10);
 
-	if (trace->busrep == HBUS && value >=0 && value <= 15) {
+	if (trace->busrep == BUSREP_HEX_UN && value >=0 && value <= 15) {
 	    cptr[3] = (cptr[3]<<4) + ((cptr[2] & MSH)>>28);
 	    cptr[2] = (cptr[2]<<4) + ((cptr[1] & MSH)>>28);
 	    cptr[1] = (cptr[1]<<4) + ((cptr[0] & MSH)>>28);
 	    cptr[0] = (cptr[0]<<4) + value;
 	}
-	else if (trace->busrep == OBUS && value >=0 && value <= 7) {
+	else if (trace->busrep == BUSREP_OCT_UN && value >=0 && value <= 7) {
 	    cptr[3] = (cptr[3]<<3) + ((cptr[2] & MSO)>>29);
 	    cptr[2] = (cptr[2]<<3) + ((cptr[1] & MSO)>>29);
 	    cptr[1] = (cptr[1]<<3) + ((cptr[0] & MSO)>>29);
 	    cptr[0] = (cptr[0]<<3) + value;
 	}
-	else if (trace->busrep == DBUS && value >=0 && value <= 9) {
-	    /* This may be buggy */
+	else if (trace->busrep == BUSREP_DEC_UN && value >=0 && value <= 9) {
+	    /* This may be buggy for large numbers */
 	    cptr[3] = (cptr[3]*10) + ((cp>=(strg+30))?cp[-30]:0);
 	    cptr[2] = (cptr[2]*10) + ((cp>=(strg+20))?cp[-20]:0);
 	    cptr[1] = (cptr[1]*10) + ((cp>=(strg+10))?cp[-10]:0);
@@ -729,8 +729,8 @@ void    val_search_cb (
 	DManageChild (trace->value.label5, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple
-		 ( (trace->busrep == HBUS)? "Search value in HEX":
-		  ( (trace->busrep == DBUS) ? "Search value in OCTAL" : "Search value in DECIMAL" ) ) );
+		 ( (trace->busrep == BUSREP_HEX_UN)? "Search value in HEX":
+		  ( (trace->busrep == BUSREP_OCT_UN) ? "Search value in OCTAL" : "Search value in DECIMAL" ) ) );
 	XtSetArg (arglist[1], XmNx, 140);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopOffset, 1);

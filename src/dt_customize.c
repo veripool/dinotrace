@@ -273,18 +273,18 @@ void cus_dialog_cb (
     }
 
     /* Update with current custom values */
-    XtSetArg (arglist[0], XmNset, (global->pageinc==QPAGE));
+    XtSetArg (arglist[0], XmNset, (global->pageinc==PAGEINC_QUARTER));
     XtSetValues (trace->custom.tpage1,arglist,1);
-    XtSetArg (arglist[0], XmNset, (global->pageinc==HPAGE));
+    XtSetArg (arglist[0], XmNset, (global->pageinc==PAGEINC_HALF));
     XtSetValues (trace->custom.tpage2,arglist,1);
-    XtSetArg (arglist[0], XmNset, (global->pageinc==FPAGE));
+    XtSetArg (arglist[0], XmNset, (global->pageinc==PAGEINC_FULL));
     XtSetValues (trace->custom.tpage3,arglist,1);
     
-    XtSetArg (arglist[0], XmNset, (trace->busrep==OBUS));
+    XtSetArg (arglist[0], XmNset, (trace->busrep==BUSREP_OCT_UN));
     XtSetValues (trace->custom.tbus3,arglist,1);
-    XtSetArg (arglist[0], XmNset, (trace->busrep==HBUS));
+    XtSetArg (arglist[0], XmNset, (trace->busrep==BUSREP_HEX_UN));
     XtSetValues (trace->custom.tbus4,arglist,1);
-    XtSetArg (arglist[0], XmNset, (trace->busrep==DBUS));
+    XtSetArg (arglist[0], XmNset, (trace->busrep==BUSREP_DEC_UN));
     XtSetValues (trace->custom.tbus5,arglist,1);
     
     XtSetArg (arglist[0], XmNset, (trace->timerep==TIMEREP_NS));
@@ -364,10 +364,10 @@ void	cus_ok_cb (
     else trace->sigrf = 0;
 
     if (XmToggleButtonGetState (trace->custom.tbus3))
-	trace->busrep = OBUS;
+	trace->busrep = BUSREP_OCT_UN;
     else if (XmToggleButtonGetState (trace->custom.tbus4))
-	trace->busrep = HBUS;
-    else trace->busrep = DBUS;
+	trace->busrep = BUSREP_HEX_UN;
+    else trace->busrep = BUSREP_DEC_UN;
 
     if (XmToggleButtonGetState (trace->custom.ttimecyc))
 	trace->timerep = TIMEREP_CYC;
@@ -378,10 +378,10 @@ void	cus_ok_cb (
     else trace->timerep = TIMEREP_NS;
 
     if (XmToggleButtonGetState (trace->custom.tpage1))
-	global->pageinc = QPAGE;
+	global->pageinc = PAGEINC_QUARTER;
     else if (XmToggleButtonGetState (trace->custom.tpage2))
-	global->pageinc = HPAGE;
-    else global->pageinc = FPAGE;
+	global->pageinc = PAGEINC_HALF;
+    else global->pageinc = PAGEINC_FULL;
     
     /* hide the customize window */
     XtUnmanageChild (trace->custom.dialog);

@@ -777,9 +777,9 @@ void	config_process_line_internal (
 	else if (!strcmp(cmd, "PAGE_INC")) {
 	    value = global->pageinc;
 	    line += config_read_int (line, &value);
-	    if (value == 1) global->pageinc = FPAGE;
-	    else if (value == 2) global->pageinc = HPAGE;
-	    else if (value == 4) global->pageinc = QPAGE;
+	    if (value == 1) global->pageinc = PAGEINC_FULL;
+	    else if (value == 2) global->pageinc = PAGEINC_HALF;
+	    else if (value == 4) global->pageinc = PAGEINC_QUARTER;
 	    else {
 		config_error_ack (trace, "Page_Inc must be 1, 2, or 4\n");
 	    }
@@ -1292,7 +1292,7 @@ void config_write_file (
     fprintf (writefp, "save_ordering\t%s\n", global->save_ordering?"ON":"OFF");
     fprintf (writefp, "click_to_edge\t%s\n", global->click_to_edge?"ON":"OFF");
     fprintf (writefp, "page_inc\t%d\n", 
-	     global->pageinc==QPAGE ? 4 : (global->pageinc==QPAGE?2:1) );
+	     global->pageinc==PAGEINC_QUARTER ? 4 : (global->pageinc==PAGEINC_HALF?2:1) );
     fprintf (writefp, "print_size\t");
     switch (global->print_size) {
       case PRINTSIZE_A:		fprintf (writefp, "A\n");	break;
@@ -1402,7 +1402,7 @@ void config_global_defaults(void)
     draw_needupd_val_states ();
     draw_needupd_sig_start ();
     
-    global->pageinc = FPAGE;
+    global->pageinc = PAGEINC_FULL;
     global->save_ordering = TRUE;
 }
 

@@ -840,9 +840,9 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	      case STATE_B32: if ( xloc > xend ) xloc = xend;
 		value = *((unsigned int *)cptr+1);
 
-		if (trace->busrep == HBUS)
+		if (trace->busrep == BUSREP_HEX_UN)
 		    sprintf (vstrg,"%x", value);
-		else if (trace->busrep == OBUS)
+		else if (trace->busrep == BUSREP_OCT_UN)
 		    sprintf (vstrg,"%o", value);
 		else
 		    sprintf (vstrg,"%d", value);

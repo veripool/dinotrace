@@ -500,7 +500,7 @@ Trace *malloc_trace (void)
     if (global->deleted_trace_head) global->deleted_trace_head->next_trace = global->trace_head;
 
     /* Initialize Various Parameters */
-    trace->busrep = HBUS;
+    trace->busrep = BUSREP_HEX_UN;
     trace->ystart = 30;
 
     return (trace);
