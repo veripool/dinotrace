@@ -1,29 +1,28 @@
-Dinotrace NEWS --  history of user-visible changes.
-Copyright (C) 1998-2004 Wilson Snyder.
-Copyright (C) 1992-1997 Digital Equipment Corportation.
-See the end for copying conditions.
+Revision history for Dinotrace
 
-The contributors that suggested a given feature is shown in [].
+The contributors that suggested a given feature are shown in [].
 	
-This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
-
-* Changes in Dinotrace 9.1n 10/22/2004
+* Dinotrace 9.1*****
+
+**      NEWS file is now renamed Changes.
+
+* Dinotrace 9.1n 10/22/2004
 
 ****	Fix slow file reading with >128 bit __en signals. [Ta-Chung Chang]
 
 ****	Fix signed analog display.  [Uwe Bonnes]
-
-* Changes in Dinotrace 9.1m 04/21/2004
+
+* Dinotrace 9.1m 04/21/2004
 
 ***	Fix duplicate and embeded __en cosmos signals. [Krishna Rangan]
 
 ****	Fix buffer overrun bugs.  [Samuel Ho]
-
-* Changes in Dinotrace 9.1k 06/06/2003
+
+* Dinotrace 9.1k 06/06/2003
 
 ****	Fix crash with busses that are replicated with different widths.
-
-* Changes in Dinotrace 9.1j 03/22/2003
+
+* Dinotrace 9.1j 03/22/2003
 
 ****	When window is resized, keep same percentage of trace visible.
 
@@ -34,14 +33,14 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fix dropping of 0s on signals > 32 bits. [Jason Mancini]
 
 ****	Fix coredump on read and GCC 3.2.  [Jason Mancini]
-
-* Changes in Dinotrace 9.1i  03/07/2003
+
+* Dinotrace 9.1i  03/07/2003
 
 ***	Display values with appropriate leading 0s. [Dan McMahill]
 
 ***	Fix 0 extension of verilog values.  [Dominik Strasser, Bill Welch]
-
-* Changes in Dinotrace 9.1h  08/30/2002
+
+* Dinotrace 9.1h  08/30/2002
 
 ***	Save_duplicates is now on by default.
 
@@ -51,15 +50,13 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****	Fixed coredump reading wide ascii traces.  [Vitaly Oratovsky]
 
-
-* Changes in Dinotrace 9.1g  01/24/2002
+* Dinotrace 9.1g  01/24/2002
 
 ***	Reread all traces on receiving a USR1 signal.  [Uwe Bonnes]
 
 ****	Allow value searches on one-bit signals.  [Vitaly Oratovsky]
 
-
-* Changes in Dinotrace 9.1f  01/08/2002
+* Dinotrace 9.1f  01/08/2002
 
 ***	Let right button terminate Zoom click.  [Uwe Bonnes]
 
@@ -67,8 +64,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****	Hacked around bug causing window manager crash when
 	using Examine inside Zoom.  [Uwe Bonnes]
-
-* Changes in Dinotrace 9.1e  11/16/2001
+
+* Dinotrace 9.1e  11/16/2001
 
 ***	Allow 1-bit wide signals to have statenames.  [Dominik Strasser]
 
@@ -76,39 +73,34 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ***	Show count of posedges and negedges in value examine.
 
-
-* Changes in Dinotrace 9.1d  5/24/2001
+* Dinotrace 9.1d  5/24/2001
 
 ***	Fixed missing 0's in display of >64 bit numbers. [Amitvikram Rajkhowa]
 
 ***	Fixed stripping of characters after bus prefix.  [Steve Hoover]
-
-* Changes in Dinotrace 9.1c  2/13/2001
+
+* Dinotrace 9.1c  2/13/2001
 
 ***	Fixed Verilog reading ignoring the hiearchy separator. [Dominik Strasser]
-
-* Changes in Dinotrace 9.1b  2/13/2001
+
+* Dinotrace 9.1b  2/13/2001
 
 ****	Documentation updates.
 
-
-* Changes in Dinotrace 9.1a  1/22/2001
+* Dinotrace 9.1a  1/22/2001
 
 **	Added analog waveform format.  [Dave Colson]
 	Includes new Signal Waveform menu and signal_waveform command.
 
-
-* Changes in Dinotrace 9.0m  11/21/2000
+* Dinotrace 9.0m  11/21/2000
 
 ****	Fixed a bug reading compressed tempest on Digital UNIX. [Steve Hoover]
 
-
-* Changes in Dinotrace 9.0l  8/30/2000
+* Dinotrace 9.0l  8/30/2000
 
 **	Added support for femtosecond Verilog timescales. [Derek Bosch]
 
-
-* Changes in Dinotrace 9.0k  7/17/2000
+* Dinotrace 9.0k  7/17/2000
 
 ****	Fixed bug with $comment after $enddefinitions. [Harunobu Miyashita]
 
@@ -119,8 +111,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****	Fixed Verilog reading with large time intervals. [Matthias Wenzel]
 
-
-* Changes in Dinotrace 9.0i  5/1/2000
+* Dinotrace 9.0i  5/1/2000
 
 **	Major speed improvement in reading Tempest traces.
 	All trace formats now have less processing when building busses from
@@ -134,8 +125,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****	Builds on NetBSD.  [Dan McMahill]
 
-
-* Changes in Dinotrace 9.0g  1/17/2000
+* Dinotrace 9.0g  1/17/2000
 
 **	Configuration file commands that require times now take times
 	with respect to the time_rep value.  Thus if the times are displayed
@@ -163,8 +153,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****    Fixed Verilog reading for TOPS traces. [Dieter Werth]
 
-
-* Changes in Dinotrace 9.0f  9/29/1999
+* Dinotrace 9.0f  9/29/1999
 
 ****	Allowed ' character in signals.  [Dominik Strasser]
 
@@ -172,8 +161,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****	Fixed a bug which errored on "$timescale 10 ns"  (Space before units.)
 
-
-* Changes in Dinotrace 9.0e  9/29/1999
+* Dinotrace 9.0e  9/29/1999
 
 ****	Fixed a bug which would resize the screen incorrectly.
 
@@ -191,8 +179,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 **	Customize Grid and grid_period allow placement of a grid on exactly
 	each assertion, deassertion or both edges of a signal, rather then on
 	a fixed time interval.
-
-* Changes in Dinotrace 9.0d  11/30/1998
+
+* Dinotrace 9.0d  11/30/1998
 
 ** Enhancements:
 
@@ -213,15 +201,14 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed crash with bad cursor X-11 error.  [Aki Niimura]
 
 ****	Fixed bug which would make Customize Grid ignore resolution setting.
-
-* Changes in Dinotrace 9.0c  9/30/1998
+
+* Dinotrace 9.0c  9/30/1998
 
 ** Enhancements:
 
 ****	Configures and builds on Windows NT.
 
-
-* Changes in Dinotrace 9.0b  8/3/1998
+* Dinotrace 9.0b  8/3/1998
 
 ** Enhancements:
 
@@ -231,8 +218,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****	Configures and builds on Linux.  [Celia Clause]
 
-
-* Changes in Dinotrace 9.0a  4/13/1998
+* Dinotrace 9.0a  4/13/1998
 
 ** Enhancements:
 
@@ -299,14 +285,12 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	reading routines, so latent bugs may cause values to be
 	mis-displayed.
 
-
-* Changes in Dinotrace 8.3b  9/12/1997
+* Dinotrace 8.3b  9/12/1997
 
 ***	Allowed colors in signal_add, signal_move, signal_rename, signal_copy.
 	[Duane Galbi]
 
-
-* Changes in Dinotrace 8.3a  1/29/1997
+* Dinotrace 8.3a  1/29/1997
 
 ***	Allowed value searches to specify a signal name to search in.
 	[Lisa Noack]
@@ -317,19 +301,16 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ***	Added the full documentation to Help menu option.
 
-
-* Changes in Dinotrace 8.2b  11/07/1996
+* Dinotrace 8.2b  11/07/1996
 
 ****	Fixed a bug which would cause a common bus to be made containing
 	two unrelated signals.  [Serge Bogdanov]
 
-
-* Changes in Dinotrace 8.2  10/10/1996
+* Dinotrace 8.2  10/10/1996
 
 ***	Added support for 3-state COSMOS traces.  [Serge Bogdanov]
 
-
-* Changes in Dinotrace 8.1e  7/24/1996
+* Dinotrace 8.1e  7/24/1996
 
 ****	Fixed a bug where reading a directory as a config file would
 	crash, rather then warn.  [Steve Lang]
@@ -337,21 +318,18 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a bug where annotation would add many leading zeros.
 	[Rachel Berman]
 
-
-* Changes in Dinotrace 8.1c  5/20/1996
+* Dinotrace 8.1c  5/20/1996
 
 ****	Fixed a bug where signal_add would add signals from any trace,
 	not just from deleted signals.  (Use signal_copy to add signals
 	from any trace including deleted signals.)  [Michael Quadri]
 
-
-* Changes in Dinotrace 8.1b  4/30/1996
+* Dinotrace 8.1b  4/30/1996
 
 ****	Fixed a bug where deleting signals would make the top signals in
 	a trace disappear.  [Steve Lang]
 
-
-* Changes in Dinotrace 8.1a  3/27/1996
+* Dinotrace 8.1a  3/27/1996
 
 ***	Added a customize read option, and allowed selection of which
 	.dino files are read automatically with traces.  [Mike Kagen]
@@ -371,15 +349,12 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 	Fixed a bug which leaked about 1MB every file read.  [Mike Kagen]
 
-
-* Changes in Dinotrace 8.0e  3/8/1996
+* Dinotrace 8.0e  3/8/1996
 
 ****	Fixed a bug where refresh in a configuration file would crash
 	Dinotrace.  [Sol Katzman]
 
-
-
-* Changes in Dinotrace 8.0d  3/6/1996
+* Dinotrace 8.0d  3/6/1996
 
 ***	Increased the number of states on a signal to 512.  [Mike Kagen,
 	Yifat Ben-Shachar]
@@ -387,8 +362,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a bug which would mis-print busses over 32 bits wide.  [Steve
 	Glaser]
 
-
-* Changes in Dinotrace 8.0c  3/4/1996
+* Dinotrace 8.0c  3/4/1996
 
 **	Massively improved grid support, especially for multi-clock
 	designs.  The grid item is no longer on the main menu, all
@@ -441,9 +415,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a bug which crashed Dinotrace when scrolling with a
 	grid on odd signal boundaries.  [Sol Katzman]
 
-
-
-* Changes in Dinotrace 7.4a  2/01/1996
+* Dinotrace 7.4a  2/01/1996
 
 **	Added time, value, and signal font selection (see resource
 	section.)  [Steve Lang]
@@ -454,9 +426,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ***	Values in the trace window now use lower case letters when printing
 	hex.  This mainly makes it easier to discriminate "E" and "F".
 
-
-
-* Changes in Dinotrace 7.3b  12/04/1995
+* Dinotrace 7.3b  12/04/1995
 
 ***	Added support for Merlin binary traces (tempest format).  [Dan Katz]
 
@@ -465,9 +435,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	read in which had the signal changing, the new signal would be
 	deleted.  Now it will detect this case and not delete the signal.
 
-
-
-* Changes in Dinotrace 7.3a  12/04/1995
+* Dinotrace 7.3a  12/04/1995
 
 **	Dinotrace will attempt to preserve signal colors, ordering, and
 	deletions when re-reading a trace.  This is controllable with the
@@ -478,16 +446,14 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	related refresh, and refreshing commands.  Added refresh button
 	near End button.  [Reinhard Schumann]
 
-
-* Changes in Dinotrace 7.2b  10/29/1995
+* Dinotrace 7.2b  10/29/1995
 
 ***	Added the signal_add command.  [Reinhard Schumann]
 
 ***	Decsim traces now allow '?' as unknows to support the Nextest
 	trace format.  [Josh Belkin]
 
-
-* Changes in Dinotrace 7.2a  10/4/1995
+* Dinotrace 7.2a  10/4/1995
 
 ***	Value Annotation now has seperate enables for automatic cursors,
 	which default to off.
@@ -498,9 +464,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a bug where Verilog DMPs with over 1024 bit busses would
 	core dump.  [Dean Sovie]
 
-
-
-* Changes in Dinotrace 7.1c  6/28/1995
+* Dinotrace 7.1c  6/28/1995
 
 **	Files ending in .Z or .gz will now be uncompressed or ungnuzip'ed
 	respectively.  This results in large disk space savings.
@@ -521,9 +485,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a bug where characters after the bus name would be truncated.
 	[Paul Wasson]
 
-
-
-* Changes in Dinotrace 7.1a  5/24/1995
+* Dinotrace 7.1a  5/24/1995
 
 **	Added a socket interface for Emacs (Ultrix/OSF only).  This allows
 	Emacs to feed configuration commands, such as cursor placements, to
@@ -554,23 +516,20 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a bug where signals of over 96 bits in Verilog DMP files
 	would show up as blank.  [Ben Marshall]
 
-
-* Changes in Dinotrace 7.0c  2/20/1995
+* Dinotrace 7.0c  2/20/1995
 
 ****	Fixed a bug where highlighting wouldn't happen when the same value
 	was in multiple colors in the value search requester.  [Mike Kagen]
 	
-
-* Changes in Dinotrace 7.0b  2/20/1995
+
+* Dinotrace 7.0b  2/20/1995
 
 ***	Added -noconfig command line option.
 
 ****	Fixed a performance bug when reading Verilog Dump files.  [Tracey
 	Jones]
 
-
-
-* Changes in Dinotrace 7.0a  2/20/1995
+* Dinotrace 7.0a  2/20/1995
 
 **	Added the annotation feature and Emacs library.  Any behavioral
 	code debuggers should look at this feature!!
@@ -605,8 +564,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a bug which would not refresh the trace when the window was
 	resized.
 
-
-* Changes in Dinotrace 6.7  10/05/1994
+* Dinotrace 6.7  10/05/1994
 
 ***	This release is the first to include an Alpha-VMS executable.
 	*** PLEASE NOTE THAT THIS CHANGES THE FILENAMES OF THE KIT AND
@@ -643,8 +601,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a bug where some X-servers would crash when large traces were
 	displayed on the screen.  [Charlie Lind]
 
-
-* Changes in Dinotrace 6.6  5/23/1994
+* Dinotrace 6.6  5/23/1994
 
 ***	This release is the first to include an Alpha-OSF executable.
 
@@ -671,9 +628,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a bug where clicking on OK in File Open without selecting a
 	file would hang.  [Larry Gust]
 
-
-
-* Changes in Dinotrace 6.5  1/10/1994
+* Dinotrace 6.5  1/10/1994
 
 **	Added Trace->Reread All which will reread the trace in every
 	window.  To support this Trace->Reread will now only read a trace
@@ -724,9 +679,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	wrong assertion until the first time it changed in the trace.
 	[John Murphy]
 
-
-
-* Changes in Dinotrace 6.4  11/18/1993
+* Dinotrace 6.4  11/18/1993
 
 ***	The major change in this release is in reading files.  Verilog
 	format is supported, and Tempest format now works correctly.
@@ -770,9 +723,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	Fixed a bug where Trace->Open, Trace->Read, Trace->ReRead would
 	crash Dinotrace.  [Jai Singh]
 
-
-
-* Changes in Dinotrace 6.3  8/11/1993
+* Dinotrace 6.3  8/11/1993
 
 **	A new top level value menu was created to effect and search on the
 	value of signals.  Signal Search has been moved to Value Search.  A
@@ -797,8 +748,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	ns would cause the screen to fill with garbage. (All times
 	in binary and ASCII traces must still be under 2,000,000,000 ns.)
 
-
-* Changes in Dinotrace 6.2  5/14/1993
+* Dinotrace 6.2  5/14/1993
 
 **	The time scroll bar (horizontal) now shows the position of cursors
 	that are not on the screen.  This makes it easy to quickly scroll
@@ -842,8 +792,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Added Verilog information and VTRACE to Documentation.  [Written
 	by Gregg Bouchard]
 
-
-* Changes in Dinotrace 6.1  4/12/1993
+* Dinotrace 6.1  4/12/1993
 
 **	Added keyboard accelerators.  The keyboard may be used to select
 	menu options when the mouse is over the menu by pressing the
@@ -867,8 +816,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ***	Allowed lower case "z" or "U" in decsim ascii traces to support
 	Verilog.  [Gregg Bouchard]
 
-
-* Changes in Dinotrace 6.0  4/6/1993
+* Dinotrace 6.0  4/6/1993
 
 	This is a major release with many new features, so read up!
 
@@ -920,16 +868,13 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	end part way across the screen.  (Not perfect, but beats crashing.)
 	[Mike Goulet]
 
-
-
-* Changes in Dinotrace 5.2b  3/11/1993
+* Dinotrace 5.2b  3/11/1993
 
 ***	Re-release to fix bug where move signal would crash Dinotrace when
 	using binary traces.  Changed "Dinotrace V5.0" to "5.2" in
 	postscript printing.
 
-
-* Changes in Dinotrace 5.2  2/17/1993
+* Dinotrace 5.2  2/17/1993
 
 **	The main new feature is Binary Traces.  Dinotrace now can read
 	either binary or ascii traces, and it automatically determines
@@ -963,9 +908,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	If a statename is too wide to print, the number will be printed
 	instead.  Previously nothing would be printed.
 
-
-
-* Changes in Dinotrace 5.1
+* Dinotrace 5.1
 
 ***	Dinotrace now supports state machines with up to 96 states, rather
 	the the 64 allowed earlier.
@@ -973,9 +916,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a bug which would prevent printouts from working when printing
 	times over 10,000.  [Jai Singh]
 
-
-
-* Changes in Dinotrace 5.0  1/11/1993
+* Dinotrace 5.0  1/11/1993
 
 ***	You may now specify a filename on the command line that will be
 	read when Dinotrace starts up.
@@ -994,8 +935,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ***	Customize ReRead and Restore were added.  The entire customization
 	file and signal_states features were added.
 
-
-* Changes in Dinotrace 4.2
+* Dinotrace 4.2
 
 	Versions prior to 5.0 were by Allen Gallotta.
 
@@ -1017,9 +957,11 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 -----------------------------------------------------------------------------
 $Id$
 -----------------------------------------------------------------------------
-Copyright information:
 
-Copyright (C) 1998-2004 Wilson Snyder
+This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
+
+Copyright (C) 1998-2004 Wilson Snyder.
+Copyright (C) 1992-1997 Digital Equipment Corportation.
 
    Permission is granted to anyone to make or distribute verbatim copies of
    this document as received, in any medium, provided that the copyright
@@ -1029,9 +971,8 @@ Copyright (C) 1998-2004 Wilson Snyder
    Permission is granted to distribute modified versions of this document,
    or of portions of it, under the above conditions, provided also that
    they carry prominent notices stating who last changed them.
-
+
 Local variables:
 mode: outline
-paragraph-separate: "[ 	]*$"
+paragraph-separate: "[ 	\f\n]*$"
 end:
-

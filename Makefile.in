@@ -99,7 +99,7 @@ INFOS = dinotrace.info INSTALL FAQ dinotrace.txt
 DISTDEP = $(INFOS) Makefile src/dinodoc.pl src/dist_date.pl
 # Files to distribute.
 DISTBIN = $(wildcard bin/dinotrace-*)
-DISTFILES = $(INFOS) COPYING NEWS TODO configure *.in \
+DISTFILES = $(INFOS) COPYING Changes TODO configure *.in \
 	config.sub config.guess \
 	install-sh mkinstalldirs *.texi *.com \
 	src/*.in src/*.h src/*.c src/*.pl src/*.com lisp/* traces/* \
