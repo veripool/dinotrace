@@ -65,7 +65,7 @@
 #ifndef MAX
 # if __GNUC__
 #   define MAX(a,b) \
-       ({typedef _ta = (a), _tb = (b);  \
+       ({typedef __typeof__(a) _ta; typedef __typeof__(b) _tb;  \
          _ta _a = (a); _tb _b = (b);     \
          _a > _b ? _a : _b; })
 # else
@@ -76,7 +76,7 @@
 #ifndef MIN
 # if __GNUC__
 #   define MIN(a,b) \
-       ({typedef _ta = (a), _tb = (b);  \
+       ({typedef __typeof__(a) _ta; typedef __typeof__(b) _tb;  \
          _ta _a = (a); _tb _b = (b);     \
          _a < _b ? _a : _b; })
 # else
@@ -87,7 +87,7 @@
 #ifndef ABS
 # if __GNUC__
 #   define ABS(a) \
-       ({typedef _ta = (a);  \
+       ({typedef __typeof__(a) _ta;  \
          _ta _a = (a);     \
          _a < 0 ? - _a : _a; })
 # else
