@@ -7,10 +7,9 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-* Changes in Dinotrace 9.1i  03/07/2003
+* Changes in Dinotrace *****
 
 ****	Fix coredump on read and GCC 3.2.  [Jason Mancini]
-
 
 * Changes in Dinotrace 9.1i  03/07/2003
 
