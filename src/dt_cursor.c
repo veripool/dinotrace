@@ -23,7 +23,7 @@
 
 
 #include <X11/Xlib.h>
-#include <X11/Xm.h>
+#include <Xm/Xm.h>
 #include "dinotrace.h"
 #include "callbacks.h"
 
@@ -41,7 +41,7 @@ void    cur_add_cb(w, trace, cb)
     
     /* process all subsequent button presses as cursor adds */
     set_cursor (trace, DC_CUR_ADD);
-    XtAddEventHandler(trace->work,ButtonPressMask,TRUE,add_cursor,trace);
+    add_event (ButtonPressMask, cur_add_ev);
     }
 
 void    cur_mov_cb(w, trace, cb)
@@ -57,7 +57,7 @@ void    cur_mov_cb(w, trace, cb)
     
     /* process all subsequent button presses as cursor moves */
     set_cursor (trace, DC_CUR_MOVE);
-    XtAddEventHandler(trace->work,ButtonPressMask,TRUE,move_cursor,trace);
+    add_event (ButtonPressMask, cur_move_ev);
     }
 
 void    cur_del_cb(w, trace, cb)
@@ -73,7 +73,7 @@ void    cur_del_cb(w, trace, cb)
     
     /* process all subsequent button presses as cursor deletes */
     set_cursor (trace, DC_CUR_DELETE);
-    XtAddEventHandler(trace->work,ButtonPressMask,TRUE,delete_cursor,trace);
+    add_event (ButtonPressMask, cur_delete_ev);
     }
 
 void    cur_clr_cb(w, trace, cb)
@@ -86,24 +86,21 @@ void    cur_clr_cb(w, trace, cb)
     if (DTPRINT) printf("In cb_clr_cursor.\n");
     
     /* clear the cursor array to zero */
-    for (i=0; i < MAX_CURSORS; i++)
-	{
-	trace->cursors[i] = 0;
+    for (i=0; i < MAX_CURSORS; i++) {
+	global->cursors[i] = 0;
 	}
     
     /* reset the number of cursors */
-    trace->numcursors = 0;
+    global->numcursors = 0;
     
     /* cancel the button actions */
     remove_all_events(trace);
     
     /* redraw the screen with no cursors */
-    get_geometry(trace);
-    XClearWindow(trace->display,trace->wind);
-    draw(trace);
+    redraw_all (trace);
     }
 
-void    add_cursor(w, trace, ev)
+void    cur_add_ev(w, trace, ev)
     Widget		w;
     TRACE		*trace;
     XButtonPressedEvent	*ev;
@@ -112,48 +109,44 @@ void    add_cursor(w, trace, ev)
     
     if (DTPRINT) printf("In add cursor - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
     
-    /* check if button has been clicked on trace portion of screen */
-    if ( ev->x < trace->xstart || ev->x > trace->width - XMARGIN )
-	return;
-    
     /* check if there is room for another cursor */
-    if (trace->numcursors >= MAX_CURSORS)
+    if (global->numcursors >= MAX_CURSORS)
 	{
-	sprintf(message,"Reached max of %d cursors in display",trace->numcursors);
+	sprintf(message,"Reached max of %d cursors in display",global->numcursors);
 	dino_warning_ack(trace,message);
 	return;
 	}
     
     /* convert x value to a time value */
-    time = (ev->x + trace->time * trace->res - trace->xstart) / trace->res;
+    time = posx_to_time (trace, ev->x);
+    if (time<0) return;
     
     /* put into cursor array in chronological order */
     i = 0;
-    while ( time > trace->cursors[i] && trace->cursors[i] != 0)
+    while ( time > global->cursors[i] && global->cursors[i] != 0)
 	{
 	i++;
 	}
     
-    for (j=trace->numcursors; j > i; j--)
+    for (j=global->numcursors; j > i; j--)
 	{
-	trace->cursors[j] = trace->cursors[j-1];
+	global->cursors[j] = global->cursors[j-1];
 	}
     
-    trace->cursors[i] = time;
-    trace->numcursors++;
+    global->cursors[i] = time;
+    global->numcursors++;
     
     /* redraw the screen with new cursors */
-    get_geometry(trace);
-    XClearWindow(trace->display,trace->wind);
-    draw(trace);
+    redraw_all (trace);
     }
 
-void    move_cursor(w, trace, ev)
+void    cur_move_ev(w, trace, ev)
     Widget		w;
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
     int		i,j,time;
+    int		x1,x2,y1,y2;
     static	last_x = 0;
     XEvent	event;
     XMotionEvent *em;
@@ -161,23 +154,20 @@ void    move_cursor(w, trace, ev)
     
     if (DTPRINT) printf("In cursor_mov\n");
     
-    /* check if button has been clicked on trace portion of screen */
-    if ( ev->x < trace->xstart || ev->x > trace->width - XMARGIN )
-	return;
-    
     /* check if there are any cursors to move */
-    if (trace->numcursors <= 0)
+    if (global->numcursors <= 0)
 	{
 	dino_warning_ack(trace,"No cursors to move");
 	return;
 	}
     
     /* convert x value to a time value */
-    time = (ev->x + trace->time * trace->res - trace->xstart) / trace->res;
+    time = posx_to_time (trace, ev->x);
+    if (time<0) return;
     
     /* find the closest cursor */
     i = 0;
-    while ( time > trace->cursors[i] && i < trace->numcursors)
+    while ( time > global->cursors[i] && i < global->numcursors)
 	{
 	i++;
 	}
@@ -185,15 +175,15 @@ void    move_cursor(w, trace, ev)
     /* i is between cursors[i-1] and cursors[i] - determine which is closest */
     if ( i )
 	{
-	if (trace->cursors[i]-time > time-trace->cursors[i-1] || 
-	    i == trace->numcursors)
+	if (global->cursors[i]-time > time-global->cursors[i-1] || 
+	    i == global->numcursors)
 	    {
 	    i--;
 	    }
 	}
     
-    /* trace->cursors[i] is the cursor to be moved - calculate starting x */
-    last_x = (trace->cursors[i] - trace->time)* trace->res + trace->xstart;
+    /* global->cursors[i] is the cursor to be moved - calculate starting x */
+    last_x = (global->cursors[i] - global->time)* global->res + global->xstart;
     
     /* not sure why this has to be done but it must be done */
     XUngrabPointer(XtDisplay(trace->work),CurrentTime);
@@ -204,14 +194,14 @@ void    move_cursor(w, trace, ev)
     
     /* change the GC function to drag the cursor */
     xgcv.function = GXinvert;
-    XChangeGC(trace->display,trace->gc,GCFunction,&xgcv);
-    XSync(trace->display,0);
+    XChangeGC(global->display,trace->gc,GCFunction,&xgcv);
+    XSync(global->display,0);
     
     /* draw the first line */
     y1 = 25;
     y2 = trace->height - trace->ystart + trace->sighgt;
     x1 = x2 = last_x = ev->x;
-    XDrawLine(trace->display,trace->wind,trace->gc,x1,y1,x2,y2);
+    XDrawLine(global->display,trace->wind,trace->gc,x1,y1,x2,y2);
     
     /* loop and service events until button is released */
     while ( 1 )
@@ -226,9 +216,9 @@ void    move_cursor(w, trace, ev)
 	    x1 = x2 = last_x;
 	    y1 = 25;
 	    y2 = trace->height - trace->ystart + trace->sighgt;
-	    XDrawLine(trace->display,trace->wind,trace->gc,x1,y1,x2,y2);
+	    XDrawLine(global->display,trace->wind,trace->gc,x1,y1,x2,y2);
 	    x1 = x2 = em->x;
-	    XDrawLine(trace->display,trace->wind,trace->gc,x1,y1,x2,y2);
+	    XDrawLine(global->display,trace->wind,trace->gc,x1,y1,x2,y2);
 	    last_x = em->x;
 	    }
 	
@@ -248,7 +238,7 @@ void    move_cursor(w, trace, ev)
 	if (event.type == ButtonRelease)
 	    {
 	    eb = (XButtonReleasedEvent *)&event;
-	    time = (eb->x + trace->time * trace->res - trace->xstart) / trace->res;
+	    time = posx_to_time (trace, eb->x);
 	    break;
 	    }
 	}
@@ -259,82 +249,70 @@ void    move_cursor(w, trace, ev)
     
     /* change the GC function back to its default */
     xgcv.function = GXcopy;
-    XChangeGC(trace->display,trace->gc,GCFunction,&xgcv);
+    XChangeGC(global->display,trace->gc,GCFunction,&xgcv);
     
     /* squeeze cursor array, effectively removing cursor that moved */
-    for (j=i;j<trace->numcursors;j++)
-	trace->cursors[j] = trace->cursors[j+1];
+    for (j=i;j<global->numcursors;j++)
+	global->cursors[j] = global->cursors[j+1];
     
     /* put into cursor array in chronological order */
     i = 0;
-    while ( time > trace->cursors[i] && trace->cursors[i] != 0)
+    while ( time > global->cursors[i] && global->cursors[i] != 0)
 	{
 	i++;
 	}
     
-    for (j=trace->numcursors; j > i; j--)
+    for (j=global->numcursors; j > i; j--)
 	{
-	trace->cursors[j] = trace->cursors[j-1];
+	global->cursors[j] = global->cursors[j-1];
 	}
     
-    trace->cursors[i] = time;
+    global->cursors[i] = time;
     
     /* redraw the screen with new cursor position */
-    get_geometry(trace);
-    XClearWindow(trace->display,trace->wind);
-    draw(trace);
+    redraw_all (trace);
     }
 
-void    delete_cursor(w, trace, ev)
+void    cur_delete_ev(w, trace, ev)
     Widget		w;
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
     int		i,j,time;
     
-    if (DTPRINT) printf("In delete_cursor - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
-    
-    /* check if button has been clicked on trace portion of screen */
-    if ( ev->x < trace->xstart || ev->x > trace->width - XMARGIN )
-	return;
+    if (DTPRINT) printf("In cur_delete_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
     
     /* check if there are any cursors to delete */
-    if (trace->numcursors <= 0)
+    if (global->numcursors <= 0)
 	{
 	dino_warning_ack(trace,"No cursors to delete");
 	return;
 	}
     
-    /* convert x value to a time value */
-    time = (ev->x + trace->time * trace->res - trace->xstart) / trace->res;
+    time = posx_to_time (trace, ev->x);
+    if (time<0) return;
     
     /* find the closest cursor */
     i = 0;
-    while ( time > trace->cursors[i] )
-	{
+    while ( time > global->cursors[i] ) {
 	i++;
 	}
     
     /* i is between cursors[i-1] and cursors[i] - determine which is closest */
-    if ( i )
-	{
-	if ( trace->cursors[i] - time > time - trace->cursors[i-1] )
-	    {
+    if ( i ) {
+	if ( global->cursors[i] - time > time - global->cursors[i-1] ) {
 	    i--;
 	    }
 	}
     
     /* delete the cursor */
-    for (j=i; j < trace->numcursors; j++)
-	{
-	trace->cursors[j] = trace->cursors[j+1];
+    for (j=i; j < global->numcursors; j++) {
+	global->cursors[j] = global->cursors[j+1];
 	}
     
-    trace->numcursors--;
+    global->numcursors--;
     
     /* redraw the screen with new cursors */
-    get_geometry(trace);
-    XClearWindow(trace->display,trace->wind);
-    draw(trace);
+    redraw_all (trace);
     }
 

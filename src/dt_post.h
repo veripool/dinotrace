@@ -27,7 +27,7 @@ char dinopost[] = "%\n\
   /Helvetica-BoldOblique findfont 30 scalefont setfont % choose large font\n\
   1 setlinecap 1 setlinejoin 1 setlinewidth            % set line char\n\
 \n\
-  20 20 MT (Dinotrace V5.3) true charpath stroke   % draw logo\n\
+  20 20 MT (Dinotrace V6.0) true charpath stroke   % draw logo\n\
   650 20 MT (Page ) true charpath		   % draw PAGE\n\
   3 string cvs true charpath stroke		   % draw page number\n\
 \n\

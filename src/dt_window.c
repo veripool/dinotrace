@@ -27,7 +27,7 @@
 
 
 #include <X11/Xlib.h>
-#include <X11/Xm.h>
+#include <Xm/Xm.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
@@ -38,32 +38,12 @@ void cb_window_expose(w,trace)
     Widget		w;
     TRACE		*trace;
 {
-    char	string[20];
-    int		width;
-
-    /* initialize to NULL string */
-    string[0] = '\0';
-
     if (DTPRINT) printf("In Window Expose - trace=%d\n",trace);
-
-    /* change the current pointer to point to the new window */
-    curptr = trace;
-
-    if (DTPRINT) printf("New curptr=%d\n",curptr);
-
-    /* save the old with in case of a resize */
-    width = trace->width;
+    if (!trace->loaded) return;
 
     /* redraw the entire screen */
-    get_geometry( trace );
-    draw( trace );
-
-    /* if the width has changed, update the resolution button */
-    if (width != trace->width)    {
-	sprintf(string,"Res=%d ns",(int)((trace->width-trace->xstart)/trace->res) );
-        XtSetArg(arglist[0],XmNlabelString,XmStringCreateSimple(string));
-        XtSetValues(trace->command.reschg_but,arglist,1);
-	}
+    get_geometry (trace);
+    draw (trace);
     }
 
 void cb_window_focus(w,trace)
@@ -72,12 +52,9 @@ void cb_window_focus(w,trace)
 {
     if (DTPRINT) printf("In Window Focus - trace=%d\n",trace);
 
-    /* change the current pointer to point to the new window */
-    curptr = trace;
-
     /* redraw the entire screen */
-    get_geometry( trace );
-    draw( trace );
+    get_geometry (trace);
+    draw (trace);
     }
 
 void hscroll_unitinc(w,trace,cb)
@@ -85,9 +62,9 @@ void hscroll_unitinc(w,trace,cb)
     TRACE		*trace;
     XmScrollBarCallbackStruct *cb;
 {
-    if (DTPRINT) printf("In hscroll_unitinc - trace=%d  old_time=%d",trace,trace->time);
-    trace->time += trace->grid_res;
-    if (DTPRINT) printf(" new time=%d\n",trace->time);
+    if (DTPRINT) printf("In hscroll_unitinc - trace=%d  old_time=%d",trace,global->time);
+    global->time += trace->grid_res;
+    if (DTPRINT) printf(" new time=%d\n",global->time);
 
     new_time(trace);
     }
@@ -97,8 +74,8 @@ void hscroll_unitdec(w,trace,cb)
     TRACE		*trace;
     XmScrollBarCallbackStruct *cb;
 {
-    if (DTPRINT) printf("In hscroll_unitdec - trace=%d  old_time=%d",trace,trace->time);
-    trace->time -= trace->grid_res;
+    if (DTPRINT) printf("In hscroll_unitdec - trace=%d  old_time=%d",trace,global->time);
+    global->time -= trace->grid_res;
     new_time(trace);
     }
 
@@ -107,16 +84,16 @@ void hscroll_pageinc(w,trace,cb)
     TRACE		*trace;
     XmScrollBarCallbackStruct *cb;
 {
-    if (DTPRINT) printf("In hscroll_pageinc - trace=%d  old_time=%d",trace,trace->time);
+    if (DTPRINT) printf("In hscroll_pageinc - trace=%d  old_time=%d",trace,global->time);
 
     if ( trace->pageinc == QPAGE )
-	trace->time += (int)(((trace->width-trace->xstart)/trace->res)/4);
+	global->time += (int)(((trace->width-global->xstart)/global->res)/4);
     else if ( trace->pageinc == HPAGE )
-	trace->time += (int)(((trace->width-trace->xstart)/trace->res)/2);
+	global->time += (int)(((trace->width-global->xstart)/global->res)/2);
     else if ( trace->pageinc == FPAGE )
-	trace->time += (int)((trace->width-trace->xstart)/trace->res);
+	global->time += (int)((trace->width-global->xstart)/global->res);
 
-    if (DTPRINT) printf(" new time=%d\n",trace->time);
+    if (DTPRINT) printf(" new time=%d\n",global->time);
 
     new_time(trace);
     }
@@ -126,16 +103,16 @@ void hscroll_pagedec(w,trace,cb)
     TRACE		*trace;
     XmScrollBarCallbackStruct *cb;
 {
-    if (DTPRINT) printf("In hscroll_pagedec - trace=%d  old_time=%d",trace,trace->time);
+    if (DTPRINT) printf("In hscroll_pagedec - trace=%d  old_time=%d",trace,global->time);
 
     if ( trace->pageinc == QPAGE )
-	trace->time -= (int)(((trace->width-trace->xstart)/trace->res)/4);
+	global->time -= (int)(((trace->width-global->xstart)/global->res)/4);
     else if ( trace->pageinc == HPAGE )
-	trace->time -= (int)(((trace->width-trace->xstart)/trace->res)/2);
+	global->time -= (int)(((trace->width-global->xstart)/global->res)/2);
     else if ( trace->pageinc == FPAGE )
-	trace->time -= (int)((trace->width-trace->xstart)/trace->res);
+	global->time -= (int)((trace->width-global->xstart)/global->res);
 
-    if (DTPRINT) printf(" new time=%d\n",trace->time);
+    if (DTPRINT) printf(" new time=%d\n",global->time);
 
     new_time(trace);
     }
@@ -152,7 +129,7 @@ void hscroll_drag(w,trace,cb)
     XtGetValues(trace->hscroll,arglist,1);
     if (DTPRINT) printf("inc=%d\n",inc);
 
-    trace->time = inc;
+    global->time = inc;
 
     new_time(trace);
     }
@@ -162,7 +139,7 @@ void cb_begin(w, trace )
     TRACE		*trace;
 {
     if (DTPRINT) printf("In cb_start trace=%d\n",trace);
-    trace->time = trace->start_time;
+    global->time = trace->start_time;
     new_time(trace);
     }
 
@@ -171,7 +148,7 @@ void cb_end(w, trace )
     TRACE		*trace;
 {
     if (DTPRINT) printf("In cb_end trace=%d\n",trace);
-    trace->time = trace->end_time - (int)((trace->width-XMARGIN-trace->xstart)/trace->res);
+    global->time = trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res);
     new_time(trace);
     }
 
@@ -211,9 +188,9 @@ void vscroll_new(trace,inc)
 	inc++;
 	}
     
-    get_geometry(trace);
-    XClearWindow(trace->display, trace->wind);
-    draw(trace);
+    get_geometry (trace);
+    XClearWindow (global->display, trace->wind);
+    draw (trace);
     }
 
 void vscroll_unitinc(w,trace,cb)
@@ -250,7 +227,7 @@ void vscroll_pagedec(w,trace,cb)
     /* Not numsigvis because may not be limited by screen size */
     sigs = (int)((trace->height-trace->ystart)/trace->sighgt);
 
-    if ( trace->numcursors > 0 &&
+    if ( global->numcursors > 0 &&
 	 trace->cursor_vis &&
 	 trace->numsigvis > 1 &&
 	 trace->numsigvis >= sigs ) {
@@ -265,8 +242,7 @@ void vscroll_drag(w,trace,cb)
     TRACE		*trace;
     XmScrollBarCallbackStruct *cb;
 {
-    int		inc,diff,p;
-    SIGNAL_SB	*tptr;
+    int		inc;
 
     if (DTPRINT) printf("In vscroll_drag trace=%d\n",trace);
 
@@ -304,8 +280,6 @@ void cb_chg_res(w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    char string[10];
-
     if (DTPRINT) printf("In cb_chg_res - trace=%d\n",trace);
     get_data_popup(trace,"Resolution",IO_RES);
     }
@@ -317,20 +291,19 @@ void new_res(trace, redisplay)
 {
     char	string[20];
 
-    if (DTPRINT) printf ("In new_res - res = %f\n",trace->res);
+    if (DTPRINT) printf ("In new_res - res = %f\n",global->res);
 
-    if (trace->res==0.0) trace->res=0.1;	/* prevent div zero error */
+    if (global->res==0.0) global->res=0.1;	/* prevent div zero error */
 
-    /* change res button's value */
-    sprintf(string,"Res=%d ns",(int)((trace->width-trace->xstart)/trace->res) );
-    XtSetArg(arglist[0],XmNlabelString,XmStringCreateSimple(string));
-    XtSetValues(trace->command.reschg_but,arglist,1);
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	/* change res button's value */
+	sprintf(string,"Res=%d ns",(int)(RES_SCALE/global->res) );
+	XtSetArg(arglist[0],XmNlabelString,XmStringCreateSimple(string));
+	XtSetValues(trace->command.reschg_but,arglist,1);
+	}
 
     if (redisplay) {
-	/* redraw the screen with new resolution */
-	get_geometry(trace);
-	XClearWindow(trace->display,trace->wind);
-	draw(trace);
+	redraw_all (trace);
 	}
     }
 
@@ -342,7 +315,7 @@ void cb_inc_res(w,trace,cb)
     if (DTPRINT) printf("In cb_inc_res - trace=%d\n",trace);
 
     /* increase the resolution by 10% */
-    trace->res = trace->res*1.1;
+    global->res = global->res*1.1;
     new_res (trace, TRUE);
     }
 
@@ -354,7 +327,7 @@ void cb_dec_res(w,trace,cb)
     if (DTPRINT) printf("In cb_dec_res - trace=%d\n",trace);
 
     /* decrease the resolution by 10% */
-    trace->res = trace->res*0.9;
+    global->res = global->res*0.9;
     new_res (trace, TRUE);
     }
 
@@ -366,13 +339,13 @@ void cb_full_res(w,trace,cb)
     if (DTPRINT) printf("In cb_full_res - trace=%d\n",trace);
 
     /*    printf("%d %d %d %d %d\n",
-	   trace->xstart, trace->width,XMARGIN, trace->end_time, trace->start_time);	   */
+	   global->xstart, trace->width,XMARGIN, trace->end_time, trace->start_time);	   */
 
     /* set resolution  */
     if (trace->end_time != trace->start_time) {
-	trace->res = ((float)(trace->width - trace->xstart)) /
+	global->time = trace->start_time;
+	global->res = ((float)(trace->width - global->xstart)) /
 	    ((float)(trace->end_time - trace->start_time));
-	trace->time = trace->start_time;
 	new_res (trace, FALSE);
 	new_time (trace);
 	}
@@ -389,7 +362,7 @@ void cb_zoom_res(w,trace,cb)
     trace->click_time = -1;
     remove_all_events (trace);
     set_cursor (trace, DC_ZOOM_1);
-    XtAddEventHandler(trace->work,ButtonPressMask,TRUE,res_zoom_click_ev,trace);
+    add_event (ButtonPressMask, res_zoom_click_ev);
     }
 
 void res_zoom_click_ev(w, trace, ev)
@@ -397,16 +370,13 @@ void res_zoom_click_ev(w, trace, ev)
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    int		time, tmp;
+    int		time,tmp;
 
     if (DTPRINT) printf("In res_zoom_click1_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
 
-    /* check if button has been clicked on trace portion of screen */
-    if ( ev->x < trace->xstart || ev->x > trace->width - XMARGIN )
-	return;
-
     /* convert x value to a time value */
-    time = (ev->x + trace->time * trace->res - trace->xstart) / trace->res;
+    time = posx_to_time (trace, ev->x);
+    if (time<0) return;
 
     /* If no click time defined, define one and wait for second click */
     if ( trace->click_time < 0) {
@@ -427,10 +397,10 @@ void res_zoom_click_ev(w, trace, ev)
 	    }
        
 	/* Set new res & time */
-	trace->res = ((float)(trace->width - trace->xstart)) /
+	global->res = ((float)(trace->width - global->xstart)) /
 	    ((float)(time - trace->click_time));
 	
-	trace->time = trace->click_time;
+	global->time = trace->click_time;
 
 	new_res (trace, FALSE);
 	new_time(trace);

@@ -43,17 +43,18 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <file.h>
-#include <strdef.h>
 
 #ifdef VMS
+#include <file.h>
+#include <strdef.h>
 #include <math.h> /* removed for Ultrix support... */
 #endif VMS
 
 #include <X11/Xlib.h>
-#include <X11/Xm.h>
+#include <Xm/Xm.h>
 
 #include "dinotrace.h"
+#include "callbacks.h"
 
 #define issigchr(ch)  (isalnum(ch) || (ch)=='%' || (ch)=='.' || (ch)=='*' ||\
 		       (ch)=='_' || (ch)=='>'|| (ch)=='<' || (ch)==':')
@@ -576,14 +577,28 @@ void config_read_defaults(trace)
     char newfilename[200];
     char *pchar;
 
+#ifdef VMS
     config_read_file (trace, "DINO$DISK:DINOTRACE.DINO", 0);
     config_read_file (trace, "SYS$LOGIN:DINOTRACE.DINO", 0);
+#else
+    newfilename[0] = '\0';
+    if (NULL != (pchar = getenv ("DINODISK"))) strcpy (newfilename, pchar);
+    if (newfilename[0]) strcat (newfilename, "/");
+    strcat (newfilename, "dinotrace.dino");
+    config_read_file (trace, newfilename, 0);
+
+    newfilename[0] = '\0';
+    if (NULL != (pchar = getenv ("HOME"))) strcpy (newfilename, pchar);
+    if (newfilename[0]) strcat (newfilename, "/");
+    strcat (newfilename, "dinotrace.dino");
+    config_read_file (trace, newfilename, 0);
+#endif
 
     /* Same directory as trace, dinotrace.dino */
     if (trace->filename != '\0') {
 	strcpy (newfilename, trace->filename);
 	file_directory (newfilename);
-	strcat (newfilename, "DINOTRACE.DINO");
+	strcat (newfilename, "dinotrace.dino");
 	config_read_file (trace, newfilename, 0);
 	}
     
@@ -592,12 +607,13 @@ void config_read_defaults(trace)
 	strcpy (newfilename, trace->filename);
 	if ((pchar=strrchr(newfilename,'.')) != NULL )
 	    *pchar = '\0';
-	strcat (newfilename, ".DINO");
+	strcat (newfilename, ".dino");
 	config_read_file (trace, newfilename, 0);
 	}
 
     /* Apply the statenames */
     update_signal_states (trace);
+    update_search ();
     }
 
 /**********************************************************************

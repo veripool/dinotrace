@@ -28,6 +28,12 @@
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
 #include <Xm/RowColumn.h>
+#include <Xm/PushB.h>
+#include <Xm/ToggleB.h>
+#include <Xm/SelectioB.h>
+#include <Xm/Text.h>
+#include <Xm/Scale.h>
+#include <Xm/BulletinB.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
@@ -71,17 +77,17 @@ void cus_dialog_cb(w,trace,cb)
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("1/4 Page"));
 	trace->custom.tpage1 = XmCreateToggleButton(trace->custom.rpage,"rpage",arglist,1);
-	XtAddCallback(trace->custom.tpage1, XmNarmCallback, cus_page_cb, QPAGE);
+	XtAddCallback(trace->custom.tpage1, XmNarmCallback, cus_page4_cb, trace);
 	XtManageChild(trace->custom.tpage1);
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("1/2 Page"));
 	trace->custom.tpage2 = XmCreateToggleButton(trace->custom.rpage,"tpage2",arglist,1);
-	XtAddCallback(trace->custom.tpage2, XmNarmCallback, cus_page_cb, HPAGE);
+	XtAddCallback(trace->custom.tpage2, XmNarmCallback, cus_page2_cb, trace);
 	XtManageChild(trace->custom.tpage2);
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(" 1  Page"));
 	trace->custom.tpage3 = XmCreateToggleButton(trace->custom.rpage,"tpage3",arglist,1);
-	XtAddCallback(trace->custom.tpage3, XmNarmCallback, cus_page_cb, FPAGE);
+	XtAddCallback(trace->custom.tpage3, XmNarmCallback, cus_page1_cb, trace);
 	XtManageChild(trace->custom.tpage3);
 	
 	/* Create radio box for bus representation */
@@ -100,23 +106,23 @@ void cus_dialog_cb(w,trace,cb)
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("INDIVIDUAL"));
 	XtSetArg(arglist[1], XmNsensitive, FALSE);
 	trace->custom.tbus1 = XmCreateToggleButton(trace->custom.rbus,"tbus1",arglist,2);
-	XtAddCallback(trace->custom.tbus1, XmNarmCallback, cus_bus_cb, IBUS);
+	XtAddCallback(trace->custom.tbus1, XmNarmCallback, cus_bush_cb, trace);
 	XtManageChild(trace->custom.tbus1);
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("BINARY"));
 	XtSetArg(arglist[1], XmNsensitive, FALSE);
 	trace->custom.tbus2 = XmCreateToggleButton(trace->custom.rbus,"tbus2",arglist,2);
-	XtAddCallback(trace->custom.tbus2, XmNarmCallback, cus_bus_cb, BBUS);
+	XtAddCallback(trace->custom.tbus2, XmNarmCallback, cus_bush_cb, trace);
 	XtManageChild(trace->custom.tbus2);
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("OCTAL"));
 	trace->custom.tbus3 = XmCreateToggleButton(trace->custom.rbus,"tbus3",arglist,1);
-	XtAddCallback(trace->custom.tbus3, XmNarmCallback, cus_bus_cb, OBUS);
+	XtAddCallback(trace->custom.tbus3, XmNarmCallback, cus_buso_cb, trace);
 	XtManageChild(trace->custom.tbus3);
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("HEXADECIMAL"));
 	trace->custom.tbus4 = XmCreateToggleButton(trace->custom.rbus,"tbus4",arglist,1);
-	XtAddCallback(trace->custom.tbus4, XmNarmCallback, cus_bus_cb, HBUS);
+	XtAddCallback(trace->custom.tbus4, XmNarmCallback, cus_bush_cb, trace);
 	XtManageChild(trace->custom.tbus4);
 	
 	/* Create signal height slider */
@@ -245,9 +251,7 @@ void cus_read_cb(w,trace,cb)
     config_read_file (trace, "DINO$DISK:DINOTRACE.DINO", 0);
     
     /* Reformat and refresh */
-    get_geometry(trace);
-    XClearWindow(trace->display, trace->wind);
-    draw(trace);
+    redraw_all (trace);
     }
 
 void cus_reread_cb(w,trace,cb)
@@ -260,9 +264,7 @@ void cus_reread_cb(w,trace,cb)
     config_read_defaults (trace);
     
     /* Reformat and refresh */
-    get_geometry(trace);
-    XClearWindow(trace->display, trace->wind);
-    draw(trace);
+    redraw_all (trace);
     }
 
 void	cus_restore_cb(w,trace,cb)
@@ -272,14 +274,11 @@ void	cus_restore_cb(w,trace,cb)
 {
     if (DTPRINT) printf("in cus_restore_cb trace=%d\n",trace);
     
+    /* do the default thing */
     config_restore_defaults (trace);
     
-    /* do the default thing */
-    
     /* redraw the display */
-    get_geometry(trace);
-    XClearWindow(trace->display,trace->wind);
-    draw(trace);
+    redraw_all (trace);
     }
 
 void	cus_save_cb(w,trace,cb)
@@ -290,26 +289,44 @@ void	cus_save_cb(w,trace,cb)
     if (DTPRINT) printf("in cus_save_cb trace=%d\n",trace);
     }
 
-void	cus_page_cb(w,tag,cb)
+void	cus_page1_cb(w,trace,cb)
     Widget		w;
-    int		tag;
+    TRACE		*trace;
     XmAnyCallbackStruct *cb;
 {
-    if (DTPRINT) printf("In cus_page_cb - tag=%d\n",tag);
-    
-    /* change the value of the page increment */
-    curptr->custom.pageinc = tag;
+    trace->custom.pageinc = FPAGE;
     }
 
-void	cus_bus_cb(w,tag,cb)
+void	cus_page2_cb(w,trace,cb)
     Widget		w;
-    int		tag;
+    TRACE		*trace;
     XmAnyCallbackStruct *cb;
 {
-    if (DTPRINT) printf("In cus_bus_cb - tag=%d\n",tag);
-    
-    /* change the value of the bus representation */
-    curptr->custom.busrep = tag;
+    trace->custom.pageinc = HPAGE;
+    }
+
+void	cus_page4_cb(w,trace,cb)
+    Widget		w;
+    TRACE		*trace;
+    XmAnyCallbackStruct *cb;
+{
+    trace->custom.pageinc = QPAGE;
+    }
+
+void	cus_bush_cb(w,trace,cb)
+    Widget		w;
+    TRACE		*trace;
+    XmAnyCallbackStruct *cb;
+{
+    trace->custom.busrep = HBUS;
+    }
+
+void	cus_buso_cb(w,trace,cb)
+    Widget		w;
+    TRACE		*trace;
+    XmAnyCallbackStruct *cb;
+{
+    trace->custom.busrep = OBUS;
     }
 
 void	cus_rf_cb(w,trace,cb)
@@ -378,9 +395,7 @@ void	cus_ok_cb(w,trace,cb)
     XtUnmanageChild(trace->custom.customize);
     
     /* redraw the display */
-    get_geometry(trace);
-    XClearWindow(trace->display,trace->wind);
-    draw(trace);
+    redraw_all (trace);
     }
 
 void	cus_apply_cb(w,trace,cb)

@@ -25,6 +25,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef VMS
 #include <math.h>
@@ -33,6 +34,10 @@
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
+#include <Xm/PushB.h>
+#include <Xm/Text.h>
+#include <Xm/BulletinB.h>
+#include <Xm/Scale.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
@@ -82,7 +87,19 @@ void    ps_dialog(w,trace,cb)
 	XtSetArg(arglist[2], XmNx, 10);
 	XtSetArg(arglist[3], XmNy, 35);
 	XtSetArg(arglist[4], XmNresizeHeight, FALSE);
+#ifdef VMS
 	XtSetArg(arglist[5], XmNvalue, "sys$login:dinotrace.ps");
+#else
+	{
+	char homestrg[200],*pchar;
+
+	homestrg[0] = '\0';
+	if (NULL != (pchar = getenv ("HOME"))) strcpy (homestrg, pchar);
+	if (homestrg[0]) strcat (homestrg, "/");
+	strcat (homestrg, "dinotrace.ps");
+	XtSetArg(arglist[5], XmNvalue, homestrg);
+	}
+#endif
 	XtSetArg(arglist[6], XmNeditMode, XmSINGLE_LINE_EDIT);
 	trace->prntscr.text = XmCreateText(trace->prntscr.customize,"",arglist,7);
 	XtManageChild(trace->prntscr.text);
@@ -168,11 +185,11 @@ void    ps_numpag(w,trace,cb)
     if (DTPRINT) printf("In ps_numpag - trace=%d value passed=%d\n",trace,cb->value);
     
     /* calculate ns per page */
-    ns = (int)((trace->width - trace->xstart)/trace->res);
+    ns = (int)((trace->width - global->xstart)/global->res);
     
     /* calculate max number of pages from current time to end */
-    max = (trace->end_time - trace->time)/ns;
-    if ( (trace->end_time - trace->time) % ns )
+    max = (trace->end_time - global->time)/ns;
+    if ( (trace->end_time - global->time) % ns )
 	max++;;
     
     /* update num pages making sure user didn't select too many */
@@ -222,6 +239,8 @@ void    ps_print(w,trace,cb)
 	}
     
     /* get the date */
+    set_cursor (trace, DC_BUSY);
+    XSync(global->display,0);
     
 #ifdef VMS
     date.dsc$b_dtype = DSC$K_DTYPE_T;
@@ -238,12 +257,12 @@ void    ps_print(w,trace,cb)
     /* print out each page */
     for (i=0;i<trace->numpag && trace->filename[0] != '\0';i++) {
 	
-	ns = (int)((trace->width - trace->xstart)/trace->res);
+	ns = (int)((trace->width - global->xstart)/global->res);
 	
 	/* output the page header macro */
 	fprintf(psfile,"(%d-%d) %d (%s) (%s) %d PAGEHDR\n",
-		trace->time + ns,                                  /* end time */
-		trace->time,					     /* start time */
+		global->time + ns,                                  /* end time */
+		global->time,					     /* start time */
 		ns,						     /* resolution */
 		date.dsc$a_pointer,                              /* time & date */
 		trace->filename,                                   /* filename */
@@ -262,7 +281,7 @@ void    ps_print(w,trace,cb)
 	/* if not the last page, draw the next page */
 	if (i < trace->numpag-1) {
 	    /* increment to next page */
-	    trace->time += ns;
+	    global->time += ns;
 	    
 	    /* redraw the display */
 	    get_geometry(trace);
@@ -278,6 +297,7 @@ void    ps_print(w,trace,cb)
     
     /* close output file */
     fclose(psfile);
+    set_cursor (trace, DC_NORMAL);
     }
 
 void    ps_print_all(w,trace,cb)
@@ -285,21 +305,19 @@ void    ps_print_all(w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    FILE	*psfile;
-    int		i,ns;
-    char	*psfilename;
+    int		ns;
     
     if (DTPRINT) printf("In ps_print_all - trace=%d\n",trace);
     
     /* reset the drawing back to the beginning */
-    trace->time = trace->start_time;
+    global->time = trace->start_time;
     
     /* redraw the display */
     get_geometry(trace);
     new_time(trace);
     
     /* calculate ns per page */
-    ns = (int)((trace->width - trace->xstart)/trace->res);
+    ns = (int)((trace->width - global->xstart)/global->res);
     
     /* calculate number of pages needed to draw the entire trace */
     trace->numpag = (trace->end_time - trace->start_time)/ns;
@@ -335,7 +353,8 @@ ps_draw(trace,psfile)
     TRACE	*trace;
     FILE		*psfile;
 {
-    int c=0,numprt,i,j,k=2,d,cnt,adj,ymdpt,inc,xt,yt,xloc,xend,len,mid,xstart,ystart;
+    int c=0,numprt,i,adj,ymdpt,yt,xloc,xend,len,mid,xstart,ystart;
+    int x1,y1,x2,y2;
     float iff,xlocf,xtimf;
     SIGNAL_LW *cptr,*nptr;
     SIGNAL_SB *sig_ptr;
@@ -345,9 +364,9 @@ ps_draw(trace,psfile)
     if (DTPRINT) printf("In ps_draw - filename=%s\n",trace->filename);
     
     xend = trace->width - XMARGIN;
-    adj = trace->time * trace->res - trace->xstart;
+    adj = global->time * global->res - global->xstart;
     
-    if (DTPRINT) printf("trace->res=%f adj=%d\n",trace->res,adj);
+    if (DTPRINT) printf("global->res=%f adj=%d\n",global->res,adj);
     
     /* Loop and draw each signal individually */
     for (sig_ptr = trace->dispsig, numprt = 0; sig_ptr && numprt<trace->numsigvis;
@@ -356,7 +375,7 @@ ps_draw(trace,psfile)
 	y1 = trace->height - trace->ystart - c * trace->sighgt - SIG_SPACE;
 	ymdpt = y1 - (int)(trace->sighgt/2) + SIG_SPACE;
 	y2 = y1 - trace->sighgt + 2*SIG_SPACE;
-	cptr = sig_ptr->cptr;
+	cptr = (SIGNAL_LW *)sig_ptr->cptr;
 	c++;
 	xloc = 0;
 	
@@ -365,7 +384,7 @@ ps_draw(trace,psfile)
 		y2,ymdpt,y1);
 	
 	/* Compute starting points for signal */
-	xstart = trace->xstart;
+	xstart = global->xstart;
 	switch( cptr->state )
 	    {
 	  case STATE_0: ystart = y2; break;
@@ -391,7 +410,7 @@ ps_draw(trace,psfile)
 	    if (nptr->time == EOT) break;
 	    
 	    /* find the x location for the end of this segment */
-	    xloc = nptr->time * trace->res - adj;
+	    xloc = nptr->time * global->res - adj;
 	    
 	    /* Determine what the state of the signal is and build transition */
 	    switch( cptr->state ) {
@@ -415,7 +434,7 @@ ps_draw(trace,psfile)
 		value = *((unsigned int *)cptr+1);
 		/* Below evaluation left to right important to prevent error */
 		if ( (sig_ptr->decode != NULL) &&
-		    (value>=0 && value<MAXSTATENAMES) &&
+		    (value<MAXSTATENAMES) &&
 		    (sig_ptr->decode->statename[value][0] != '\0')) {
 		    strcpy (tmp, sig_ptr->decode->statename[value]);
 		    }
@@ -462,11 +481,11 @@ ps_draw(trace,psfile)
     /*** draw the time line and the grid if its visible ***/
     
     /* calculate the starting window pixel location of the first time */
-    xlocf = (trace->grid_align + (trace->time-trace->grid_align)
-	     /trace->grid_res*trace->grid_res)*trace->res - adj;
+    xlocf = (trace->grid_align + (global->time-trace->grid_align)
+	     /trace->grid_res*trace->grid_res)*global->res - adj;
     
     /* calculate the starting time */
-    xtimf = (xlocf + (float)adj)/trace->res + .001;
+    xtimf = (xlocf + (float)adj)/global->res + .001;
     
     /* initialize some parameters */
     i = 0;
@@ -483,9 +502,9 @@ ps_draw(trace,psfile)
     fprintf(psfile,"stroke\n[%d YTRN %d YTRN] 0 setdash\n",tmp[0],tmp[1]);
     
     /* check if there is a reasonable amount of increments to draw the time grid */
-    if ( ((float)xend - xlocf)/(trace->grid_res*trace->res) < MIN_GRID_RES )
+    if ( ((float)xend - xlocf)/(trace->grid_res*global->res) < MIN_GRID_RES )
 	{
-        for (iff=xlocf;iff<(float)xend; iff+=trace->grid_res*trace->res)
+        for (iff=xlocf;iff<(float)xend; iff+=trace->grid_res*global->res)
 	    {
 	    /* compute the time value and draw it if it fits */
 	    sprintf(tmp,"%d",x1);
@@ -521,27 +540,27 @@ ps_draw(trace,psfile)
 	y1 = trace->height - 25 - 10;
 	y2 = trace->height - ( (int)((trace->height-trace->ystart)/trace->sighgt)-1) *
 	    trace->sighgt - trace->sighgt/2 - trace->ystart - 2;
-	for (i=0; i < trace->numcursors; i++)
+	for (i=0; i < global->numcursors; i++)
 	    {
 	    /* check if cursor is on the screen */
-	    if (trace->cursors[i] > trace->time)
+	    if (global->cursors[i] > global->time)
 		{
 		/* draw the vertical cursor line */
-		x1 = trace->cursors[i] * trace->res - adj;
+		x1 = global->cursors[i] * global->res - adj;
 		fprintf(psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
 			x1,y1,x1,y2);
 		
 		/* draw the cursor value */
-		sprintf(tmp,"%d",trace->cursors[i]);
+		sprintf(tmp,"%d",global->cursors[i]);
  		len = XTextWidth(trace->text_font,tmp,strlen(tmp));
 		fprintf(psfile,"%d XADJ %d YADJ MT (%s) show\n",
 			x1-len/2,y2-8,tmp);
 		
 		/* if there is a previous visible cursor, draw delta line */
-		if ( i != 0 && trace->cursors[i-1] > trace->time )
+		if ( i != 0 && global->cursors[i-1] > global->time )
 		    {
-		    x2 = trace->cursors[i-1] * trace->res - adj;
-		    sprintf(tmp,"%d",trace->cursors[i] - trace->cursors[i-1]);
+		    x2 = global->cursors[i-1] * global->res - adj;
+		    sprintf(tmp,"%d",global->cursors[i] - global->cursors[i-1]);
  		    len = XTextWidth(trace->text_font,tmp,strlen(tmp));
 		    
 		    /* write the delta value if it fits */
@@ -575,6 +594,7 @@ int    ps_drawsig(trace,psfile)
 {
     SIGNAL_SB *sig_ptr;
     int c=0,numprt,ymdpt;
+    int		x1,y1;
     
     if (DTPRINT) printf("In ps_drawsig - filename=%s\n",trace->filename);
     
@@ -586,8 +606,8 @@ int    ps_drawsig(trace,psfile)
 	 sig_ptr = sig_ptr->forward, numprt++) {
 
 	/* calculate the location to start drawing the signal name */
-	x1 = trace->xstart - 105;
-	/* printf ("x1=%d, xstart=%d, %s\n",x1,trace->xstart, sig_ptr->signame); */
+	x1 = global->xstart - 105;
+	/* printf ("x1=%d, xstart=%d, %s\n",x1,global->xstart, sig_ptr->signame); */
 	
 	/* calculate the y location to draw the signal name and draw it */
 	y1 = trace->height - trace->ystart - c * trace->sighgt - SIG_SPACE;

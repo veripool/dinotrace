@@ -23,7 +23,7 @@
 
 
 #include <X11/Xlib.h>
-#include <X11/Xm.h>
+#include <Xm/Xm.h>
 
 #include "dinotrace.h"
 

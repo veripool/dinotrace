@@ -23,7 +23,7 @@
 
 
 #include <X11/Xlib.h>
-#include <X11/Xm.h>
+#include <Xm/Xm.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
@@ -54,7 +54,7 @@ void grid_align_cb(w, trace, cb)
     remove_all_events(trace);
 
     /* process all subsequent button presses as grid aligns */
-    XtAddEventHandler(trace->work,ButtonPressMask,TRUE,align_grid,trace);
+    add_event (ButtonPressMask, grid_align_ev);
     }
 
 void grid_reset_cb(w, trace, cb)
@@ -74,29 +74,26 @@ void grid_reset_cb(w, trace, cb)
     remove_all_events(trace);
 
     /* redraw the screen */
-    get_geometry(trace);
-    XClearWindow(trace->display,trace->wind);
-    draw(trace);
+    redraw_all (trace);
     }
 
-void align_grid(w, trace, ev)
+void grid_align_ev(w, trace, ev)
     Widget			w;
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    int		i,j,time;
+    int		time;
 
-    if (DTPRINT) printf("In align_grid - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
-
-    /* check if button has been clicked on trace portion of screen */
-    if ( ev->x < trace->xstart || ev->x > trace->width - XMARGIN )
-	return;
+    if (DTPRINT) printf("In grid_align_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
 
     /* convert x value to a new grid_align (time) value */
-    trace->grid_align = (ev->x + trace->time * trace->res - trace->xstart) / trace->res;
+    time = posx_to_time (trace, ev->x);
+    if (time<0) return;
+
+    trace->grid_align = time;
 
     /* redraw the screen with new cursors */
-    get_geometry(trace);
-    XClearWindow(trace->display,trace->wind);
-    draw(trace);
+    redraw_all (trace);
     }
+
+

@@ -28,8 +28,17 @@
 
 
 #include <X11/Xlib.h>
-#include <X11/CursorFont.h>
-#include <X11/Xm.h>
+#include <X11/cursorfont.h>
+#include <Xm/Xm.h>
+#include <Xm/Form.h>
+#include <Xm/PushB.h>
+#include <Xm/PushBG.h>
+#include <Xm/ArrowB.h>
+#include <Xm/DrawingA.h>
+#include <Xm/ScrollBar.h>
+#include <Xm/RowColumn.h>
+#include <Xm/CascadeB.h>
+#include <Xm/MainW.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
@@ -37,34 +46,189 @@
 #include "bigdino.bit"
 
 
-void set_cursor (trace, cursor_num)
-    TRACE		*trace;		/* Display information */
-    int		cursor_num;		/* Entry in xcursors to display */
-{
-    XDefineCursor (trace->display, trace->wind, trace->xcursors[cursor_num]);
-    }
+
+Widget *othertop;
 
 
-
-void create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
-    int		argc;
-    char		**argv;
-    int		xs,ys,xp,yp,res;
-    char *start_filename;
+void set_cursor (trace, cursor_num)
+    TRACE	*trace;			/* Display information */
+    int		cursor_num;		/* Entry in xcursors to display */
 {
-    char	title[24],data[10],string[20];
-    int		fore,back,pd=0,pde=0,i;
-    XImage	ximage;
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	XDefineCursor (global->display, trace->wind, global->xcursors[cursor_num]);
+	}
+    }
+
+/* Make the close menu options on all of the menus be active */
+void set_menu_closes ()
+{
     TRACE	*trace;
-    
-    /*** alloc space for trace to display state block ***/
-    trace = (TRACE *)malloc( sizeof(TRACE) );
-    curptr = trace;
-    
-    /*** create toplevel widget ***/
-    toplevel = XtInitialize(DTVERSION, "dinotrace", NULL, 0, &argc, argv);
+    int		sensitive;
+
+    sensitive = (global->trace_head && global->trace_head->next_trace)?TRUE:FALSE;
+
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	XtSetArg(arglist[0], XmNsensitive, sensitive);
+	XtSetValues (trace->menu_close, arglist, 1);
+	}
+    }
+
+void cb_open_trace(w,trace)
+    Widget		w;
+    TRACE		*trace;
+{
+    int xp,yp,xs,ys;
+
+    if (DTPRINT) printf("In open_trace - trace=%d\n",trace);
+
+    XtSetArg(arglist[0], XmNheight, (int)&ys);
+    XtSetArg(arglist[1], XmNwidth, (int)&xs);
+    XtSetArg(arglist[2], XmNx, (int)&xp);
+    XtSetArg(arglist[3], XmNy, (int)&yp);
+    XtGetValues(trace->toplevel, arglist, 4);
+
+    XtSetArg(arglist[0], XmNheight, ys/2);
+    XtSetValues(trace->toplevel, arglist, 1);
+
+    create_trace (xs, ys/2, xp, yp+ys/2);
+    }
+
+void cb_close_trace(w,trace)
+    Widget		w;
+    TRACE		*trace;
+{
+    TRACE	*trace_ptr;
+
+    if (DTPRINT) printf("In close_trace - trace=%d\n",trace);
+
+    /* clear the screen */
+    XClearWindow(global->display, trace->wind);
+    /* Nail the child */
+    /* XtUnmanageChild(trace->toplevel); */
+    /* free memory associated with the data */
+    free_data(trace);
+    /* destroy all the widgets created for the screen */
+    XtDestroyWidget(trace->toplevel);
+    /* free the display structure */
+    XtFree(trace);
+
+    /* relink pointers to ignore this trace */
+    if (trace == global->trace_head)
+	global->trace_head = trace->next_trace;
+    for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
+	if (trace_ptr->next_trace == trace) trace_ptr->next_trace = trace->next_trace;
+	}
+
+    /* Update menus */
+    set_menu_closes();
+    }
+
+void cb_clear_trace (w,trace)
+    Widget		w;
+    TRACE		*trace;
+{
+    TRACE	*trace_ptr;
+    TRACE	*trace_next;
+
+    if (DTPRINT) printf("In clear_trace - trace=%d\n",trace);
+
+    /* nail all traces except for this window's */
+    for (trace_ptr = global->trace_head; trace_ptr; ) {
+	trace_next = trace_ptr->next_trace;
+	if (trace_ptr != trace) {
+	    cb_close_trace (w, trace_ptr);
+	    }
+	trace_ptr = trace_next;
+	}
+
+    /* clear the screen */
+    XClearWindow(global->display, trace->wind);
+
+    /* free memory associated with the data */
+    free_data(trace);
+
+    /* change the name on title bar back to the trace */
     change_title (trace);
-    
+
+    init_globals();
+    }
+
+void cb_exit_trace (w,trace)
+    Widget		w;
+    TRACE		*trace;
+{
+    TRACE		*trace_next;
+
+    if (DTPRINT) printf("In cb_exit_trace - trace=%d\n",trace);
+
+    for (trace = global->trace_head; trace; ) {
+	trace_next = trace->next_trace;
+	cb_close_trace (w, trace);
+	trace = trace_next;
+	}
+
+    XtFree(global);
+
+    /* all done */
+    exit(1);
+    }
+
+void init_globals ()
+{
+    int i;
+
+    if (DTPRINT) printf ("in init_globals\n");
+
+    global->delsig = NULL;
+    global->selected_sig = NULL;
+    global->xstart = 200;
+    global->time = 0;
+
+    /* Initialize cursor array to zero */
+    global->numcursors = 0;
+    for (i=0; i<MAX_CURSORS; i++)
+	global->cursors[i] = 0;
+
+    for (i=0; i<MAX_SRCH; i++) {
+	global->srch_color[i] = global->srch_value[i][0] = 
+	    global->srch_value[i][1] = global->srch_value[i][2] = 0;
+	}
+    }
+
+void create_globals(argc,argv,res)
+    int		argc;
+    char	**argv;
+    int		res;
+{
+    int		argc_copy;
+    char	**argv_copy;
+
+    /* alloc space for globals block */
+    global = (GLOBAL *)XtMalloc( sizeof(GLOBAL) );
+    global->trace_head = NULL;
+    global->argc = argc;
+    global->argv = argv;
+    global->res = RES_SCALE/(float)res;
+    global->directory[0] = '\0';
+    init_globals ();
+
+    XtToolkitInitialize();
+
+    global->appcontext = XtCreateApplicationContext();
+
+    /* Save parameters and open display */
+    argc_copy = global->argc;
+    argv_copy = (char **)XtMalloc (global->argc * sizeof (char *));
+    memcpy (argv_copy, global->argv, global->argc * sizeof (char *));
+
+    global->display = XtOpenDisplay (global->appcontext, NULL, NULL, "Dinotrace",
+				    NULL, 0, &argc_copy, &argv_copy);
+
+    if (global->display==NULL) {
+	printf ("Can't open display\n");
+	exit(0);
+	}
+
     /*
      * Editor's Note: Thanks go to Sally C. Barry, former employee of DEC,
      * for her painstaking effort in the creation of the infamous 'Dino'
@@ -72,30 +236,73 @@ void create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
      */
     
     /*** create small dino pixmap from data ***/
-    dpm = make_icon(XtDisplay(toplevel),DefaultRootWindow(XtDisplay(toplevel)),
-		    dino_icon_bits,dino_icon_width,dino_icon_height);    
+    global->dpm = make_icon(global->display, DefaultRootWindow(global->display),
+			    dino_icon_bits,dino_icon_width,dino_icon_height);    
     
     /*** create big dino pixmap from data ***/
-    bdpm = make_icon(XtDisplay(toplevel),DefaultRootWindow(XtDisplay(toplevel)),
-		     bigdino_icon_bits,bigdino_icon_width,bigdino_icon_height);    
+    global->bdpm = make_icon(global->display, DefaultRootWindow(global->display),
+			     bigdino_icon_bits,bigdino_icon_width,bigdino_icon_height);    
     
-    /*** add pixmap and position toplevel widget ***/
+    /* Define cursors */
+    global->xcursors[0] = XCreateFontCursor (global->display, XC_top_left_arrow);
+    global->xcursors[1] = XCreateFontCursor (global->display, XC_watch);
+    global->xcursors[2] = XCreateFontCursor (global->display, XC_sb_left_arrow);
+    global->xcursors[3] = XCreateFontCursor (global->display, XC_sb_right_arrow);
+    global->xcursors[4] = XCreateFontCursor (global->display, XC_hand1);
+    global->xcursors[5] = XCreateFontCursor (global->display, XC_center_ptr);
+    global->xcursors[6] = XCreateFontCursor (global->display, XC_sb_h_double_arrow);
+    global->xcursors[7] = XCreateFontCursor (global->display, XC_X_cursor);
+    global->xcursors[8] = XCreateFontCursor (global->display, XC_left_side);
+    global->xcursors[9] = XCreateFontCursor (global->display, XC_right_side);
+    global->xcursors[10] = XCreateFontCursor (global->display, XC_spraycan);
+    }
+
+
+/* Create a trace display and link it into the global information */
+
+TRACE *create_trace (xs,ys,xp,yp)
+    int		xs,ys,xp,yp;
+{
+    char	string[20];
+    int		x1,x2;
+    int		pd=0,pde=0;
+    TRACE	*trace;
+    int		argc_copy;
+    char	**argv_copy;
+    
+    /*** alloc space for trace to display state block ***/
+    trace = (TRACE *)XtMalloc( sizeof(TRACE) );
+    trace->next_trace = global->trace_head;
+    global->trace_head = trace;
+    
+    /*** create trace->toplevel widget ***/
+    argc_copy = global->argc;
+    argv_copy = (char **)XtMalloc (global->argc * sizeof (char *));
+    memcpy (argv_copy, global->argv, global->argc * sizeof (char *));
+    XtSetArg (arglist[0], XtNargc, argc_copy);
+    XtSetArg (arglist[1], XtNargv, argv_copy);
+    trace->toplevel = XtAppCreateShell (NULL, "Dinotrace",
+				 applicationShellWidgetClass, global->display, arglist, 2);
+
+    change_title (trace);
+    
+    /*** add pixmap and position trace->toplevel widget ***/
     XtSetArg(arglist[0], XtNallowShellResize, TRUE);
-    XtSetArg(arglist[1], XtNiconPixmap, bdpm);
-    XtSetArg(arglist[2], "iconifyPixmap", dpm);
+    XtSetArg(arglist[1], XtNiconPixmap, global->bdpm);
+    XtSetArg(arglist[2], "iconifyPixmap", global->dpm);
     XtSetArg(arglist[3], XmNx, xp);
     XtSetArg(arglist[4], XmNy, yp);
-    XtSetValues(toplevel, arglist, 5);
-    
+    XtSetArg(arglist[5], XmNheight, ys);
+    XtSetArg(arglist[6], XmNwidth, xs);
+    XtSetValues(trace->toplevel, arglist, 7);
+
     /****************************************
      * create the main window
      ****************************************/
-    XtSetArg(arglist[0], XmNheight, ys);
-    XtSetArg(arglist[1], XmNwidth, xs);
-    XtSetArg(arglist[2], XmNx, 20);
-    XtSetArg(arglist[3], XmNy, 350);
+    XtSetArg(arglist[0], XmNx, 20);
+    XtSetArg(arglist[1], XmNy, 350);
     /*CCCCCC XtSetArg(arglist[4], XmNacceptFocus, TRUE); */
-    trace->main = XmCreateMainWindow(toplevel,"main", arglist, 4);
+    trace->main = XmCreateMainWindow(trace->toplevel,"main", arglist, 2);
 #ifdef NOTDONE
     XtAddCallback(trace->main, XmNfocusCallback, cb_window_focus, trace);
 #endif
@@ -128,11 +335,14 @@ void create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
     /*** begin with -1 pde, since new menu will increment ***/
     pde = -1;
 
-    dt_menu_title ("Display");
+    dt_menu_title ("Trace");
     dt_menu_entry	("Read", cb_read_trace);
     dt_menu_entry	("ReRead", cb_reread_trace);
-    dt_menu_entry	("Clear", clear_display);
-    dt_menu_entry	("Exit", delete_display);
+    dt_menu_entry	("Open", cb_open_trace);
+    dt_menu_entry	("Close", cb_close_trace);
+    trace->menu_close = trace->menu.pulldown[pd-1];
+    dt_menu_entry	("Clear", cb_clear_trace);
+    dt_menu_entry	("Exit", cb_exit_trace);
     dt_menu_title ("Customize");
     dt_menu_entry	("Change", cus_dialog_cb);
     dt_menu_entry	("ReRead", cus_reread_cb);
@@ -153,7 +363,8 @@ void create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
     dt_menu_entry	("Move", sig_mov_cb);
     dt_menu_entry	("Delete", sig_del_cb);
     dt_menu_entry	("Highlight", sig_highlight_cb);
-    dt_menu_entry	("Reset", sig_reset_cb);
+    dt_menu_entry	("Search", sig_search_cb);
+    /* dt_menu_entry	("Reset", sig_reset_cb); */
     dt_menu_entry	("Cancel", cancel_all_events);
     /*
     dt_menu_title ("Note");
@@ -176,7 +387,8 @@ void create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
     /****************************************
      * create the command widget
      ****************************************/
-    trace->command.command = XmCreateForm(trace->main, "form", arglist, 0);
+    XtSetArg(arglist[0], XmNresizePolicy, XmRESIZE_NONE);
+    trace->command.command = XmCreateForm(trace->main, "form", arglist, 1);
     XtManageChild(trace->command.command);
     
     /*** create begin button in command region ***/
@@ -296,6 +508,9 @@ void create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
     trace->work = XmCreateDrawingArea(trace->command.command,"work", arglist, 6);
 
     XtAddCallback(trace->work, XmNexposeCallback, cb_window_expose, trace);
+/*
+    XtAddCallback(trace->work, XmNresizeCallback, cb_window_expose, trace);
+*/
     XtManageChild(trace->work);
     
 #ifdef NOTDONE    
@@ -308,16 +523,15 @@ void create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
 #endif
     
     XtManageChild(trace->main);
-    XtRealizeWidget(toplevel);
+    XtRealizeWidget(trace->toplevel);
     
     /* Initialize Various Parameters */
     trace->firstsig = NULL;
     trace->dispsig = NULL;
-    trace->delsig = NULL;
-    trace->display = XtDisplay(toplevel);
     trace->wind = XtWindow(trace->work);
     trace->custom.customize = NULL;
-    trace->signal.customize = NULL;
+    trace->signal.add = NULL;
+    trace->signal.search = NULL;
     trace->prntscr.customize = NULL;
     trace->prompt_popup = NULL;
     trace->fileselect = NULL;
@@ -325,21 +539,17 @@ void create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
     trace->loaded = 0;
     trace->numsig = 0;
     trace->numsigvis = 0;
-    trace->numsigdel = 0;
     trace->numsigstart = 0;
-    trace->time = 0;
     trace->busrep = HBUS;
-    trace->xstart = 200;
     trace->ystart = 40;
     
     trace->signalstate_head = NULL;
     config_restore_defaults (trace);
     
-    XGetGeometry( XtDisplay(toplevel), XtWindow(trace->work), &x1, &x1,
+    XGetGeometry( global->display, XtWindow(trace->work), &x1, &x1,
 		 &x1, &x2, &x1, &x1, &x1);
 
-    trace->res = ((float)(x2-trace->xstart))/(float)res;
-    sprintf(string,"Res=%d ns",res);
+    sprintf(string,"Res=%d ns",(int)(RES_SCALE/global->res) );
     XtSetArg(arglist[0],XmNlabelString,XmStringCreateSimple(string));
     XtSetValues(trace->command.reschg_but,arglist,1);
     
@@ -359,38 +569,32 @@ void create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
     XtSetValues(trace->work,arglist,1);
 #endif    
 
-    trace->gc = XCreateGC(trace->display,trace->wind,
+    trace->gc = XCreateGC(global->display,trace->wind,
 			  GCLineWidth|GCForeground|GCBackground,&xgcv);
     
-    /* Define cursors */
-    trace->xcursors[0] = XCreateFontCursor (trace->display, XC_top_left_arrow);
-    trace->xcursors[1] = XCreateFontCursor (trace->display, XC_watch);
-    trace->xcursors[2] = XCreateFontCursor (trace->display, XC_sb_left_arrow);
-    trace->xcursors[3] = XCreateFontCursor (trace->display, XC_sb_right_arrow);
-    trace->xcursors[4] = XCreateFontCursor (trace->display, XC_hand1);
-    trace->xcursors[5] = XCreateFontCursor (trace->display, XC_center_ptr);
-    trace->xcursors[6] = XCreateFontCursor (trace->display, XC_sb_h_double_arrow);
-    trace->xcursors[7] = XCreateFontCursor (trace->display, XC_X_cursor);
-    trace->xcursors[8] = XCreateFontCursor (trace->display, XC_left_side);
-    trace->xcursors[9] = XCreateFontCursor (trace->display, XC_right_side);
-    trace->xcursors[10] = XCreateFontCursor (trace->display, XC_spraycan);
-    set_cursor (trace, DC_NORMAL);
-    
     /* get font information */
-    trace->text_font = XQueryFont(trace->display,XGContextFromGC(trace->gc));
+    trace->text_font = XQueryFont(global->display,XGContextFromGC(trace->gc));
     
     /* get color information */
     arglist[0].name = XmNforeground;
     arglist[0].value = (int)&(trace->xcolornums[0]);
-    XtGetValues(trace->main,arglist,1);
-    trace->xcolornums[1] = XWhitePixel (trace->display, 0);
+    XtGetValues (trace->main, arglist, 1);
+    trace->xcolornums[1] = XWhitePixel (global->display, 0);
+    /* temp kludge */
+    trace->xcolornums[2] = 13;
+    trace->xcolornums[3] = 15;
+    trace->xcolornums[4] = 17;
+    trace->xcolornums[5] = 18;
+    trace->xcolornums[6] = 25;
+    trace->xcolornums[7] = 50;
+    trace->xcolornums[8] = 11;
+    trace->xcolornums[9] = 24;
+
+    set_cursor (trace, DC_NORMAL);
 
     get_geometry(trace);
-    
-    /* Load up the file on the command line, if any */
-    if (start_filename != NULL) {
-	XSync(trace->display,0);
-	strcpy (trace->filename, start_filename);
-	cb_fil_read (trace);
-	}
+
+    set_menu_closes();
+
+    return (trace);
     }

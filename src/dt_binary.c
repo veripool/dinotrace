@@ -1,13 +1,13 @@
 #include <stdio.h>
-#include <file.h>
-#include <unixio.h>
 
 #ifdef VMS
+#include <file.h>
+#include <unixio.h>
 #include <math.h> /* removed for Ultrix support... */
 #endif VMS
 
 #include <X11/Xlib.h>
-#include <X11/Xm.h>
+#include <Xm/Xm.h>
 
 #include "dinotrace.h"
 #include "bintradef.h"
@@ -28,7 +28,7 @@
 #define EXTRACT_2STATE(buf,pos)	(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 1)
 #define EXTRACT_4STATE(buf,pos)	(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 3)
 
-void read_DECSIM(trace)
+void read_decsim(trace)
     TRACE	*trace;
 {
     int		in_fd;
@@ -44,10 +44,17 @@ void read_DECSIM(trace)
     int		eof_next=FALSE;
 
     int	pass=0;
-    
+
+#ifndef VMS
+    /* The reads below rely on varible RMS records - Ultrix has no such thing */
+    if (DTPRINT) printf ("Binary traces are disabled under Ultrix.\n");
+    read_decsim_ascii (trace);
+    return;
+#endif
+
     in_fd = open (trace->filename, O_RDONLY, 0);
     if (in_fd<1) {
-	read_DECSIM_ascii (trace);
+	read_decsim_ascii (trace);
 	return;
 	}
 
@@ -125,9 +132,9 @@ void read_DECSIM(trace)
 		/* if (DTPRINT) printf ("Reading signal format data, ptr=%d\n", sig_ptr); */
 
 		/* initialize all the pointers that aren't NULL */
-		if (last_sig_ptr) last_sig_ptr->forward = (int *)sig_ptr;
-		sig_ptr->backward = (int *)last_sig_ptr;
-		if (trace->firstsig==NULL) trace->firstsig = (int *)sig_ptr;
+		if (last_sig_ptr) last_sig_ptr->forward = sig_ptr;
+		sig_ptr->backward = last_sig_ptr;
+		if (trace->firstsig==NULL) trace->firstsig = sig_ptr;
 		break;
 
 		/**** TYPE: Node signal name data ****/
@@ -152,7 +159,7 @@ void read_DECSIM(trace)
 
 		/* save start/ end time */
 		if (first_data) {
-		    trace->time = trace->start_time = time;
+		    trace->start_time = time;
 		    }
 		trace->end_time = time;
 
@@ -175,14 +182,14 @@ void read_DECSIM(trace)
 	    break;
 
 	    /**** CLASS: EOF ****/
-	  case 4:
+	  case tra$k_mtr:
 	    break;
 
 	    /**** CLASS: Unknown ****/
 	  default:
 	    if (DTPRINT) printf( "Unknown record class %d, assuming ASCII\n", buf->tra$b_class);
 	    close (in_fd);
-	    read_DECSIM_ascii (trace);
+	    read_decsim_ascii (trace);
 	    return;
 	    }
 	}
@@ -491,8 +498,8 @@ read_binary_time (trace, buf, time, flag )
 	else {
 	    /* Multibit signal */
 	    if ( sig_ptr->binary_type == tra$k_twosta )
-		state = read_2state_to_value (sig_ptr, buf, &value);
-	    else state = read_4state_to_value (sig_ptr, buf, &value);
+		state = read_2state_to_value (sig_ptr, buf, value);
+	    else state = read_4state_to_value (sig_ptr, buf, value);
 	    
 	    /* now see if data has changed since previous entry */
 	    /* add if states !=, or if both are a bus and values != */

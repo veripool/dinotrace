@@ -32,7 +32,9 @@
 #include <stdio.h>
 
 #include <X11/Xlib.h>
-#include <Xm/Xm.h>
+#include <Xm/MessageB.h>
+#include <Xm/SelectioB.h>
+#include <Xm/FileSB.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
@@ -69,8 +71,8 @@ void    cancel_all_events(w,trace,cb)
     remove_all_events(trace);
     
     /* unmanage any widgets left around */
-    if ( trace->signal.customize != NULL )
-	XtUnmanageChild(trace->signal.customize);
+    if ( trace->signal.add != NULL )
+	XtUnmanageChild(trace->signal.add);
     }
 
 void    update_scrollbar(w,value,inc,min,max,size)
@@ -87,6 +89,9 @@ void    update_scrollbar(w,value,inc,min,max,size)
     else {
 	XtSetArg(arglist[0], XmNsensitive, TRUE);
 	}
+    
+    if (value > (max - size)) value = max - size;
+    if (value < min) value = min;
 
     XtSetArg(arglist[1], XmNvalue, value);
     XtSetArg(arglist[2], XmNincrement, inc);
@@ -97,82 +102,102 @@ void    update_scrollbar(w,value,inc,min,max,size)
     }
 
 
+void 	add_event (type, callback)
+    int		type;
+    void	*callback;
+{
+    TRACE	*trace;
+
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	XtAddEventHandler(trace->work, type, TRUE, callback, trace);
+	}
+    }
+
 void    remove_all_events(trace)
     TRACE		*trace;
 {
+    TRACE		*trace_ptr;
+
     if (DTPRINT) printf("In remove_all_events - trace=%d\n",trace);
     
-    /* remove all possible events due to res options */ 
-    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,res_zoom_click_ev,trace);
-    
-    /* remove all possible events due to cursor options */ 
-    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,add_cursor,trace);
-    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,move_cursor,trace);
-    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,delete_cursor,trace);
-    
-    /* remove all possible events due to grid options */ 
-    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,align_grid,trace);
-    
-    /* remove all possible events due to signal options */ 
-    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,add_signal,trace);
-    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,move_signal,trace);
-    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,delete_signal,trace);
+    for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
+	/* remove all possible events due to res options */ 
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,res_zoom_click_ev,trace_ptr);
+	
+	/* remove all possible events due to cursor options */ 
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,cur_add_ev,trace_ptr);
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,cur_move_ev,trace_ptr);
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,cur_delete_ev,trace_ptr);
+	
+	/* remove all possible events due to grid options */ 
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,grid_align_ev,trace_ptr);
+	
+	/* remove all possible events due to signal options */ 
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_add_ev,trace_ptr);
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_move_ev,trace_ptr);
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_delete_ev,trace_ptr);
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_highlight_ev,trace_ptr);
+	}
+
+    global->selected_sig = NULL;
 
     /* Set the cursor back to normal */
     set_cursor (trace, DC_NORMAL);
     }
 
-new_time(trace)
+void new_time(trace)
     TRACE *trace;
 {
-    int		i,inc;
-    short		*pshort;
     SIGNAL_SB	*sig_ptr;
     
-    if ( trace->time > trace->end_time - (int)((trace->width-XMARGIN-trace->xstart)/trace->res) ) {
+    if ( global->time > trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res) ) {
         if (DTPRINT) printf("At end of trace...\n");
-        trace->time = trace->end_time - (int)((trace->width-XMARGIN-trace->xstart)/trace->res);
+        global->time = trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res);
 	}
     
-    if ( trace->time < trace->start_time ) {
+    if ( global->time < trace->start_time ) {
         if (DTPRINT) printf("At beginning of trace...\n");
-        trace->time = trace->start_time;
+        global->time = trace->start_time;
 	}
-    
-    pshort = trace->bus;
-    
-    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	/*
-	  if (DTPRINT)
-	  printf("next time=%d\n",(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time);
-	  */
+
+    /* Update beginning of all traces */
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	    /* if (DTPRINT)
+	       printf("next time=%d\n",(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time);
+	       */
 	
-        if ( trace->time >= (*(SIGNAL_LW *)(sig_ptr->cptr)).time ) {
-            while (trace->time>(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time) {
-		(sig_ptr->cptr)+=sig_ptr->inc;
+	    if ( !sig_ptr->cptr ) {
+		sig_ptr->cptr = sig_ptr->bptr;
 		}
-	    }
-	else {
-            while (trace->time < (*(SIGNAL_LW *)(sig_ptr->cptr)).time) {
-                (sig_ptr->cptr)-=sig_ptr->inc;
+
+	    if (global->time >= (*(SIGNAL_LW *)(sig_ptr->cptr)).time ) {
+		while (((*(SIGNAL_LW *)(sig_ptr->cptr)).time != EOT) &&
+		       (global->time > (*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time)) {
+		    (sig_ptr->cptr) += sig_ptr->inc;
+		    }
+		}
+	    else {
+		while ((sig_ptr->cptr > sig_ptr->bptr) &&
+		       (global->time < (*(SIGNAL_LW *)(sig_ptr->cptr)).time)) {
+		    (sig_ptr->cptr) -= sig_ptr->inc;
+		    }
 		}
 	    }
 	}
     
-    /* Update window */
-    XClearWindow(trace->display, trace->wind);
-    get_geometry(trace);
-    draw(trace);
+    /* Update windows */
+    redraw_all (trace);
     }
 
 /* Get window size, calculate what fits on the screen and update scroll bars */
 
-get_geometry( trace )
+void get_geometry( trace )
     TRACE	*trace;
 {
-    int		temp,x,y,width,height,dret,max_y;
+    int		x,y,width,height,dret,max_y;
     
-    XGetGeometry( XtDisplay(toplevel), XtWindow(trace->work), &dret,
+    XGetGeometry( global->display, XtWindow(trace->work), &dret,
 		 &x, &y, &width, &height, &dret, &dret);
     
     trace->width = width;
@@ -181,32 +206,44 @@ get_geometry( trace )
     /* calulate the number of signals possibly visible on the screen */
     /* same calculation in get_geometry */
     max_y = (int)((trace->height-trace->ystart)/trace->sighgt);
-    trace->numsigvis = MIN(trace->numsig - trace->numsigdel - trace->numsigstart,max_y);
+    trace->numsigvis = MIN(trace->numsig - trace->numsigstart,max_y);
     
     /* if there are cursors showing, subtract one to make room for cursor */
-    if ( trace->numcursors > 0 &&
+    if ( global->numcursors > 0 &&
 	trace->cursor_vis &&
 	trace->numsigvis > 1 &&
 	trace->numsigvis >= max_y ) {
 	trace->numsigvis--;
 	}
     
-    update_scrollbar (trace->hscroll, trace->time,
-		      (int)((trace->width-trace->xstart)/trace->res/trace->pageinc),
+    update_scrollbar (trace->hscroll, global->time,
+		      trace->grid_res,
 		      trace->start_time, trace->end_time, 
-		      (int)((trace->width-trace->xstart)/trace->res) );
+		      (int)((trace->width-global->xstart)/global->res) );
 
     update_scrollbar (trace->vscroll, trace->numsigstart, 1,
-		      0, trace->numsig - trace->numsigdel, trace->numsigvis); 
+		      0, trace->numsig, trace->numsigvis); 
     
     if (DTPRINT) printf("In get_geometry: x=%d y=%d width=%d height=%d\n",
+			x,y,width,height);
+    }
+
+void print_geometry( trace )
+    TRACE	*trace;
+{
+    int		temp,x,y,width,height,dret,max_y;
+    
+    XGetGeometry( global->display, XtWindow(trace->work), &dret,
+		 &x, &y, &width, &height, &dret, &dret);
+    
+    if (DTPRINT) printf("In print_geometry: x=%d y=%d width=%d height=%d\n",
 			x,y,width,height);
     }
 
 void  get_file_name( trace )
     TRACE	*trace;
 {
-    char mask[200], *pchar;
+    char mask[200], *pattern;
     
     if (DTPRINT) printf("In get_file_name trace=%d\n",trace);
     
@@ -219,22 +256,25 @@ void  get_file_name( trace )
 	XtAddCallback(trace->fileselect, XmNcancelCallback, cb_fil_can, trace);
 	XtUnmanageChild( XmFileSelectionBoxGetChild (trace->fileselect, XmDIALOG_HELP_BUTTON));
 	
-	XSync(trace->display,0);
+	XSync(global->display,0);
 	}
     
     XtManageChild(trace->fileselect);
 
-    strcpy (mask, trace->filename);
-    file_directory (mask);
+    /* Directory is global information */
+    strcpy (mask, global->directory);
     
     if ( trace_format == DECSIM )
-	strcat (mask, "*.tra");
+	pattern = "*.tra";
     else if ( trace_format == HLO_TEMPEST )
-	strcat (mask, "*.bt");
+	pattern = "*.bt";
     
+    strcat (mask, pattern);
     XtSetArg(arglist[0], XmNdirMask, XmStringCreateSimple(mask) );
-    XtSetValues(trace->fileselect,arglist,1);
-    XSync(trace->display,0);
+    XtSetArg(arglist[1], XmNpattern, XmStringCreateSimple(pattern) );
+    XtSetArg(arglist[2], XmNdirectory, XmStringCreateSimple(global->directory) );
+    XtSetValues(trace->fileselect,arglist,3);
+    XSync(global->display,0);
     }
 
 void cb_fil_ok(widget, trace, reason)
@@ -242,7 +282,6 @@ void cb_fil_ok(widget, trace, reason)
     TRACE	*trace;
     XmFileSelectionBoxCallbackStruct *reason;
 {
-    int d,status,charset,direction,language,rendition;
     char *tmp;
     
     if (DTPRINT) printf("In cb_fil_ok trace=%d\n",trace);
@@ -253,12 +292,12 @@ void cb_fil_ok(widget, trace, reason)
      ** the idle is very big.
      */
     XtUnmanageChild(trace->fileselect);
-    XSync(trace->display,0);
+    XSync(global->display,0);
     
     tmp = extract_first_xms_segment(reason->value);
     if (DTPRINT) printf("filename=%s\n",tmp);
     
-    strcpy (trace->filename,tmp);
+    strcpy (trace->filename, tmp);
     
     XtFree(tmp);
     
@@ -266,45 +305,6 @@ void cb_fil_ok(widget, trace, reason)
     cb_fil_read (trace);
     }
 
-
-void cb_fil_read(trace)
-    TRACE	*trace;
-{
-    if (DTPRINT) printf("In cb_fil_read trace=%d filename=%s\n",trace,trace->filename);
-    
-    /* Clear the data structures & the screen */
-    clear_display (0, trace);
-    set_cursor (trace, DC_BUSY);
-    XSync(trace->display,0);
-    
-    /*
-     ** Read in the trace file using the format selected by the user
-     */
-    if (trace_format == DECSIM)
-	read_DECSIM(trace);
-    else if (trace_format == HLO_TEMPEST)
-	read_HLO_TEMPEST(trace);
-    
-    /* Change the name on title bar to filename */
-    change_title (trace);
-    
-    /*
-     ** Clear the number of deleted signals and the starting signal
-     */
-    trace->numsigdel = 0;
-    trace->numsigstart = 0;
-    
-    /* get applicable config files */
-    config_read_defaults (trace);
-    
-    /*
-     ** Clear the window and draw the screen with the new file
-     */
-    set_cursor (trace, DC_NORMAL);
-    get_geometry(trace);
-    XClearWindow(trace->display,trace->wind);
-    draw(trace);
-    }
 
 void cb_fil_can( widget, trace, reason )
     Widget	widget;
@@ -385,9 +385,7 @@ void    cb_prompt_ok(w, trace, reason)
     XmSelectionBoxCallbackStruct *reason;
 {
     char	*valstr;
-    char	string[20]="";
     int		tempi;
-    float	tempf;
     
     if (DTPRINT) printf("In cb_prompt_ok type=%d\n",trace->prompt_type);
     
@@ -411,8 +409,7 @@ void    cb_prompt_ok(w, trace, reason)
 	    return;
 	    }
 	
-	/* validate the geometry */
-	get_geometry( trace );
+	redraw_all (trace);
 	break;
 	
       case IO_RES:
@@ -423,24 +420,16 @@ void    cb_prompt_ok(w, trace, reason)
 	    return;
 	    }
 	else {
-	    trace->res = ((float)(trace->width-trace->xstart))/(float)tempi;
+	    global->res = RES_SCALE / (float)tempi;
 	    
 	    /* change the resolution string on display */
-	    sprintf(string,"Res=%d ns",(int)((trace->width-trace->xstart)/trace->res) );
-	    XtSetArg(arglist[0],XmNlabelString, XmStringCreateSimple(string));
-	    XtSetValues(trace->command.reschg_but,arglist,1);
+	    new_res (trace, TRUE);
 	    }
-	/* validate the geometry */
-	get_geometry( trace );
 	break;
 	
       default:
 	printf("Error - bad type %d\n",trace->prompt_type);
 	}
-    
-    /* redraw the screen */
-    XClearWindow(trace->display, trace->wind);
-    draw(trace);
     }
 
 
@@ -448,10 +437,6 @@ void dino_message_info(trace,msg)
     TRACE	*trace;
     char		*msg;
 {
-    short	wx,wy,wh,ww;
-    static	MAPPED=FALSE;
-    static Widget message;
-    
     if (DTPRINT) printf("In dino_message_info msg=%s\n",msg);
     
     /* display message at terminal */
@@ -465,7 +450,6 @@ void dino_message_ack(trace, type, msg)
     int		type;	/* See dino_warning_ack macros, 1=warning */
     char		*msg;
 {
-    short	wx,wy,wh,ww;
     static	MAPPED=FALSE;
     static Widget message;
     Arg		arglist[10];
@@ -595,7 +579,7 @@ void    print_screen_traces(w,trace)
 	return;
 	}
     
-    adj = trace->time * trace->res - trace->xstart;
+    adj = global->time * global->res - global->xstart;
     printf("Adjustment value is %d\n",adj);
     
     sig_ptr = (SIGNAL_SB *)trace->dispsig;
@@ -610,7 +594,7 @@ void    print_screen_traces(w,trace)
     printf("\n");
     
     while( cptr->time != 0x1FFFFFFF &&
-	  (cptr->time*trace->res-adj) < trace->width - XMARGIN)
+	  (cptr->time*global->res-adj) < trace->width - XMARGIN)
 	{
 	DINO_NUMBER_TO_VALUE(cptr->state);
 	printf(" at time %d ns",cptr->time);
@@ -661,6 +645,7 @@ void file_directory (strg)
 {
     char *pchar;
     
+#ifdef VMS
     if ((pchar=strrchr(strg,']')) != NULL )
 	*(pchar+1) = '\0';
     else
@@ -668,6 +653,12 @@ void file_directory (strg)
 	    *(pchar+1) = '\0';
 	else
 	    strg[0] = '\0';
+#else
+    if ((pchar=strrchr(strg,'/')) != NULL )
+	*(pchar+1) = '\0';
+    else
+	strg[0] = '\0';
+#endif
     }
 
 
@@ -680,14 +671,15 @@ void change_title(trace)
      ** Change the name on title bar to filename
      */
     strcpy(title,DTVERSION);
-    if (trace->filename[0]!='\0') {
+    if (trace->loaded) {
 	strcat(title," - ");
 	strcat(title,trace->filename);
 	}
     
     /* For icon title drop extension and directory */
-    if (trace->filename[0]!='\0') {
+    if (trace->loaded) {
 	strcpy (icontitle, trace->filename);
+#ifdef VMS
 	if ((pchar=strrchr(trace->filename,']')) != NULL )
 	    strcpy (icontitle, pchar+1);
 	else
@@ -700,6 +692,10 @@ void change_title(trace)
 	/* Tack on the version number */
 	if ((pchar=strrchr(trace->filename,';')) != NULL )
 	    strcat (icontitle, pchar);
+#else
+	if ((pchar=strrchr(trace->filename,'/')) != NULL )
+	    strcpy (icontitle, pchar+1);
+#endif
 	}
     else {
 	strcpy(icontitle, DTVERSION);
@@ -707,6 +703,50 @@ void change_title(trace)
     
     XtSetArg(arglist[0], XmNtitle, title);
     XtSetArg(arglist[1], XmNiconName, icontitle);
-    XtSetValues(toplevel,arglist,2);
+    XtSetValues(trace->toplevel,arglist,2);
     }
+
+#pragma inline (posx_to_time)
+int	posx_to_time(trace,x)
+    /* convert x value to a time value, return -1 if invalid click */
+    TRACE *trace;
+    int x;
+{
+    /* check if button has been clicked on trace portion of screen */
+    if ( !trace->loaded || x < global->xstart || x > trace->width - XMARGIN )
+	return (-1);
+    
+    return (((x) + global->time * global->res - global->xstart) / global->res);
+    }
+
+
+#pragma inline (posy_to_signal)
+SIGNAL_SB	*posy_to_signal(trace,y)
+    /* convert y value to a signal pointer, return NULL if invalid click */
+    TRACE *trace;
+    int y;
+{
+    SIGNAL_SB	*sig_ptr;
+    int num,i,max_y;
+
+    /* return if there is no file */
+    if ( !trace->loaded )
+	return (NULL);
+    
+    /* make sure button has been clicked in in valid location of screen */
+    max_y = MIN(trace->numsig,trace->numsigvis);
+    if ( y < trace->ystart || y > trace->ystart + max_y * trace->sighgt )
+	return (NULL);
+    
+    /* figure out which signal has been selected */
+    num = (int)((y - trace->ystart) / trace->sighgt);
+
+    /* set pointer to signal to 'highlight' */
+    sig_ptr = trace->dispsig;
+    for (i=0; sig_ptr && i<num; i++)
+	sig_ptr = sig_ptr->forward;
+
+    return (sig_ptr);
+    }
+
 

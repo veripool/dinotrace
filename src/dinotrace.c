@@ -28,18 +28,29 @@
 
 
 #include <X11/Xlib.h>
-#include <X11/Xm.h>
+#include <Xm/Xm.h>
 #include <stdio.h>
 
 #include "dinotrace.h"
+#include "callbacks.h"
+
+int		DTDEBUG=FALSE,		/* Debugging mode */
+		DTPRINT=FALSE;		/* Information printing mode */
+int		trace_format=DECSIM;	/* Type of trace to support */
+char		message[100];		/* generic string for messages */
+XGCValues	xgcv;
+Arg		arglist[20];
+GLOBAL		*global;
+
 
 int    main(argc, argv)
     unsigned int	argc;
     char		**argv;
 {
-    int i,x_siz=800,y_siz=600,x_pos=100,y_pos=100,res=500;
+    int i,x_siz=800,y_siz=600,x_pos=100,y_pos=100,res=250;
     char *start_filename = NULL;
     FILE *tempfp;
+    TRACE *trace;
     
     for (i=1; i<argc; i++) 
 	{
@@ -90,10 +101,20 @@ int    main(argc, argv)
 	    }
 	}
     
+    /* create global information */
+    create_globals (0, argv, res);
+
     /* create the main dialog window */
-    create_display(argc,argv,x_siz,y_siz,x_pos,y_pos,res,start_filename);
+    trace = create_trace (x_siz,y_siz,x_pos,y_pos);
     
+    /* Load up the file on the command line, if any */
+    if (start_filename != NULL) {
+	XSync(global->display,0);
+	strcpy (trace->filename, start_filename);
+	cb_fil_read (trace);
+	}
+
     /* loop forever */
-    XtMainLoop();
+    XtAppMainLoop(global->appcontext);
     }
 
