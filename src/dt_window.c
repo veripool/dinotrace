@@ -81,7 +81,7 @@ void hscroll_unitinc (w,trace,cb)
     XmScrollBarCallbackStruct *cb;
 {
     if (DTPRINT_ENTRY) printf ("In hscroll_unitinc - trace=%d  old_time=%d",trace,global->time);
-    global->time += trace->grid_res;
+    global->time += trace->grid[0].spacing;
     if (DTPRINT_ENTRY) printf (" new time=%d\n",global->time);
 
     new_time (trace);
@@ -93,7 +93,7 @@ void hscroll_unitdec (w,trace,cb)
     XmScrollBarCallbackStruct *cb;
 {
     if (DTPRINT_ENTRY) printf ("In hscroll_unitdec - trace=%d  old_time=%d",trace,global->time);
-    global->time -= trace->grid_res;
+    global->time -= trace->grid[0].spacing;
     new_time (trace);
     }
 
@@ -200,24 +200,35 @@ void vscroll_new (trace,inc)
     TRACE	*trace;
     int 	inc;	/* Lines to move, signed, +1, -1, or +- n */
 {
-    int		maxsig;
+    int			signum;
+    SIGNAL		*sig_ptr;
+
     if (DTPRINT_ENTRY) printf ("in vscroll_new inc=%d start=%d\n",inc,trace->numsigstart);
 
-    maxsig = max_sigs_on_screen(trace);
-
-    while ( (inc > 0) && trace->dispsig && trace->dispsig->forward
-	   && (trace->numsigstart <= (trace->numsig - maxsig))) {
-	trace->numsigstart++;
+    /* Move to requested position */
+    while ( (inc > 0) && trace->dispsig && trace->dispsig->forward ) {
 	trace->dispsig = trace->dispsig->forward;
 	inc--;
 	}
-    
     while ( (inc < 0) && trace->dispsig && trace->dispsig->backward ) {
-	trace->numsigstart--;
 	trace->dispsig = trace->dispsig->backward;
 	inc++;
 	}
-    
+
+    /* Calculate numsigstart */
+    trace->numsigstart = 0;
+    for (sig_ptr = trace->firstsig; sig_ptr && (sig_ptr != trace->dispsig); sig_ptr = sig_ptr->forward) {
+	trace->numsigstart++;
+    }
+
+    /* If blank space on bottom of screen, scroll to fill it */
+    for (signum=0; (signum < trace->numsigvis) && sig_ptr; sig_ptr = sig_ptr->forward)  signum++;
+    while ( (signum < trace->numsigvis) && trace->dispsig && trace->dispsig->backward ) {
+	trace->dispsig = trace->dispsig->backward;
+	signum++;
+	trace->numsigstart--;
+	}
+
     draw_needed (trace);
     }
 
@@ -250,19 +261,7 @@ void vscroll_pagedec (w,trace,cb)
     TRACE		*trace;
     XmScrollBarCallbackStruct *cb;
 {
-    int sigs;
-
-    /* Not numsigvis because may not be limited by screen size */
-    sigs = max_sigs_on_screen (trace);
-
-    if ( (global->cursor_head != NULL) &&
-	 trace->cursor_vis &&
-	 trace->numsigvis > 1 &&
-	 trace->numsigvis >= sigs ) {
-	sigs--;
-	}
-
-    vscroll_new (trace, -sigs);
+    vscroll_new (trace, -(trace->numsigvis));
     }
 
 void vscroll_drag (w,trace,cb)
@@ -281,7 +280,6 @@ void vscroll_drag (w,trace,cb)
     ** The sig pointer is reset to the start and the loop will set
     ** it to the signal that inc represents
     */
-    trace->numsigstart = 0;
     trace->dispsig = trace->firstsig;
     vscroll_new (trace, inc);
     }
