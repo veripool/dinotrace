@@ -3,6 +3,7 @@
 !
 !	! Comment
 !	page_inc	4 | 2 | 1
+!	print_size	A | B
 !	rise_fall_time	Number
 !	signal_height	Number
 !	grid		ON | OFF

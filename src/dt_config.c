@@ -65,8 +65,6 @@
 int line_num=0;
 char *current_file="";
 
-SIGNALSTATE *symbol_head=NULL;
-
 /* Line reading support */
 char UnGetLine[1000];
 int  UnGot=0;
@@ -99,7 +97,7 @@ void config_get_line(line, len, readfp)
 
     /* Read line & kill EOL at end */
     fgets (line, len, readfp);
-    if (*(tp=(line+strlen(line)-1))='\n') *tp='\0';
+    if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
     line_num++;
     }
 
@@ -168,7 +166,6 @@ int	config_read_int (line, out)
     char *line;
     int *out;
 {
-    char *tp;
     int outlen=0;
 
     while (*line && !isalnum(*line)) {
@@ -197,10 +194,9 @@ int	config_read_on_off (line, out)
     int *out;
 {
     char cmd[MAXSIGLEN];
-    char *tp;
     int outlen;
 
-    outlen += config_read_signal (line, cmd);
+    outlen = config_read_signal (line, cmd);
     upcase_string (cmd);
 
     if (!strcmp (cmd, "ON") || !strcmp (cmd, "1"))
@@ -320,7 +316,6 @@ void	config_process_states (trace, oldline, readfp)
     char newstate[MAXSTATELEN];
     char *line;
     int statenum=0;
-    int t;
 
     memset (&newsigst, 0, sizeof (SIGNALSTATE));
 
@@ -380,10 +375,7 @@ void	config_process_line (trace, line, readfp)
     char *line;
     FILE *readfp;
 {
-    char *tp;
-    char signal[MAXSIGLEN];
     char cmd[MAXSIGLEN];
-    char name[MAXSIGLEN];
     int value;
 
     /* Comment */
@@ -528,6 +520,20 @@ void	config_process_line (trace, line, readfp)
 	    }
 	if (DTPRINT) printf ("timerep = %d\n", trace->timerep);
 	}
+    else if (!strcmp(cmd, "PRINT_SIZE")) {
+	switch (toupper(line[0])) {
+	  case 'A':
+	    global->bsized = FALSE;
+	    break;
+	  case 'B':
+	    global->bsized = TRUE;
+	    break;
+	  default:
+	    sprintf (message, "Print_Size must be A, or B\non line %d of %s\n",
+		     line_num, current_file);
+	    dino_error_ack(trace,message);
+	    }
+	}
     else if (!strcmp(cmd, "FILE_FORMAT")) {
 	switch (toupper(line[0])) {
 	  case 'D':
@@ -536,9 +542,12 @@ void	config_process_line (trace, line, readfp)
 	  case 'T':
 	    file_format = FF_TEMPEST;
 	    break;
+	  case 'V':
+	    file_format = FF_VERILOG;
+	    break;
 	  default:
-	    if (DTPRINT) printf ("%%E, File_Format must be DECSIM or TEMPEST on config line %d\n", line_num);
-	    sprintf (message, "File_Format must be DECSIM or TEMPEST\non line %d of %s\n",
+	    if (DTPRINT) printf ("%%E, File_Format must be DECSIM, TEMPEST, or VERILOG on config line %d\n", line_num);
+	    sprintf (message, "File_Format must be DECSIM, TEMPEST or VERILOG\non line %d of %s\n",
 		     line_num, current_file);
 	    dino_error_ack(trace,message);
 	    }
@@ -581,11 +590,6 @@ void config_read_file(trace, filename, report_error)
 
     /* Open File For Reading */
     if (!(readfp=fopen(filename,"r"))) {
-	char temp[100];
-	/* Try filename .dino */
-	/* strcpy (temp, filename);
-	   strcat (temp, ".dino");
-	   if (!(readfp=fopen(temp,"r"))) */
 	if (report_error) {
 	    if (DTPRINT) printf("%%E, Can't Open File %s\n", filename);
 	    sprintf(message,"Can't open file %s",filename);

@@ -53,27 +53,14 @@ void    ps_dialog(w,trace,cb)
     XmAnyCallbackStruct	*cb;
     
 {
-    char		ps_trans_table[100];
-    XtTranslations	ps_trans_parsed;
-    static XtActionsRec	ps_action_table[] = 
-	{
-	{"ps_hit_return",	(XtActionProc)ps_hit_return},
-	{NULL,			NULL}
-	};
-    
     if (DTPRINT) printf("In print_screen - trace=%d\n",trace);
     
     if (!trace->prntscr.customize)
 	{
-	sprintf(ps_trans_table,"<KeyPress>0xff0d: ps_hit_return(%d)",trace);
-	XtAddActions(ps_action_table,1);
-	ps_trans_parsed = XtParseTranslationTable(ps_trans_table);
-	
 	XtSetArg(arglist[0],XmNdefaultPosition, TRUE);
 	XtSetArg(arglist[1],XmNwidth, 300);
 	XtSetArg(arglist[2],XmNheight, 150);
 	XtSetArg(arglist[3],XmNdialogTitle, XmStringCreateSimple("Print Screen Menu"));
-/*	XtSetArg(arglist[4], XmNtextMergeTranslations,ps_trans_parsed); */
 	trace->prntscr.customize = XmCreateBulletinBoardDialog(trace->work, "print",arglist,4);
 	
 	/* create label widget for text widget */
@@ -174,9 +161,9 @@ void    ps_dialog(w,trace,cb)
     XtSetValues(trace->prntscr.s1,arglist,1);
     
     /* reset page size */
-    XtSetArg(arglist[0], XmNset, !(trace->bsized));
+    XtSetArg(arglist[0], XmNset, !(global->bsized));
     XtSetValues(trace->prntscr.rsizea,arglist,1);
-    XtSetArg(arglist[0], XmNset, (trace->bsized));
+    XtSetArg(arglist[0], XmNset, (global->bsized));
     XtSetValues(trace->prntscr.rsizeb,arglist,1);
 
     /* if a file has been read in, make printscreen buttons active */
@@ -186,17 +173,6 @@ void    ps_dialog(w,trace,cb)
     
     /* manage the popup on the screen */
     XtManageChild(trace->prntscr.customize);
-    }
-
-void    ps_hit_return(w,ev,params,numparams)
-    Widget		w;
-    XEvent		*ev;
-    char		**params;
-    int		*numparams;
-{
-    if (DTPRINT) printf("In ps_hit_return\n");
-    
-    /* null routine to prevent <cr>'s from disturbing ps filename */
     }
 
 void    ps_numpag(w,trace,cb)
@@ -232,7 +208,7 @@ void    ps_print(w,trace,cb)
     if (DTPRINT) printf("In ps_print - trace=%d\n",trace);
     
     /* get page size */
-    trace->bsized = XmToggleButtonGetState (trace->prntscr.rsizeb);
+    global->bsized = XmToggleButtonGetState (trace->prntscr.rsizeb);
     
     /* open output file */
     psfilename = XmTextGetString (trace->prntscr.text);
@@ -270,8 +246,8 @@ void    ps_print(w,trace,cb)
 	/* output the page scaling and rf time */
 	fprintf(psfile,"%d %d %d %d %d PAGESCALE\n",
 		trace->height, trace->width, trace->sigrf,
-		(int) ( ( trace->bsized ? 11.0 :  8.5) * 72.0),
-		(int) ( ( trace->bsized ? 17.0 : 11.0) * 72.0)
+		(int) ( ( global->bsized ? 11.0 :  8.5) * 72.0),
+		(int) ( ( global->bsized ? 17.0 : 11.0) * 72.0)
 		);
 	
 	/* output the page header macro */
@@ -397,7 +373,7 @@ ps_draw(trace,psfile)
 	
 	/* Compute starting points for signal */
 	xstart = global->xstart;
-	switch( cptr->state )
+	switch( cptr->sttime.state )
 	    {
 	  case STATE_0: ystart = y2; break;
 	  case STATE_1: ystart = y1; break;
@@ -406,26 +382,26 @@ ps_draw(trace,psfile)
 	  case STATE_B32: ystart = ymdpt; break;
 	  case STATE_B64: ystart = ymdpt; break;
 	  case STATE_B96: ystart = ymdpt; break;
-	  default: printf("Error: State=%d\n",cptr->state); break;
+	  default: printf("Error: State=%d\n",cptr->sttime.state); break;
 	    }
 	
 	/* output starting positional information */
 	fprintf(psfile,"%d %d START\n",xstart,ystart);
 	
 	/* Loop as long as the time and end of trace are in current screen */
-	while ( cptr->time != EOT && xloc < xend )
+	while ( cptr->sttime.time != EOT && xloc < xend )
 	    {
 	    /* find the next transition */
-	    nptr = cptr + sig_ptr->inc;
+	    nptr = cptr + sig_ptr->lws;
 	    
 	    /* if next transition is the end, don't draw */
-	    if (nptr->time == EOT) break;
+	    if (nptr->sttime.time == EOT) break;
 	    
 	    /* find the x location for the end of this segment */
-	    xloc = nptr->time * global->res - adj;
+	    xloc = nptr->sttime.time * global->res - adj;
 	    
 	    /* Determine what the state of the signal is and build transition */
-	    switch( cptr->state ) {
+	    switch( cptr->sttime.state ) {
 	      case STATE_0: if ( xloc > xend ) xloc = xend;
 		fprintf(psfile,"%d STATE_0\n",xloc);
 		break;
@@ -462,31 +438,31 @@ ps_draw(trace,psfile)
 		
 	      case STATE_B64: if ( xloc > xend ) xloc = xend;
 		if (trace->busrep == HBUS)
-		    sprintf(strg,"%X %08X",*((unsigned int *)cptr+1),
-			    *((unsigned int *)cptr+2));
+		    sprintf(strg,"%X %08X",*((unsigned int *)cptr+2),
+			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
-		    sprintf(strg,"%o %o",*((unsigned int *)cptr+1),
-			    *((unsigned int *)cptr+2));
+		    sprintf(strg,"%o %o",*((unsigned int *)cptr+2),
+			    *((unsigned int *)cptr+1));
 		
 		fprintf(psfile,"%d (%s) STATE_B32\n",xloc,strg);
 		break;
 		
 	      case STATE_B96: if ( xloc > xend ) xloc = xend;
 		if (trace->busrep == HBUS)
-		    sprintf(strg,"%X %08X %08X",*((unsigned int *)cptr+1),
+		    sprintf(strg,"%X %08X %08X",*((unsigned int *)cptr+3),
 			    *((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+2));
+			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
-		    sprintf(strg,"%o %o %o",*((unsigned int *)cptr+1),
+		    sprintf(strg,"%o %o %o",*((unsigned int *)cptr+3),
 			    *((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+2));
+			    *((unsigned int *)cptr+1));
 		fprintf(psfile,"%d (%s) STATE_B32\n",xloc,strg);
 		break;
 		
-	      default: printf("Error: State=%d\n",cptr->state); break;
+	      default: printf("Error: State=%d\n",cptr->sttime.state); break;
 		} /* end switch */
 	    
-	    cptr += sig_ptr->inc;
+	    cptr += sig_ptr->lws;
 	    }
 	} /* end of FOR */
     

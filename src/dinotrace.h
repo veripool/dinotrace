@@ -26,7 +26,9 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V6.4Beta"
+#define DTVERSION	"Dinotrace V6.4"
+#define EXPIRATION	(60*60*24*30)	/* In seconds - Comment out define for no expiration dates */
+#undef	EXPIRATION
 
 #pragma member_alignment
 
@@ -74,12 +76,6 @@
 #define	dino_warning_ack(tr,msg)	dino_message_ack (tr, 1, msg)
 #define	dino_information_ack(tr,msg)	dino_message_ack (tr, 2, msg)
 
-/* Encodings for dt_file cvd2d */
-#define CHECK      0
-#define NOCHECK    1
-#define NOCHECKEND 2
-
-
 #define SIG_SPACE	5
 #define SIG_RF		2
 #define DELU	 5
@@ -118,8 +114,12 @@
 
 
 /* Utilities */
+#ifndef MAX
 #define MAX(_a_,_b_) ( ( ( _a_ ) > ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
+#endif
+#ifndef MIN
 #define MIN(_a_,_b_) ( ( ( _a_ ) < ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
+#endif
 
 
 extern int	DTDEBUG,		/* Debugging mode */
@@ -127,6 +127,7 @@ extern int	DTDEBUG,		/* Debugging mode */
 
 #define	FF_DECSIM	1
 #define	FF_TEMPEST	2
+#define	FF_VERILOG	3
 extern int		file_format;	/* Type of trace to support */
 
 extern char		message[100];		/* generic string for messages */
@@ -134,6 +135,9 @@ extern char		message[100];		/* generic string for messages */
 extern XGCValues	xgcv;
 
 extern Arg		arglist[20];
+
+extern int		line_num;
+extern char		*current_file;
 
 /* Grid Automatic flags */
 #define GRID_AUTO_ASS	-2
@@ -190,7 +194,7 @@ typedef struct {
     Widget b1;
     Widget b2;
     Widget b3;
-    Widget format_label, format_radio, format_decsim, format_tempest;
+    Widget format_label, format_radio, format_decsim, format_tempest, format_verilog;
     } CUSTOM_DATA;
 
 typedef struct {
@@ -256,11 +260,22 @@ typedef struct st_signalstate {
 
 /* Signal LW: A structure for each transition of each signal, */
 /* 32/64/96 state signals have an additional 1, 2, or 3 LWs after this */
-typedef struct st_signal_lw {
-    unsigned int state:3;
-    unsigned int time:29;
+typedef union un_signal_lw {
+    struct {
+	unsigned int state:3;
+	unsigned int time:29;
+	} sttime;
+    unsigned int number;
     } SIGNAL_LW;
 #define EOT	0x1FFFFFFF	/* SIGNAL_LW End of time indicator if in .time */
+
+/* Value: A signal_lw and 3 data elements */
+/* A cptr points to at least a SIGNAL_LW and at most a VALUE */
+/* since from 0 to 2 of the unsigned ints are dropped in the cptr array */
+typedef struct st_value {
+    SIGNAL_LW		siglw;
+    unsigned int	number[3];	/* [0]=bits 31-0, [1]=bits 63-32, [2]=bits 95-64 */
+    } VALUE;
 
 /* Value searching structure */
 typedef struct st_valsearch {
@@ -292,7 +307,9 @@ typedef struct st_signal {
     struct st_signal	*backward;	/* Backward link to previous signal */
 
     struct st_signal	*copyof;	/* Link to signal this is copy of (or NULL) */
-    struct st_trace	*trace;		/* Trace signal belongs to */
+    struct st_trace	*trace;		/* Trace signal belongs to (originally) */
+    /* struct st_signal	*verilog_copyof; / * Copy of another verilog signal (which has own data) */
+    struct st_signal	*verilog_next;	/* Next verilog signal with same coding */
 
     char		*signame;	/* Signal name */
     XmString		xsigname;	/* Signal name as XmString */
@@ -303,14 +320,32 @@ typedef struct st_signal {
 
     int			type;		/* Type of signal, STATE_B32, _B64, etc */
     SIGNALSTATE		*decode;	/* Pointer to decode information, NULL if none */
-    int			inc;		/* Number of LWs in a SIGNAL_LW record */
-    int			index;		/* Bit subscript of first index in a signal (<10:20> == 10) */
+    int			lws;		/* Number of LWs in a SIGNAL_LW record */
     int			blocks;		/* Number of time data blocks */
+    int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20), -1=none */
+    int			lsb_index;	/* Bit subscript of last index in a signal (<20:10> == 10), -1=none */
     int			bits;		/* Number of bits in a bus, 0=single */
-    int			file_type;	/* File specific type of trace, two/fourstate, etc */
     int			file_pos;	/* Position of the bits in the file line */
-    int			*bptr;		/* begin of time data ptr */
-    int			*cptr;		/* current time data ptr */
+    int			file_end_pos;	/* Ending position of the bits in the file line */
+
+    union {
+	struct {
+	    int		pin_input:1;	/* (Tempest) Pin is an input */
+	    int		pin_output:1;	/* (Tempest) Pin is an output */
+	    int		pin_psudo:1;	/* (Tempest) Pin is an psudo-pin */
+	    int		pin_timestamp:1; /* (Tempest) Pin is a time-stamp */
+	    int		four_state:1;	/* (Tempest, Binary) Signal is four state (U, Z) */
+	    int		perm_vector:1;	/* (Verilog) Signal is a permanent vector, don't vectorize */
+	    } flag;
+	int		flags;
+	}		file_type;	/* File specific type of trace, two/fourstate, etc */
+
+    SIGNAL_LW		*bptr;		/* begin of time data ptr */
+    SIGNAL_LW		*cptr;		/* current time data ptr */
+
+    unsigned int	value_mask[3];	/* Value Mask with 1s in bits that are to be set */
+    unsigned int	pos_mask;	/* Mask to translate file positions */
+    VALUE		file_value;	/* current state/time LW information for reading in */
     } SIGNAL;
 
 /* Trace information structure (one per window) */
@@ -371,7 +406,6 @@ typedef struct st_trace {
     int			cursor_vis;	/* True if cursors are visible */
 
     int			numpag;		/* Number of pages in dt_printscreen */
-    int			bsized;		/* True if b-sized printing in dt_printscreen */
 
     int			start_time;	/* Time of beginning of trace */
     int			end_time;	/* Time of ending of trace */
@@ -405,6 +439,8 @@ typedef struct {
 
     int			highlight_color; /* Color selected for sig/cursor highlight */
     int			goto_color;	/* Cursor color to place on a 'GOTO' -1=none */
+
+    int			bsized;		/* True if b-sized printing in dt_printscreen */
 
     int			time;		/* Time of trace at left edge of screen */
     float		res;		/* Resolution of graph width (gadgets) */

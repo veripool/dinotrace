@@ -147,7 +147,6 @@ void    cur_clr_cb(w, trace, cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    int		i;
     CURSOR	*csr_ptr;
     
     if (DTPRINT) printf("In cb_clr_cursor.\n");

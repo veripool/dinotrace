@@ -1,6 +1,8 @@
 $ qual := """"""
 $ if p1 .eqs. "DEBUG" then qual := '/debug'
-$ if p2 .eqs. "DEBUG" then qual := '/debug /noopt=(noinline,nodisjoint)'
+$ if p2 .eqs. "DEBUG" then qual := """/debug /noopt=(noinline,nodisjoint)"""
+$ write sys$output "**********************************************************************"
+$ run compile_date
 $ recomp   DINOTRACE		 'qual'	dinotrace.h callbacks.h
 $ recomp   DT_VALUE		 'qual'	dinotrace.h callbacks.h
 $ recomp   DT_CONFIG		 'qual'	dinotrace.h callbacks.h
@@ -16,5 +18,6 @@ $ recomp   DT_SIGNAL		 'qual'	dinotrace.h callbacks.h
 $ recomp   DT_UTIL		 'qual'	dinotrace.h callbacks.h
 $ recomp   DT_WINDOW		 'qual'	dinotrace.h callbacks.h
 $ recomp   DT_BINARY		 'qual'	dinotrace.h callbacks.h bintradef.h
+$ recomp   DT_VERILOG		 'qual'	dinotrace.h callbacks.h
 $ purge *.obj
 $ @link_dt 'p1'

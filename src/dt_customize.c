@@ -100,6 +100,7 @@ void cus_dialog_cb(w,trace,cb)
 	XtSetArg(arglist[2], XmNspacing, 2);
 	trace->custom.rbus = XmCreateRadioBox(trace->custom.customize,"rbus",arglist,3);
 	
+	/*
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Individual"));
 	XtSetArg(arglist[1], XmNsensitive, FALSE);
 	trace->custom.tbus1 = XmCreateToggleButton(trace->custom.rbus,"tbus1",arglist,2);
@@ -109,6 +110,7 @@ void cus_dialog_cb(w,trace,cb)
 	XtSetArg(arglist[1], XmNsensitive, FALSE);
 	trace->custom.tbus2 = XmCreateToggleButton(trace->custom.rbus,"tbus2",arglist,2);
 	XtManageChild(trace->custom.tbus2);
+	*/
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Octal"));
 	trace->custom.tbus3 = XmCreateToggleButton(trace->custom.rbus,"tbus3",arglist,1);
@@ -160,6 +162,10 @@ void cus_dialog_cb(w,trace,cb)
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Tempest CCLI"));
 	trace->custom.format_tempest = XmCreateToggleButton(trace->custom.format_radio,"fmttmp",arglist,1);
 	XtManageChild(trace->custom.format_tempest);
+	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Verilog DMP"));
+	trace->custom.format_verilog = XmCreateToggleButton(trace->custom.format_radio,"fmtvlg",arglist,1);
+	XtManageChild(trace->custom.format_verilog);
 	
 	/* Create signal height slider */
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Signal Height"));
@@ -255,6 +261,8 @@ void cus_dialog_cb(w,trace,cb)
     XtSetValues(trace->custom.format_decsim,arglist,1);
     XtSetArg(arglist[0], XmNset, (file_format==FF_TEMPEST));
     XtSetValues(trace->custom.format_tempest,arglist,1);
+    XtSetArg(arglist[0], XmNset, (file_format==FF_VERILOG));
+    XtSetValues(trace->custom.format_verilog,arglist,1);
     
     XtSetArg(arglist[0], XmNvalue, trace->sighgt);
     XtSetValues(trace->custom.s1,arglist,1);
@@ -315,14 +323,6 @@ void	cus_restore_cb(w,trace,cb)
     redraw_all (trace);
     }
 
-void	cus_save_cb(w,trace,cb)
-    Widget			w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
-{
-    if (DTPRINT) printf("in cus_save_cb trace=%d\n",trace);
-    }
-
 void	cus_ok_cb(w,trace,cb)
     Widget			w;
     TRACE		*trace;
@@ -354,7 +354,10 @@ void	cus_ok_cb(w,trace,cb)
     
     if (XmToggleButtonGetState (trace->custom.format_decsim))
 	file_format = FF_DECSIM;
-    else file_format = FF_TEMPEST;
+    if (XmToggleButtonGetState (trace->custom.format_tempest))
+	file_format = FF_TEMPEST;
+    if (XmToggleButtonGetState (trace->custom.format_verilog))
+	file_format = FF_VERILOG;
 
     /* hide the customize window */
     XtUnmanageChild(trace->custom.customize);

@@ -42,6 +42,51 @@
 
 /****************************** UTILITIES ******************************/
 
+void sig_free (trace, sig_ptr, select, recursive)
+    /* Free a signal structure, and unlink all traces of it */
+    TRACE	*trace;
+    SIGNAL	*sig_ptr;	/* Pointer to signal to be deleted */
+    int		select;		/* True = selectively pick trace's signals from the list */
+    int		recursive;	/* True = recursively do the entire list */
+{
+    SIGNAL	*del_sig_ptr;
+    TRACE	*trace_ptr;
+
+    /* loop and free signal data and each signal structure */
+    while (sig_ptr) {
+	if (!select || sig_ptr->trace == trace) {
+	    /* Check head pointers */
+	    for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
+		if ( sig_ptr == trace_ptr->dispsig )
+		    trace_ptr->dispsig = sig_ptr->forward;
+		if ( sig_ptr == trace_ptr->firstsig )
+		    trace_ptr->firstsig = sig_ptr->forward;
+		}
+	    if ( sig_ptr == global->delsig )
+		global->delsig = sig_ptr->forward;
+
+	    /* free the signal data */
+	    del_sig_ptr = sig_ptr;
+
+	    if (sig_ptr->forward)
+		((SIGNAL *)(sig_ptr->forward))->backward = sig_ptr->backward;
+	    if (sig_ptr->backward)
+		((SIGNAL *)(sig_ptr->backward))->forward = sig_ptr->forward;
+	    sig_ptr = sig_ptr->forward;
+	
+	    /* free the signal structure */
+	    if (del_sig_ptr->copyof == NULL) XtFree (del_sig_ptr->bptr);
+	    XtFree (del_sig_ptr->signame);
+	    XtFree (del_sig_ptr->xsigname);
+	    XtFree (del_sig_ptr);
+	    }
+	else {
+	    sig_ptr = sig_ptr->forward;
+	    }
+	if (!recursive) sig_ptr=NULL;
+	}
+    }
+
 void    remove_signal_from_queue(trace, sig_ptr)
     TRACE	*trace;
     SIGNAL	*sig_ptr;	/* Signal to remove */
@@ -346,23 +391,6 @@ void    sig_highlight_cb(w,trace,cb)
     set_cursor (trace, DC_SIG_HIGHLIGHT);
     add_event (ButtonPressMask, sig_highlight_ev);
     }
-
-void    sig_reset_cb(w,trace,cb)
-    Widget			w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
-{
-    if (DTPRINT) printf("In sig_reset_cb - trace=%d\n",trace);
-    
-    /* remove any previous events */
-    remove_all_events(trace);
-    
-    /* unmanage the popup on the screen */
-    XtUnmanageChild(trace->signal.add);
-    
-    /* ADD RESET CODE !!! */
-    }
-
 
 void    sig_search_cb(w,trace,cb)
     Widget		w;

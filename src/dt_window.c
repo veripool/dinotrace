@@ -33,6 +33,7 @@
 #include <Xm/CascadeBP.h>
 #include <Xm/BulletinB.h>
 #include <Xm/PushB.h>
+#include <Xm/PushBG.h>
 #include <Xm/ToggleB.h>
 #include <Xm/Text.h>
 
@@ -413,7 +414,6 @@ void    win_goto_cb(w,trace,cb)
     XmSelectionBoxCallbackStruct *cb;
 {
     int		i;
-    char	strg[40];
     
     if (DTPRINT) printf("In win_goto_cb - trace=%d\n",trace);
     

@@ -108,8 +108,8 @@ void draw(trace)
     SIGNAL *sig_ptr;			/* Current signal being printed */
     CURSOR *csr_ptr;			/* Current cursor being printed */
     unsigned int value;
-    int temp_color=0;
-    char temp_strg[20];
+    /* int temp_color=0; */
+    /* char temp_strg[20]; */
     int end_time;
     
     if (DTPRINT) printf("In draw - filename=%s\n",trace->filename);
@@ -166,7 +166,7 @@ void draw(trace)
 	
 	/* Compute starting points for signal */
 	Pts[cnt].x = global->xstart - trace->sigrf;
-	switch( cptr->state ) {
+	switch( cptr->sttime.state ) {
 	  case STATE_0: Pts[cnt].y = y2; break;
 	  case STATE_1: Pts[cnt].y = y1; break;
 	  case STATE_U: Pts[cnt].y = ymdpt; break;
@@ -174,23 +174,23 @@ void draw(trace)
 	  case STATE_B32: Pts[cnt].y = ymdpt; break;
 	  case STATE_B64: Pts[cnt].y = ymdpt; break;
 	  case STATE_B96: Pts[cnt].y = ymdpt; break;
-	  default: printf("Error: State=%d\n",cptr->state); break;
+	  default: printf("Error: State=%d\n",cptr->sttime.state); break;
 	    }
 	
 	/* Loop as long as the time and end of trace are in current screen */
-	while ( cptr->time != EOT && Pts[cnt].x < xend && cnt < 5000) {
+	while ( cptr->sttime.time != EOT && Pts[cnt].x < xend && cnt < 5000) {
 
 	    /* find the next transition */
-	    nptr = cptr + sig_ptr->inc;
+	    nptr = cptr + sig_ptr->lws;
 	    
 	    /* if next transition is the end, don't draw */
-	    if (nptr->time == EOT) break;
+	    if (nptr->sttime.time == EOT) break;
 	    
 	    /* find the x location for the end of this segment */
-	    xloc = nptr->time * global->res - adj;
+	    xloc = nptr->sttime.time * global->res - adj;
 	    
 	    /* Determine what the state of the signal is and build transition */
-	    switch( cptr->state ) {
+	    switch( cptr->sttime.state ) {
 	      case STATE_0:
 		if ( xloc > xend ) xloc = xend;
 		Pts[cnt+1].x = Pts[cnt].x+trace->sigrf; Pts[cnt+1].y = y2;
@@ -267,7 +267,7 @@ void draw(trace)
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->val_srch[i].value[2]==value ) ) {
+			if ( ( global->val_srch[i].value[0]==value ) ) {
 			    srch_this_color = global->val_srch[i].color;
 			    break;
 			    }
@@ -280,17 +280,17 @@ void draw(trace)
 		if ( xloc > xend ) xloc = xend;
 
 		if (trace->busrep == HBUS)
-		    sprintf(strg,"%X %08X",*((unsigned int *)cptr+1),
-			    *((unsigned int *)cptr+2));
+		    sprintf(strg,"%X %08X",*((unsigned int *)cptr+2),
+			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
-		    sprintf(strg,"%o %o",*((unsigned int *)cptr+1),
-			    *((unsigned int *)cptr+2));
+		    sprintf(strg,"%o %o",*((unsigned int *)cptr+2),
+			    *((unsigned int *)cptr+1));
 		
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->val_srch[i].value[2]== *((unsigned int *)cptr+2) )
-			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+1) ) ) {
+			if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
+			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) ) ) {
 			    srch_this_color = global->val_srch[i].color;
 			    break;
 			    }
@@ -303,13 +303,13 @@ void draw(trace)
 		if ( xloc > xend ) xloc = xend;
 
 		if (trace->busrep == HBUS)
-		    sprintf(strg,"%X %08X %08X",*((unsigned int *)cptr+1),
+		    sprintf(strg,"%X %08X %08X",*((unsigned int *)cptr+3),
 			    *((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+3));
+			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
-		    sprintf(strg,"%o %o %o",*((unsigned int *)cptr+1),
+		    sprintf(strg,"%o %o %o",*((unsigned int *)cptr+3),
 			    *((unsigned int *)cptr+2),
-			    *((unsigned int *)cptr+3));
+			    *((unsigned int *)cptr+1));
 		
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
@@ -362,11 +362,11 @@ void draw(trace)
 		break;
 		
 	      default:
-		printf("Error: State=%d\n",cptr->state); break;
+		printf("Error: State=%d\n",cptr->sttime.state); break;
 		} /* end switch */
 	    
 	    cnt += 2;
-	    cptr += sig_ptr->inc;
+	    cptr += sig_ptr->lws;
 	    }
         cnt++;
 	

@@ -46,10 +46,6 @@
 #include "bigdino.bit"
 
 
-
-Widget *othertop;
-
-
 void set_cursor (trace, cursor_num)
     TRACE	*trace;			/* Display information */
     int		cursor_num;		/* Entry in xcursors to display */

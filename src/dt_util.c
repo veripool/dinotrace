@@ -112,16 +112,16 @@ char *date_string()
     }
 
 
-void    unmanage_cb (widget, tag, reason )
+void    unmanage_cb (w, tag, cb )
     /* Generic unmanage routine, usually for cancel buttons */
-    Widget		widget;
+    Widget		w;
     Widget		*tag;
-    XmAnyCallbackStruct *reason;
+    XmAnyCallbackStruct *cb;
 {
     if (DTPRINT) printf("In unmanage_cb\n");
     
     /* unmanage the widget */
-    XtUnmanageChild(widget);
+    XtUnmanageChild(w);
     }
 
 void    cancel_all_events(w,trace,cb)
@@ -146,14 +146,15 @@ void    update_scrollbar(w,value,inc,min,max,size)
     if (DTPRINT) printf("In update_scrollbar - %d %d %d %d %d\n",
 			value, inc, min, max, size);
 
-    if (min==max) {
+    if (min >= max) {
 	XtSetArg(arglist[0], XmNsensitive, FALSE);
 	min=0; max=1; inc=1; size=1; value=0;
 	}
     else {
 	XtSetArg(arglist[0], XmNsensitive, TRUE);
 	}
-    
+
+    if (size < 1) size=1;
     if (value > (max - size)) value = max - size;
     if (value < min) value = min;
 
@@ -235,23 +236,23 @@ void new_time(trace)
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    /* if (DTPRINT)
-	       printf("next time=%d\n",(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time);
+	       printf("next time=%d\n",(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time);
 	       */
 	
 	    if ( !sig_ptr->cptr ) {
 		sig_ptr->cptr = sig_ptr->bptr;
 		}
 
-	    if (global->time >= (*(SIGNAL_LW *)(sig_ptr->cptr)).time ) {
-		while (((*(SIGNAL_LW *)(sig_ptr->cptr)).time != EOT) &&
-		       (global->time > (*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time)) {
-		    (sig_ptr->cptr) += sig_ptr->inc;
+	    if (global->time >= (*(SIGNAL_LW *)(sig_ptr->cptr)).sttime.time ) {
+		while (((*(SIGNAL_LW *)(sig_ptr->cptr)).sttime.time != EOT) &&
+		       (global->time > (*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time)) {
+		    (sig_ptr->cptr) += sig_ptr->lws;
 		    }
 		}
 	    else {
 		while ((sig_ptr->cptr > sig_ptr->bptr) &&
-		       (global->time < (*(SIGNAL_LW *)(sig_ptr->cptr)).time)) {
-		    (sig_ptr->cptr) -= sig_ptr->inc;
+		       (global->time < (*(SIGNAL_LW *)(sig_ptr->cptr)).sttime.time)) {
+		    (sig_ptr->cptr) -= sig_ptr->lws;
 		    }
 		}
 	    }
@@ -302,7 +303,7 @@ void get_geometry( trace )
 void print_geometry( trace )
     TRACE	*trace;
 {
-    int		temp,x,y,width,height,dret,max_y;
+    int		x,y,width,height,dret;
     
     XGetGeometry( global->display, XtWindow(trace->work), &dret,
 		 &x, &y, &width, &height, &dret, &dret);
@@ -339,6 +340,8 @@ void  get_file_name( trace )
 	pattern = "*.tra";
     else if ( file_format == FF_TEMPEST )
 	pattern = "*.bt";
+    else if ( file_format == FF_VERILOG )
+	pattern = "*.dmp";
     
     strcat (mask, pattern);
     XtSetArg(arglist[0], XmNdirMask, XmStringCreateSimple(mask) );
@@ -348,10 +351,10 @@ void  get_file_name( trace )
     XSync(global->display,0);
     }
 
-void cb_fil_ok(widget, trace, reason)
-    Widget	widget;
+void cb_fil_ok(w, trace, cb)
+    Widget	w;
     TRACE	*trace;
-    XmFileSelectionBoxCallbackStruct *reason;
+    XmFileSelectionBoxCallbackStruct *cb;
 {
     char *tmp;
     
@@ -365,7 +368,7 @@ void cb_fil_ok(widget, trace, reason)
     XtUnmanageChild(trace->fileselect);
     XSync(global->display,0);
     
-    tmp = extract_first_xms_segment(reason->value);
+    tmp = extract_first_xms_segment(cb->value);
     if (DTPRINT) printf("filename=%s\n",tmp);
     
     strcpy (trace->filename, tmp);
@@ -377,10 +380,10 @@ void cb_fil_ok(widget, trace, reason)
     }
 
 
-void cb_fil_can( widget, trace, reason )
-    Widget	widget;
+void cb_fil_can( w, trace, cb )
+    Widget	w;
     TRACE	*trace;
-    XmFileSelectionBoxCallbackStruct *reason;
+    XmFileSelectionBoxCallbackStruct *cb;
 {
     if (DTPRINT) printf("In cb_fil_can trace=%d\n",trace);
     
@@ -431,19 +434,19 @@ void get_data_popup(trace,string,type)
     XtManageChild(trace->prompt_popup);
     }
 
-void    cb_prompt_cancel( widget, trace, reason )
-    Widget		widget;
+void    cb_prompt_cancel( w, trace, cb )
+    Widget		w;
     TRACE	*trace;
-    XmAnyCallbackStruct *reason;
+    XmAnyCallbackStruct *cb;
 {
     if (DTPRINT) printf("In cb_prompt_cancel\n");
     XtUnmanageChild(trace->prompt_popup);
     }
 
-void    cb_prompt_ok(w, trace, reason)
+void    cb_prompt_ok(w, trace, cb)
     Widget		w;
     TRACE	*trace;
-    XmSelectionBoxCallbackStruct *reason;
+    XmSelectionBoxCallbackStruct *cb;
 {
     char	*valstr;
     int		tempi;
@@ -451,7 +454,7 @@ void    cb_prompt_ok(w, trace, reason)
     if (DTPRINT) printf("In cb_prompt_ok type=%d\n",trace->prompt_type);
     
     /* Get value */
-    valstr = extract_first_xms_segment (reason->value);
+    valstr = extract_first_xms_segment (cb->value);
     tempi = atoi(valstr);
 
     /* unmanage the popup window */
@@ -515,8 +518,8 @@ void dino_message_ack(trace, type, msg)
     char		*msg;
 {
     static	MAPPED=FALSE;
-    static Widget message;
-    Arg		arglist[10];
+    static Widget message_wgt;
+    Arg		msg_arglist[10];	/* Local copy so don't munge global args */
     XmString	xsout;
     
     if (DTPRINT) printf("In dino_message_ack msg=%s\n",msg);
@@ -524,21 +527,21 @@ void dino_message_ack(trace, type, msg)
     /* create the widget if it hasn't already been */
     if (!MAPPED)
 	{
-	XtSetArg(arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg(msg_arglist[0], XmNdefaultPosition, TRUE);
 	switch (type) {
 	  case 2:
-	    message = XmCreateInformationDialog(trace->work, "info", arglist, 1);
+	    message_wgt = XmCreateInformationDialog(trace->work, "info", msg_arglist, 1);
 	    break;
 	  case 1:
-	    message = XmCreateWarningDialog(trace->work, "warning", arglist, 1);
+	    message_wgt = XmCreateWarningDialog(trace->work, "warning", msg_arglist, 1);
 	    break;
 	  default:
-	    message = XmCreateErrorDialog(trace->work, "error", arglist, 1);
+	    message_wgt = XmCreateErrorDialog(trace->work, "error", msg_arglist, 1);
 	    break;
 	    }
-	XtAddCallback(message, XmNokCallback, unmanage_cb, trace);
-	XtUnmanageChild( XmMessageBoxGetChild (message, XmDIALOG_CANCEL_BUTTON));
-	XtUnmanageChild( XmMessageBoxGetChild (message, XmDIALOG_HELP_BUTTON));
+	XtAddCallback(message_wgt, XmNokCallback, unmanage_cb, trace);
+	XtUnmanageChild( XmMessageBoxGetChild (message_wgt, XmDIALOG_CANCEL_BUTTON));
+	XtUnmanageChild( XmMessageBoxGetChild (message_wgt, XmDIALOG_HELP_BUTTON));
 	MAPPED=TRUE;
 	}
 
@@ -546,12 +549,12 @@ void dino_message_ack(trace, type, msg)
     xsout = string_create_with_cr (msg);
     
     /* change the label value and location */
-    XtSetArg(arglist[0], XmNmessageString, xsout);
-    XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple("Dinotrace Message") );
-    XtSetValues(message,arglist,2);
+    XtSetArg(msg_arglist[0], XmNmessageString, xsout);
+    XtSetArg(msg_arglist[1], XmNdialogTitle, XmStringCreateSimple("Dinotrace Message") );
+    XtSetValues(message_wgt,msg_arglist,2);
     
     /* manage the widget */
-    XtManageChild(message);
+    XtManageChild(message_wgt);
     }
 
 /******************************************************************************
@@ -560,7 +563,7 @@ void dino_message_ack(trace, type, msg)
  *
  *****************************************************************************/
 
-DINO_NUMBER_TO_VALUE(num)
+void DINO_NUMBER_TO_VALUE(num)
     int	num;
 {
     switch(num)
@@ -595,30 +598,57 @@ void    print_sig_names(w,trace)
     Widget		w;
     TRACE	*trace;
 {
-    SIGNAL	*sig_ptr;
+    SIGNAL	*sig_ptr, *back_sig_ptr;
 
     if (DTPRINT) printf ("In print_sig_names\n");
 
     printf ("  Number of signals = %d\n", trace->numsig);
 
     /* loop thru each signal */
+    back_sig_ptr = NULL;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	printf (" Sig '%s'  ty=%d inc=%d index=%d btyp=%d bpos=%d bits=%d\n",
-		sig_ptr->signame, sig_ptr->type, sig_ptr->inc,
-		sig_ptr->index,
-		sig_ptr->file_type, sig_ptr->file_pos, sig_ptr->bits
+	printf (" Sig '%s'  ty=%d inc=%d index=%d-%d btyp=%d bpos=%d bits=%d\n",
+		sig_ptr->signame, sig_ptr->type, sig_ptr->lws,
+		sig_ptr->msb_index, sig_ptr->lsb_index,
+		sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->bits
 		);
+	if (sig_ptr->backward != back_sig_ptr) {
+	    printf (" %%E, Backward link is to '%d' not '%d'\n", sig_ptr->backward, back_sig_ptr);
+	    }
+	back_sig_ptr = sig_ptr;
 	}
     
     /* print_signal_states (trace); */
     }
 
-void    print_all_traces(w,trace)
-    Widget		w;
-    TRACE	*trace;
+void    print_cptr (cptr)
+    SIGNAL_LW	*cptr;
 {
-    printf("In print_all_traces.\n");
+    DINO_NUMBER_TO_VALUE(cptr->sttime.state);
+    printf(" at time %d ns",cptr->sttime.time);
+	
+    switch (cptr->sttime.state) {
+      case STATE_B32:
+	printf(" with a value of %x\n",(cptr+1)->number);
+	break;
+	
+      case STATE_B64:
+	printf(" with a value of %X %08X",(cptr+2)->number,
+	       (cptr+2)->number);
+	break;
+	
+      case STATE_B96:
+	printf(" with a value of %X %08X %08X",(cptr+3)->number,
+	       (cptr+2)->number,
+	       (cptr+1)->number);
+	break;
+	
+      default:
+	printf("\n");
+	break;
+	}
     }
+
 
 void    print_screen_traces(w,trace)
     Widget		w;
@@ -647,52 +677,15 @@ void    print_screen_traces(w,trace)
     
     cptr = (SIGNAL_LW *)sig_ptr->cptr;
     
-    printf("Signal %s starts at %d with a value of ",sig_ptr->signame,cptr->time);
-    DINO_NUMBER_TO_VALUE(cptr->state);
+    printf("Signal %s starts at %d with a value of ",sig_ptr->signame,cptr->sttime.time);
+    DINO_NUMBER_TO_VALUE(cptr->sttime.state);
     printf("\n");
     
-    while( cptr->time != 0x1FFFFFFF &&
-	  (cptr->time*global->res-adj) < trace->width - XMARGIN)
+    while( cptr->sttime.time != 0x1FFFFFFF &&
+	  (cptr->sttime.time*global->res-adj) < trace->width - XMARGIN)
 	{
-	DINO_NUMBER_TO_VALUE(cptr->state);
-	printf(" at time %d ns",cptr->time);
-	
-	if ( cptr->state >= STATE_B32 )
-	    {
-	    switch(sig_ptr->type)
-		{
-	      case STATE_B32:
-		cptr++;
-		printf(" with a value of %x\n",*((unsigned int *)cptr));
-		break;
-		
-	      case STATE_B64:
-		cptr++;
-		printf(" with a value of %x ",*((unsigned int *)cptr));
-		cptr++;
-		printf("%x\n",*((unsigned int *)cptr));
-		break;
-		
-	      case STATE_B96:
-		cptr++;
-		printf(" with a value of %x ",*((unsigned int *)cptr));
-		cptr++;
-		printf("%x ",*((unsigned int *)cptr));
-		cptr++;
-		printf("%x\n",*((unsigned int *)cptr));
-		break;
-		
-	      default:
-		printf("Error: Bad sig_ptr->type=%d\n",sig_ptr->type);
-		break;
-		}
-	    cptr++;
-	    }
-	else
-	    {
-	    printf("\n");
-	    cptr += sig_ptr->inc;
-	    }
+	print_cptr (cptr);
+	cptr += sig_ptr->lws;
 	}
     }
 

@@ -1,8 +1,7 @@
 
 char dinopost[] = "%\n\
-% Allen Gallotta May-90 DINO.POST\n\
-% Modified 1/4/93 by snyder@ricks.enet.dec.com\n\
-% Contains Postscript Header and Routines for DINOTRACE\n\
+% DinoTrace Version 6.3 Postscript\n\
+% Last Modified 8/9/93 by Wilson Snyder, RICKS::SNYDER\n\
 %\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
@@ -34,7 +33,7 @@ char dinopost[] = "%\n\
   /Helvetica-BoldOblique findfont 30 scalefont setfont % choose large font\n\
   1 setlinecap 1 setlinejoin 1 setlinewidth	% set line char\n\
 \n\
-  20 20 MT 15 string cvs true charpath stroke	% draw logo\n\
+  20 20 MT 20 string cvs true charpath stroke	% draw logo\n\
   650 20 MT (Page ) true charpath		% draw PAGE\n\
   3 string cvs true charpath stroke		% draw page number\n\
 \n\
