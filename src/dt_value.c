@@ -1017,7 +1017,12 @@ static void    val_examine_popup (
     /* Don't manage this guy, he's just a container */
     XtSetArg (arglist[0], XmNallowShellResize, FALSE);
     XtSetArg (arglist[1], XmNshadowThickness, 2);
+#if 1  /* If you get a error on the above, try changing the 1 to a 0 */
     trace->examine.popup = (Widget)XmCreateGrabShell (trace->main, "examinepopup", arglist, 2);
+#else    
+    trace->examine.popup = XtCreatePopupShell
+	("examinepopup", overrideShellWidgetClass, trace->main, arglist, 1);
+#endif
     
     /* Row column for a nice border */
     /* For Lesstif we used to have MENU_POPUP, but that has mouse side effects */
