@@ -1,5 +1,5 @@
 Dinotrace NEWS --  history of user-visible changes.
-Copyright (C) 1998-2003 Wilson Snyder.
+Copyright (C) 1998-2004 Wilson Snyder.
 Copyright (C) 1992-1997 Digital Equipment Corportation.
 See the end for copying conditions.
 
@@ -7,14 +7,15 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-* Changes in Dinotrace 9.1k ****
+* Changes in Dinotrace 9.1m 04/21/2004
 
-****	Fixed buffer overrun bugs.  [Samuel Ho]
+***	Fix duplicate and embeded __en cosmos signals. [Krishna Rangan]
+
+****	Fix buffer overrun bugs.  [Samuel Ho]
 
 * Changes in Dinotrace 9.1k 06/06/2003
 
 ****	Fix crash with busses that are replicated with different widths.
-
 
 * Changes in Dinotrace 9.1j 03/22/2003
 
@@ -1012,7 +1013,7 @@ $Id$
 -----------------------------------------------------------------------------
 Copyright information:
 
-Copyright (C) 2003 Wilson Snyder
+Copyright (C) 1998-2004 Wilson Snyder
 
    Permission is granted to anyone to make or distribute verbatim copies of
    this document as received, in any medium, provided that the copyright

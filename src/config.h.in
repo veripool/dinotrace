@@ -34,7 +34,7 @@
 /**********************************************************************/
 /**** Version and host name */
 
-#define DTVERSION	"Dinotrace 9.1k"
+#define DTVERSION	"Dinotrace 9.1m"
 
 /* When this version will expire */
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
