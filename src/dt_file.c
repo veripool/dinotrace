@@ -832,7 +832,6 @@ void	update_signal_states (trace)
 	    if (twohigh1 && twohigh2 && twohigh3) {
 		/* Clocks are symmetric, override twohigh */
 		trace->grid_res_auto = GRID_RES_AUTO;
-		trace->grid_res /= 2;
 		}
 	    break;
 	    }
