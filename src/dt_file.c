@@ -281,6 +281,9 @@ void fil_read_cb (trace)
 	}
 #endif
 
+    /* Now add EOT to each signal and reset the cptr */
+    read_trace_end (trace);
+
     /* Change the name on title bar to filename */
     change_title (trace);
     
@@ -1147,8 +1150,6 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	}
 
     XtFree (header_start);
-
-    read_trace_end (trace);
 
     /* Mark format as may have presumed binary */
     trace->fileformat = FF_DECSIM_ASCII;

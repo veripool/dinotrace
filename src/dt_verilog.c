@@ -747,9 +747,6 @@ void verilog_read (trace, read_fd)
 
     /* Free up */
     DFree (signal_by_pos);
-
-    /* Now add EOT to each signal and reset the cptr */
-    read_trace_end (trace);
     }
 
 

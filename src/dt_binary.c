@@ -541,8 +541,6 @@ void decsim_read_binary (trace, read_fd)
 	sig_ptr->color = 0;
 	}
 	*/
-
-    read_trace_end (trace);
     }
 #endif /* VMS */
 
@@ -715,9 +713,6 @@ void tempest_read (trace, read_fd)
 	first_data = FALSE;
 	}/* end for */
 
-    /* Now add EOT to each signal and reset the cptr */
-    read_trace_end (trace);
-
-    XtFree ((char *)data);
+    DFree (data);
     }
 
