@@ -1,6 +1,6 @@
 \input texinfo @c -*-texinfo-*-
 @c %**start of header
-@stfilename install.info
+@setfilename install.info
 @settitle Dinotrace Installation
 @c %**end of header
 
@@ -264,8 +264,7 @@ Look for Dinotrace's source code in directory @var{dir}.  Usually
 @node NT Installation,  , Unix Installation
 @section NT Installation
 
-Dinotrace can be built for Windows 95, Windows 98 and Windows NT under
-the Cygwin32 environment.
+Dinotrace can be built for Windows under the Cygwin32 environment.
 
 @subsection Binary Installation
 
@@ -284,6 +283,8 @@ work with Cygwin Beta 20.1,
 After downloading, click on the executable and install, preferably
 accepting the default location of @file{C:/Cygnus/B20}.
 @item
+Cygwin now comes with XFree86 as a option, you'll want it.
+@item
 As in the Cygwin readme, be sure to setup ld.exe and sh.exe:
 @example
 mkdir /bin
@@ -293,34 +294,34 @@ cp /Cygnus/B20/cygwin-b20/H-i586-cygwin/bin/sh.exe /bin
 @end enumerate
 
 @item
-Install LessTIF and X11R6.4.  A port that works with Cygwin32 and
-provides X11R6.4 is available at
-@uref{http://sourceware.cygnus.com/cygwin/}.  At last count it was
-called something like @file{x11r6.4-cygwin-b20.1.tar.gz}.
+Install LessTIF.  A port that works with Cygwin32 is available at
+@uref{ftp://ftp.lesstif.org/pub/hungry/lesstif/srcdist/}.  At last
+count it was called something like @file{lesstif-0.93.34.tar.bz2}.
+Place it into @file{/cygwin}.
 
 @enumerate
 @item
-After downloading, enter the cygwin shell.
-@item
-Gunzip the file and UN tar @emph{while in} /usr.  This will create a
-/usr/X11R6.4 directory.  Do not move it, even though the documentation
-suggests you can, this directory is hard-coded in the X11 executables.
+After downloading, enter the cygwin shell.  From the LessTif INSTALL.TXT:
 @example
-cd /usr
-gunzip x11r6.4-cygwin-b20.1.tar.gz
-tar xvf x11r6.4-cygwin-b20.1.tar.gz
+cd /
+bunzip2 lesstif-0.93.34.tar.bz2
+tar xvf lesstif-0.93.34.tar
 @end example
 
 @item
-Add /usr/X11R6.4/bin to your PATH, using the Control
-Panel/System/Enviornment requester.
+Configure make and install.
+@example
+./configure
+make
+make install
+@end example
+
 @end enumerate
 
 @item
-Obtain a X11 server.  If you're using Unix you probably already have the
-commercial @strong{eXcursion} or @strong{exceed} programs, and are all set.
-There are also public domain versions, such as @strong{MI/X} available from
-@uref{http://tnt.microimages.com/www/html/freestuf/mix/}.
+Obtain a X11 server.  You can use XFree86 that came with cygwin.
+Another alternative is the commercial @strong{eXcursion} or
+@strong{exceed} programs.
 
 @item
 Download the Dinotrace kit, if not done previously.
@@ -328,11 +329,11 @@ Download the Dinotrace kit, if not done previously.
 @item
 Set your X11 Display.  If you'll only be using it locally, 
 use the Control Panel/System/Enviornment requester to add a DISPLAY
-environment variable with the value :0.0
+environment variable with the value :0
 
 Or, in the cygwin shell before each run of Dinotrace do
 @example
-DISPLAY=:0.0
+DISPLAY=:0
 export DISPLAY
 @end example
 
@@ -340,9 +341,12 @@ export DISPLAY
 Reboot or restart the shells to pick up the new environment variables.
 
 @item
-The Dinotrace executable should work, it's under
-@file{bin/dinotrace-i386-pc-cygwin32.exe}  Make a shortcut to the executable
-or add it to your path.
+Make and install dinotrace.
+@example
+./configure
+make
+make install
+@end example
 
 @item
 There are known problems in LessTif from looking at network drives in the

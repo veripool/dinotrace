@@ -240,18 +240,19 @@ The people who have contributed code or other major functionality are
 Allen Gallotta, Steve Hoover, Nathan Hughes, and Craig Ziegler.
 
 Some of the people who have provided ideas and feedback for Dinotrace
-include Edward Arthur, Sally Barry, Josh Belkin, Yifat Ben-Shachar, Lee
-Bradshaw, Rachel Berman, Sass Berman, Mike Blake, Serge Bogdanov, Ronen
-Boneh, Gregg Bouchard, Derek Bosch, Bill Bruce, Lauren Carlson, Paul
-Chan, Ta-Chung Chang, David Chen, Dave Colson, Derrick Dacosta, Erik
-Debriae, Paul Dormitzer, Duane Galbi, Allen Gallotta, Steve Glaser, Mike
-Goulet, Larry Gust, Larry Herman, Dave Horan, Steve Hoover, Nathan
-Hughes, Tom Hunt, Tracey Jones, Mike Kagen, Dan Katz, Sol Katzman, Steve
-Kolecki, Steve Lang, Charlie Lind, Dan Lussier, Ben Marshall, Bob
-McNamara, Harunobu Miyashita, John Murphy, Aki Niimura, Lisa Noack,
-Mitch Norcross, Michael Quadri, Reinhard Schumann, Simcha, Jai Singh,
-Dean Sovie, Julie Staraitis, Dominik Strasser, Bob Walsh, Paul Wasson,
-Steve Wilson, Bob Yodlowski, and Craig Ziegler.
+include Edward Arthur, Sally Barry, Josh Belkin, Yifat Ben-Shachar,
+Lee Bradshaw, Rachel Berman, Sass Berman, Mike Blake, Serge Bogdanov,
+Ronen Boneh, Gregg Bouchard, Derek Bosch, Bill Bruce, Lauren Carlson,
+Paul Chan, Ta-Chung Chang, David Chen, Dave Colson, Derrick Dacosta,
+Erik Debriae, Paul Dormitzer, Duane Galbi, Allen Gallotta, Steve
+Glaser, Mike Goulet, Larry Gust, Larry Herman, Dave Horan, Steve
+Hoover, Nathan Hughes, Tom Hunt, Tracey Jones, Mike Kagen, Dan Katz,
+Sol Katzman, Steve Kolecki, Steve Lang, Charlie Lind, Greg Loxtercamp,
+Dan Lussier, Ben Marshall, Bob McNamara, Harunobu Miyashita, John
+Murphy, Aki Niimura, Lisa Noack, Mitch Norcross, Michael Quadri,
+Reinhard Schumann, Simcha, Jai Singh, Dean Sovie, Julie Staraitis,
+Dominik Strasser, Bob Walsh, Paul Wasson, Steve Wilson, Bob Yodlowski,
+and Craig Ziegler.
 
 @c ======================================================================
 @node Invoking Dinotrace, Screen Description, History, Top
