@@ -12,7 +12,7 @@
  *
  * Some of the code in this file was originally developed for Digital
  * Semiconductor, a division of Digital Equipment Corporation.  They
- * gratefuly have agreed to share it, and thus the bas version has been
+ * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
  * 
@@ -356,6 +356,7 @@ void init_globals (void)
     global->res = RES_SCALE/ (float)(250);
     global->res_default = TRUE;
 
+    global->save_duplicates = TRUE;
     global->preserved_trace = NULL;
     global->selected_sig = NULL;
     global->cursor_head = NULL;
