@@ -167,6 +167,7 @@ extern void
     config_trace_defaults (TRACE *),
     config_global_defaults (void),
     config_parse_geometry (char *, GEOMETRY *);
+extern void config_update_filenames (TRACE *trace);
 extern SIGNALSTATE *find_signal_state (TRACE *, char *);
 extern int	wildmat ();
     
@@ -210,6 +211,7 @@ extern void
     val_highlight_cb(), val_highlight_ev(),
     val_update_search();
 extern void val_states_update();
+extern void cptr_to_search_value ();
     
 /* dt_printscreen routines */
 extern void
@@ -229,6 +231,7 @@ extern void
     fil_string_to_value(),
     decsim_read_ascii(), 
     read_trace_end(), help_cb(), help_trace_cb(), help_doc_cb();
+extern void  fil_select_set_pattern (TRACE *trace, Widget dialog, char *pattern);
 extern void fgets_dynamic ();
 #ifndef fil_add_cptr
 extern void fil_add_cptr();
@@ -246,6 +249,7 @@ extern void
     fil_read_cb(), get_data_popup(), time_to_string(),
     fil_format_option_cb(),
     print_sig_names(), print_screen_traces(), print_sig_info(SIGNAL *);
+extern void    value_to_string ();
 extern TRACE	*widget_to_trace (Widget);
 extern SIGNAL_LW *cptr_at_time ();
 extern char	*extract_first_xms_segment (XmString);
