@@ -130,6 +130,11 @@ with the Motif Widget set.  If Motif didn't come with your system, a public
 domain version, LessTif, is available at @uref{ftp://ftp.lesstif.org}.
 
 @item
+Set your X11 Display.  If your machine is local use @samp{setenv DISPLAY
+"localhost:0.0"} for csh or @samp{DISPLAY="localhost:0.0" ; export DISPLAY}
+for sh or bash.
+
+@item
 Try out the executable with @samp{src/dinotrace}.
 
 @item
@@ -294,6 +299,14 @@ There are also public domain versions, such as @strong{MI/X} available from
 
 @item
 Download the Dinotrace kit, if not done previously.
+
+@item
+Set your X11 Display.  If you'll only be using it locally, 
+use the Control Panel/System/Enviornment requester to add a DISPLAY
+environment variable with the value localhost:0.0
+
+@item
+Reboot or restart the shells to pick up the new environment variables.
 
 @item
 The Dinotrace executable should work, it's under
