@@ -1,5 +1,6 @@
 
-char dinopost[] = "% Header last modified 11/12/94 by Wilson Snyder, RICKS::SNYDER\n\
+char dinopost[] = "% $Id$\n\
+% Contact RICKS::SNYDER with any problems with this document\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
 \n\
@@ -13,10 +14,8 @@ char dinopost[] = "% Header last modified 11/12/94 by Wilson Snyder, RICKS::SNYD
   /height exch def		% height of DINOTRACE window\n\
   /YADJ { PG_HGT 50 sub height div mul 50 add } def\n\
   /YTRN { PG_HGT 50 sub height div mul } def\n\
-  /DEL { 3 XADJ } def		% def DEL\n\
-  /DELB { 2 XADJ } def		% define DELB\n\
-  /DELU { 5 XADJ } def		% define DELU\n\
-  /DELU2 { 10 XADJ } def	% define DELU2\n\
+  /DELU 5 def			% width of U diamond\n\
+  /DELU2 10 def			% twice DELU\n\
 } def \n\
 \n\
 /EPSPHDR      % stack: dtversion pagenum file note date res st_end_time\n\
@@ -155,19 +154,6 @@ char dinopost[] = "% Header last modified 11/12/94 by Wilson Snyder, RICKS::SNYD
     ym 3 sub MT v show		% draw the bus value\n\
     } if\n\
 \n\
-  x ym MT			% reset current point\n\
-  } def\n\
-\n\
-/STATE_B			% draw bus waveform w/o value\n\
-{ /x exch XADJ def		% store end location of bus\n\
-  currentpoint pop		% get current x location\n\
-  /xc exch def			% store current x location\n\
-  xc DELB add y2 LT		% draw 1st segment\n\
-  x DELB sub y2 LT		% draw 2nd segment\n\
-  x ym LT			% draw 3rd segment\n\
-  x DELB sub y1 LT		% draw 4th segment\n\
-  xc DELB add y1 LT		% draw 5th segment\n\
-  xc ym LT stroke		% draw 6th segment and stroke\n\
   x ym MT			% reset current point\n\
   } def\n\
 \n\
