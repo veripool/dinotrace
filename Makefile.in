@@ -110,10 +110,11 @@ all: dinotrace_exe info
 .PHONY:dinotrace_exe
 .PHONY:dinotrace
 dinotrace_exe dinotrace:
-	echo making dinotrace in src ; \
-	  (cd src && $(MAKE) ../dinotrace \
-		&& (cp ../dinotrace ../bin/dinotrace-$(HOST) >/dev/null 2>&1\
-		|| cp ../dinotrace.exe ../bin/dinotrace-$(HOST).exe >/dev/null 2>&1)) ; \
+	-mkdir -p bin
+	@echo making dinotrace in src
+	cd src && $(MAKE) ../dinotrace
+	(cp dinotrace bin/dinotrace-$(HOST) >/dev/null 2>&1\
+	 || cp dinotrace.exe bin/dinotrace-$(HOST).exe >/dev/null 2>&1)
 
 info: $(INFOS)
 

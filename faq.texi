@@ -250,7 +250,7 @@ If the signal exists in the trace, it may have been deleted by a configuration
 command.  Use the @dmenu{Signal Select} popup to add all signals, then
 use @dmenu{Signal Search} to find it.
 
-In Verilog DMP files, if a identical signal exists at many levels of
+In Verilog VCD files, if a identical signal exists at many levels of
 hierarchy, only the top level signal will exist.  If your naming
 convention is sane, and doesn't change names at hierarchy boundaries,
 you still should find the signal, just with a different hierarchy in

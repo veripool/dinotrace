@@ -78,7 +78,7 @@ struct st_filetypes filetypes[FF_NUMFORMATS] = {
     { 0, "Auto",		"?",	"*.*"		},
     { 1, "DECSIM",		"TRA",	"*.tra*"	},
     { 1, "Tempest CCLI",	"BT",	"*.bt*"		},
-    { 1, "Verilog VCD",		"DMP",	"*.d*mp*"	},
+    { 1, "Verilog VCD",		"DMP",	"*.vcd*"	},
     { 1, "Verilog VPD+",	"VPD",	"*.vpd*"	},
     { 0, "DECSIM Binary",	"TRA",	"*.tra*"	},
     { 0, "DECSIM Ascii",	"TRA",	"*.tra*"	},

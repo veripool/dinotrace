@@ -2294,7 +2294,7 @@ reader for this format is included with the Dinotrace distribution.
 Dinotrace can read the Value Change Dump format, common with
 simulators such as Verilog-XL, VCS, and many others.
 
-VCD files have a @file{.dmp} extension.  Under the @dmenu{Trace Read}
+VCD files have a @file{.vcd} extension.  Under the @dmenu{Trace Read}
 menu, select Verilog Format.  Select @dmenu{Trace Read} to read the file.
 If this is your standard format, you can set it permanently by placing
 in the @file{$DINODISK:dinotrace.dino} file:
@@ -2333,14 +2333,14 @@ somewhere in a module:
 @example
 // Create a dump file
 initial begin
-        $dumpfile ("|gzip --fast --stdout >trace_top.dmp.gz");
+        $dumpfile ("|gzip --fast --stdout >trace_top.vcd.gz");
         $dumpvars (12, top);
 end
 @end example
 
-Where top is the name of the module to be traced, trace_top.dmp.gz is the
+Where top is the name of the module to be traced, trace_top.vcd.gz is the
 output file, and 12 is the number of levels of hierarchy underneath top
-to be traced.  Dinotrace expects the @file{.dmp} extension.  This
+to be traced.  Dinotrace expects the @file{.vcd} extension.  This
 command will dump all signals in the module top.  For more information
 on dump files, see @cite{Chapter 18 of the Verilog-XL reference manual}.
 
