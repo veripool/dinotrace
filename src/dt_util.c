@@ -285,11 +285,38 @@ TRACE	*widget_to_trace (w)
     return (trace);
     }
 
+void new_time_sigs (sig_first_ptr)
+    SIGNAL	*sig_first_ptr;	
+{
+    SIGNAL	*sig_ptr;	
+
+    for (sig_ptr = sig_first_ptr; sig_ptr; sig_ptr = sig_ptr->forward) {
+	/* if (DTPRINT)
+	   printf ("next time=%d\n", (* (SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time);
+	   */
+	
+	if ( !sig_ptr->cptr ) {
+	    sig_ptr->cptr = sig_ptr->bptr;
+	}
+
+	if (global->time >= (* (SIGNAL_LW *)(sig_ptr->cptr)).sttime.time ) {
+	    while (((* (SIGNAL_LW *)(sig_ptr->cptr)).sttime.time != EOT) &&
+		   (global->time > (* (SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time)) {
+		(sig_ptr->cptr) += sig_ptr->lws;
+	    }
+	}
+	else {
+	    while ((sig_ptr->cptr > sig_ptr->bptr) &&
+		   (global->time < (* (SIGNAL_LW *)(sig_ptr->cptr)).sttime.time)) {
+		(sig_ptr->cptr) -= sig_ptr->lws;
+	    }
+	}
+    }
+}
+
 void new_time (trace)
     TRACE 	*trace;
 {
-    SIGNAL	*sig_ptr;
-    
     if ( global->time > trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res) ) {
         if (DTPRINT_ENTRY) printf ("At end of trace...\n");
         global->time = trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res);
@@ -302,29 +329,11 @@ void new_time (trace)
 
     /* Update beginning of all traces */
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    /* if (DTPRINT)
-	       printf ("next time=%d\n", (* (SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time);
-	       */
-	
-	    if ( !sig_ptr->cptr ) {
-		sig_ptr->cptr = sig_ptr->bptr;
-		}
-
-	    if (global->time >= (* (SIGNAL_LW *)(sig_ptr->cptr)).sttime.time ) {
-		while (((* (SIGNAL_LW *)(sig_ptr->cptr)).sttime.time != EOT) &&
-		       (global->time > (* (SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time)) {
-		    (sig_ptr->cptr) += sig_ptr->lws;
-		    }
-		}
-	    else {
-		while ((sig_ptr->cptr > sig_ptr->bptr) &&
-		       (global->time < (* (SIGNAL_LW *)(sig_ptr->cptr)).sttime.time)) {
-		    (sig_ptr->cptr) -= sig_ptr->lws;
-		    }
-		}
-	    }
+	new_time_sigs (trace->firstsig);
 	}
+
+    /* Update deleted traces in case one gets added */
+    new_time_sigs (global->delsig);
     
     /* Update windows */
     draw_all_needed ();
