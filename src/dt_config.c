@@ -166,7 +166,7 @@ static void config_get_line (
 
     /* Read line & kill EOL at end */
     fgets (line, len, readfp);
-    if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
+    if (*line && *(tp=(line+strlen(line)-1))=='\n') *tp='\0';
     config_line_num++;
 }
 
