@@ -251,7 +251,7 @@ void draw_cursors (trace)
  */                          
 
 
-void draw (trace)                                 
+void draw_trace (trace)                                 
     TRACE	*trace;                        
 {         
     int c=0,i,cnt,adj,ymdpt,xloc,xend,du,len,mid,yfntloc;
@@ -270,7 +270,7 @@ void draw (trace)
     int end_time;
     int question_width;			/* Width of '?' character */
     
-    if (DTPRINT_ENTRY) printf ("In draw - filename=%s\n",trace->filename);
+    if (DTPRINT_ENTRY) printf ("In draw_trace\n");
     
     /* don't draw anything if no file is loaded */
     if (!trace->loaded) return;
@@ -618,22 +618,31 @@ void	update_globals ()
     }
 
 
-void redraw_all (trace)
-    TRACE		*trace;
+void draw_perform ()
 {
-    if (DTPRINT_ENTRY) printf ("In redraw_all\n");
+    TRACE		*trace;
+
+    if (DTPRINT_ENTRY) printf ("In draw_perform %d %d\n", global->redraw_needed, global->trace_head->redraw_needed);
 
     /* do not unroll this loop, as it will make the refresh across windows */
     /* appear out of sync */
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	get_geometry (trace);
+	if ((global->redraw_needed & 2) || (trace->redraw_needed & 1)) {
+	    get_geometry (trace);
+	    }
 	}
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	XClearWindow (global->display,trace->wind);
+	if ((global->redraw_needed & 2) || (trace->redraw_needed & 1)) {
+	    XClearWindow (global->display,trace->wind);
+	    }
 	}
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	draw (trace);
+	if ((global->redraw_needed & 2) || trace->redraw_needed) {
+	    draw_trace (trace);
+	    trace->redraw_needed = FALSE;
+	    }
 	}
+    global->redraw_needed = FALSE;
     }
 
 

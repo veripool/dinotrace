@@ -120,6 +120,27 @@ void cur_delete_of_type (type)
 	    }
 	}
     }
+
+void cur_print (FILE *writefp)
+{
+    CURSOR	*csr_ptr;
+    char strg[MAXSIGLEN];
+
+    for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
+	time_to_string (global->trace_head, strg, csr_ptr->time, FALSE);
+	switch (csr_ptr->type) {
+	  case USER:
+	    fprintf (writefp, "cursor_add %s %d -user\n", strg, csr_ptr->color);
+	    break;
+	  case CONFIG:
+	    fprintf (writefp, "cursor_add %s %d\n", strg, csr_ptr->color);
+	    break;
+	  default:
+	    break;
+	    }
+	}
+    }
+
 
 /****************************** MENU OPTIONS ******************************/
 
@@ -192,8 +213,7 @@ void    cur_clr_cb (w, trace, cb)
     /* cancel the button actions */
     remove_all_events (trace);
     
-    /* redraw the screen with no cursors */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void    cur_highlight_cb (w,trace,cb)
@@ -235,8 +255,7 @@ void    cur_add_ev (w, trace, ev)
     /* make the cursor */
     cur_add (time, global->highlight_color, USER);
     
-    /* redraw the screen with new cursors */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void    cur_move_ev (w, trace, ev)
@@ -326,8 +345,7 @@ void    cur_move_ev (w, trace, ev)
     cur_add (time, csr_ptr->color, USER);
     XtFree ((char *)csr_ptr);
     
-    /* redraw the screen with new cursor position */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void    cur_delete_ev (w, trace, ev)
@@ -347,8 +365,7 @@ void    cur_delete_ev (w, trace, ev)
     cur_remove (csr_ptr);
     DFree (csr_ptr);
     
-    /* redraw the screen with new cursors */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void    cur_highlight_ev (w, trace, ev)
@@ -367,7 +384,6 @@ void    cur_highlight_ev (w, trace, ev)
     /* change color */
     csr_ptr->color = global->highlight_color;
     
-    /* redraw the screen with new cursors */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 

@@ -282,7 +282,7 @@ void    sig_highlight_pattern (trace, color, pattern)
 	}
 
     /* redraw the screen */
-    /* redraw_all (trace); */
+    /* draw_all_needed (trace); */
     }
 
 Boolean sig_is_constant (trace, sig_ptr)
@@ -323,7 +323,7 @@ void    sig_delete_pattern (trace, pattern)
 	    }
 	}
     
-    /* not done, since used in config only: redraw_all (trace); */
+    /* not done, since used in config only: draw_all_needed (trace); */
     }
 
 
@@ -346,7 +346,7 @@ void    sig_delete_constant_pattern (trace, pattern)
 	    }
 	}
 
-    /* not done, since used in config only: redraw_all (trace); */
+    /* not done, since used in config only: draw_all_needed (trace); */
     }
 
 
@@ -397,7 +397,7 @@ void    sig_goto_pattern (trace, pattern)
 	    }
 	}
 
-    /* not done, since used in config only: redraw_all (trace); */
+    /* not done, since used in config only: draw_all_needed (trace); */
     }
 
 
@@ -694,8 +694,7 @@ void    sig_search_ok_cb (w,trace,cb)
 
     sig_update_search ();
 
-    /* redraw the display */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void    sig_search_apply_cb (w,trace,cb)
@@ -764,8 +763,7 @@ void    sig_add_ev (w,trace,ev)
     XtUnmanageChild ( trace->signal.add );
     XtManageChild ( trace->signal.add );
     
-    /* redraw the screen */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void    sig_move_ev (w,trace,ev)
@@ -816,8 +814,7 @@ void    sig_move_ev (w,trace,ev)
 	set_cursor (trace, DC_SIG_MOVE_1);
 	}
     
-    /* redraw the screen */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void    sig_copy_ev (w,trace,ev)
@@ -859,8 +856,7 @@ void    sig_copy_ev (w,trace,ev)
 	set_cursor (trace, DC_SIG_COPY_1);
 	}
     
-    /* redraw the screen */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void    sig_delete_ev (w,trace,ev)
@@ -898,8 +894,7 @@ void    sig_delete_ev (w,trace,ev)
 		       sig_ptr->xsigname, 0 );
 	}
     
-    /* redraw the screen */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 
@@ -920,8 +915,7 @@ void    sig_highlight_ev (w,trace,ev)
     sig_ptr->color = global->highlight_color;
     sig_ptr->search = 0;
 
-    /* redraw the screen */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 
@@ -1183,8 +1177,7 @@ void    sig_sel_ok_cb (w,trace,cb)
     TRACE			*trace;
     XmAnyCallbackStruct		*cb;
 {
-    /* redraw the display */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void    sig_sel_apply_cb (w,trace,cb)

@@ -676,9 +676,10 @@ void tempest_read (trace, read_fd)
     for (i=0;i<numRows;i++) {
 	/* Read a row of data */
 	status = read (read_fd, data, numBitsRowPad/8);
-	/*if (DTPRINT_FILE) {
-	    printf ("read: time=%d  data=%08x %08x\n", data[0], 
-		   data[0], data[1]);
+	/*
+	if (DTPRINT_FILE) {
+	    printf ("read: time=%d  status %d data=%08x %08x\n", data[0], 
+		    status, data[0], data[1]);
 	    }*/
 	
 	/** Extract the phase - this will be used as a 'time' value and

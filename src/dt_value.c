@@ -41,22 +41,23 @@ static char rcsid[] = "$Id$";
 
 /****************************** UTILITIES ******************************/
 
-void    value_to_string (trace, strg, cptr)
+void    value_to_string (trace, strg, cptr, seperator)
     TRACE *trace;
     char *strg;
     unsigned int cptr[];
+    char seperator;		/* What to print between the values */
 {
     if (cptr[2]) {
 	if (trace->busrep == HBUS)
-	    sprintf (strg,"%X %08X %08X", cptr[2], cptr[1], cptr[0]);
+	    sprintf (strg,"%X%c%08X%c%08X", cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	else if (trace->busrep == OBUS)
-	    sprintf (strg,"%o %o %o", cptr[2], cptr[1], cptr[0]);
+	    sprintf (strg,"%o%c%o%c%o", cptr[2], seperator, cptr[1], seperator, cptr[0]);
 	}
     else if (cptr[1]) {
 	if (trace->busrep == HBUS)
-	    sprintf (strg,"%X %08X", cptr[1], cptr[0]);
+	    sprintf (strg,"%X%c%08X", cptr[1], seperator, cptr[0]);
 	else if (trace->busrep == OBUS)
-	    sprintf (strg,"%o %o", cptr[1], cptr[0]);
+	    sprintf (strg,"%o%c%o", cptr[1], seperator, cptr[0]);
 	}
     else {
 	if (trace->busrep == HBUS)
@@ -97,6 +98,33 @@ void    string_to_value (trace, strg, cptr)
 	    cptr[0] = (cptr[0]<<3) + value;
 	    }
 	}
+    }
+
+void    cptr_to_search_value (cptr, value)
+    SIGNAL_LW	*cptr;
+    unsigned int value[];
+{
+    value[0] = value[1] = value[2] = 0;
+    switch (cptr->sttime.state) {
+      case STATE_1:
+	value[0] = 1;
+	break;
+	
+      case STATE_B32:
+	value[0] = *((unsigned int *)cptr+1);
+	break;
+	
+      case STATE_B64:
+	value[0] = *((unsigned int *)cptr+1);
+	value[1] = *((unsigned int *)cptr+2);
+	break;
+
+      case STATE_B96:
+	value[0] = *((unsigned int *)cptr+1);
+	value[1] = *((unsigned int *)cptr+2);
+	value[2] = *((unsigned int *)cptr+3);
+	break;
+	} /* switch */
     }
 
 void	val_update_search ()
@@ -211,6 +239,24 @@ void    val_examine_cb (w, trace, cb)
     add_event (ButtonPressMask, val_examine_ev);
     }
 
+void    val_highlight_cb (w,trace,cb)
+    Widget		w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    if (DTPRINT_ENTRY) printf ("In val_highlight_cb - trace=%d\n",trace);
+    
+    /* remove any previous events */
+    remove_all_events (trace);
+     
+    /* Grab color number from the menu button pointer */
+    global->highlight_color = submenu_to_color (trace, w, trace->menu.val_highlight_pds);
+
+    /* process all subsequent button presses as signal deletions */ 
+    set_cursor (trace, DC_VAL_HIGHLIGHT);
+    add_event (ButtonPressMask, val_highlight_ev);
+    }
+
 
 /****************************** EVENTS ******************************/
 
@@ -262,27 +308,7 @@ void    val_examine_popup (trace, x, y, ev)
 		}
 	    }
 	
-	value[0] = value[1] = value[2] = 0;
-	switch (cptr->sttime.state) {
-	  case STATE_1:
-	    value[0] = 1;
-	    break;
-	    
-	  case STATE_B32:
-	    value[0] = *((unsigned int *)cptr+1);
-	    break;
-	
-	  case STATE_B64:
-	    value[0] = *((unsigned int *)cptr+1);
-	    value[1] = *((unsigned int *)cptr+2);
-	    break;
-
-	  case STATE_B96:
-	    value[0] = *((unsigned int *)cptr+1);
-	    value[1] = *((unsigned int *)cptr+2);
-	    value[2] = *((unsigned int *)cptr+3);
-	    break;
-	    } /* switch */
+	cptr_to_search_value (cptr, value);
 
 	switch (cptr->sttime.state) {
 	  case STATE_0:
@@ -305,7 +331,7 @@ void    val_examine_popup (trace, x, y, ev)
 	  case STATE_B64:
 	  case STATE_B96:
 	    strcat (strg, "= ");
-	    value_to_string (trace, strg2, value);
+	    value_to_string (trace, strg2, value, ' ');
 	    strcat (strg, strg2);
 	    if ( (sig_ptr->decode != NULL) 
 		&& (cptr->sttime.state == STATE_B32)
@@ -397,7 +423,7 @@ void    val_examine_unpopup_act (w)
 	trace->examine.popup = NULL;
 	}
     /* redraw the screen as popup may have mangled widgets */
-    /*redraw_all (trace);*/
+    /* draw_all_needed (trace);*/
     }
 
 char *events[40] = {"","", "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelease", "MotionNotify",
@@ -497,6 +523,28 @@ void    val_examine_popup_act (w, ev, params, num_params)
     set_cursor (trace, prev_cursor);
     }
 
+void    val_search_widget_update (trace)
+    TRACE	*trace;
+{
+    VSearchNum search_pos;
+    char	strg[40];
+
+    /* Copy settings to local area to allow cancel to work */
+    for (search_pos=0; search_pos<MAX_SRCH; search_pos++) {
+	/* Update with current search enables */
+	XtSetArg (arglist[0], XmNset, (global->val_srch[search_pos].color != 0));
+	XtSetValues (trace->value.enable[search_pos], arglist, 1);
+
+	/* Update with current cursor enables */
+	XtSetArg (arglist[0], XmNset, (global->val_srch[search_pos].cursor != 0));
+	XtSetValues (trace->value.cursor[search_pos], arglist, 1);
+
+	/* Update with current search values */
+	value_to_string (trace, strg, global->val_srch[search_pos].value, ' ');
+	XmTextSetString (trace->value.text[search_pos], strg);
+	}
+    }
+
 void    val_search_cb (w,trace,cb)
     Widget		w;
     TRACE	*trace;
@@ -504,7 +552,6 @@ void    val_search_cb (w,trace,cb)
 {
     int		i;
     int		y=10;
-    char	strg[40];
     
     if (DTPRINT_ENTRY) printf ("In val_search_cb - trace=%d\n",trace);
     
@@ -608,19 +655,7 @@ void    val_search_cb (w,trace,cb)
 	}
     
     /* Copy settings to local area to allow cancel to work */
-    for (i=0; i<MAX_SRCH; i++) {
-	/* Update with current search enables */
-	XtSetArg (arglist[0], XmNset, (global->val_srch[i].color != 0));
-	XtSetValues (trace->value.enable[i], arglist, 1);
-
-	/* Update with current cursor enables */
-	XtSetArg (arglist[0], XmNset, (global->val_srch[i].cursor != 0));
-	XtSetValues (trace->value.cursor[i], arglist, 1);
-
-	/* Update with current search values */
-	value_to_string (trace, strg, global->val_srch[i].value);
-	XmTextSetString (trace->value.text[i], strg);
-	}
+    val_search_widget_update (trace);
 
     /* manage the popup on the screen */
     XtManageChild (trace->value.search);
@@ -638,14 +673,10 @@ void    val_search_ok_cb (w,trace,cb)
 
     for (i=0; i<MAX_SRCH; i++) {
 	/* Update with current search enables */
-	if (XmToggleButtonGetState (trace->value.enable[i]))
-	    global->val_srch[i].color = i+1;
-	else global->val_srch[i].color = 0;
+	global->val_srch[i].color = (XmToggleButtonGetState (trace->value.enable[i])) ? i+1 : 0;
 	
 	/* Update with current cursor enables */
-	if (XmToggleButtonGetState (trace->value.cursor[i]))
-	    global->val_srch[i].cursor = i+1;
-	else global->val_srch[i].cursor = 0;
+	global->val_srch[i].cursor = (XmToggleButtonGetState (trace->value.cursor[i])) ? i+1 : 0;
 	
 	/* Update with current search values */
 	strg = XmTextGetString (trace->value.text[i]);
@@ -653,7 +684,7 @@ void    val_search_ok_cb (w,trace,cb)
 
 	if (DTPRINT_SEARCH) {
 	    char strg2[40];
-	    value_to_string (trace, strg2, global->val_srch[i].value);
+	    value_to_string (trace, strg2, global->val_srch[i].value, '_');
 	    printf ("Search %d) %d   '%s' -> '%s'\n", i, global->val_srch[i].color, strg, strg2);
 	    }
 	}
@@ -662,8 +693,7 @@ void    val_search_ok_cb (w,trace,cb)
 
     val_update_search ();
 
-    /* redraw the display */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void    val_search_apply_cb (w,trace,cb)
@@ -676,6 +706,47 @@ void    val_search_apply_cb (w,trace,cb)
     val_search_ok_cb (w,trace,cb);
     val_search_cb (w,trace,cb);
     }
+
+void    val_highlight_ev (w,trace,ev)
+    Widget		w;
+    TRACE		*trace;
+    XButtonPressedEvent	*ev;
+{
+    int		time;
+    SIGNAL	*sig_ptr;
+    SIGNAL_LW	*cptr;
+    VSearchNum	search_pos;
+    
+    if (DTPRINT_ENTRY) printf ("In val_highlight_ev - trace=%d\n",trace);
+    if (ev->type != ButtonPress || ev->button!=1) return;
+    
+    time = posx_to_time (trace, ev->x);
+    sig_ptr = posy_to_signal (trace, ev->y);
+    if (!sig_ptr && time<=0) return;
+    cptr = cptr_at_time (sig_ptr, time);
+    if (!cptr) return;
+    
+    /* Change the color */
+    if (global->highlight_color > 0) {
+	search_pos = global->highlight_color - 1;
+	cptr_to_search_value (cptr, global->val_srch[search_pos].value);
+	if (!global->val_srch[search_pos].color
+	    && !global->val_srch[search_pos].cursor ) {
+	    /* presume user really wants color if neither is on */
+	    global->val_srch[search_pos].color = search_pos + 1;
+	    }
+	}
+
+    /* If search requester is on the screen, update it too */
+    if (trace->value.search && XtIsManaged (trace->value.search)) {
+	val_search_widget_update (trace);
+	}
+
+    /* redraw the screen */
+    val_update_search ();
+    draw_all_needed (trace);
+    }
+
 
 /****************************** ANNOTATION ******************************/
 
@@ -802,10 +873,10 @@ void    val_annotate_ok_cb (w,trace,cb)
     if (DTPRINT_ENTRY) printf ("In sig_search_ok_cb - trace=%d\n",trace);
 
     /* Update with current search enables */
-    for (i=0; i<MAX_SRCH; i++) {
+    for (i=0; i<=MAX_SRCH; i++) {
 	global->anno_ena_cursor[i] = XmToggleButtonGetState (trace->annotate.cursors[i]);
 	}
-    for (i=1; i<MAX_SRCH; i++) {
+    for (i=1; i<=MAX_SRCH; i++) {
 	global->anno_ena_signal[i] = XmToggleButtonGetState (trace->annotate.signals[i]);
 	}
 	
@@ -842,10 +913,11 @@ void    val_annotate_do_cb (w,trace,cb)
     char	strg[100];
     int		csr_num, csr_num_incl;
     
+    /* Initialize requestor before first usage? */
+    /*
     if (! global->anno_poppedup) {
 	val_annotate_cb (w,trace,cb);
-	/*val_annotate_ok_cb (w,trace,cb); <- ask first*/
-	}
+	}*/
 
     if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%d  file=%s\n",trace,global->anno_filename);
 
@@ -880,16 +952,28 @@ void    val_annotate_do_cb (w,trace,cb)
 	}
     fprintf (dump_fp, "\t))\n");
 
+#define colornum_to_name(_color_)  (((_color_)==0)?"":global->color_names[(_color_)])
     /* Cursor info */
     fprintf (dump_fp, "(setq dinotrace-cursors [\n");
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 	if (global->anno_ena_cursor[csr_ptr->color]) {
 	    time_to_string (global->trace_head, strg, csr_ptr->time, FALSE);
 	    fprintf (dump_fp, "\t[\"%s\"\t%d\t\"%s\"\tnil]\n", strg,
-		     csr_ptr->color, (csr_ptr->color==0)?"":global->color_names[csr_ptr->color]);
+		     csr_ptr->color, colornum_to_name(csr_ptr->color));
 	    }
 	}
     fprintf (dump_fp, "\t])\n");
+
+    /* Value search info */
+    fprintf (dump_fp, "(setq dinotrace-value-searches '(\n");
+    for (i=1; i<=MAX_SRCH; i++) {
+	if (global->val_srch[i-1].color) {
+	    value_to_string (global->trace_head, strg, global->val_srch[i-1].value, '_');
+	    fprintf (dump_fp, "\t[\"%s\"\t%d\t\"%s\"]\n", strg,
+		     i, colornum_to_name(i));
+	    }
+	}
+    fprintf (dump_fp, "\t))\n");
 
     /* Signal color info */
     /* 0's never actually used, but needed in the array so aref will work in emacs */

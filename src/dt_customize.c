@@ -303,7 +303,7 @@ void cus_read_cb (w,trace,cb)
     config_read_file (trace, "DINODISK:DINOTRACE.DINO", FALSE, TRUE);
     
     /* Reformat and refresh */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void cus_reread_cb (w,trace,cb)
@@ -316,7 +316,7 @@ void cus_reread_cb (w,trace,cb)
     config_read_defaults (trace, TRUE);
     
     /* Reformat and refresh */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void	cus_restore_cb (w,trace,cb)
@@ -330,7 +330,7 @@ void	cus_restore_cb (w,trace,cb)
     config_restore_defaults (trace);
     
     /* redraw the display */
-    redraw_all (trace);
+    draw_all_needed (trace);
     }
 
 void	cus_ok_cb (w,trace,cb)
@@ -338,9 +338,12 @@ void	cus_ok_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
+    int hgt;
+
     if (DTPRINT_ENTRY) printf ("In cus_ok_cb - trace=%d\n",trace);
     
-    XmScaleGetValue (trace->custom.s1, (int*) &(trace->sighgt));
+    XmScaleGetValue (trace->custom.s1, &hgt);
+    trace->sighgt = hgt;
     trace->grid_vis = XmToggleButtonGetState (trace->custom.grid_state);
     trace->cursor_vis = XmToggleButtonGetState (trace->custom.cursor_state);
     global->click_to_edge = XmToggleButtonGetState (trace->custom.click_to_edge);

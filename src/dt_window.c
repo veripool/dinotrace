@@ -52,11 +52,8 @@ void win_expose_cb (w,trace)
     TRACE		*trace;
 {
     if (DTPRINT_ENTRY) printf ("In win_expose_cb - trace=%d\n",trace);
-    if (!trace->loaded) return;
-
-    /* redraw the entire screen */
-    /*get_geometry (trace);*/
-    draw (trace);
+    /* special, call draw directly so screen doesn't flicker */
+    draw_expose_needed (trace);
     }
 
 void win_resize_cb (w,trace)
@@ -64,12 +61,7 @@ void win_resize_cb (w,trace)
     TRACE		*trace;
 {
     if (DTPRINT_ENTRY) printf ("In win_resize_cb - trace=%d\n",trace);
-    if (!trace->loaded) return;
-
-    /* redraw the entire screen */
-    get_geometry (trace);
-    XClearWindow (global->display, trace->wind);
-    draw (trace);
+    draw_needed (trace);
     }
 
 void hscroll_unitinc (w,trace,cb)
@@ -215,9 +207,7 @@ void vscroll_new (trace,inc)
 	inc++;
 	}
     
-    get_geometry (trace);
-    XClearWindow (global->display, trace->wind);
-    draw (trace);
+    draw_needed (trace);
     }
 
 void vscroll_unitinc (w,trace,cb)
@@ -331,7 +321,7 @@ void new_res (trace, redisplay)
 	}
 
     if (redisplay) {
-	redraw_all (trace);
+	draw_all_needed (trace);
 	}
     }
 

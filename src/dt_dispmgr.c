@@ -79,6 +79,14 @@ XtResource resources[] = {
     };
 #undef Offset
 
+void debug_event_cb (w,trace,cb)
+    Widget			w;
+    TRACE			*trace;
+    XmDrawingAreaCallbackStruct	*cb;
+{
+    printf ("DEBUG_EVENT_CB %d %s\n",w, ""/*(events[cb->event->type]*/);
+    }
+
 extern void    val_examine_popup_act ();
 extern void    val_examine_unpopup_act ();
 static XtActionsRec actions[] = {
@@ -86,7 +94,8 @@ static XtActionsRec actions[] = {
     {"value_examine_unpopup", val_examine_unpopup_act}
     };
 
-static char translations[] = "<Btn2Down> : value_examine_popup()";
+char *translations = "<Btn2Down> : value_examine_popup()\n";
+/*<Key>F10: hscroll.PageDownOrRight(1)*/
 
 
 static int last_set_cursor_num = DC_NORMAL;
@@ -377,6 +386,7 @@ void create_globals (argc, argv, sync)
     global->xcursors[9] = XCreateFontCursor (global->display, XC_right_side);
     global->xcursors[10] = XCreateFontCursor (global->display, XC_spraycan);
     global->xcursors[11] = XCreateFontCursor (global->display, XC_question_arrow);
+    global->xcursors[12] = XCreateFontCursor (global->display, XC_cross);
     }
 
 TRACE *malloc_trace ()
@@ -471,6 +481,10 @@ void dm_menu_subentry (TRACE *trace,
     }
 
 void dm_menu_subentry_colors (TRACE *trace,
+			      char *cur_accel,	/* Accelerator, or NULL */
+			      char *cur_accel_string,	/* Accelerator string, or NULL */
+			      char *next_accel,	/* Accelerator, or NULL */
+			      char *next_accel_string,	/* Accelerator string, or NULL */
 			      void (*callback)()
 			      )
     /*** create a pulldownmenu entry under a subtitle (uses special colors) ***/
@@ -486,8 +500,8 @@ void dm_menu_subentry_colors (TRACE *trace,
 	XtAddCallback (trace->menu.pdsubbutton[trace->menu.pds], XmNactivateCallback, callback, trace);
 	XtManageChild (trace->menu.pdsubbutton[trace->menu.pds]);
 	}
-    dm_menu_subentry (trace, "Current", 'C', NULL, NULL, callback);
-    dm_menu_subentry (trace, "Next", 'N', NULL, NULL, callback);
+    dm_menu_subentry (trace, (cur_accel ? "Curr":"Current"), 'C', cur_accel, cur_accel_string, callback);
+    dm_menu_subentry (trace, "Next", 'N', next_accel, next_accel_string, callback);
     }
 
 /* Create a trace display and link it into the global information */
@@ -596,18 +610,21 @@ TRACE *create_trace (xs,ys,xp,yp)
     dm_menu_title (trace, "Customize", 'u');
     dm_menu_entry (trace, 	"Change...",	'C',	NULL, NULL,	cus_dialog_cb);
     dm_menu_entry (trace, 	"ReRead",	'e',	NULL, NULL,	cus_reread_cb);
+    if (DTDEBUG) {
+	dm_menu_entry (trace, 	"Write",	'W',	NULL, NULL,	config_write_cb);
+	}
     dm_menu_entry (trace, 	"Restore",	'R',	NULL, NULL,	cus_restore_cb);
 
     dm_menu_title (trace, "Cursor", 'C');
     dm_menu_subtitle (trace, 	"Add",		'A');
     trace->menu.cur_add_pds = trace->menu.pds+1;
-    dm_menu_subentry_colors (trace, cur_add_cb);
+    dm_menu_subentry_colors (trace, "<Key>F3:", "F3", "Shift<Key>F3:", "S-F3",cur_add_cb);
     dm_menu_entry (trace, 	"Move",		'M',	NULL, NULL,	cur_mov_cb);
     dm_menu_entry (trace, 	"Delete",	'D',	NULL, NULL,	cur_del_cb);
     dm_menu_entry (trace, 	"Clear", 	'C',	NULL, NULL,	cur_clr_cb);
     dm_menu_subtitle (trace,	 "Highlight",	'H');
     trace->menu.cur_highlight_pds = trace->menu.pds+1;
-    dm_menu_subentry_colors (trace, cur_highlight_cb);
+    dm_menu_subentry_colors (trace, 		NULL, NULL, NULL, NULL,	cur_highlight_cb);
     dm_menu_entry (trace, 	"Cancel", 	'l',	NULL, NULL,	cancel_all_events);
 
     dm_menu_title (trace, "Grid", 'G');
@@ -624,7 +641,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     dm_menu_entry (trace, 	"Search...",	'S',	NULL, NULL,	sig_search_cb);
     dm_menu_subtitle (trace, 	"Highlight",	'H');
     trace->menu.sig_highlight_pds = trace->menu.pds+1;
-    dm_menu_subentry_colors (trace, sig_highlight_cb);
+    dm_menu_subentry_colors (trace, "<Key>F4:", "F4", "Shift<Key>F4:", "S-F4",sig_highlight_cb);
     dm_menu_entry (trace, 	"Select...",	'e',	NULL, NULL,	sig_select_cb);
     dm_menu_entry (trace, 	"Cancel", 	'l',	NULL, NULL,	cancel_all_events);
 
@@ -635,6 +652,9 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg (arglist[0], XmNacceleratorText, XmStringCreateSimple ("MB2") );
     XtSetValues (trace->menu.pdentrybutton[trace->menu.pdm], arglist, 1);
     dm_menu_entry (trace, 	"Search...",	'S',	NULL, NULL,	val_search_cb);
+    dm_menu_subtitle (trace, 	"Highlight",	'H');
+    trace->menu.val_highlight_pds = trace->menu.pds+1;
+    dm_menu_subentry_colors (trace, "<Key>F5:", "F5", "Shift<Key>F5:", "S-F5",val_highlight_cb);
     dm_menu_entry (trace, 	"Cancel", 	'l',	NULL, NULL,	cancel_all_events);
 
     dm_menu_title (trace, "Print", 'P');
@@ -731,7 +751,6 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg (arglist[4], XmNrightAttachment, XmATTACH_WIDGET );
     XtSetArg (arglist[5], XmNrightWidget, trace->vscroll);
     XtSetArg (arglist[6], XmNheight, 18);
-
     trace->hscroll = XmCreateScrollBar ( trace->command.command, "hscroll", arglist, 7);
     XtAddCallback (trace->hscroll, XmNincrementCallback, hscroll_unitinc, trace);
     XtAddCallback (trace->hscroll, XmNdecrementCallback, hscroll_unitdec, trace);

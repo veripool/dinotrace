@@ -26,9 +26,9 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V7.0b"
-/*#define EXPIRATION	(60*60*24*30)	/ * In seconds - Comment out define for no expiration dates */
-#undef	EXPIRATION
+#define DTVERSION	"Dinotrace V7.1a"
+#define EXPIRATION	((60*60*24)*100) /* In seconds - Comment out define for no expiration dates */
+/*#undef	EXPIRATION*/
 
 /* Turn off alignment for any structures that will be read/written onto Disk! */
 /*
@@ -47,11 +47,9 @@
 #define MAXFNAMELEN	200	/* Maximum length of file names */
 #define MAXSTATENAMES	130	/* Maximum number of state name translations */
 #define MAXSTATELEN	32	/* Maximum length of state names */
-#define MAX_SRCH	9	/* Maximum number of search values */
 #define	MIN_GRID_RES	512.0	/* Minimum grid resolution */
 #define BLK_SIZE	512	/* Trace data block size */
 #define	CLICKCLOSE	20	/* Number of pixels that are "close" for click-to-edges */
-#define MAXCOLORS	11	/* Maximum number of colors 0-10 */
 
 #define	RES_SCALE	((float)500.0)	/* Scaling factor for entering resolution */
 
@@ -72,6 +70,7 @@
 #define DC_ZOOM_1	8	/* XC_left_side		Zoom point 1 */
 #define DC_ZOOM_2	9	/* XC_right_side	Zoom point 2 */
 #define DC_VAL_EXAM	11	/* XC_question_arrow	Value Examine */
+#define DC_VAL_HIGHLIGHT 12	/* XC_cross		Value Highlight */
 
 /* All of the states a signal can be in (have only 3 bits so 0-7) */
 #define STATE_0   0
@@ -177,7 +176,14 @@ typedef enum {
 #define DFree(ptr) XtFree((char *)ptr)
 
 typedef	long 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
+
+/* Colors */
+#define MAX_SRCH	9		/* Maximum number of search values, or cursor/signal colors */
+#define MAXCOLORS	10		/* Maximum number of colors, all types, including bars */
+#define COLOR_CURRENT	(MAX_SRCH+1)
+#define COLOR_NEXT	(MAX_SRCH+2)
 typedef	int	ColorNum;
+typedef	int	VSearchNum;
 
 extern Boolean	DTDEBUG;		/* Debugging mode */
 extern int	DTPRINT;		/* Information printing mode */
@@ -191,6 +197,7 @@ extern int	DebugTemp;		/* Temp value for trying things */
 #define DTPRINT_PRINT	(DTPRINT & 0x00000800)	/* Print postscript printing information */
 #define DTPRINT_SEARCH	(DTPRINT & 0x00001000)	/* Print searching value/signal information */
 #define DTPRINT_BUSSES	(DTPRINT & 0x00002000)	/* Print make busses information */
+#define DTPRINT_SOCKET	(DTPRINT & 0x00010000)	/* Print socket connection information */
 
 /* File formats.  See also hardcoded case statement in dinotrace.c */
 #define	FF_AUTO		0		/* Automatic selection */
@@ -216,9 +223,6 @@ extern XGCValues	xgcv;
 
 extern Arg		arglist[20];
 
-extern int		line_num;
-extern char		*current_file;
-
 /* Grid Automatic flags */
 #define GRID_RES_AUTO_DOUBLE	-5
 #define GRID_RES_AUTO		-4
@@ -232,10 +236,12 @@ typedef struct {
     Widget	pdmenubutton[11];
     Widget	pdentry[22];
     Widget	pdentrybutton[72];
-    Widget	pdsubbutton[4+MAX_SRCH*4];
+    Widget	pdsubbutton[4+(MAX_SRCH+2)*5];
     int		sig_highlight_pds;
     int		cur_highlight_pds;
     int		cur_add_pds;
+    int		val_highlight_pds;
+    int		pdm, pde, pds;		/* Temp for loading structure */
     } MENU_WDGTS;
 
 typedef struct {
@@ -356,6 +362,7 @@ typedef struct st_geometry {
 /* 5.0: Structure for each signal-state assignment */
 typedef struct st_signalstate {
     struct st_signalstate *next;	/* Next structure in a linked list */
+    int	 numstates;			/* Number of states in the structure */
     char signame[MAXSIGLEN];		/* Signal name to translate, Nil = wildcard */
     char statename[MAXSTATENAMES][MAXSTATELEN];	/* Name for each state, nil=keep */
     } SIGNALSTATE;
@@ -526,6 +533,7 @@ typedef struct st_trace {
     Boolean		loaded;		/* True if the filename is loaded in */
     char		vector_seperator;	/* Seperator character, usually "<" */
 
+    int			redraw_needed;	/* Need to refresh the screen when get a chance, 0=NO, 1=YES, 2=Expose Only */
     Position		width;		/* Screen width */
     Position		height;		/* Screen height */
     Position		ystart;		/* Start Y pos of signals on display (dispmgr) */
@@ -566,7 +574,7 @@ typedef struct {
 
     XtAppContext	appcontext;	/* X App context */
     Display		*display;	/* X display pointer */
-    Cursor		xcursors[12];	/* X cursors */
+    Cursor		xcursors[13];	/* X cursors */
     Pixmap		dpm,bdpm;	/* X pixmaps for the icons */
 
     int			argc;		/* Program argc for X stuff */
@@ -589,6 +597,7 @@ typedef struct {
     Boolean		anno_ena_signal[MAX_SRCH+1];   /* Annotation signal enables */
     Boolean		anno_ena_cursor[MAX_SRCH+1];    /* Annotation cursor enables */
     char		anno_filename[MAXFNAMELEN]; /* Annotation file name */
+    char		anno_socket[MAXFNAMELEN];	/* Annotation socket number */
 
     int			pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
     PrintSize		print_size;	/* Size of paper for dt_printscreen */
@@ -600,6 +609,7 @@ typedef struct {
     int			tempest_time_mult;	/* Time multiplier for tempest */
     Boolean		save_enables;	/* Save enable wires */
 
+    int			redraw_needed;	/* Some trace needs to refresh the screen when get a chance, 0=NO, 1=YES, 2=Do All */
     DTime		time;		/* Time of trace at left edge of screen */
     float		res;		/* Resolution of graph width (gadgets) */
     Boolean		res_default;	/* True if resolution has never changed from initial value */

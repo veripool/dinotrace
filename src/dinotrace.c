@@ -193,9 +193,21 @@ See the Help menu for more information.");
 	fil_read_cb (trace);
 	}
 
-    /* loop forever */
+    draw_all_needed (trace);
+
     if (!benchmark) {
-	XtAppMainLoop (global->appcontext);
+	/* loop forever */
+	/*This code ~= XtAppMainLoop (global->appcontext);*/
+	while (1) {
+	    XEvent event;
+
+	    if (global->redraw_needed && !XtAppPending (global->appcontext)) {
+		draw_perform();
+		}
+
+	    XtAppNextEvent (global->appcontext, event);
+	    XtDispatchEvent (event);
+	    }
 	}
     else {
 	int t;
@@ -206,7 +218,8 @@ See the Help menu for more information.");
 	fil_read_cb (trace);
 	fil_read_cb (trace);
 	for (t=1; t<100; t++) {
-	    redraw_all (trace);
+	    draw_all_needed (trace);
+	    draw_perform ();
 	    }
 	}
 

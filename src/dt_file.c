@@ -526,6 +526,13 @@ void read_make_busses (trace, not_tempest)
 	sig_ptr = bus_sig_ptr->forward;
 	}
     
+    
+    if (trace->fileformat == FF_VERILOG) {
+	/* Verilog may have busses > 96 bits, other formats should have one record per
+	   bit, so it shouldn't matter.  Make consistent sometime in the future */
+	verilog_womp_96s (trace);
+	}
+
     /* Vectorize signals */
     bus_sig_ptr = NULL;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {

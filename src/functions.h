@@ -22,6 +22,11 @@
 /***********************************************************************/
 /* Defined functions.... Really inlines, but old VMS compiler chokes */
 
+/* Schedule a redraw for trace or everybody */
+#define draw_expose_needed(_trace_)	{ (_trace_)->redraw_needed |= 2; global->redraw_needed |= 1; }
+#define draw_needed(_trace_)	{ (_trace_)->redraw_needed |= 1; global->redraw_needed |= 1; }
+#define draw_all_needed(_trace_) { global->redraw_needed |= 2; }
+
 #define	cptr_to_value(cptr,value_ptr) \
 {\
      (value_ptr)->siglw.number = (cptr)[0].number;\
@@ -86,6 +91,7 @@ extern void
     
 /* dt_config.c routines */
 extern void
+    config_write_cb(),
     print_signal_states(),
     config_read_defaults (),
     config_read_file (), upcase_string(),
@@ -117,6 +123,7 @@ extern void
     val_annotate_cb(), val_annotate_do_cb(), val_annotate_ok_cb(), val_annotate_apply_cb(),
     val_examine_cb(), val_examine_ev(),
     val_search_cb(), val_search_ok_cb(), val_search_apply_cb(),
+    val_highlight_cb(), val_highlight_ev(),
     val_update_search();
     
 /* dt_printscreen routines */
@@ -152,6 +159,7 @@ extern void
     fil_read_cb(), get_data_popup(), time_to_string(),
     fil_format_option_cb(),
     print_sig_names(), print_all_traces(), print_screen_traces(), print_sig_info(SIGNAL *);
+extern TRACE	*widget_to_trace (Widget);
 extern SIGNAL_LW *cptr_at_time ();
 extern char	*extract_first_xms_segment (XmString);
 extern XmString	string_create_with_cr (char *);
@@ -188,7 +196,6 @@ extern int	win_goto_number();
 
 /* dt_draw */
 extern void
-    redraw_all(TRACE *),
     update_globals(),
     draw(),
     drawsig();
