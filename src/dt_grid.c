@@ -85,7 +85,7 @@ void	grid_calc_auto (
     Grid	*grid_ptr)
 {
     Signal	*sig_ptr;
-    SignalLW_t	*cptr;
+    Value_t	*cptr;
     int		rise1=0, rise2=0;
     int		fall1=0, fall2=0;
 
@@ -111,14 +111,14 @@ void	grid_calc_auto (
     }
 
     /* Skip to end */
-    cptr = cptr_at_time (sig_ptr, EOT);
+    cptr = value_at_time (sig_ptr, EOT);
     /* Ignore last - determined by EOT, not period */
-    if ( cptr != sig_ptr->cptr) cptr -= CPTR_SIZE_PREV(cptr);
+    if ( cptr > sig_ptr->cptr) cptr = CPTR_PREV(cptr);
 
     /* Move back 3 grids, if we can */
-    while ( cptr != sig_ptr->cptr) {
-	cptr -= CPTR_SIZE_PREV(cptr);
-	switch (cptr->stbits.state) {
+    while ( cptr > sig_ptr->bptr) {
+	cptr = CPTR_PREV(cptr);
+	switch (cptr->siglw.stbits.state) {
 	  case STATE_1:
 	    if (!rise2) rise2 = CPTR_TIME(cptr);
 	    else if (!rise1) rise1 = CPTR_TIME(cptr);

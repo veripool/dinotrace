@@ -67,6 +67,7 @@
 #include <Xm/ArrowB.h>
 #include <Xm/DrawingA.h>
 #include <Xm/ScrollBar.h>
+#include <Xm/ScrollBarP.h>
 #include <Xm/RowColumn.h>
 #include <Xm/CascadeB.h>
 #include <Xm/Separator.h>
@@ -991,9 +992,6 @@ Trace *create_trace (
     DAddCallback (trace->work, XmNresizeCallback, win_resize_cb, trace);
     DManageChild (trace->work, trace, MC_GLOBALKEYS);
     
-    /* Setup keys */
-    XtInstallAllAccelerators (trace->main, trace->main);
-
     DManageChild (trace->main, trace, MC_GLOBALKEYS);
     DManageChild (trace->command.form, trace, MC_GLOBALKEYS);
     XtRealizeWidget (trace->toplevel);
@@ -1001,6 +999,9 @@ Trace *create_trace (
     /* Display parameters */
     trace->wind = XtWindow (trace->work);
     trace->gc = XCreateGC (global->display, trace->wind, 0, NULL);
+    trace->pixmap = XCreatePixmap (global->display, XtWindow (trace->work),
+				   XtWidth(trace->work), XtHeight(trace->work),
+				   DefaultDepthOfScreen(XtScreen(trace->work)));
 
     /* Choose fonts */
     global->signal_font = grab_font (trace, global->signal_font_name);

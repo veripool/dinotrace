@@ -102,7 +102,7 @@ XmString string_create_with_cr (
     char	*ptr,*nptr;
     char	aline[2000];
 
-    /* create string w/ seperators */
+    /* create string w/ separators */
     xsout = NULL;
     for (ptr=msg; ptr && *ptr; ptr = nptr) {
 	nptr = strchr (ptr, '\n');
@@ -392,26 +392,26 @@ void new_time_sigs (
     Signal	*sig_ptr;	
 
     for (sig_ptr = sig_first_ptr; sig_ptr; sig_ptr = sig_ptr->forward) {
-	SignalLW_t	*cptr = sig_ptr->cptr;
-	/* if (DTPRINT)
-	   printf ("next time=%d\n", CPTR_TIME(cptr+CPTR_SIZE(cptr)));
-	   */
+	Value_t	*cptr = sig_ptr->cptr;
 	if ( !cptr ) {
 	    cptr = sig_ptr->bptr;
 	}
+	/*if (DTPRINT) {printf ("sig %s move: %p   %p\n",
+			      sig_ptr->signame, sig_ptr->cptr, sig_ptr->bptr);
+			      print_sig_info (sig_ptr);}*/
 
 	if (global->time >= CPTR_TIME(cptr) ) {
 	    /* Step forward till right segment is found */
 	    while ((CPTR_TIME(cptr) != EOT) &&
-		   (global->time > CPTR_TIME(cptr + CPTR_SIZE(cptr)))) {
-		cptr += CPTR_SIZE(cptr);
+		   (global->time > CPTR_TIME(CPTR_NEXT(cptr)))) {
+		cptr = CPTR_NEXT(cptr);
 	    }
 	}
 	else {
 	    /* Step backward till right segment is found */
 	    while ((cptr > sig_ptr->bptr) &&
 		   (global->time < CPTR_TIME(cptr))) {
-		cptr -= CPTR_SIZE_PREV(cptr);
+		cptr = CPTR_PREV(cptr);
 	    }
 	}
 	sig_ptr->cptr = cptr;
@@ -445,12 +445,23 @@ void get_geometry (
     Trace	*trace)
 {
     int		x,y;
-    uint_t	width,height,dret;
+    uint_t	width,height,dret,depth;
+    uint_t	pixmap_width,pixmap_height;
     Dimension m_time_height = global->time_font->ascent + global->time_font->descent;
     
+    XGetGeometry ( global->display, trace->pixmap, (Window *)&dret,
+		   &x, &y, &pixmap_width, &pixmap_height, &dret, &depth);
+
     XGetGeometry ( global->display, XtWindow (trace->work), (Window *)&dret,
-		 &x, &y, &width, &height, &dret, &dret);
+		   &x, &y, &width, &height, &dret, &depth);
     
+    if (pixmap_width != width || pixmap_height != height) {
+	/* Reallocate a new pixmap of the right size */
+	XFreePixmap (global->display, trace->pixmap);
+	trace->pixmap = XCreatePixmap (global->display, XtWindow (trace->work),
+				       width, height, depth);
+    }
+
     trace->width = MIN(width, (uint_t)MAXSCREENWIDTH-2);
 
     /* See comment in dinotrace.h about y layout */
@@ -477,11 +488,16 @@ void get_geometry (
 	global->namepos = (global->namepos_hier + global->namepos_base - global->namepos_visible);
 
     /* Move horiz scrollbar left edge to start position */
-    XtUnmanageChild (trace->hscroll);
-    XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
-    XtSetArg (arglist[1], XmNleftOffset, global->xstart - XSTART_MARGIN);
-    XtSetValues (trace->hscroll,arglist,2);
-    XtManageChild (trace->hscroll);	/* Don't need DManage... already set up */
+    if (trace->xstart_last != global->xstart
+	|| trace->width_last != trace->width) {
+	trace->xstart_last = global->xstart;
+	trace->width_last = trace->width;
+	XtUnmanageChild (trace->hscroll);
+	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[1], XmNleftOffset, global->xstart - XSTART_MARGIN);
+	XtSetValues (trace->hscroll,arglist,2);
+	XtManageChild (trace->hscroll);	/* Don't need DManage... already set up */
+    }
 
     update_scrollbar (trace->hscroll, global->time,
 		      trace->grid[0].period,
@@ -601,7 +617,7 @@ void dino_message_ack (
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->message, XmDIALOG_HELP_BUTTON));
 	}
 
-    /* create string w/ seperators */
+    /* create string w/ separators */
     xsout = string_create_with_cr (msg);
     
     /* change the label value and location */
@@ -613,16 +629,17 @@ void dino_message_ack (
     DManageChild (trace->message, trace, MC_NOKEYS);
 }
 
-SignalLW_t *cptr_at_time (
-    /* Return the CPTR for the given time */
+Value_t *value_at_time (
+    /* Return the value for the given time */
+    /* Must be on the screen! */
     Signal	*sig_ptr,
     DTime	ctime)
 {
-    SignalLW_t	*cptr;
+    Value_t	*cptr;
     for (cptr = sig_ptr->cptr;
 	 CPTR_TIME(cptr) != EOT
-	     && (CPTR_TIME(cptr + CPTR_SIZE(cptr)) <= ctime);
-	 cptr += CPTR_SIZE(cptr)) {
+	     && (CPTR_TIME(CPTR_NEXT(cptr)) <= ctime);
+	 cptr = CPTR_NEXT(cptr)) {
     }
     return (cptr);
 }
@@ -634,58 +651,17 @@ SignalLW_t *cptr_at_time (
  *
  *****************************************************************************/
 
-void    cptr_to_string (
-    SignalLW_t	*cptr,
-    char	*strg)
-{
-    switch (cptr->stbits.state) {
-      case STATE_1:
-	strg[0] = '1';
-	strg[1] = '\0';
-	return;
-	
-      case STATE_0:
-	strg[0] = '0';
-	strg[1] = '\0';
-	return;
-	
-      case STATE_U:
-	strg[0] = 'U';
-	strg[1] = '\0';
-	return;
-	
-      case STATE_Z:
-	strg[0] = 'Z';
-	strg[1] = '\0';
-	return;
-	
-      case STATE_B32:
-	sprintf (strg, "%x", (cptr+1)->number);
-	return;
-	
-      case STATE_B128:
-	sprintf (strg, "%x_%08x_%08x_%08x",
-		 (cptr+4)->number,
-		 (cptr+3)->number,
-		 (cptr+2)->number,
-		 (cptr+1)->number);
-	return;
-	
-      default:
-	strg[0] = '?';
-	return;
-    }
-}
-
 void    print_cptr (
-    SignalLW_t	*cptr)
+    Value_t	*value_ptr)
 {
     char strg[1000];
-    uint_t	value[4];
-
-    cptr_to_search_value (cptr, value);
-    value_to_string (global->trace_head, strg, value, '_');
-    printf ("%s at time %d\n", strg, CPTR_TIME(cptr));
+    value_to_string (global->trace_head, strg, value_ptr, '_');
+    if (CPTR_TIME(value_ptr)==EOT) {
+	printf ("%s at EOT\n", strg);
+    }
+    else {
+	printf ("%s at time %d\n", strg, CPTR_TIME(value_ptr));
+    }
 }
 
 void    debug_print_screen_traces_cb (
@@ -714,17 +690,19 @@ void    debug_print_screen_traces_cb (
 void    print_sig_info (
     Signal	*sig_ptr)
 {
-    SignalLW_t	*cptr;
+    Value_t	*cptr;
     
     cptr = sig_ptr->bptr;
     
-    printf ("Signal %s starts ",sig_ptr->signame);
-    print_cptr (cptr);
+    printf ("Signal %s, cptr %p  bptr %p\n",sig_ptr->signame, sig_ptr->cptr, sig_ptr->bptr);
     
-    for ( ; CPTR_TIME(cptr); cptr += CPTR_SIZE(size) ) {
-	/*printf ("%x %x %x %x %x    ", (cptr)->number, (cptr+1)->number, (cptr+2)->number,
-		(cptr+3)->number, (cptr+4)->number);*/
+    for ( ; cptr->siglw.stbits.size > 0; cptr = CPTR_NEXT(cptr) ) {
+	printf ("%p: %08x %08x %08x %08x %08x %08x    ", cptr,
+		cptr->siglw.number, cptr->time,
+		cptr->number[0],cptr->number[1],
+		cptr->number[2],cptr->number[3]);
 	print_cptr (cptr);
+	/*printf ("s %d  sp %d\n", cptr->siglw.stbits.size, cptr->siglw.stbits.size_prev);*/
     }
 }
 
@@ -734,7 +712,7 @@ void    debug_signal_integrity (
     char	*list_name,
     Boolean	del)
 {
-    SignalLW_t	*cptr;
+    Value_t	*cptr;
     DTime	last_time;
     uint_t	nsigstart, nsig;
     Boolean	hitstart;
@@ -766,7 +744,7 @@ void    debug_signal_integrity (
 
 	/* Change data */
 	last_time = -1;
-	for (cptr = sig_ptr->bptr; CPTR_TIME(cptr) != EOT; cptr += CPTR_SIZE(cptr)) {
+	for (cptr = sig_ptr->bptr; CPTR_TIME(cptr) != EOT; cptr = CPTR_NEXT(cptr)) {
 	    if ( CPTR_TIME(cptr) == last_time ) {
 		printf ("%s, Double time change at signal %s time %d\n",
 			list_name, sig_ptr->signame, CPTR_TIME(cptr));
@@ -892,7 +870,7 @@ DTime	posx_to_time_edge (
 {
     DTime	xtime;
     Signal 	*sig_ptr;
-    SignalLW_t	*cptr;
+    Value_t	*cptr;
     DTime	left_time, right_time;
 
     xtime = posx_to_time (trace,x);
@@ -903,11 +881,11 @@ DTime	posx_to_time_edge (
 
     /* Find time where signal changes */
     for (cptr = sig_ptr->cptr;
-	 (CPTR_TIME(cptr) != EOT) && (CPTR_TIME(cptr + CPTR_SIZE(cptr)) < xtime);
-	 cptr += CPTR_SIZE(cptr)) ;
+	 (CPTR_TIME(cptr) != EOT) && (CPTR_TIME(CPTR_NEXT(cptr)) < xtime);
+	 cptr = CPTR_NEXT(cptr)) ;
     left_time = CPTR_TIME(cptr);
     if (left_time == EOT) return (xtime);
-    cptr += CPTR_SIZE(cptr);
+    cptr = CPTR_NEXT(cptr);
     right_time = CPTR_TIME(cptr);
 
     /*

@@ -401,40 +401,30 @@ Boolean sig_is_constant (
     Boolean	ignorexz)		/* TRUE = ignore xz */
 {
     Boolean 	changes;
-    SignalLW_t	*cptr;
-    int		new_value[4];
-    int		old_value[4];
-    int		old_state = STATE_U;
+    Value_t	*cptr;
+    Value_t	old_value;
     Boolean	old_got_value;
 
     /* Is there a transition? */
     changes=FALSE;
     old_got_value = FALSE;
-    for (cptr = sig_ptr->bptr ; CPTR_TIME(cptr) != EOT; cptr += CPTR_SIZE(cptr)) {
+    for (cptr = sig_ptr->bptr ; CPTR_TIME(cptr) != EOT; cptr = CPTR_NEXT(cptr)) {
 	if (CPTR_TIME(cptr) == trace->end_time) {
 	    break;
 	}
 
-	if (ignorexz & ((cptr->stbits.state == STATE_U) | (cptr->stbits.state == STATE_Z))) {
+	if (ignorexz & ((cptr->siglw.stbits.state == STATE_U)
+			| (cptr->siglw.stbits.state == STATE_Z))) {
 	    continue;
 	}
 
 	if (!old_got_value) {
-	    cptr_to_search_value (cptr, old_value);
-	    old_state = cptr->stbits.state;
+	    value_cpy (&old_value, cptr);
 	    old_got_value = TRUE;
 	    continue;
 	}
 
-	if (cptr->stbits.state != old_state) {
-	    changes = TRUE;
-	    break;
-	}
-	cptr_to_search_value (cptr, new_value);
-	if ((new_value[0] != old_value[0])
-	    | (new_value[1] != old_value[1])
-	    | (new_value[2] != old_value[2])
-	    | (new_value[3] != old_value[3])) {
+	if (!val_equal (cptr, &old_value)) {
 	    changes = TRUE;
 	    break;
 	}
@@ -1818,7 +1808,7 @@ void sig_modify_en_signal (
     Boolean	is_cosmos)
 {
     Signal	*new_sig_ptr;
-    SignalLW_t	*base_cptr, *en_cptr;
+    Value_t	*base_cptr, *en_cptr;
     Value_t	new_value, base_value, en_value;
     int		has_ones;
     int		has_zeros;
@@ -1840,14 +1830,15 @@ void sig_modify_en_signal (
     new_sig_ptr->signame = strdup (new_sig_ptr->signame);
     new_sig_ptr->copyof = NULL;
     new_sig_ptr->blocks = BLK_SIZE;
-    new_sig_ptr->bptr = (SignalLW_t *)XtMalloc ((new_sig_ptr->blocks*sizeof(uint_t))
+    new_sig_ptr->bptr = (Value_t *)XtMalloc ((new_sig_ptr->blocks*sizeof(uint_t))
 						+ (sizeof(Value_t)*2 + 2));
+    value_zero (new_sig_ptr->bptr);	/* So we know is empty */
     new_sig_ptr->cptr = new_sig_ptr->bptr;
 
-    base_cptr = (SignalLW_t *)(base_sig_ptr->bptr),
-    en_cptr = (SignalLW_t *)(en_sig_ptr->bptr);
-    cptr_to_value (base_cptr, &base_value);
-    cptr_to_value (en_cptr, &en_value);
+    base_cptr = base_sig_ptr->bptr;
+    en_cptr = en_sig_ptr->bptr;
+    value_cpy (&base_value, base_cptr);
+    value_cpy (&en_value, en_cptr);
 
     has_ones = has_zeros = 0;
     while ((CPTR_TIME(base_cptr) != EOT) 
@@ -1858,14 +1849,14 @@ void sig_modify_en_signal (
 	    }*/
 	 
 	if (CPTR_TIME(base_cptr) == CPTR_TIME(en_cptr)) {
-	    cptr_to_value (en_cptr, &en_value);
-	    cptr_to_value (base_cptr, &base_value);
+	    value_cpy (&en_value, en_cptr);
+	    value_cpy (&base_value, base_cptr);
 	}
 	else if (CPTR_TIME(base_cptr) < CPTR_TIME(en_cptr)) {
-	    cptr_to_value (base_cptr, &base_value);
+	    value_cpy (&base_value, base_cptr);
 	}
 	else {
-	    cptr_to_value (en_cptr, &en_value);
+	    value_cpy (&en_value, en_cptr);
 	}
 
 	/** start of determining new value **/
@@ -1895,11 +1886,7 @@ void sig_modify_en_signal (
 
 	/* printf ("has0=%d has1=%d\n", has_zeros, has_ones); */
 
-	new_value.siglw.number = base_value.siglw.number;
-	new_value.number[0] = base_value.number[0];
-	new_value.number[1] = base_value.number[1];
-	new_value.number[2] = base_value.number[2];
-	new_value.number[3] = base_value.number[3];
+	value_cpy (&new_value, &base_value);
 
 	if (is_cosmos) {
 	    if (has_ones) {
@@ -1923,17 +1910,17 @@ void sig_modify_en_signal (
 
 	/* Calc time */
 	if (CPTR_TIME(base_cptr) == CPTR_TIME(en_cptr)) {
-	    new_value.siglw.stbits.time = CPTR_TIME(base_cptr);
-	    base_cptr += base_sig_ptr->lws;
-	    en_cptr += en_sig_ptr->lws;
+	    new_value.time = CPTR_TIME(base_cptr);
+	    base_cptr = CPTR_NEXT(base_cptr);
+	    en_cptr = CPTR_NEXT(en_cptr);
 	}
 	else if (CPTR_TIME(base_cptr) < CPTR_TIME(en_cptr)) {
-	    new_value.siglw.stbits.time = CPTR_TIME(base_cptr);
-	    base_cptr += base_sig_ptr->lws;
+	    new_value.time = CPTR_TIME(base_cptr);
+	    base_cptr = CPTR_NEXT(base_cptr);
 	}
 	else {
-	    new_value.siglw.stbits.time = CPTR_TIME(en_cptr);
-	    en_cptr += en_sig_ptr->lws;
+	    new_value.time = CPTR_TIME(en_cptr);
+	    en_cptr = CPTR_NEXT(en_cptr);
 	}
 
 	if ((CPTR_TIME(base_cptr) == EOT) && (CPTR_TIME(en_cptr) == EOT)) {
@@ -1951,7 +1938,7 @@ void sig_modify_en_signal (
     }
 
     /* Add ending data & EOT marker */
-    new_value.siglw.stbits.time = EOT;
+    new_value.time = EOT;
     fil_add_cptr (new_sig_ptr, &new_value, TRUE);
     new_sig_ptr->cptr = new_sig_ptr->bptr;
 

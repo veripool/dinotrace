@@ -72,57 +72,106 @@
 
 /****************************** UTILITIES ******************************/
 
+void    value_strcat_lw (
+    Trace *trace,
+    char *strg,
+    uint_t lw)
+{
+    /* Add to end */
+    strg += strlen(strg);
+    if (trace->busrep == BUSREP_HEX_UN)
+	sprintf (strg,"%x", lw);
+    else if (trace->busrep == BUSREP_OCT_UN)
+	sprintf (strg,"%o", lw);
+    else
+	sprintf (strg,"%d", lw);
+}
+
 void    value_to_string (
     Trace *trace,
     char *strg,
-    uint_t cptr[],
-    char seperator)		/* What to print between the values */
+    Value_t *value_ptr,
+    char separator)		/* What to print between the values */
 {
-    if (cptr[3]) {
-	if (trace->busrep == BUSREP_HEX_UN)
-	    sprintf (strg,"%x%c%08x%c%08x%c%08x", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
-	else if (trace->busrep == BUSREP_OCT_UN)
-	    sprintf (strg,"%o%c%010o%c%010o%c%010o", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
-	else
-	    sprintf (strg,"%d%c%010d%c%010d%c%010d", cptr[3], seperator, cptr[2], seperator, cptr[1], seperator, cptr[0]);
+    char sep[2];
+    sep[0] = separator; sep[1] = '\0';
+    switch (value_ptr->siglw.stbits.state) {
+    case STATE_1:
+	strg[0] = '1';
+	strg[1] = '\0';
+	return;
+	
+    case STATE_0:
+	strg[0] = '0';
+	strg[1] = '\0';
+	return;
+	
+    case STATE_U:
+	strg[0] = 'U';
+	strg[1] = '\0';
+	return;
+	
+    case STATE_Z:
+	strg[0] = 'Z';
+	strg[1] = '\0';
+	return;
+	
+    case STATE_B32:
+	strg[0] = '\0';
+	value_strcat_lw (trace, strg, value_ptr->number[0]);
+	return;
+	
+    case STATE_B128:
+	strg[0] = '\0';
+	value_strcat_lw (trace, strg, value_ptr->number[3]);
+	strcat (strg, sep);
+	value_strcat_lw (trace, strg, value_ptr->number[2]);
+	strcat (strg, sep);
+	value_strcat_lw (trace, strg, value_ptr->number[1]);
+	strcat (strg, sep);
+	value_strcat_lw (trace, strg, value_ptr->number[0]);
+	return;
+	
+    default:
+	strg[0] = '?';
+	strg[1] = '\0';
+	return;
     }
-    else if (cptr[2]) {
-	if (trace->busrep == BUSREP_HEX_UN)
-	    sprintf (strg,"%x%c%08x%c%08x", cptr[2], seperator, cptr[1], seperator, cptr[0]);
-	else if (trace->busrep == BUSREP_OCT_UN)
-	    sprintf (strg,"%o%c%010o%c%010o", cptr[2], seperator, cptr[1], seperator, cptr[0]);
-	else
-	    sprintf (strg,"%d%c%010d%c%010d", cptr[2], seperator, cptr[1], seperator, cptr[0]);
+}
+
+void	val_minimize (
+    Value_t	*value_ptr
+    )
+    /* Given a STATE_B128, try to shrink to something smaller if we can */
+{
+    if (value_ptr->siglw.stbits.state != STATE_B128) {
+	}
+    else if ((value_ptr->number[0] == 0)
+	     && (value_ptr->number[1] == 0)
+	     && (value_ptr->number[2] == 0)
+	     && (value_ptr->number[3] == 0)) {
+	value_ptr->siglw.stbits.state = STATE_0;
     }
-    else if (cptr[1]) {
-	if (trace->busrep == BUSREP_HEX_UN)
-	    sprintf (strg,"%x%c%08x", cptr[1], seperator, cptr[0]);
-	else if (trace->busrep == BUSREP_OCT_UN)
-	    sprintf (strg,"%o%c%010o", cptr[1], seperator, cptr[0]);
-	else
-	    sprintf (strg,"%d%c%010d", cptr[1], seperator, cptr[0]);
+    else if ((value_ptr->number[1] == 0)
+	     && (value_ptr->number[2] == 0)
+	     && (value_ptr->number[3] == 0)) {
+	value_ptr->siglw.stbits.state = STATE_B32;
     }
-    else {
-	if (trace->busrep == BUSREP_HEX_UN)
-	    sprintf (strg,"%x", cptr[0]);
-	else if (trace->busrep == BUSREP_OCT_UN)
-	    sprintf (strg,"%o", cptr[0]);
-	else
-	    sprintf (strg,"%d", cptr[0]);
-    }
+    value_ptr->siglw.stbits.size = STATE_SIZE(value_ptr->siglw.stbits.state);
 }
 
 void    string_to_value (
     Trace *trace,
     char *strg,
-    uint_t cptr[])
+    Value_t *value_ptr)
 {
     register char value;
     uint_t MSO = (7<<29);		/* Most significant hex digit */
     uint_t MSH = (15<<28);	/* Most significant octal digit */
     register char *cp;
+    uint_t *nptr = &(value_ptr->number[0]);
 
-    cptr[0] = cptr[1] = cptr[2] = cptr[3] = 0;
+    value_zero (value_ptr);
 
     for (cp=strg; *cp; cp++) {
 	value = -1;
@@ -134,60 +183,61 @@ void    string_to_value (
 	    value = *cp - ('a' - 10);
 
 	if (trace->busrep == BUSREP_HEX_UN && value >=0 && value <= 15) {
-	    cptr[3] = (cptr[3]<<4) + ((cptr[2] & MSH)>>28);
-	    cptr[2] = (cptr[2]<<4) + ((cptr[1] & MSH)>>28);
-	    cptr[1] = (cptr[1]<<4) + ((cptr[0] & MSH)>>28);
-	    cptr[0] = (cptr[0]<<4) + value;
+	    nptr[3] = (nptr[3]<<4) + ((nptr[2] & MSH)>>28);
+	    nptr[2] = (nptr[2]<<4) + ((nptr[1] & MSH)>>28);
+	    nptr[1] = (nptr[1]<<4) + ((nptr[0] & MSH)>>28);
+	    nptr[0] = (nptr[0]<<4) + value;
 	}
 	else if (trace->busrep == BUSREP_OCT_UN && value >=0 && value <= 7) {
-	    cptr[3] = (cptr[3]<<3) + ((cptr[2] & MSO)>>29);
-	    cptr[2] = (cptr[2]<<3) + ((cptr[1] & MSO)>>29);
-	    cptr[1] = (cptr[1]<<3) + ((cptr[0] & MSO)>>29);
-	    cptr[0] = (cptr[0]<<3) + value;
+	    nptr[3] = (nptr[3]<<3) + ((nptr[2] & MSO)>>29);
+	    nptr[2] = (nptr[2]<<3) + ((nptr[1] & MSO)>>29);
+	    nptr[1] = (nptr[1]<<3) + ((nptr[0] & MSO)>>29);
+	    nptr[0] = (nptr[0]<<3) + value;
 	}
 	else if (trace->busrep == BUSREP_DEC_UN && value >=0 && value <= 9) {
 	    /* This may be buggy for large numbers */
-	    cptr[3] = (cptr[3]*10) + ((cp>=(strg+30))?cp[-30]:0);
-	    cptr[2] = (cptr[2]*10) + ((cp>=(strg+20))?cp[-20]:0);
-	    cptr[1] = (cptr[1]*10) + ((cp>=(strg+10))?cp[-10]:0);
-	    cptr[0] = (cptr[0]*10) + value;
+	    nptr[3] = (nptr[3]*10) + ((cp>=(strg+30))?cp[-30]:0);
+	    nptr[2] = (nptr[2]*10) + ((cp>=(strg+20))?cp[-20]:0);
+	    nptr[1] = (nptr[1]*10) + ((cp>=(strg+10))?cp[-10]:0);
+	    nptr[0] = (nptr[0]*10) + value;
 	}
     }
+
+    value_ptr->siglw.stbits.state = STATE_B128;
+    val_minimize (value_ptr);
 }
 
-void    cptr_to_search_value (
-    SignalLW_t	*cptr,
-    uint_t value[])
+Boolean  val_equal (
+    Value_t	*vptra,
+    Value_t	*vptrb)
 {
-    value[0] = value[1] = value[2] = value[3] = 0;
-    switch (cptr->stbits.state) {
-      case STATE_0:
-      case STATE_U:
-      case STATE_Z:
-	break;
-
-      case STATE_1:
-	value[0] = 1;
-	break;
-	
-      case STATE_B32:
-	value[0] = *((uint_t *)cptr+1);
-	break;
-	
-      case STATE_B128:
-	value[0] = *((uint_t *)cptr+1);
-	value[1] = *((uint_t *)cptr+2);
-	value[2] = *((uint_t *)cptr+3);
-	value[3] = *((uint_t *)cptr+4);
-	break;
-    } /* switch */
+    switch ( vptra->siglw.stbits.state ) {
+    case STATE_0:
+    case STATE_1:
+    case STATE_U:
+    case STATE_Z:
+	return (vptra->siglw.stbits.state == vptrb->siglw.stbits.state);
+    case STATE_B32:
+	if (vptrb->siglw.stbits.state != STATE_B32) return (0);
+	if (vptra->number[0] != vptrb->number[0]) return (0);
+	return (1);
+    case STATE_B128:
+	if (vptrb->siglw.stbits.state != STATE_B32) return (0);
+	if (vptra->number[0] != vptrb->number[0]) return (0);
+	if (vptra->number[1] != vptrb->number[1]) return (0);
+	if (vptra->number[2] != vptrb->number[2]) return (0);
+	if (vptra->number[3] != vptrb->number[3]) return (0);
+	return (1);
+    default:
+	return (0);
+    }
 }
 
 void	val_update_search ()
 {
     Trace	*trace;
     Signal	*sig_ptr;
-    SignalLW_t	*cptr;
+    Value_t	*cptr;
     int		cursorize;
     register int i;
     DCursor	*csr_ptr;
@@ -224,34 +274,18 @@ void	val_update_search ()
 		    sig_ptr->srch_ena[i] = FALSE;
 		}
 
-		cptr = (SignalLW_t *)(sig_ptr->bptr);
-		for (; (CPTR_TIME(cptr) != EOT); cptr += CPTR_SIZE(cptr)) {
-		    switch (cptr->stbits.state) {
+		for (cptr = sig_ptr->bptr; (CPTR_TIME(cptr) != EOT);
+		     cptr = CPTR_NEXT(cptr)) {
+		    switch (cptr->siglw.stbits.state) {
 		      case STATE_B32:
+		      case STATE_B128:
 			for (i=0; i<MAX_SRCH; i++) {
-			    if ( ( global->val_srch[i].value[0]== *((uint_t *)cptr+1) )
-				&& ( global->val_srch[i].value[1] == 0) 
-				&& ( global->val_srch[i].value[2] == 0)
-				&& ( global->val_srch[i].value[3] == 0)
+			    if (val_equal (cptr, &global->val_srch[i].value)
 				&& ( matches[i] || wildmat (sig_ptr->signame, global->val_srch[i].signal))  ) {
 				matches[i] = TRUE;
 				if ( global->val_srch[i].color != 0)  sig_ptr->srch_ena[i] = TRUE;
 				if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
 				/* don't break, because if same value on two lines, one with cursor and one without will fail */
-			    }
-			}
-			break;
-			
-		      case STATE_B128:
-			for (i=0; i<MAX_SRCH; i++) {
-			    if ( ( global->val_srch[i].value[0]== *((uint_t *)cptr+1) )
-				&& ( global->val_srch[i].value[1]== *((uint_t *)cptr+2) )
-				&& ( global->val_srch[i].value[2]== *((uint_t *)cptr+3) )
-				&& ( global->val_srch[i].value[3]== *((uint_t *)cptr+4) )
-				&& ( matches[i] || wildmat (sig_ptr->signame, global->val_srch[i].signal))  ) {
-				matches[i] = TRUE;
-				if ( global->val_srch[i].color != 0)  sig_ptr->srch_ena[i] = TRUE;
-				if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
 			    }
 			}
 			break;
@@ -372,10 +406,9 @@ char *val_examine_popup_cptr_string (
     Signal	*sig_ptr,
     DTime	time)
 {
-    SignalLW_t	*cptr;
+    Value_t	*cptr;
     static char	strg[2000];
     char	strg2[2000];
-    uint_t	value[4];
     int		rows, cols, bit, row, col, par;
     uint_t	bit_value;
     char	*format;
@@ -383,7 +416,7 @@ char *val_examine_popup_cptr_string (
     if (DTPRINT_ENTRY) printf ("\ttime = %d, signal = %s\n", time, sig_ptr->signame);
 
     /* Get information */
-    cptr = cptr_at_time (sig_ptr, time);
+    cptr = value_at_time (sig_ptr, time);
     
     strcpy (strg, sig_ptr->signame);
 	
@@ -395,18 +428,17 @@ char *val_examine_popup_cptr_string (
 	time_to_string (trace, strg2, CPTR_TIME(cptr), FALSE);
 	strcat (strg, strg2);
 	strcat (strg, " - ");
-	time_to_string (trace, strg2, CPTR_TIME(cptr + CPTR_SIZE(cptr)), FALSE);
+	time_to_string (trace, strg2, CPTR_TIME(CPTR_NEXT(cptr)), FALSE);
 	strcat (strg, strg2);
 	strcat (strg, ":\n");
     }
     
-    cptr_to_search_value (cptr, value);
-    
-    switch (cptr->stbits.state) {
+    switch (cptr->siglw.stbits.state) {
     case STATE_0:
+	strcat (strg, "= 0\n");
+	break;
     case STATE_1:
-	sprintf (strg2, "= %d\n", value[0]);
-	strcat (strg, strg2);
+	strcat (strg, "= 1\n");
 	break;
 	
     case STATE_Z:
@@ -422,13 +454,13 @@ char *val_examine_popup_cptr_string (
     case STATE_B32:
     case STATE_B128:
 	strcat (strg, "= ");
-	value_to_string (trace, strg2, value, ' ');
+	value_to_string (trace, strg2, cptr, ' ');
 	strcat (strg, strg2);
 	if ( (sig_ptr->decode != NULL) 
-	     && (cptr->stbits.state == STATE_B32)
-	     && (value[0] < sig_ptr->decode->numstates)
-	     && (sig_ptr->decode->statename[value[0]][0] != '\0') ) {
-	    sprintf (strg2, " = %s\n", sig_ptr->decode->statename[value[0]] );
+	     && (cptr->siglw.stbits.state == STATE_B32)
+	     && (cptr->number[0] < sig_ptr->decode->numstates)
+	     && (sig_ptr->decode->statename[cptr->number[0]][0] != '\0') ) {
+	    sprintf (strg2, " = %s\n", sig_ptr->decode->statename[cptr->number[0]] );
 	    strcat (strg, strg2);
 	}
 	else strcat (strg, "\n");
@@ -447,10 +479,10 @@ char *val_examine_popup_cptr_string (
 	    for (col = cols - 1; col >= 0; col--) {
 		bit = (row * cols + col);
 		
-		if (bit<32) bit_value = ( value[0] >> bit ) & 1;
-		else if (bit<64) bit_value = ( value[1] >> (bit-32) ) & 1;
-		else if (bit<96) bit_value = ( value[2] >> (bit-64) ) & 1;
-		else  bit_value = ( value[3] >> (bit-96) ) & 1;
+		if (bit<32) bit_value = ( cptr->number[0] >> bit ) & 1;
+		else if (bit<64) bit_value = ( cptr->number[1] >> (bit-32) ) & 1;
+		else if (bit<96) bit_value = ( cptr->number[2] >> (bit-64) ) & 1;
+		else  bit_value = ( cptr->number[3] >> (bit-96) ) & 1;
 		
 		if ((bit>=0) && (bit <= sig_ptr->bits)) {
 		    sprintf (strg2, format, sig_ptr->msb_index +
@@ -467,10 +499,10 @@ char *val_examine_popup_cptr_string (
 	if (sig_ptr->bits > 2) {
 	    par = 0;
 	    for (bit=0; bit<=sig_ptr->bits; bit++) {
-		if (bit<32) bit_value = ( value[0] >> bit ) & 1;
-		else if (bit<64) bit_value = ( value[1] >> (bit-32) ) & 1;
-		else if (bit<96) bit_value = ( value[2] >> (bit-64) ) & 1;
-		else  bit_value = ( value[3] >> (bit-96) ) & 1;
+		if (bit<32) bit_value = ( cptr->number[0] >> bit ) & 1;
+		else if (bit<64) bit_value = ( cptr->number[1] >> (bit-32) ) & 1;
+		else if (bit<96) bit_value = ( cptr->number[2] >> (bit-64) ) & 1;
+		else  bit_value = ( cptr->number[3] >> (bit-96) ) & 1;
 		
 		par ^= bit_value;
 	    }
@@ -667,7 +699,7 @@ void    val_search_widget_update (
 	XtSetValues (trace->value.cursor[search_pos], arglist, 1);
 
 	/* Update with current search values */
-	value_to_string (trace, strg, global->val_srch[search_pos].value, ' ');
+	value_to_string (trace, strg, &global->val_srch[search_pos].value, ' ');
 	XmTextSetString (trace->value.text[search_pos], strg);
 
 	/* Update with current signal values */
@@ -852,7 +884,7 @@ void    val_search_ok_cb (
 	
 	/* Update with current search values */
 	strg = XmTextGetString (trace->value.text[i]);
-	string_to_value (trace, strg, global->val_srch[i].value);
+	string_to_value (trace, strg, &global->val_srch[i].value);
 
 	/* Update with current search values */
 	strg = XmTextGetString (trace->value.signal[i]);
@@ -860,7 +892,7 @@ void    val_search_ok_cb (
 
 	if (DTPRINT_SEARCH) {
 	    char strg2[MAXVALUELEN];
-	    value_to_string (trace, strg2, global->val_srch[i].value, '_');
+	    value_to_string (trace, strg2, &global->val_srch[i].value, '_');
 	    printf ("Search %d) %d   '%s' -> '%s'\n", i, global->val_srch[i].color, strg, strg2);
 	}
     }
@@ -889,7 +921,7 @@ void    val_highlight_ev (
 {
     DTime	time;
     Signal	*sig_ptr;
-    SignalLW_t	*cptr;
+    Value_t	*cptr;
     VSearchNum	search_pos;
     
     if (DTPRINT_ENTRY) printf ("In val_highlight_ev - trace=%p\n",trace);
@@ -898,13 +930,13 @@ void    val_highlight_ev (
     time = posx_to_time (trace, ev->x);
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr && time<=0) return;
-    cptr = cptr_at_time (sig_ptr, time);
+    cptr = value_at_time (sig_ptr, time);
     if (!cptr) return;
     
     /* Change the color */
     if (global->highlight_color > 0) {
 	search_pos = global->highlight_color - 1;
-	cptr_to_search_value (cptr, global->val_srch[search_pos].value);
+	memcpy (cptr, &global->val_srch[search_pos].value, sizeof(Value_t));
 	strcpy (global->val_srch[search_pos].signal, sig_ptr->signame);
 	if (!global->val_srch[search_pos].color
 	    && !global->val_srch[search_pos].cursor ) {
@@ -943,7 +975,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Name") );
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNy, 3);
-	trace->annotate.label1 = XmCreateLabel (trace->annotate.dialog,"",arglist,3);
+	trace->annotate.label1 = XmCreateLabel (trace->annotate.dialog,"l1",arglist,3);
 	DManageChild (trace->annotate.label1, trace, MC_NOKEYS);
 	
 	/* create the file name text widget */
@@ -953,7 +985,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[3], XmNy, 35);
 	XtSetArg (arglist[4], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
-	trace->annotate.text = XmCreateText (trace->annotate.dialog,"",arglist,6);
+	trace->annotate.text = XmCreateText (trace->annotate.dialog,"filename",arglist,6);
 	DManageChild (trace->annotate.text, trace, MC_NOKEYS);
 	DAddCallback (trace->annotate.text, XmNactivateCallback, val_annotate_ok_cb, trace);
 	
@@ -961,7 +993,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include which user (solid) cursor colors:") );
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNy, 75);
-	trace->annotate.label2 = XmCreateLabel (trace->annotate.dialog,"",arglist,3);
+	trace->annotate.label2 = XmCreateLabel (trace->annotate.dialog,"l2",arglist,3);
 	DManageChild (trace->annotate.label2, trace, MC_NOKEYS);
 	
 	for (i=0; i<=MAX_SRCH; i++) {
@@ -978,7 +1010,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include which auto (dotted) cursor colors:") );
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNy, 145);
-	trace->annotate.label4 = XmCreateLabel (trace->annotate.dialog,"",arglist,3);
+	trace->annotate.label4 = XmCreateLabel (trace->annotate.dialog,"l4",arglist,3);
 	DManageChild (trace->annotate.label4, trace, MC_NOKEYS);
 	
 	for (i=0; i<=MAX_SRCH; i++) {
@@ -1102,12 +1134,11 @@ void    val_annotate_do_cb (
 {
     int		i;
     Signal	*sig_ptr;
-    SignalLW_t	*cptr;
+    Value_t	*cptr;
     FILE	*dump_fp;
     DCursor 	*csr_ptr;		/* Current cursor being printed */
     char	strg[1000];
     int		csr_num, csr_num_incl;
-    int		value[4];
     
     /* Initialize requestor before first usage? */
     /*
@@ -1166,7 +1197,7 @@ void    val_annotate_do_cb (
     fprintf (dump_fp, "(setq dinotrace-value-searches '(\n");
     for (i=1; i<=MAX_SRCH; i++) {
 	if (global->val_srch[i-1].color) {
-	    value_to_string (global->trace_head, strg, global->val_srch[i-1].value, '_');
+	    value_to_string (global->trace_head, strg, &global->val_srch[i-1].value, '_');
 	    fprintf (dump_fp, "\t[\"%s\"\t%d\t\"%s\"]\n", strg,
 		     i, colornum_to_name(i));
 	}
@@ -1196,7 +1227,7 @@ void    val_annotate_do_cb (
 	    fprintf (dump_fp, "\t(\"%s\"\t", sig_ptr->signame);
 	    if (global->anno_ena_signal[sig_ptr->color]) fprintf (dump_fp, "%d\t(", sig_ptr->color);
 	    else     fprintf (dump_fp, "nil\t(");
-	    cptr = (SignalLW_t *)sig_ptr->cptr;
+	    cptr = sig_ptr->cptr;
 
 	    csr_num=0;
 	    for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
@@ -1207,15 +1238,14 @@ void    val_annotate_do_cb (
 		    /* Note grabs value to right of cursor */
 		    while ( (CPTR_TIME(cptr) <= csr_ptr->time)
 			   && (CPTR_TIME(cptr) != EOT)) {
-			cptr += CPTR_SIZE(cptr);
+			cptr = CPTR_NEXT(cptr);
 		    }
 		    if ( (CPTR_TIME(cptr) > csr_ptr->time)
-			&& ( cptr != (SignalLW_t *)sig_ptr->cptr)) {
-			cptr -= CPTR_SIZE_PREV(cptr);
+			&& ( cptr > sig_ptr->bptr)) {
+			cptr = CPTR_PREV(cptr);
 		    }
 
-		    cptr_to_search_value (cptr, value);
-		    value_to_string (trace, strg, value, '_');
+		    value_to_string (trace, strg, cptr, '_');
 		    
 		    /* First value must have `, last must have ', commas in middle */
 		    if (csr_num==1 && csr_num==csr_num_incl)

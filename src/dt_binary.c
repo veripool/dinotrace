@@ -73,7 +73,7 @@
 #endif /* VMS */
 
 /* Extract 1 bit or 2 bits from bit position POS in the buffer */
-/* Type casting to long is important to prevent bit 7 & 8 from seperating */
+/* Type casting to long is important to prevent bit 7 & 8 from separating */
 /* Note that pos is used twice, no ++'s! */
 #define EXTRACT_2STATE(buf,pos)	((int)(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 1))
 #define EXTRACT_4STATE(buf,pos)	((int)(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 3))
@@ -275,7 +275,7 @@ void	fil_decsim_binary_add_cptr (
     register	Value	value;
 
     /* zero the value */
-    value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
+    value_zero (&value);
 
     if (sig_ptr->bits == 0) {
 	/* Single bit signal */
@@ -312,7 +312,7 @@ void	fil_decsim_binary_add_cptr (
     }
 	    
     value.siglw.stbits.state = state;
-    value.siglw.stbits.time = time;
+    value.siglw.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
 }
 
@@ -532,7 +532,7 @@ void	fil_tempest_binary_add_cptr (
     Value_t	value;
 
     /* zero the value */
-    value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
+    value_zero (&value);
 
     /* determine starting index and bit mask */
     if (sig_ptr->bits == 0) {
@@ -594,7 +594,7 @@ void	fil_tempest_binary_add_cptr (
     }
 	    
     value.siglw.stbits.state = state;
-    value.siglw.stbits.time = time;
+    value.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
 
     /*if (DTPRINT_FILE) printf ("Sig %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.stbits.state,

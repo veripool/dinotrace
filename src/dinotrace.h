@@ -155,6 +155,8 @@
 #define STATE_B128 5		/* 33-128 bit vector */
 #define STATE_UN6 6		/* not used */
 #define STATE_UN7 7		/* not used */
+/* Size in LWs for each state.  Note st may be invalid, which must return a small non-zero value */
+#define STATE_SIZE(st) (((st)==STATE_B32)?3:(((st)==STATE_B128)?6:2))
 
 #define PDASH_HEIGHT	2	/* Heigth of primary dash, <= SIG_SPACE, in pixels */
 #define SDASH_HEIGHT	2	/* Heigth of primary dash, <= SIG_SPACE, in pixels */
@@ -501,30 +503,36 @@ typedef struct st_signalstate {
     char statename[MAXSTATENAMES][MAXVALUELEN];	/* Name for each state, nil=keep */
 } SignalState;
 
-/* Signal LW: A structure for each transition of each signal, */
-/* 32/64/96 state signals have an additional 1, 2, or 3 LWs after this */
-typedef union un_signal_lw {
+/* Signal LW: A integer broken down into control fields */
+/* 32/64/96/256 state signals have an additional 1, 2, or 3 LWs after this */
+typedef union {
     struct {
-	uint_t state:3;
-	uint_t time:29;
+	uint_t pad:8;		/* Unused */
+	uint_t color:8;		/* (>4bits) Color to use when drawing this edge */
+	uint_t state:8;		/* (>4bits) State of this value */
+	uint_t size_prev:4;	/* (>4bits) Size of previous cptr array, 0 if end */
+	uint_t size:4;		/* (>4bits) Size of this cptr array, including header */
     } stbits;
     uint_t number;
 } SignalLW_t;
-#define EOT	0x1FFFFFFF	/* SignalLW End of time indicator if in .time */
+#define EOT	0x7FFFFFFF	/* SignalLW End of time indicator if in .time (max signed) */
 
 /* Value: A signal_lw and 3 data elements */
 /* A cptr points to at least a SignalLW and at most a Value */
-/* since from 0 to 2 of the uint_ts are dropped in the cptr array */
+/* since from 0 to all of the uint_ts are dropped in the cptr array */
+/* Because of this, you can't just cptr++ to point to the next.  USE cptr=CPTR_NEXT(cptr) */
 typedef struct {
-    SignalLW_t	siglw;
-    uint_t	number[4];	/* [0]=bits 31-0, [1]=bits 63-32, [2]=bits 95-64, [3]=bits 127-96 */
+    SignalLW_t	siglw;		/* Header information */
+    DTime	time;		/* Time of this entry */
+    uint_t	number[8];	/* [0]=bits 31-0, [1]=bits 63-32, [2]=bits 95-64, [3]=bits 127-96 */
+    				/* If 4-state, additional 4, where 10=z, 11=u */
 } Value_t;
 
 /* Value searching structure */
 typedef struct {
     ColorNum	color;		/* Color number (index into trace->xcolornum) 0=OFF*/
     ColorNum	cursor;		/* Enable cursors, color or 0=OFF */
-    uint_t	value[4];	/* Value to search for, (128 bit LW format) */
+    Value_t	value;		/* Value to search for, (128 bit LW format) */
     char	signal[MAXSIGLEN];	/* Signal to search for */
 } ValSearch;
 
@@ -567,8 +575,9 @@ struct st_signal {
     struct st_signal	*forward;	/* Forward link to next signal */
     struct st_signal	*backward;	/* Backward link to previous signal */
 
-    SignalLW_t		*bptr;		/* begin of time data ptr */
-    SignalLW_t		*cptr;		/* current time data ptr */
+    /* Storage of values.  IMPORTANT: You must use CPTR_NEXT and CPTR_PREV to illiterate! */
+    Value_t		*bptr;		/* begin of time data ptr */
+    Value_t		*cptr;		/* current time data ptr */
 
     struct st_signal	*copyof;	/* Link to signal this is copy of (or NULL) */
     Trace		*trace;		/* Trace signal belongs to (originally) */
@@ -589,7 +598,6 @@ struct st_signal {
     uint_t		type;		/* Type of signal, STATE_B32, _B64, etc */
     SignalState		*decode;	/* Pointer to decode information, NULL if none */
     char *		(*decode_fptr)(); /* Pointer to function that decodes statenames, NULL if none */
-    uint_t		lws;		/* Number of LWs in a SignalLW record */
     ulong_t		blocks;		/* Number of time data blocks allocated, in # of ints */
     int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20), -1=none */
     int			lsb_index;	/* Bit subscript of last index in a signal (<20:10> == 10), -1=none */
@@ -635,10 +643,10 @@ struct st_trace {
     uint_t		numsigstart;	/* signal to start displaying */
 
     Window		wind;		/* X window */
+    Pixmap		pixmap;		/* Primary drawable area pixmap */
     Pixel		xcolornums[MAXCOLORS];	/* X color numbers (pixels) for normal/highlight */
     Pixel		barcolornum;	/* X color number for the signal bar background */
     GC                  gc;
-    GC                  hscroll_gc;
 
     MenuWidgets		menu;
     Widget		menu_close;	/* Pointer to menu_close widget */
@@ -672,14 +680,15 @@ struct st_trace {
     struct stat		filestat;	/* Information on the current file */
     uint_t		fileformat;	/* Type of trace file (see FF_*) */
     Boolean		loaded;		/* True if the filename is loaded in */
-    char		vector_seperator;	/* Bus seperator character, usually "<" */
-    char		vector_endseperator;	/* Bus ending seperator character, usually ">" */
+    char		vector_separator;	/* Bus separator character, usually "<" */
+    char		vector_endseparator;	/* Bus ending separator character, usually ">" */
 
     uint_t		redraw_needed;	/* Need to refresh the screen when get a chance, TRD_* bit fielded */
 #define				TRD_REDRAW	0x1
 #define				TRD_EXPOSE	0x2
 
     Dimension		width;		/* Screen width */
+    Dimension		width_last;	/* Last start X pos of signals on display */
     Dimension		sighgt;		/* Height of signals (customize) */
 
     Position		ygridtime;	/* Start Y pos of grid times (get_geom) */
@@ -688,6 +697,7 @@ struct st_trace {
     Position		ycursortimerel;	/* Start Y pos of cursor relative times (get_geom) */
     Position		ycursortimeabs;	/* Start Y pos of cursor absolute times (get_geom) */
     Dimension		height;		/* Screen height */
+    Position		xstart_last;	/* Last start X pos of signals on display */
 
     uint_t		sigrf;		/* Signal rise/fall time spec */
     BusRep_t		busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS/DBUS */

@@ -57,6 +57,7 @@
 
 #include "dinotrace.h"
 
+#include "assert.h"
 #include <Xm/Text.h>
 #include <Xm/MessageB.h>
 #include <Xm/SelectioB.h>
@@ -558,7 +559,7 @@ void	fil_string_add_cptr (
     /* zero the value */
     /* We do NOT need to set value.siglw.number, as is set later */
     /* I set it anyways to get it into the cache */
-    value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
+    value_zero (&value);
 
     if (sig_ptr->bits == 0) {
 	/* This branch not used for verilog, only Decsim */
@@ -603,8 +604,10 @@ void	fil_string_add_cptr (
 	    state_chr |= *cp++;
 	}
 	switch (state_chr) {
-	  case '0':
-	  case '1':
+	case '0':
+	    /* Got all zeros, else LSB would have gotten set */
+	case '1':
+	    /* Mix of 0's and 1's, or all 1's */
 	    /* compute the value */
 	    /* Note '0'->0 and '1'->1 by just ANDing with 1 */
 	    state = sig_ptr->type;
@@ -622,12 +625,12 @@ void	fil_string_add_cptr (
 		value.number[0] = (value.number[0]<<1) | (*cp++=='1');
 	    break;
 
-	  case 'z':
-	  case 'Z':
+	case 'z':
+	case 'Z':
 	    state = STATE_Z;
 	    break;
 
-	  default:
+	default:
 	    state = STATE_U;
 	    break;
 	}
@@ -635,7 +638,7 @@ void	fil_string_add_cptr (
 
     /* if (DTPRINT_FILE) printf ("time %d sig %s state %d\n", time, sig_ptr->signame,  state); */
     value.siglw.stbits.state = state;
-    value.siglw.stbits.time = time;
+    value.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
 }
 
@@ -648,39 +651,56 @@ void	fil_add_cptr (
     Boolean	nocheck)		/* compare against previous data */
 {
     long	diff;
-    SignalLW_t	*cptr;
+    Value_t	*cptr = sig_ptr->cptr;
 
-    printf ("Checking st %d tm %d with st %d time %d\n",
-	    value_ptr->siglw.stbits.state,
-	    value_ptr->siglw.stbits.time,
-	    ((sig_ptr->cptr) - CPTR_SIZE_PREV(cptr))->stbits.state,      
-	    CPTR_TIME((sig_ptr->cptr) - CPTR_SIZE_PREV(sig_ptr->cptr))
+    /* Important! During the adding cptr points to the __last__ value added, not the next! */
+
+    /*
+    if (DTPRINT_FILE) printf ("Checking st %d v %d tm %d with st %d v %d time %d\n",
+	    value_ptr->siglw.stbits.state, value_ptr->number[0],
+	    CPTR_TIME(value_ptr),
+	    cptr->siglw.stbits.state,      cptr->number[0],
+	    CPTR_TIME(cptr)
 	    );
+    if (DTPRINT_FILE) printf ("val: %08x %08x %08x %08x %08x %08x    ",
+	    value_ptr->siglw.number, value_ptr->time,
+	    value_ptr->number[0],value_ptr->number[1],
+	    value_ptr->number[2],value_ptr->number[3]);
+    */
 
     /* Comparing all 4 LW's works because we keep the unused LWs zeroed */
-    cptr = sig_ptr->cptr - CPTR_SIZE_PREV(sig_ptr->cptr);
     if ( nocheck
-	|| ( cptr->stbits.state != value_ptr->siglw.stbits.state )
-	|| ( cptr[1].number != value_ptr->number[0] )
-	|| ( cptr[2].number != value_ptr->number[1] )
-	|| ( cptr[3].number != value_ptr->number[2] )
-	|| ( cptr[4].number != value_ptr->number[3] ) ) {
+	|| ( cptr->siglw.stbits.state != value_ptr->siglw.stbits.state )
+	|| ( cptr->number[0] != value_ptr->number[0] )
+	|| ( cptr->number[1] != value_ptr->number[1] )
+	|| ( cptr->number[2] != value_ptr->number[2] )
+	|| ( cptr->number[3] != value_ptr->number[3] ) ) {
 
-	diff = sig_ptr->cptr - sig_ptr->bptr;
+	diff = (uint_t*)sig_ptr->cptr - (uint_t*)sig_ptr->bptr;
 	if (diff > sig_ptr->blocks ) {
+	    /* if (DTPRINT_FILE) printf ("Realloc\n"); */
 	    sig_ptr->blocks += BLK_SIZE;
-	    sig_ptr->bptr = (SignalLW_t *)XtRealloc ((char*)sig_ptr->bptr,
-						    (sig_ptr->blocks*sizeof(uint_t)) + (sizeof(Value)*2 + 2));
-	    sig_ptr->cptr = sig_ptr->bptr + diff;
+	    sig_ptr->bptr = (Value_t *)XtRealloc
+		((char*)sig_ptr->bptr,
+		 (sig_ptr->blocks*sizeof(uint_t)) + (sizeof(Value_t)*2 + 2));
+	    sig_ptr->cptr = (Value_t *)((uint_t*)sig_ptr->bptr + diff);
 	}
        
-	(sig_ptr->cptr)[0].number = value_ptr->siglw.number;
-	(sig_ptr->cptr)[1].number = value_ptr->number[0];
-	(sig_ptr->cptr)[2].number = value_ptr->number[1];
-	(sig_ptr->cptr)[3].number = value_ptr->number[2];
-	(sig_ptr->cptr)[4].number = value_ptr->number[3];
-	(sig_ptr->cptr) += CPTR_SIZE(sig_ptr->cptr);
+	/* Update size of previous */
+	/* Note that if at the beginning of a trace, the loaded value may */
+	/* be from uninitialized data, in that case we don't care about the size */
+	value_ptr->siglw.stbits.size_prev = sig_ptr->cptr->siglw.stbits.size;
+	value_ptr->siglw.stbits.size = STATE_SIZE(value_ptr->siglw.stbits.state);
+	if (sig_ptr->cptr->siglw.number || sig_ptr->cptr!=sig_ptr->bptr) {
+	    /* Not empty cptr list... have loaded something */
+	    sig_ptr->cptr = CPTR_NEXT(sig_ptr->cptr);
+	}
+
+	/* Load new datum */
+	value_cpy (sig_ptr->cptr, value_ptr);
+	/*if (DTPRINT_FILE) print_sig_info(sig_ptr);*/
     }
+
 }
 #endif
 
@@ -693,7 +713,7 @@ void read_make_busses (
     Signal	*sig_ptr;	/* ptr to current signal (lower bit number) */
     Signal	*bus_sig_ptr;	/* ptr to signal which is being bussed (upper bit number) */
     char	*bbeg;		/* bus beginning */
-    char	*sep;		/* seperator position */
+    char	*sep;		/* separator position */
     int		pos;
     char	sepchar;
     char	postbusstuff[MAXSIGLEN];
@@ -713,14 +733,14 @@ void read_make_busses (
 	     bbeg--)
 	    *bbeg = '\0';
 
-	/* Use the seperator character to split signals into vector and base */
-	/* IE "signal_1" becomes "signal" with index=1 if the seperator is _ */
-	sepchar = trace->vector_seperator;
+	/* Use the separator character to split signals into vector and base */
+	/* IE "signal_1" becomes "signal" with index=1 if the separator is _ */
+	sepchar = trace->vector_separator;
 	if (sepchar == '\0') sepchar='<';	/* Allow both '\0' and '<' for DANGER::DORMITZER */
 	sep = strrchr (sig_ptr->signame, sepchar);
 	bbeg = sep+1;
 	if (!sep || !isdigit (*bbeg)) {
-	    if (trace->vector_seperator == '\0') {
+	    if (trace->vector_separator == '\0') {
 		/* Allow numbers at end to be stripped off as the vector bit */
 		for (sep = sig_ptr->signame + strlen (sig_ptr->signame) - 1;
 		     (sep > sig_ptr->signame) && isdigit (*sep);
@@ -747,7 +767,7 @@ void read_make_busses (
 	    /* Mark this first digit, _, whatever as null (truncate the name) */
 	    *sep++ = '\0';
 	    /* Hunt for the end of the vector */
-	    while (*sep && *sep!=trace->vector_endseperator) sep++;
+	    while (*sep && *sep!=trace->vector_endseparator) sep++;
 	    /* Remember if there is stuff after the vector */
 	    if (*sep && *(sep+1)) sig_ptr->signame_buspos = sep+1;
 	}
@@ -809,7 +829,7 @@ void read_make_busses (
 	    if (sig_ptr->msb_index >= 0
 		/* Signal name */
 		&& !strcmp (sig_ptr->signame, bus_sig_ptr->signame)
-		/* Signal name following bus seperator */
+		/* Signal name following bus separator */
 		&& (sig_ptr->signame_buspos==NULL || !strcmp (sig_ptr->signame_buspos, bus_sig_ptr->signame_buspos))
 		/*  & the result would have < 128 bits */
 		&& (ABS(bus_sig_ptr->msb_index - sig_ptr->lsb_index) < 128 )
@@ -822,7 +842,7 @@ void read_make_busses (
 		/*	& not a tempest trace (because the bit ordering is backwards, <31:0> would look line 0:31 */
 		&& ((trace->fileformat != FF_TEMPEST)
 		    || (((bus_sig_ptr->file_pos) == (sig_ptr->file_pos + sig_ptr->bits + 1))
-			&& trace->vector_seperator=='<'))
+			&& trace->vector_separator=='<'))
 		&& (trace->fileformat != FF_VERILOG
 		    || ((bus_sig_ptr->file_pos + bus_sig_ptr->bits + 1) == sig_ptr->file_pos))
 		&& ! (sig_ptr->file_type.flag.vector_msb)
@@ -870,15 +890,12 @@ void read_make_busses (
 
 	/* Create the bussed name & type */
 	if (sig_ptr->bits < 1) {
-	    sig_ptr->lws = 1;
 	    sig_ptr->type = 0;
 	}
 	else if (sig_ptr->bits < 32) {
-	    sig_ptr->lws = 2;
 	    sig_ptr->type = STATE_B32;
 	}
 	else if (sig_ptr->bits < 128) {
-	    sig_ptr->lws = 5;
 	    sig_ptr->type = STATE_B128;
 	}
 
@@ -913,8 +930,9 @@ void read_make_busses (
 	
 	/* allocate the data storage memory */
 	sig_ptr->blocks = BLK_SIZE;
-	sig_ptr->bptr = (SignalLW_t *)XtMalloc ((sig_ptr->blocks*sizeof(uint_t))
+	sig_ptr->bptr = (Value_t *)XtMalloc ((sig_ptr->blocks*sizeof(uint_t))
 						+ (sizeof(Value_t)*2 + 2));
+	value_zero (sig_ptr->bptr);	/* So we know is empty */
 	sig_ptr->cptr = sig_ptr->bptr;
     }
 
@@ -926,8 +944,8 @@ void read_mark_cptr_end (
     Trace	*trace)
 {
     Signal	*sig_ptr;
-    SignalLW_t	*cptr;
     Value_t	value;
+    Boolean	msg=FALSE;
 
     /* loop thru each signal */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -935,22 +953,28 @@ void read_mark_cptr_end (
 	/* Must be a cptr which has the same time as the last time on the screen */
 	/* If none exists, create it */
 	if (sig_ptr->bptr != sig_ptr->cptr) {
-	    cptr = sig_ptr->cptr - CPTR_SIZE_PREV(cptr);
+	    Value_t	*cptr = sig_ptr->cptr;
 	    if (CPTR_TIME(cptr) != trace->end_time) {
-		cptr_to_value (cptr, &value);
-		value.siglw.stbits.time = trace->end_time;
+		value_cpy (&value, sig_ptr->cptr);
+		value.time = trace->end_time;
 		fil_add_cptr (sig_ptr, &value, TRUE);
 	    }
 	}
 	else {
-	    if (DTDEBUG) printf ("%%W, No data for signal %s\n", sig_ptr->signame);
+	    if (DTDEBUG && !msg) {
+		printf ("%%W, No data for signal %s\n\tAdditional messages suppressed\n", sig_ptr->signame);
+		msg = TRUE;
+	    }
 	}
 
 	/* Mark end of time */
-	sig_ptr->cptr->stbits.time = EOT;
+	value.time = EOT;
+	fil_add_cptr (sig_ptr, &value, TRUE);
 
 	/* re-initialize the cptr's to the bptr's */
 	sig_ptr->cptr = sig_ptr->bptr;
+
+	assert (sig_ptr->bptr->siglw.stbits.size!=0);
     }
 }
 

@@ -54,55 +54,55 @@
  * Boston, MA 02111-1307, USA.
  *
  ******************************************************************************
-! Undocumented:
-!	debug		ON | OFF
-!	print		<number> | ON | OFF
-!
-!	! Comment
-! Config:
-!	click_to_edge	ON | OFF
-!	cursor		ON | OFF
-!	refreshing	AUTO | MANUAL
-!	grid		ON | OFF	<grid_number>
-!	grid_align	<number> | ASSERTION | DEASSERTION	<grid_number>
-!	grid_resolution	<number> | AUTO | EDGE 	 <grid_number>
-!	grid_type	NORMAL | WIDE		 <grid_number>
-!	grid_signal	<signal_pattern> 	 <grid_number>
-!	grid_color	<color>		 	 <grid_number>
-!	page_inc	4 | 2 | 1
-!	print_size	A | B | EPSPORT | EPSLAND
-!	rise_fall_time	<number>
-!	signal_height	<number>
-!	time_format	%0.6lf | %0.6lg | "" 
-!	time_precision	US | NS | PS
-!	time_rep	<number> | US | NS | PS | CYCLE
-! File Format:
-!	file_format	DECSIM | TEMPEST | VERILOG
-!	save_enables	ON | OFF
-!	save_ordering	ON | OFF
-!	signal_states	<signal_pattern> = {<State>, <State>...}
-!	vector_seperator "<char>"
-!       time_multiplier	<number>
-! Geometry/resources:
-!	open_geometry	<width>[%]x<height>[%]+<xoffset>[%]+<yoff>[%]
-!	shrink_geometry	<width>%x<height>%+<xoffset>%+<yoff>%
-!	start_geometry	<width>x<height>+<xoffset>+<yoffset>
-! Modification of traces:
-!	signal_delete	<signal_pattern>
-!	signal_delete_constant	<signal_pattern> [-IGNOREXZ]
-!	signal_add	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
-!	signal_copy	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
-!	signal_move	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
-!	signal_rename	<signal_pattern> <new_signal_name>	[<color>]
-!	signal_highlight <color> <signal_pattern>
-!	cursor_add	<color> <time>	[-USER]
-!	value_highlight <color>	<value>	[<signal_pattern>] [-Cursor] [-Value]
-! Display changes:
-!	time_goto	<time>
-!	signal_goto	<signal_pattern>	(if not on screen, first match)
-!	resolution	<res>
-!	refresh
-!	annotate
+# Undocumented:
+#	debug		ON | OFF
+#	print		<number> | ON | OFF
+#
+#	# Comment
+# Config:
+#	click_to_edge	ON | OFF
+#	cursor		ON | OFF
+#	refreshing	AUTO | MANUAL
+#	grid		ON | OFF	<grid_number>
+#	grid_align	<number> | ASSERTION | DEASSERTION	<grid_number>
+#	grid_resolution	<number> | AUTO | EDGE 	 <grid_number>
+#	grid_type	NORMAL | WIDE		 <grid_number>
+#	grid_signal	<signal_pattern> 	 <grid_number>
+#	grid_color	<color>		 	 <grid_number>
+#	page_inc	4 | 2 | 1
+#	print_size	A | B | EPSPORT | EPSLAND
+#	rise_fall_time	<number>
+#	signal_height	<number>
+#	time_format	%0.6lf | %0.6lg | "" 
+#	time_precision	US | NS | PS
+#	time_rep	<number> | US | NS | PS | CYCLE
+# File Format:
+#	file_format	DECSIM | TEMPEST | VERILOG
+#	save_enables	ON | OFF
+#	save_ordering	ON | OFF
+#	signal_states	<signal_pattern> = {<State>, <State>...}
+#	vector_separator "<char>"
+#       time_multiplier	<number>
+# Geometry/resources:
+#	open_geometry	<width>[%]x<height>[%]+<xoffset>[%]+<yoff>[%]
+#	shrink_geometry	<width>%x<height>%+<xoffset>%+<yoff>%
+#	start_geometry	<width>x<height>+<xoffset>+<yoffset>
+# Modification of traces:
+#	signal_delete	<signal_pattern>
+#	signal_delete_constant	<signal_pattern> [-IGNOREXZ]
+#	signal_add	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
+#	signal_copy	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
+#	signal_move	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
+#	signal_rename	<signal_pattern> <new_signal_name>	[<color>]
+#	signal_highlight <color> <signal_pattern>
+#	cursor_add	<color> <time>	[-USER]
+#	value_highlight <color>	<value>	[<signal_pattern>] [-CURSOR] [-VALUE]
+# Display changes:
+#	time_goto	<time>
+#	signal_goto	<signal_pattern>	(if not on screen, first match)
+#	resolution	<res>
+#	refresh
+#	annotate
  *****************************************************************************/
 
 
@@ -585,15 +585,28 @@ void	config_process_line_internal (
     int value;
     Grid	*grid_ptr;
     char pattern[MAXSIGLEN];
+    char *cmt;
     
     static SignalState newsigst;
     static Boolean processing_sig_state = FALSE;
 
   re_process_line:
     
-    /* Comment */
+    /* Strip spaces and comments */
     while (*line && isspace(*line)) line++;
-    if ((line[0]=='!') || (line[0]==';') || (line[0]=='\0')) return;
+    cmt = line;
+    while (cmt != NULL) {
+	cmt=strpbrk(cmt,"!#\"");
+	if (cmt!=NULL) {
+	    if (*cmt=='\"') {
+		cmt=strpbrk(cmt+1,"\"");	/* Skip to closing quote */
+		continue;
+	    }
+	    *cmt = '\0';
+	    break;
+	}
+    }
+    if ((line[0]==';') || (line[0]=='\0')) return;
 
     /* if (DTPRINT_CONFIG) printf ("Cmd='%s'\n",cmd); */
 
@@ -857,25 +870,26 @@ void	config_process_line_internal (
 	    }
 	    if (DTPRINT_CONFIG) printf ("File_format = %d\n", file_format);
 	}
-	else if (!strcmp(cmd, "VECTOR_SEPERATOR")) {
+	else if (!strcmp(cmd, "VECTOR_SEPERATOR")	/* Backward compatible spelling! */
+		 || !strcmp(cmd, "VECTOR_SEPARATOR")) {
 	    if (*line=='"') line++;
 	    if (*line && *line!='"') {
-		trace->vector_seperator = line[0];
+		trace->vector_separator = line[0];
 	    }
 	    else {
-		trace->vector_seperator = '\0';
+		trace->vector_separator = '\0';
 	    }
 	    /* Take a stab at the ending character */
-	    switch (trace->vector_seperator) {
-	      case '`':	trace->vector_endseperator = '\''; break;
-	      case '(':	trace->vector_endseperator = ')'; break;
-	      case '[':	trace->vector_endseperator = ']'; break;
-	    case '{':	trace->vector_endseperator = '}'; break;
-	      case '<':	trace->vector_endseperator = '>'; break;
-	      default:  trace->vector_endseperator = trace->vector_seperator; break;	/* a wild guess SIG$20:1$? */
+	    switch (trace->vector_separator) {
+	      case '`':	trace->vector_endseparator = '\''; break;
+	      case '(':	trace->vector_endseparator = ')'; break;
+	      case '[':	trace->vector_endseparator = ']'; break;
+	    case '{':	trace->vector_endseparator = '}'; break;
+	      case '<':	trace->vector_endseparator = '>'; break;
+	      default:  trace->vector_endseparator = trace->vector_separator; break;	/* a wild guess SIG$20:1$? */
 	    }
-	    if (DTPRINT_CONFIG) printf ("Vector_seperator = '%c'  End='%c'\n", 
-					trace->vector_seperator, trace->vector_endseperator);
+	    if (DTPRINT_CONFIG) printf ("vector_separator = '%c'  End='%c'\n", 
+					trace->vector_separator, trace->vector_endseparator);
 	}
 	else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
 	    ColorNum color;
@@ -1004,7 +1018,7 @@ void	config_process_line_internal (
 		/* Add it */
 		global->val_srch[search_pos].color = (show_value) ? search_pos+1 : 0;
 		global->val_srch[search_pos].cursor = (add_cursor) ? search_pos+1 : 0;
-		string_to_value (trace, strg, global->val_srch[search_pos].value);
+		string_to_value (trace, strg, &global->val_srch[search_pos].value);
 		strcpy (global->val_srch[search_pos].signal, signal);
 		draw_needupd_val_search ();
 	    }
@@ -1321,7 +1335,7 @@ void config_write_file (
 	    fprintf (writefp, "file_format\t%s\n", filetypes[trace->fileformat].name);
 	    fprintf (writefp, "cursor\t\t%s\n", trace->cursor_vis?"ON":"OFF");
 	    fprintf (writefp, "signal_height\t%d\n", trace->sighgt);
-	    fprintf (writefp, "vector_seperator\t\"%c\"\n", trace->vector_seperator);
+	    fprintf (writefp, "vector_separator\t\"%c\"\n", trace->vector_separator);
 	    fprintf (writefp, "rise_fall_time\t%d\n", trace->sigrf);
 	    fprintf (writefp, "time_rep\t%s\n", time_units_to_string (trace->timerep, TRUE));
 	    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
@@ -1389,8 +1403,8 @@ void config_trace_defaults (
     trace->cursor_vis = TRUE;
     trace->sigrf = SIG_RF;
     trace->timerep = global->time_precision;
-    trace->vector_seperator = '[';
-    trace->vector_endseperator = ']';
+    trace->vector_separator = '[';
+    trace->vector_endseparator = ']';
 
     grid_reset_cb (trace->main);
 }

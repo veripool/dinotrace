@@ -170,11 +170,10 @@ int    main (
     
     /* quick structure portability check */
 #ifndef lint	/* constant in conditional context */
-    if ((sizeof (SignalLW_t) != sizeof (uint_t))
-	|| (sizeof (Value_t) != 5*sizeof (uint_t))
+    if ((sizeof (Value_t) != 10*sizeof (uint_t))
 	|| (sizeof (uint_t) != 4)) {
-	printf ("%%E, Internal structure portability problem %d!=%d!=%d/4.\n",
-		(int)sizeof (SignalLW_t), (int)sizeof (uint_t), (int)sizeof (Value_t));
+	printf ("%%E, Internal structure portability problem %d!=%d/4.\n",
+		(int)sizeof (uint_t), (int)sizeof (Value_t));
     }
 
     /* FAILS on MIPS Ultrix, so don't rely on this:

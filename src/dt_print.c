@@ -758,7 +758,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 {
     int c=0,adj,ymdpt,xloc,xend,xstart,ystart;
     int y1,y2;
-    SignalLW_t *cptr,*nptr;
+    Value_t *cptr,*nptr;
     char dvstrg[MAXVALUELEN];
     char vstrg[MAXVALUELEN];
     unsigned int value;
@@ -784,14 +784,14 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	cptr = sig_ptr->bptr;
 	if (printtime >= CPTR_TIME(cptr) ) {
 	    while ((CPTR_TIME(cptr) != EOT) &&
-		   (printtime > CPTR_TIME(cptr + CPTR_SIZE(cptr)))) {
-		cptr += CPTR_SIZE(cptr);
+		   (printtime > CPTR_TIME(CPTR_NEXT(cptr)))) {
+		cptr = CPTR_NEXT(cptr);
 	    }
 	}
 
 	/* Compute starting points for signal */
 	xstart = global->xstart;
-	switch ( cptr->stbits.state )
+	switch ( cptr->siglw.stbits.state )
 	    {
 	  case STATE_0: ystart = y2; break;
 	  case STATE_1: ystart = y1; break;
@@ -799,7 +799,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	  case STATE_Z: ystart = ymdpt; break;
 	  case STATE_B32: ystart = ymdpt; break;
 	  case STATE_B128: ystart = ymdpt; break;
-	  default: printf ("Error: State=%d\n",cptr->stbits.state); ystart = ymdpt; break;
+	  default: printf ("Error: State=%d\n",cptr->siglw.stbits.state); ystart = ymdpt; break;
 	    }
 	
 	/* output y information - note reverse from draw() due to y-axis */
@@ -811,7 +811,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	while ( CPTR_TIME(cptr) != EOT && xloc < xend )
 	    {
 	    /* find the next transition */
-	    nptr = cptr + CPTR_SIZE(cptr);
+	    nptr = CPTR_NEXT(cptr);
 	    
 	    /* if next transition is the end, don't draw */
 	    if (CPTR_TIME(nptr) == EOT) break;
@@ -820,7 +820,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	    xloc = CPTR_TIME(nptr) * global->res - adj;
 	    
 	    /* Determine what the state of the signal is and build transition */
-	    switch ( cptr->stbits.state ) {
+	    switch ( cptr->siglw.stbits.state ) {
 	      case STATE_0: if ( xloc > xend ) xloc = xend;
 		fprintf (psfile,"%d STATE_0\n",xloc);
 		break;
@@ -838,7 +838,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		break;
 		
 	      case STATE_B32: if ( xloc > xend ) xloc = xend;
-		value = *((unsigned int *)cptr+1);
+		value = cptr->number[0];
 
 		if (trace->busrep == BUSREP_HEX_UN)
 		    sprintf (vstrg,"%x", value);
@@ -863,12 +863,12 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	      case STATE_B128:
 		if ( xloc > xend ) xloc = xend;
 
-		value_to_string (trace, vstrg, (unsigned int *)cptr+1, ' ');
+		value_to_string (trace, vstrg, cptr, ' ');
 
 		fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
 		break;
 		
-	      default: printf ("Error: State=%d\n",cptr->stbits.state); break;
+	      default: printf ("Error: State=%d\n",cptr->siglw.stbits.state); break;
 	    } /* end switch */
 	    
 	    if (unstroked++ > 400) {
@@ -877,7 +877,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		unstroked=0;
 	    }
 
-	    cptr += CPTR_SIZE(cptr);
+	    cptr = CPTR_NEXT(cptr);
 	    }
 	} /* end of FOR */
     

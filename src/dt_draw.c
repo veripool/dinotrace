@@ -70,8 +70,10 @@
 #define OVERLAPSPACE 2		/* Number of pixels within which two signal transitions are visualized as one */
 
 extern void draw_trace_signame (Trace *trace, Signal *sig_ptr, Position y);
-extern void draw_vscroll (Trace *trace);
 extern void draw_hscroll (Trace *trace);
+extern void draw_vscroll (Trace *trace);
+
+XtExposeProc draw_orig_scroll_expose=NULL;	/* Original function for scroll exposure */
 
 void draw_string_fit (
     Trace	*trace,
@@ -102,7 +104,7 @@ void draw_string_fit (
 
     if (testx > maxx) {
 	/* Fits on screen */
-	XDrawString (global->display, trace->wind, trace->gc, minx + 2, y, strg, strlen (strg));
+	XDrawString (global->display, trace->pixmap, trace->gc, minx + 2, y, strg, strlen (strg));
 	/* Mark these positions as occupied */
 	for (testx = minx;  testx <= maxx; testx++) {
 	    textoccupied[testx] = TRUE;
@@ -126,15 +128,15 @@ void draw_grid_line (
 
     /* if the grid is visible, draw a vertical dashed line */
     XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0, 0);
-    XDrawLine     (global->display, trace->wind,trace->gc,   x2, y1,   x2, y2);
+    XDrawLine     (global->display, trace->pixmap,trace->gc,   x2, y1,   x2, y2);
     if (grid_ptr->wide_line) {
-	XDrawLine (global->display, trace->wind,trace->gc, 1+x2, y1, 1+x2, y2);
+	XDrawLine (global->display, trace->pixmap,trace->gc, 1+x2, y1, 1+x2, y2);
     }
 
     XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
-    XDrawLine     (global->display, trace->wind,trace->gc, x2,   y0,   x2, y1);
+    XDrawLine     (global->display, trace->pixmap,trace->gc, x2,   y0,   x2, y1);
     if (grid_ptr->wide_line) {
-	XDrawLine (global->display, trace->wind,trace->gc, 1+x2, y0, 1+x2, y1);
+	XDrawLine (global->display, trace->pixmap,trace->gc, 1+x2, y0, 1+x2, y1);
     }
 
     /* compute the time value and draw it if it fits */
@@ -278,14 +280,14 @@ void draw_cursors (
 	    
 	    /* draw the cursor */
 	    x1 = TIME_TO_XPOS (csr_ptr->time);
-	    XDrawLine (global->display,trace->wind,trace->gc,x1,ytop,x1,ybot);
+	    XDrawLine (global->display,trace->pixmap,trace->gc,x1,ytop,x1,ybot);
 	    
 	    /* draw the cursor value */
 	    time_to_string (trace, strg, csr_ptr->time, FALSE);
 	    len = XTextWidth (global->time_font,strg,strlen (strg));
 	    if (len/2 < (x1 - last_drawn_xloc)) {
 		last_drawn_xloc = x1 + len/2 + 2;
-		XDrawString (global->display,trace->wind,
+		XDrawString (global->display,trace->pixmap,
 			     trace->gc, x1-len/2, trace->ycursortimeabs,
 			     strg, strlen (strg));
 	    }
@@ -302,18 +304,18 @@ void draw_cursors (
 		if ( x1 - x2 >= len + 6 ) {
 		    /* calculate the mid pt of the segment */
 		    mid = x2 + (x1 - x2)/2;
-		    XDrawLine (global->display, trace->wind, trace->gc,
+		    XDrawLine (global->display, trace->pixmap, trace->gc,
 			       x2, ydelta, mid-len/2-2, ydelta);
-		    XDrawLine (global->display, trace->wind, trace->gc,
+		    XDrawLine (global->display, trace->pixmap, trace->gc,
 			       mid+len/2+2, ydelta, x1, ydelta);
 		    
-		    XDrawString (global->display,trace->wind,
+		    XDrawString (global->display,trace->pixmap,
 				 trace->gc, mid-len/2, trace->ycursortimerel,
 				 strg, strlen (strg));
 		}
 		/* or just draw the delta line */
 		else {
-		    XDrawLine (global->display, trace->wind,
+		    XDrawLine (global->display, trace->pixmap,
 			       trace->gc, x2, ydelta, x1, ydelta);
 		}
 	    }
@@ -391,7 +393,7 @@ void draw_trace (
     int srch_this_color;		/* Color to print signal if matches search value */
     XPoint Pts[MAXCNT+100];		/* Array of points to plot */
     char strg[MAXVALUELEN];		/* String value to print out */
-    register SignalLW_t *cptr,*nptr;	/* Current value pointer and next value pointer */
+    register Value_t *cptr,*nptr;	/* Current value pointer and next value pointer */
     Signal *sig_ptr;			/* Current signal being printed */
     uint_t value;
     /* int temp_color=0; */
@@ -428,7 +430,7 @@ void draw_trace (
 	    y2 = y1 + trace->sighgt - 2*Y_SIG_SPACE;
 
 	    XSetForeground (global->display, trace->gc, trace->barcolornum);
-	    XFillRectangle (global->display, trace->wind, trace->gc,
+	    XFillRectangle (global->display, trace->pixmap, trace->gc,
 			    0, y1, trace->width - XMARGIN, y2-y1);
 	}
 	
@@ -460,21 +462,22 @@ void draw_trace (
 	/* Compute starting points for signal */
 	Pts[cnt].x = global->xstart - trace->sigrf;
 	last_drawn_xloc = -1;
-	switch ( cptr->stbits.state ) {
+	switch ( cptr->siglw.stbits.state ) {
 	  case STATE_0: Pts[cnt].y = y2; break;
 	  case STATE_1: Pts[cnt].y = y1; break;
 	  case STATE_U: Pts[cnt].y = ymdpt; break;
 	  case STATE_Z: Pts[cnt].y = ymdpt; break;
 	  case STATE_B32: Pts[cnt].y = ymdpt; break;
 	  case STATE_B128: Pts[cnt].y = ymdpt; break;
-	  default: printf ("Error: State=%d\n",cptr->stbits.state); break;
+	  default: printf ("Error: State=%d\n",cptr->siglw.stbits.state); break;
 	}
+        cnt++;
 	
 	/* Loop as long as the time and end of trace are in current screen */
-	while ( CPTR_TIME(cptr) != EOT && Pts[cnt].x < xend && cnt < MAXCNT) {
+	while ( CPTR_TIME(cptr) != EOT && Pts[cnt-1].x < xend && cnt < MAXCNT) {
 
 	    /* find the next transition */
-	    nptr = cptr + CPTR_SIZE(cptr);
+	    nptr = CPTR_NEXT(cptr);
 	    
 	    /* if next transition is the end, don't draw */
 	    if (CPTR_TIME(nptr) == EOT) break;
@@ -482,10 +485,10 @@ void draw_trace (
 	    /* find the x location for the end of this segment */
 	    xloc = TIME_TO_XPOS (CPTR_TIME(nptr));
 	    xloc = MIN (xloc, xend);
-	    xloclast = Pts[cnt].x;
+	    xloclast = Pts[cnt-1].x;
 	    
 	    /* printf ("L %07x\t%d < %d < %d\n", cptr, last_drawn_xloc+OVERLAPSPACE, xloc, xend); */
-	    if ( ((uint_t)last_drawn_state==(uint_t)(cptr->stbits.state))
+	    if ( ((uint_t)last_drawn_state==(uint_t)(cptr->siglw.stbits.state))
 		 && ((Position)(last_drawn_xloc+OVERLAPSPACE) > (Position)(xloc))
 		 && ((Position)(xloc) < (Position)(xend-OVERLAPSPACE)) ) {
 		/* Too close to previously drawn vector.  User won't see the difference */
@@ -494,54 +497,52 @@ void draw_trace (
 	    }
 	    else {
 		last_drawn_xloc = xloc;
-		last_drawn_state = cptr->stbits.state;
+		last_drawn_state = cptr->siglw.stbits.state;
 	    }
 	    
 	    /* Determine what the state of the signal is and build transition */
-	    switch ( cptr->stbits.state ) {
+	    switch ( cptr->siglw.stbits.state ) {
 	      case STATE_0:
 		if ( xloc > xend ) xloc = xend;
-		Pts[cnt+1].x = xloclast+trace->sigrf; Pts[cnt+1].y = y2;
-		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y2;
+		Pts[cnt].x = xloclast+trace->sigrf;   Pts[cnt].y = y2;
+		Pts[cnt+1].x = xloc;                  Pts[cnt+1].y = y2;
 		cnt += 2;
 		break;
 		
 	      case STATE_1:
 		if ( xloc > xend ) xloc = xend;
-		Pts[cnt+1].x = xloclast+trace->sigrf; Pts[cnt+1].y = y1;
-		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y1;
-		Pts[cnt+3].x = xloc;                  Pts[cnt+3].y = y1+1;
-		Pts[cnt+4].x = xloclast+trace->sigrf; Pts[cnt+4].y = y1+1;
-		Pts[cnt+5].x = xloc;                  Pts[cnt+5].y = y1+1; /* extranious, just to get endpoint right */
+		Pts[cnt].x = xloclast+trace->sigrf;   Pts[cnt].y = y1;
+		Pts[cnt+1].x = xloc;                  Pts[cnt+1].y = y1;
+		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y1+1;
+		Pts[cnt+3].x = xloclast+trace->sigrf; Pts[cnt+3].y = y1+1;
+		Pts[cnt+4].x = xloc;                  Pts[cnt+4].y = y1+1; /* extranious, just to get endpoint right */
 		cnt += 5;
 		break;
 		
 	      case STATE_U:
-		Pts[cnt+1].x=xloclast+trace->sigrf; Pts[cnt+1].y=ymdpt;
+		Pts[cnt].x=xloclast+trace->sigrf;	Pts[cnt].y=ymdpt;
 		cnt++;
 		if ( xloc > xend ) xloc = xend;
-		if ( xloc - xloclast < DELU2)
-		    {
+		if ( xloc - xloclast < DELU2) {
 		    du = xloc - xloclast;
-		    Pts[cnt+1].x=xloclast+du/2;  Pts[cnt+1].y = y2;
-		    Pts[cnt+2].x=xloclast+du; Pts[cnt+2].y = ymdpt;
-		    Pts[cnt+3].x=xloclast+du/2;  Pts[cnt+3].y = y1;
-		    Pts[cnt+4].x=xloclast;       Pts[cnt+4].y = ymdpt;
-		    Pts[cnt+5].x=xloclast+du/2;  Pts[cnt+5].y = y1;
-		    Pts[cnt+6].x=xloclast+du; Pts[cnt+6].y = ymdpt;
+		    Pts[cnt+0].x=xloclast+du/2;	Pts[cnt].y = y2;
+		    Pts[cnt+1].x=xloclast+du;	Pts[cnt+1].y = ymdpt;
+		    Pts[cnt+2].x=xloclast+du/2;	Pts[cnt+2].y = y1;
+		    Pts[cnt+3].x=xloclast;	Pts[cnt+3].y = ymdpt;
+		    Pts[cnt+4].x=xloclast+du/2;	Pts[cnt+4].y = y1;
+		    Pts[cnt+5].x=xloclast+du;	Pts[cnt+5].y = ymdpt;
 		    cnt += 6;
 		    }
-		else
-		    {
-		    while ( xloclast < xloc - DELU )
-			{
-                        Pts[cnt+1].x=xloclast+DELU;  Pts[cnt+1].y = y2;
-                        Pts[cnt+2].x=xloclast+DELU2; Pts[cnt+2].y = ymdpt;
-                        Pts[cnt+3].x=xloclast+DELU;  Pts[cnt+3].y = y1;
-                        Pts[cnt+4].x=xloclast;       Pts[cnt+4].y = ymdpt;
-                        Pts[cnt+5].x=xloclast+DELU;  Pts[cnt+5].y = y1;
-                        Pts[cnt+6].x=xloclast+DELU2; Pts[cnt+6].y = ymdpt;
+		else {
+		    while ( xloclast < xloc - DELU ) {
+                        Pts[cnt+0].x=xloclast+DELU;  Pts[cnt+0].y = y2;
+                        Pts[cnt+1].x=xloclast+DELU2; Pts[cnt+1].y = ymdpt;
+                        Pts[cnt+2].x=xloclast+DELU;  Pts[cnt+2].y = y1;
+                        Pts[cnt+3].x=xloclast;       Pts[cnt+3].y = ymdpt;
+                        Pts[cnt+4].x=xloclast+DELU;  Pts[cnt+4].y = y1;
+                        Pts[cnt+5].x=xloclast+DELU2; Pts[cnt+5].y = ymdpt;
                         cnt += 6;
+                        xloclast+=DELU2;
 			}
 		    }
 		xloclast = Pts[cnt-4].x = xloc;
@@ -549,15 +550,15 @@ void draw_trace (
 		
 	      case STATE_Z:
 		if ( xloc > xend ) xloc = xend;
-		Pts[cnt+1].x = xloclast+trace->sigrf; Pts[cnt+1].y = ymdpt;
-		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = ymdpt;
+		Pts[cnt+0].x = xloclast+trace->sigrf; Pts[cnt+0].y = ymdpt;
+		Pts[cnt+1].x = xloc;                  Pts[cnt+1].y = ymdpt;
 		cnt += 2;
 		break;
 		
 	      case STATE_B32:
 		if ( xloc > xend ) xloc = xend;
 		
-		value = * ((uint_t *)cptr+1);
+		value = cptr->number[0];
 		
 		/* Below evaluation left to right important to prevent error */
 		if ( (sig_ptr->decode != NULL) &&
@@ -581,39 +582,26 @@ void draw_trace (
 			sprintf (strg,"%d", value);
 		}
 		
-		srch_this_color = 0;
-		for (i=0; i<MAX_SRCH; i++) {
-		    if (sig_ptr->srch_ena[i]
-			&& global->val_srch[i].value[0]==value) {
-			srch_this_color = global->val_srch[i].color;
-			break;
-		    }
-		}
-
 		goto state_plot;
 
 	      case STATE_B128:
 		if ( xloc > xend ) xloc = xend;
 
-		value_to_string (trace, strg, (uint_t *)cptr+1, ' ');
+		value_to_string (trace, strg, cptr, ' ');
 		
+		goto state_plot;
+		
+		/***** COMMON section of all 3 STATE_* encodings *****/
+	      state_plot:
+
 		srch_this_color = 0;
 		for (i=0; i<MAX_SRCH; i++) {
 		    if (sig_ptr->srch_ena[i]
-			&& ( global->val_srch[i].value[3]== *((uint_t *)cptr+4) )
-			&& ( global->val_srch[i].value[2]== *((uint_t *)cptr+3) )
-			&& ( global->val_srch[i].value[1]== *((uint_t *)cptr+2) )
-			&& ( global->val_srch[i].value[0]== *((uint_t *)cptr+1) ) ) {
+			&& val_equal (&global->val_srch[i].value, cptr)) {
 			srch_this_color = global->val_srch[i].color;
 			break;
 		    }
 		}
-
-		goto state_plot;
-		
-
-		/***** COMMON section of all 3 STATE_* encodings *****/
-	      state_plot:
 
 		/* calculate positional parameters */
 		if (xloc-xloclast >= 6) {  /* if less definately no space for value */
@@ -631,42 +619,42 @@ void draw_trace (
 			if (srch_this_color) {
 			    /* Grab the color we want */
 			    XSetForeground (global->display, trace->gc, trace->xcolornums[srch_this_color]);
-			    XDrawString (global->display, XtWindow ( trace->work),
+			    XDrawString (global->display, trace->pixmap,
 					 trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
 			    XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
 			}
 			else {
-			    XDrawString (global->display, XtWindow ( trace->work),
+			    XDrawString (global->display, trace->pixmap,
 					 trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
 			}
 		    }
 		}
 
 		/* Plot points */
-		Pts[cnt+1].x=xloclast+trace->sigrf; Pts[cnt+1].y=y2;
-		Pts[cnt+2].x=xloc-trace->sigrf;       Pts[cnt+2].y=y2;
-		Pts[cnt+3].x=xloc;                  Pts[cnt+3].y=ymdpt;
-		Pts[cnt+4].x=xloc-trace->sigrf;       Pts[cnt+4].y=y1;
-		Pts[cnt+5].x=xloclast+trace->sigrf; Pts[cnt+5].y=y1;
-		Pts[cnt+6].x=xloclast;            Pts[cnt+6].y=ymdpt;
-		Pts[cnt+7].x=xloclast+trace->sigrf; Pts[cnt+7].y=y1;
-		Pts[cnt+8].x=xloc-trace->sigrf;       Pts[cnt+8].y=y1;
-		Pts[cnt+9].x=xloc;                  Pts[cnt+9].y=ymdpt;
+		Pts[cnt+0].x=xloclast+trace->sigrf; 	Pts[cnt+0].y=y2;
+		Pts[cnt+1].x=xloc-trace->sigrf;     	Pts[cnt+1].y=y2;
+		Pts[cnt+2].x=xloc;                  	Pts[cnt+2].y=ymdpt;
+		Pts[cnt+3].x=xloc-trace->sigrf;     	Pts[cnt+3].y=y1;
+		Pts[cnt+4].x=xloclast+trace->sigrf; 	Pts[cnt+4].y=y1;
+		Pts[cnt+5].x=xloclast;              	Pts[cnt+5].y=ymdpt;
+		Pts[cnt+6].x=xloclast+trace->sigrf; 	Pts[cnt+6].y=y1;
+		Pts[cnt+7].x=xloc-trace->sigrf;       	Pts[cnt+7].y=y1;
+		Pts[cnt+8].x=xloc;                  	Pts[cnt+8].y=ymdpt;
 		cnt += 9;
 		break;
 		
 	      default:
-		printf ("Error: State=%d\n",cptr->stbits.state); break;
+		printf ("Error: State=%d\n",cptr->siglw.stbits.state); break;
 	    } /* end switch */
 	    
 	  next_state:
 
-	    cptr += CPTR_SIZE(cptr);
+	    cptr = CPTR_NEXT(cptr);
 	}
-        cnt++;
 	
 	/* draw the lines */
-	XDrawLines (global->display, trace->wind, trace->gc, Pts, cnt, CoordModeOrigin);
+	XDrawLines (global->display, trace->pixmap, trace->gc, Pts, cnt, CoordModeOrigin);
+
 	/*
 	for (cnt--; cnt>0; cnt--) {
 	    printf ("C%d\tx%d\ty%d\n", cnt, Pts[cnt].xx, Pts[cnt].y);
@@ -721,7 +709,7 @@ void draw_trace_signame (
     /*printf ("m_sig_width %d  npos %d nbase %d nhier %d nvis %d x1 %d tc %d\n", m_sig_width, global->namepos,
       global->namepos_base, global->namepos_hier, global->namepos_visible, x1, truncchars);*/
 
-    XDrawString (global->display, trace->wind, trace->gc, x1, y,
+    XDrawString (global->display, trace->pixmap, trace->gc, x1, y,
 		 sig_ptr->signame,
 		 strlen (sig_ptr->signame) - truncchars);
 }
@@ -776,6 +764,7 @@ void	draw_update_sigstart ()
 void draw_perform ()
 {
     Trace		*trace;
+    int bgdcolor;
 
     if (DTPRINT_ENTRY) printf ("In draw_perform %d %d\n", global->redraw_needed, global->trace_head->redraw_needed);
 
@@ -790,17 +779,31 @@ void draw_perform ()
     /* Update xstart, etc.  They may care about geometry (xstart does at least) */
     draw_update();
 
-    for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	if ((global->redraw_needed & GRD_ALL) || (trace->redraw_needed & TRD_REDRAW)) {
-	    XClearWindow (global->display,trace->wind);
-	}
-    }
+    XtSetArg (arglist[0], XmNbackground, &(bgdcolor));
+    XtGetValues (global->trace_head->work, arglist, 1);
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if ((global->redraw_needed & GRD_ALL) || trace->redraw_needed) {
+	    XSetForeground (global->display, trace->gc, bgdcolor);
+	    XFillRectangle (global->display, trace->pixmap, trace->gc,
+			    0,0,XtWidth(trace->work), XtHeight(trace->work));
 	    draw_trace (trace);
+	}
+    }
+
+    /* Install backing store */
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	if ((global->redraw_needed & GRD_ALL) || trace->redraw_needed) {
+	    XCopyArea(global->display,
+		      trace->pixmap,
+		      XtWindow(trace->work),
+		      trace->gc,
+		      0, 0,
+		      XtWidth(trace->work), XtHeight(trace->work),
+		      0, 0);	
 	    trace->redraw_needed = FALSE;
 	}
     }
+
     global->redraw_needed = FALSE;
 }
 
@@ -835,7 +838,11 @@ void draw_update ()
  *	it already works.
  **********************************************************************/
 
-void	draw_hscroll (
+/* If set, the scroll pixmap is double buffered ala LessTIF */
+/* If clear, modify the scrollbar directly and ignore double buffering (vms???) */
+#define BUFFERED_PIXMAP 1
+
+void draw_hscroll (
     Trace *trace)
     /* Draw on the horizontal scroll bar - needs guts of the ScrollBarWidget */
 {
@@ -843,12 +850,20 @@ void	draw_hscroll (
     float xscale;
     DCursor *csr_ptr;			/* Current cursor being printed */
     char 	nonuser_dash[2];		/* Dashed line for nonuser cursors */
+    Pixmap pixmap;
 
     if (DTPRINT_ENTRY) printf ("In draw_hscroll\n");
 
     if (!trace->loaded || (trace->end_time == trace->start_time)) return;
 
     nonuser_dash[0]=2;	nonuser_dash[1]=2;	/* Can't auto-init in ultrix compiler */
+
+    /* if this causes a compile error, then change BUFFERED_PIXMAP to 0 */
+#if BUFFERED_PIXMAP
+    pixmap = ((XmScrollBarRec *)trace->hscroll)->scrollBar.pixmap;
+#else
+    pixmap = XtWindow (trace->hscroll);
+#endif
 
     /* initial the y colors for drawing */
     xmin = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_x;
@@ -864,9 +879,9 @@ void	draw_hscroll (
     /* Blank area to either side of slider */
     XSetForeground (global->display, trace->gc,
 		    ((XmScrollBarRec *)trace->hscroll)->scrollBar.trough_color );
-    XFillRectangle (global->display, XtWindow (trace->hscroll), trace->gc,
+    XFillRectangle (global->display, pixmap, trace->gc,
 		   xmin, ymin, slider_xmin - xmin, ymax-ymin);
-    XFillRectangle (global->display, XtWindow (trace->hscroll), trace->gc,
+    XFillRectangle (global->display, pixmap, trace->gc,
 		   slider_xmax, ymin, xmax - slider_xmax , ymax-ymin);
 
     if ( trace->cursor_vis ) {
@@ -887,16 +902,24 @@ void	draw_hscroll (
 		    XSetDashes (global->display, trace->gc, 0, nonuser_dash, 2);
 		}
 
-		XDrawLine (global->display, XtWindow (trace->hscroll),
-			  trace->gc, x1,ymin,x1,ymax);
+		XDrawLine (global->display, pixmap, trace->gc,
+			   x1,ymin,x1,ymax);
 	    }
 	}
 	/* Reset */
 	XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
     }
+
+#if BUFFERED_PIXMAP
+    /* Expose the modified pixmap to the user */
+    /* Event and region believed to be don't cares */
+    if (draw_orig_scroll_expose) {
+	(draw_orig_scroll_expose) (trace->hscroll, NULL, (Region)NULL);
+    }
+#endif
 }
 
-void	draw_vscroll (
+void draw_vscroll (
     Trace *trace)
     /* Draw on the vertical scroll bar - needs guts of the ScrollBarWidget */
 {
@@ -904,10 +927,18 @@ void	draw_vscroll (
     uint_t signum;
     float yscale;
     Signal	*sig_ptr;
+    Pixmap pixmap;
 
     if (DTPRINT_ENTRY) printf ("In draw_vscroll\n");
 
     if (!trace->loaded || !trace->numsig) return;
+
+    /* if this causes a compile error, then change BUFFERED_PIXMAP to 0 */
+#if BUFFERED_PIXMAP
+    pixmap = ((XmScrollBarRec *)trace->vscroll)->scrollBar.pixmap;
+#else
+    pixmap = XtWindow (trace->vscroll);
+#endif
 
     /* initial the y colors for drawing */
     xmin = ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_x;
@@ -925,9 +956,9 @@ void	draw_vscroll (
     /* Blank area to either side of slider */
     XSetForeground (global->display, trace->gc,
 		    ((XmScrollBarRec *)trace->vscroll)->scrollBar.trough_color );
-    XFillRectangle (global->display, XtWindow (trace->vscroll), trace->gc,
+    XFillRectangle (global->display, pixmap, trace->gc,
 		   xmin, ymin, xmax - xmin, slider_ymin - ymin);
-    XFillRectangle (global->display, XtWindow (trace->vscroll), trace->gc,
+    XFillRectangle (global->display, pixmap, trace->gc,
 		   xmin, slider_ymax, xmax - xmin, ymax - slider_ymax);
 
     yscale =
@@ -947,13 +978,19 @@ void	draw_vscroll (
 	    }
 	    /* Change color */
 	    XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
-	    XDrawLine (global->display, XtWindow (trace->vscroll),
-		      trace->gc, xmin,y1,xmax,y1);
+	    XDrawLine (global->display, pixmap, trace->gc,
+		       xmin,y1,xmax,y1);
 	}
     }
-}
 
-XtExposeProc draw_orig_scroll_expose;	/* Original function for scroll exposure */
+#if BUFFERED_PIXMAP
+    /* Expose the modified pixmap to the user */
+    /* Event and region believed to be don't cares */
+    if (draw_orig_scroll_expose) {
+	(draw_orig_scroll_expose) (trace->vscroll, NULL, (Region)NULL);
+    }
+#endif
+}
 
 void hscroll_expose (Widget w, XEvent *event, Region region)
 {

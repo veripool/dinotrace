@@ -224,10 +224,8 @@ void	verilog_process_var (
     new_sig_ptr->file_type.flags = 0;
     new_sig_ptr->file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
 
-    new_sig_ptr->file_value.siglw.number = new_sig_ptr->file_value.number[0] =
-	new_sig_ptr->file_value.number[1] =  new_sig_ptr->file_value.number[2] =
-	    new_sig_ptr->file_value.number[3] = 0;
-    
+    value_zero (&(new_sig_ptr->file_value));
+
     /* initialize all the pointers that aren't NULL */
     if (last_sig_ptr) last_sig_ptr->forward = new_sig_ptr;
     new_sig_ptr->backward = last_sig_ptr;
@@ -443,7 +441,7 @@ void	verilog_enter_busses (
 	    /*if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } */
 
 	    /* Enter the cptr */
-	    sig_ptr->file_value.siglw.stbits.time = time;
+	    sig_ptr->file_value.time = time;
 	    fil_add_cptr (sig_ptr, &(sig_ptr->file_value), first_data);
 
 	    /* Zero the state and keep the value for next time */
@@ -511,7 +509,7 @@ void	verilog_read_data (
 		if (sig_ptr->bits == 0) {
 		    /* Not a vector.  This is easy */
 		    value.siglw.stbits.state = state;
-		    value.siglw.stbits.time = time;
+		    value.time = time;
 		    fil_add_cptr (sig_ptr, &value, first_data);
 		}
 		else {	/* Unary signal made into a vector */
