@@ -54,7 +54,7 @@
 
 @dircategory Signal waveform tracing tool
 @direntry
-* Dinotrace: (Dinotrace).         Signal waveform tracing tool.
+* Dinotrace: (dinotrace).         Signal waveform tracing tool.
 @end direntry
 
 @ifinfo
@@ -1603,7 +1603,7 @@ was already on the screen, do nothing.
 @cindex Representation, Time
 @cindex Time, Representation
 @findex time_rep
-@config{time_rep}		@var{number} | PS | NS | US | CYCLE
+@config{time_rep}		@var{number} | FS | PS | NS | US | CYCLE
 
 Changes the time representation to be in picoseconds, nanoseconds,
 microseconds or in number of grid #0 cycles.  Cycle based timing is good
@@ -1616,7 +1616,7 @@ ns in the trace file.  Default is nanoseconds.
 @subsection time_precision
 @cindex Precision, Time
 @findex time_precision
-@config{time_precision}	PS | NS | US
+@config{time_precision}	FS | PS | NS | US
 
 Changes the internal precision to be in picoseconds, nanoseconds, or
 microseconds.  Traces that are read in will have all times rounded to
