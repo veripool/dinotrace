@@ -7,6 +7,10 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.1c  2/13/2001
+
+***	Fixed Verilog reading ignoring the hiearchy separator. [Dominik Strasser]
+
 * Changes in Dinotrace 9.1b  2/13/2001
 
 ****	Documentation updates.
