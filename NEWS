@@ -15,7 +15,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	through vpd2vcd.  Added supporting -vpd command line and
 	file_format vpd configuration options.
 
-****	Counfigures and builds on Linux.  [Celia Clause]
+****	Configures and builds on Linux.  [Celia Clause]
 
 
 * Changes in Dinotrace 9.0a  4/13/98
