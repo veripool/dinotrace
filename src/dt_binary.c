@@ -437,7 +437,7 @@ void decsim_read_binary (trace, read_fd)
 			   This signal itself may not have changed though, since there could
 			   be 31 of 32 signals in this LW that were not changed.  */
 
-			fil_decsim_binary_to_value (sig_ptr, buf, time, first_data);
+			fil_decsim_binary_add_cptr (sig_ptr, buf, time, first_data);
 
 			/* Compute next different lw */
 			if (((sig_ptr->file_end_pos + 1) >> 5) > next_different_lw_pos) {
