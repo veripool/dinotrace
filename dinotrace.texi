@@ -20,8 +20,8 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set ID 9.0c
-@set VERSION 9.0c
+@set ID 9.0d
+@set VERSION 9.0d
 @set UPDATED September 1998
 @c All functions use these for searching ease
 @macro dmenu{f}
@@ -230,19 +230,23 @@ signal support.
 Many people have provided ideas and other assistance with Dinotrace.
 
 The major corporate sponsors of Dinotrace, by providing funds or
-equipment grants, are Digital Equipment Corporation and Maker
-Communications.
+equipment grants, are Compaq Corporation, Digital Equipment Corporation,
+Intel Corporation, and Maker Communications.
+
+The people who have contributed code or other major functionality are
+Allen Gallotta, Steve Hoover, Nathan Hughes, and Craig Ziegler.
 
 The people who have provided ideas for Dinotrace include Edward Arthur,
 Sally Barry, Josh Belkin, Yifat Ben-Shachar, Rachel Berman, Sass Berman,
 Mike Blake, Serge Bogdanov, Ronen Boneh, Gregg Bouchard, Bill Bruce,
 Lauren Carlson, Paul Chan, David Chen, Derrick Dacosta, Erik Debriae,
 Paul Dormitzer, Duane Galbi, Allen Gallotta, Steve Glaser, Mike Goulet,
-Larry Gust, Larry Herman, Dave Horan, Tom Hunt, Tracey Jones, Mike
-Kagen, Dan Katz, Sol Katzman, Steve Kolecki, Steve Lang, Charlie Lind,
-Ben Marshall, Bob McNamara, John Murphy, Lisa Noack, Mitch Norcross,
-Michael Quadri, Reinhard Schumann, Simcha, Jai Singh, Dean Sovie, Julie
-Staraitis, Bob Walsh, Paul Wasson, Steve Wilson, and Bob Yodlowski.
+Larry Gust, Larry Herman, Dave Horan, Steve Hoover, Nathan Hughes, Tom
+Hunt, Tracey Jones, Mike Kagen, Dan Katz, Sol Katzman, Steve Kolecki,
+Steve Lang, Charlie Lind, Ben Marshall, Bob McNamara, John Murphy, Lisa
+Noack, Mitch Norcross, Michael Quadri, Reinhard Schumann, Simcha, Jai
+Singh, Dean Sovie, Julie Staraitis, Bob Walsh, Paul Wasson, Steve
+Wilson, Bob Yodlowski, and Craig Ziegler.
 
 @c ======================================================================
 @node Invoking Dinotrace, Screen Description, History, Top
@@ -2343,7 +2347,12 @@ configuration files.)  Select @dmenu{Trace Read} to read the file.
 
 Tempest designs use underscores to indicate bus subscripts.  To have
 Dinotrace collapse signals into vectors, create a configuration file
-with the line: @config{vector_separator "_"}
+with the lines:
+
+@example
+vector_separator "<"
+hierarchy_separator "-"
+@end example
 
 To save disk space you may wish to store files as gziped.  This
 will result in about a 50 times space savings, and Dinotrace will

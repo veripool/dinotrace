@@ -7,6 +7,15 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.0d  10/30/98
+
+** Enhancements:
+
+***	Added hooks for linking other C programs to Dinotrace.  [Steve Hoover]
+
+****	Fixed bug which would make Customize Grid ignore resolution setting.
+
+
 * Changes in Dinotrace 9.0c  9/30/98
 
 ** Enhancements:
