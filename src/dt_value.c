@@ -996,6 +996,7 @@ void    val_annotate_do_cb (w,trace,cb)
     CURSOR 	*csr_ptr;		/* Current cursor being printed */
     char	strg[1000];
     int		csr_num, csr_num_incl;
+    int		value[4];
     
     /* Initialize requestor before first usage? */
     /*
@@ -1102,7 +1103,8 @@ void    val_annotate_do_cb (w,trace,cb)
 			cptr -= sig_ptr->lws;
 			}
 
-		    cptr_to_string (cptr, strg);
+		    cptr_to_search_value (cptr, value);
+		    value_to_string (trace, strg, value, '_');
 		    
 		    /* First value must have `, last must have ', commas in middle */
 		    if (csr_num==1 && csr_num==csr_num_incl)

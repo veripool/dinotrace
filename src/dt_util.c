@@ -719,8 +719,10 @@ void    print_cptr (cptr)
     SIGNAL_LW	*cptr;
 {
     char strg[1000];
+    int		value[4];
 
-    cptr_to_string (cptr, strg);
+    cptr_to_search_value (cptr, value);
+    value_to_string (global->trace_head, strg, value, '_');
     printf ("%s at time %d\n",strg,cptr->sttime.time);
     }
 
