@@ -136,13 +136,13 @@ void    print_reset (
 static void print_draw_grid (
     Trace	*trace,
     FILE	*psfile,
-    DTime	printtime,	/* Time to start on */
-    Grid	*grid_ptr,		/* Grid information */
+    DTime_t	printtime,	/* Time to start on */
+    Grid_t	*grid_ptr,		/* Grid information */
     Boolean_t	draw_numbers)		/* Whether to print the times or not */
 { 
     char 	strg[MAXTIMELEN];	/* String value to print out */
     int		end_time;
-    DTime	xtime;
+    DTime_t	xtime;
     Position	x2;			/* Coordinate of current time */
     Position	ytop,ymid,ybot;
 
@@ -200,11 +200,11 @@ static void print_draw_grid (
 static void print_draw_grids (
     Trace	*trace,
     FILE	*psfile,
-    DTime	printtime)
+    DTime_t	printtime)
 {           
     int		grid_num;
-    Grid	*grid_ptr;
-    Grid	*grid_smallest_ptr;
+    Grid_t	*grid_ptr;
+    Grid_t	*grid_smallest_ptr;
 
     /* WARNING, major weedyness follows: */
     /* Determine which grid has the smallest period and only plot its times. */
@@ -234,7 +234,7 @@ static void print_draw_val (
     FILE	*psfile,
     Signal	*sig_ptr,	/* Vertical signal to start on */
     Signal	*sig_end_ptr,	/* Last signal to print */
-    DTime	printtime)	/* Time to start on */
+    DTime_t	printtime)	/* Time to start on */
 {
     int ymdpt,xend;
     int yspace;
@@ -447,12 +447,12 @@ static void print_draw_sig (
 static void print_draw_cursors (
     Trace	*trace,
     FILE	*psfile,
-    DTime	printtime)	/* Time to start on */
+    DTime_t	printtime)	/* Time to start on */
 {
     int		end_time;
     int		last_drawn_xright;
     char 	strg[MAXTIMELEN];		/* String value to print out */
-    DCursor 	*csr_ptr;			/* Current cursor being printed */
+    DCursor_t 	*csr_ptr;			/* Current cursor being printed */
     Position	x1;
     Position	ytop,ybot,ydelta;
     Dimension m_time_height = global->time_font->ascent;
@@ -499,7 +499,7 @@ void    print_internal (Trace *trace)
 {
     FILE	*psfile=NULL;
     int		sigs_per_page;
-    DTime	time_per_page;
+    DTime_t	time_per_page;
     int		horiz_pages;		/* Number of pages to print the time on (horizontal) */
     int		vert_pages;		/* Number of pages to print signal names on (vertical) */
     int		horiz_page, vert_page;
@@ -507,7 +507,7 @@ void    print_internal (Trace *trace)
     int		encapsulated;
     Signal	*sig_ptr, *sig_end_ptr=NULL;
     uint_t	numprt;
-    DTime	printtime;	/* Time current page starts on */
+    DTime_t	printtime;	/* Time current page starts on */
     char	pagenum[20];
     char	sstrg[MAXTIMELEN];
     char	estrg[MAXTIMELEN];
@@ -823,7 +823,7 @@ static void    print_range_create (
 }
 
 
-DTime	print_range_value (
+DTime_t	print_range_value (
     RangeWidgets_t	*range_ptr)
     /* Read the range value */
 {

@@ -256,6 +256,21 @@ int strcasecmp(const char *a, const char *b)
 
 #define FGETS_SIZE_INC	1024	/* Characters to increase length by */
 
+void fgets_dynamic_extend (
+    /* dynamically extend storage */
+    char **line_pptr,	/* & Line pointer */
+    uint_t *length_ptr,	/* & Length of the buffer */
+    uint_t newlen)
+{
+    if (*length_ptr == 0) {
+	*length_ptr = newlen + 1;
+	*line_pptr = XtMalloc (*length_ptr);
+    }
+    if (*length_ptr < newlen) {
+	*length_ptr = newlen + 1;
+	*line_pptr = XtRealloc (*line_pptr, *length_ptr);
+    }
+}
 void fgets_dynamic (
     /* fgets a line, with dynamically allocated line storage */
     char **line_pptr,	/* & Line pointer */
@@ -263,8 +278,7 @@ void fgets_dynamic (
     FILE *readfp)
 {
     if (*length_ptr == 0) {
-	*length_ptr = FGETS_SIZE_INC;
-	*line_pptr = XtMalloc (*length_ptr);
+	fgets_dynamic_extend (line_pptr, length_ptr, FGETS_SIZE_INC);
     }
 
     fgets ((*line_pptr), (*length_ptr), readfp);
@@ -273,8 +287,7 @@ void fgets_dynamic (
     while (*((*line_pptr) + *length_ptr - 2)!='\n'
 	   && strlen(*line_pptr)==(*length_ptr - 1)) {
 	/* Alloc more */
-	*length_ptr += FGETS_SIZE_INC;
-	*line_pptr = XtRealloc (*line_pptr, *length_ptr);
+	fgets_dynamic_extend (line_pptr, length_ptr, *length_ptr + FGETS_SIZE_INC);
 	/* Read remainder */
 	fgets (((*line_pptr) + *length_ptr - 2) + 1 - FGETS_SIZE_INC,
 	       FGETS_SIZE_INC+1, readfp);
@@ -442,12 +455,12 @@ void    remove_all_events (
     set_cursor (DC_NORMAL);
 }
 
-ColorNum submenu_to_color (
+ColorNum_t submenu_to_color (
     Trace	*trace,		/* Display information */
     Widget	w,
     int		base)		/* Loaded when the menu was loaded */
 {
-    ColorNum color;
+    ColorNum_t color;
 
     /* Grab color number from the menu button pointer (+2 for current and next buttons) */
     for (color=0; color<=(MAX_SRCH+2); color++) {
@@ -664,7 +677,7 @@ void    prompt_ok_cb (
     XmSelectionBoxCallbackStruct *cb)
 {
     char	*valstr;
-    DTime	restime;
+    DTime_t	restime;
     
     if (DTPRINT_ENTRY) printf ("In prompt_ok_cb type=%d\n",trace->prompt_type);
     
@@ -842,13 +855,15 @@ void    print_cptr (
 void    print_sig_info_internal (
     Signal	*sig_ptr,
     Value_t	*cptr,
-    DTime	end_time)
+    DTime_t	end_time)
 {
+    const char *states[8] = {"F128", "B128", "F32 ", "B32",
+			     "Z  ", "U  ", "1  ", "0  "};
     printf ("Signal %s, cptr %p  bptr %p\n",sig_ptr->signame, sig_ptr->cptr, sig_ptr->bptr);
     
     for ( ; cptr->siglw.stbits.size > 0; cptr = CPTR_NEXT(cptr) ) {
-	printf ("%p: %08x T:%08d  %08x %08x %08x %08x    ", cptr,
-		cptr->siglw.number, cptr->time,
+	printf ("%p: %08x T:%08d  %s  %08x %08x %08x %08x    ", cptr,
+		cptr->siglw.number, cptr->time, states[cptr->siglw.stbits.state],
 		cptr->number[0],cptr->number[1],
 		cptr->number[2],cptr->number[3]);
 	print_cptr (cptr);
@@ -894,7 +909,7 @@ void    debug_signal_integrity (
 {
     Value_t	*cptr;
     Value_t	*cptr_last;
-    DTime	last_time;
+    DTime_t	last_time;
     uint_t	nsigstart, nsig;
     Boolean_t	hitstart;
     Boolean_t	dumpsig;
@@ -1053,7 +1068,7 @@ void change_title (
 }
 
 #pragma inline (posx_to_time)
-DTime	posx_to_time (
+DTime_t	posx_to_time (
     /* convert x value to a time value, return -1 if invalid click */
     Trace 	*trace,
     Position 	x)
@@ -1070,7 +1085,7 @@ Value_t *value_at_time (
     /* Return the value for the given time */
     /* Must be on the screen! */
     Signal	*sig_ptr,
-    DTime	ctime)
+    DTime_t	ctime)
 {
     Value_t	*cptr;
     for (cptr = sig_ptr->cptr;
@@ -1082,17 +1097,17 @@ Value_t *value_at_time (
 }
 
 
-DTime	posx_to_time_edge (
+DTime_t	posx_to_time_edge (
     /* convert x value to a time value, return -1 if invalid click */
     /* allow clicking to a edge if it is enabled */
     Trace 	*trace,
     Position	x,
     Position	y)
 {
-    DTime	xtime;
+    DTime_t	xtime;
     Signal 	*sig_ptr;
     Value_t	*cptr;
-    DTime	left_time, right_time;
+    DTime_t	left_time, right_time;
 
     xtime = posx_to_time (trace,x);
     if (xtime<0 || !global->click_to_edge) return (xtime);
@@ -1160,13 +1175,13 @@ Signal	*posy_to_signal (
 
 
 #pragma inline (posx_to_cursor)
-DCursor *posx_to_cursor (
+DCursor_t *posx_to_cursor (
     /* convert x value to the index of the nearest cursor, return NULL if invalid click */
     Trace	*trace,
     Position	x)
 {
-    DCursor 	*csr_ptr;
-    DTime 	xtime;
+    DCursor_t 	*csr_ptr;
+    DTime_t 	xtime;
 
     /* check if there are any cursors */
     if (!global->cursor_head) {
@@ -1191,16 +1206,16 @@ DCursor *posx_to_cursor (
 }
 
 
-Grid *posx_to_grid (
+Grid_t *posx_to_grid (
     /* convert x value to the index of the nearest grid, return NULL if invalid click */
     Trace	*trace,
     Position	x,
-    DTime	*time_ptr)
+    DTime_t	*time_ptr)
 {
-    DTime 	xtime;
-    Grid 	*best_grid_ptr = NULL;
-    DTime 	best_grid_time = 0;
-    DTime 	best_grid_error = 0;
+    DTime_t 	xtime;
+    Grid_t 	*best_grid_ptr = NULL;
+    DTime_t 	best_grid_time = 0;
+    DTime_t 	best_grid_error = 0;
     int grid_num;
 
     xtime = posx_to_time (trace, x);
@@ -1208,11 +1223,11 @@ Grid *posx_to_grid (
 
     /* find the closest grid */
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
-	Grid *grid_ptr = &(trace->grid[grid_num]);
+	Grid_t *grid_ptr = &(trace->grid[grid_num]);
 	if (grid_ptr->visible && grid_ptr->period) {
-	    DTime grid_error = ((xtime - (grid_ptr->alignment % grid_ptr->period))
+	    DTime_t grid_error = ((xtime - (grid_ptr->alignment % grid_ptr->period))
 				% grid_ptr->period);
-	    DTime grid_time = xtime - grid_error;
+	    DTime_t grid_time = xtime - grid_error;
 	    if (grid_error > (grid_ptr->period/2)) {
 		grid_error = grid_ptr->period - grid_error;
 		grid_time += grid_ptr->period;
@@ -1230,12 +1245,12 @@ Grid *posx_to_grid (
 
 
 #pragma inline (time_to_cursor)
-DCursor *time_to_cursor (
+DCursor_t *time_to_cursor (
     /* convert specific time value to the index of the nearest cursor, return NULL if none */
     /* Unlike posx_to_cursor, this will not return a "close" one */
-    DTime	xtime)
+    DTime_t	xtime)
 {
-    DCursor	*csr_ptr;
+    DCursor_t	*csr_ptr;
 
     /* find the closest cursor */
     csr_ptr = global->cursor_head;
@@ -1249,7 +1264,7 @@ DCursor *time_to_cursor (
 }
 
 /* Convert time to nearest cycle number. */
-double time_to_cyc_num (DTime time) {
+double time_to_cyc_num (DTime_t time) {
     Trace *trace;
     double f_time;
 
@@ -1264,18 +1279,18 @@ double time_to_cyc_num (DTime time) {
 }
 
 /* Convert time to a cycle number. */
-DTime cyc_num_to_time (double cyc_num) {
+DTime_t cyc_num_to_time (double cyc_num) {
   Trace *trace;
 
   trace = global->trace_head;
 
-  return ((DTime)cyc_num * grid_primary_period(trace)
+  return ((DTime_t)cyc_num * grid_primary_period(trace)
 	  + trace->grid[0].alignment % grid_primary_period(trace));
 }
 
 
 #pragma inline (string_to_time)
-DTime string_to_time (
+DTime_t string_to_time (
     /* convert integer to time value */
     Trace	*trace,
     char	*strg)
@@ -1286,7 +1301,7 @@ DTime string_to_time (
     if (f_time < 0) return (0);
 
     if (global->timerep == TIMEREP_CYC) {
-	return ((DTime)(f_time * grid_primary_period(trace)
+	return ((DTime_t)(f_time * grid_primary_period(trace)
 			+ trace->grid[0].alignment % grid_primary_period(trace)));
     }
 
@@ -1296,7 +1311,7 @@ DTime string_to_time (
     /* Then convert to internal units and return */
     f_time /= global->time_precision;
 
-    return ((DTime)f_time);
+    return ((DTime_t)f_time);
 }
 
 #pragma inline (time_to_string)
@@ -1304,7 +1319,7 @@ void time_to_string (
     /* convert specific time value into the string passed in */
     Trace	*trace,
     char	*strg,
-    DTime	ctime,
+    DTime_t	ctime,
     Boolean_t	relative)	/* true = time is relative, so don't adjust */
 {
     double	f_time, remain;
@@ -1380,7 +1395,7 @@ char *time_units_to_string (
 }
 
 #pragma inline (time_units_to_multiplier)
-DTime time_units_to_multiplier (
+DTime_t time_units_to_multiplier (
     /* find units for the given time represetation */
     TimeRep_t	timerep)
 {

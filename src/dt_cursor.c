@@ -64,7 +64,7 @@
 /****************************** UTILITIES ******************************/
 
 void    cur_free (
-    DCursor	*csr_ptr)	/* Cursor to remove */
+    DCursor_t	*csr_ptr)	/* Cursor to remove */
 {
     DFree (csr_ptr->note);
     DFree (csr_ptr);
@@ -72,9 +72,9 @@ void    cur_free (
 
 void    cur_remove (
     /* Cursor is removed from list, but not freed! */
-    DCursor	*csr_ptr)	/* Cursor to remove */
+    DCursor_t	*csr_ptr)	/* Cursor to remove */
 {
-    DCursor	*next_csr_ptr, *prev_csr_ptr;
+    DCursor_t	*next_csr_ptr, *prev_csr_ptr;
 
     if (DTPRINT_ENTRY) printf ("In cur_remove\n");
 
@@ -97,7 +97,7 @@ void    cur_remove (
 }
 
 void cur_delete (
-    DCursor *csr_ptr
+    DCursor_t *csr_ptr
     )
 {
     if (csr_ptr->type == SIMVIEW) {
@@ -112,23 +112,23 @@ void cur_delete (
     }
 }
 
-DCursor *cur_add (
+DCursor_t *cur_add (
     /* Add a cursor, or replace an existing one at the same time as long as neither is
        a SIMVIEW type.  Return the new or conflicting cursor. */
-    DTime	ctime,
-    ColorNum	color,
+    DTime_t	ctime,
+    ColorNum_t	color,
     CursorType_t	type,
     const char *note)
 {
-    DCursor *new_csr_ptr;
-    DCursor *prev_csr_ptr, *csr_ptr;
+    DCursor_t *new_csr_ptr;
+    DCursor_t *prev_csr_ptr, *csr_ptr;
 
     if (DTPRINT_ENTRY) printf ("In cur_add - time=%d\n",ctime);
 
     /* No SIMVIEW cursors unless SimView is enabled. */
     assert (type != SIMVIEW || global->simview_info_ptr);
 
-    new_csr_ptr = DNewCalloc (DCursor);
+    new_csr_ptr = DNewCalloc (DCursor_t);
     new_csr_ptr->time = ctime;
     new_csr_ptr->color = color;
     new_csr_ptr->type = type;
@@ -175,13 +175,13 @@ DCursor *cur_add (
 
 /* Create new cursor and handle simview cursors */
 void cur_new (
-    DTime ctime,
-    ColorNum color,
+    DTime_t ctime,
+    ColorNum_t color,
     CursorType_t type,
     const char *note
     )
 {
-    DCursor *csr_ptr;
+    DCursor_t *csr_ptr;
     static int simview_cur_id = 0;
 
     /* Add cursor, unless this is a SimView cursor, and a response from SimView will add it. */
@@ -201,11 +201,11 @@ void cur_new (
 }
 
 void cur_move (
-    DCursor *csr_ptr,
-    DTime new_time
+    DCursor_t *csr_ptr,
+    DTime_t new_time
     )
 {
-    DCursor *new_csr_ptr;
+    DCursor_t *new_csr_ptr;
 
     /* Don't move if this is a SimView cursor and a SimView response will move it. */
     if (csr_ptr->type != SIMVIEW || global->simview_info_ptr->handshake == FALSE) {
@@ -234,7 +234,7 @@ void cur_move (
 void cur_delete_of_type (
     CursorType_t	type)
 {
-    DCursor	*csr_ptr,*new_csr_ptr;
+    DCursor_t	*csr_ptr,*new_csr_ptr;
 
     for (csr_ptr = global->cursor_head; csr_ptr; ) {
 	new_csr_ptr = csr_ptr;
@@ -246,8 +246,8 @@ void cur_delete_of_type (
 }
 
 /* Get a SIMVIEW cursor by its id number. */
-DCursor *cur_id_to_cursor (int id) {
-    DCursor *cur;
+DCursor_t *cur_id_to_cursor (int id) {
+    DCursor_t *cur;
 
     cur = global->cursor_head;
     while (cur && (cur->type != SIMVIEW || cur->simview_id != id)) {
@@ -259,7 +259,7 @@ DCursor *cur_id_to_cursor (int id) {
 
 void cur_write (FILE *writefp, char *c)
 {
-    DCursor	*csr_ptr;
+    DCursor_t	*csr_ptr;
     char strg[MAXTIMELEN];
 
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
@@ -277,11 +277,11 @@ void cur_write (FILE *writefp, char *c)
     }
 }
 
-DTime cur_time_first (
+DTime_t cur_time_first (
     const Trace 	*trace)
     /* Return time of the first cursor, or BOT if none */
 {
-    DCursor	*csr_ptr;
+    DCursor_t	*csr_ptr;
 
     csr_ptr = global->cursor_head;
     if (csr_ptr) {
@@ -292,11 +292,11 @@ DTime cur_time_first (
     }
 }
 
-DTime cur_time_last (
+DTime_t cur_time_last (
     const Trace 	*trace)
     /* Return time of the last cursor, or EOT if none */
 {
-    DCursor	*csr_ptr;
+    DCursor_t	*csr_ptr;
 
     for (csr_ptr = global->cursor_head; csr_ptr && csr_ptr->next; csr_ptr = csr_ptr->next) ;
     if (csr_ptr) {
@@ -312,8 +312,8 @@ DTime cur_time_last (
  * (Note that SIMVIEW cursors may only notify SimView that a move is requested without
  *  performing the move.) */
 static void cur_step_one (
-    DTime       step,
-    DCursor     *csr_ptr
+    DTime_t       step,
+    DCursor_t     *csr_ptr
     )
 {
     if (csr_ptr->type == USER || csr_ptr->type == SIMVIEW) {
@@ -326,12 +326,12 @@ static void cur_step_one (
 }
 
 void cur_step (
-    DTime	step
+    DTime_t	step
     )
     /* Move all USER and SIMVIEW cursors the specified distance */
 {
-    DCursor	*csr_ptr;
-    DCursor	*nxt_csr_ptr;
+    DCursor_t	*csr_ptr;
+    DCursor_t	*nxt_csr_ptr;
 
     /* Since the cursor list changes as we step through it, we step
      * through it forward if cursors are moving back, and backward
@@ -365,8 +365,8 @@ void cur_step (
 
 void cur_highlight (
     /* Set the highlight color for a cursor.  Communicate the change to SimView if necessary. */
-    DCursor	*csr_ptr,
-    ColorNum      color
+    DCursor_t	*csr_ptr,
+    ColorNum_t      color
     )
 {
     csr_ptr->color = color;
@@ -383,7 +383,7 @@ void cur_highlight (
 char *cur_examine_string (
     /* Return string with examine information in it */
     Trace	*trace,
-    DCursor	*csr_ptr)
+    DCursor_t	*csr_ptr)
 {
     static char	strg[2000];
     char	strg2[2000];
@@ -480,7 +480,7 @@ void    cur_clr_cb (
     Widget		w)
 {
     Trace *trace = widget_to_trace(w);
-    DCursor	*csr_ptr, *next;
+    DCursor_t	*csr_ptr, *next;
 
     if (DTPRINT_ENTRY) printf ("In cur_clr_cb.\n");
 
@@ -535,7 +535,7 @@ void    cur_add_ev (
     Trace		*trace,
     XButtonPressedEvent	*ev)
 {
-    DTime	time;
+    DTime_t	time;
 
     if (DTPRINT_ENTRY) printf ("In cur_add_ev - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -555,11 +555,11 @@ void    cur_move_ev (
     Trace		*trace,
     XButtonPressedEvent	*ev)
 {
-    DTime	time;
+    DTime_t	time;
     Position	x1,x2,y1,y2;
     static	last_x = 0;
     XEvent	event;
-    DCursor	*csr_ptr;
+    DCursor_t	*csr_ptr;
     XMotionEvent *em;
     XButtonEvent *eb;
 
@@ -654,7 +654,7 @@ void    cur_delete_ev (
     Trace		*trace,
     XButtonPressedEvent	*ev)
 {
-    DCursor	*csr_ptr;
+    DCursor_t	*csr_ptr;
 
     if (DTPRINT_ENTRY) printf ("In cur_delete_ev - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -673,7 +673,7 @@ void    cur_highlight_ev (
     Trace		*trace,
     XButtonPressedEvent	*ev)
 {
-    DCursor	*csr_ptr;
+    DCursor_t	*csr_ptr;
 
     if (DTPRINT_ENTRY) printf ("In cur_highlight_ev - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -704,9 +704,9 @@ void simview_init (char *arg) {
     printf ("The SimView library is not available, \"-simview\" should not be used.\n");
 }
 /* Call when a simview cursor is created/moved/etc. */
-void simview_cur_create (int cur_num, double cyc_num, ColorNum color, char *color_name) {}
+void simview_cur_create (int cur_num, double cyc_num, ColorNum_t color, char *color_name) {}
 void simview_cur_move (int cur_num, double cyc_num) {}
-void simview_cur_highlight (int cur_num, ColorNum color, char *color_name) {}
+void simview_cur_highlight (int cur_num, ColorNum_t color, char *color_name) {}
 void simview_cur_delete (int cur_num) {}
 
 #endif

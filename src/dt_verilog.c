@@ -68,7 +68,7 @@ static char *current_file="";
 #define MAXSCOPES 20
 static char	scopes[MAXSCOPES][MAXSIGLEN];
 static int	scope_level;
-static DTime	time_divisor, time_scale;
+static DTime_t	time_divisor, time_scale;
 
 static char	*verilog_line_storage;
 static uint_t	verilog_line_length;
@@ -78,6 +78,8 @@ static Signal	*last_sig_ptr;		/* last signal read in */
 /* Pointer to array of signals sorted by pos. (Special hash table) */
 /* *(signal_by_pos[VERILOG_ID_TO_POS ("abc")]) gives signal ABC */
 static Signal	**signal_by_pos;	
+static uint_t	signal_by_pos_max;
+static uint_t	verilog_max_bits;
 
 /* List of signals that need updating */
 static Signal	**signal_update_array;	
@@ -94,6 +96,9 @@ static Signal	**signal_update_array_last_pptr;
 					):0) \
 			    ):0) \
 		):0)
+
+#define VERILOG_POS_TO_SIG(_pos_) \
+    (((_pos_)<signal_by_pos_max)?signal_by_pos[(_pos_)]:0)
 
 static void	verilog_read_till_end (
     char	*line,
@@ -225,6 +230,8 @@ static void	verilog_process_var (
     new_sig_ptr->file_type.flags = 0;
     new_sig_ptr->file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
 
+    /*if (DTPRINT_FILE) printf ("var %s %s/%d %s %s\n", type, cmd,bits, code, signame);*/
+
     val_zero (&(new_sig_ptr->file_value));
 
     /* initialize all the pointers that aren't NULL */
@@ -282,6 +289,7 @@ void	verilog_womp_128s (
 	    if (new_sig_ptr->forward) new_sig_ptr->forward->backward = new_sig_ptr;
 	    
 	    /* Remember there are multiple signals under this coding */
+	    new_sig_ptr->copyof = sig_ptr->copyof;
 	    new_sig_ptr->verilog_next = sig_ptr->verilog_next;
 	    sig_ptr->verilog_next = new_sig_ptr;
 
@@ -310,15 +318,14 @@ void	verilog_womp_128s (
 }
 
 
-static void	verilog_print_pos (
-    int max_pos)
+static void	verilog_print_pos (void)
     /* Print the pos array */
 {
     int pos;
     Signal	*pos_sig_ptr, *sig_ptr;
 
     printf ("POS array:\n");
-    for (pos=0; pos<=max_pos; pos++) {
+    for (pos=0; pos<signal_by_pos_max; pos++) {
 	pos_sig_ptr = signal_by_pos[pos];
 	if (pos_sig_ptr) {
 	    printf ("\t%d\t%s\n", pos, pos_sig_ptr->signame);
@@ -333,28 +340,29 @@ static void	verilog_process_definitions (
     /* Process the definitions */
     Trace	*trace)
 {
-    uint_t	max_pos;
     Signal	*sig_ptr;
-    Signal	*pos_sig_ptr, *next_sig_ptr;
+    Signal	*pos_sig_ptr, *last_sig_ptr;
     uint_t	pos_level, level;
     uint_t	pos;
     char	*tp;
     
     /* if (DTPRINT_FILE) sig_print_names (trace); */
     
-    /* Find the highest pos used */
-    max_pos = 0;
+    /* Find the highest pos used & max number of bits */
+    signal_by_pos_max = 0;
+    verilog_max_bits = 0;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	max_pos = MAX (max_pos, sig_ptr->file_pos + sig_ptr->bits - 1);
+	signal_by_pos_max = MAX (signal_by_pos_max, sig_ptr->file_pos + sig_ptr->bits - 1 + 1);
+	verilog_max_bits = MAX (verilog_max_bits, sig_ptr->bits);
     }
     
     /* Allocate space for one signal pointer for each of the possible codes */
     /* This will, of course, use a lot of memory for large traces.  It will be very fast though */
-    signal_by_pos = (Signal **)XtMalloc (sizeof (Signal *) * (max_pos + 1));
-    memset (signal_by_pos, 0, sizeof (Signal *) * (max_pos + 1));
+    signal_by_pos = (Signal **)XtMalloc (sizeof (Signal *) * (signal_by_pos_max + 1));
+    memset (signal_by_pos, 0, sizeof (Signal *) * (signal_by_pos_max + 1));
 
     /* Also set aside space so every signal could change in a single cycle */
-    signal_update_array = (Signal **)XtMalloc (sizeof (Signal *) * (max_pos + 1));
+    signal_update_array = (Signal **)XtMalloc (sizeof (Signal *) * (signal_by_pos_max + 1));
     signal_update_array_last_pptr = signal_update_array;
     
     /* Assign signals to the pos array.  The array points to the "original" */
@@ -377,6 +385,7 @@ static void	verilog_process_definitions (
 		for (pos_level=0, tp=pos_sig_ptr->signame; *tp; tp++) {
 		    if (*tp=='.') pos_level++;
 		}
+		/*printf ("Compare %d %d  %s %s\n",level, pos_level, sig_ptr->signame, pos_sig_ptr->signame);*/
 		if (level < pos_level) {
 		    signal_by_pos[pos] = sig_ptr;
 		    sig_ptr->verilog_next = pos_sig_ptr;
@@ -390,16 +399,24 @@ static void	verilog_process_definitions (
     }
 
     /* Print the pos array */
-    /* if (DTPRINT_FILE) verilog_print_pos (max_pos); */
+    /* if (DTPRINT_FILE) verilog_print_pos (); */
 
     /* Kill all but the first copy of the signals.  This may be changed in later releases. */
-    for (pos=0; pos<=max_pos; pos++) {
+    for (pos=0; pos<signal_by_pos_max; pos++) {
 	pos_sig_ptr = signal_by_pos[pos];
 	if (pos_sig_ptr) {
-	    for (sig_ptr=pos_sig_ptr->verilog_next; sig_ptr; sig_ptr=next_sig_ptr) {
+	    last_sig_ptr = pos_sig_ptr;
+	    while (NULL!=(sig_ptr=last_sig_ptr->verilog_next)) {
 		/* Delete this signal */
-		next_sig_ptr = sig_ptr->verilog_next;
-		sig_free (trace, sig_ptr, FALSE, FALSE);
+		if (global->save_duplicates
+		    && sig_ptr->bits == pos_sig_ptr->bits) {
+		    sig_ptr->copyof = pos_sig_ptr;
+		    last_sig_ptr = sig_ptr;
+		    /*printf ("Dup %s\t  %s\n", pos_sig_ptr->signame, sig_ptr->signame);*/
+		} else {
+		    last_sig_ptr->verilog_next = sig_ptr->verilog_next;
+		    sig_free (trace, sig_ptr, FALSE, FALSE);
+		}
 	    }
 	    pos_sig_ptr->verilog_next = NULL;		/* Zero in prep of make_busses */
 	}
@@ -412,20 +429,106 @@ static void	verilog_process_definitions (
 
     /* Assign signals to the pos array **AGAIN**. */
     /* Since busses now exist, the pointers will all be different */
-    if (DTPRINT_FILE) printf ("Reassigning signals to pos array./n");
-    memset (signal_by_pos, 0, sizeof (Signal *) * (max_pos + 1));
-    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	for (pos = sig_ptr->file_pos; 
-	     pos <= sig_ptr->file_pos
-		 + ((sig_ptr->file_type.flag.perm_vector)?0:(sig_ptr->bits-1));
+    if (DTPRINT_FILE) printf ("Reassigning signals to pos array.\n");
+    memset (signal_by_pos, 0, sizeof (Signal *) * (signal_by_pos_max + 1));
+    for (pos_sig_ptr = trace->firstsig; pos_sig_ptr; pos_sig_ptr = pos_sig_ptr->forward) {
+	for (pos = pos_sig_ptr->file_pos; 
+	     pos <= pos_sig_ptr->file_pos
+		 + ((pos_sig_ptr->file_type.flag.perm_vector)?0:(pos_sig_ptr->bits-1));
 	     pos++) {
-	    /* If already assigned, this is a signal that was womp_128ed. */
-	    if (!signal_by_pos[pos]) signal_by_pos[pos] = sig_ptr;
+	    if (pos_sig_ptr->copyof) {
+		pos_sig_ptr->bptr = pos_sig_ptr->copyof->bptr;
+		pos_sig_ptr->cptr = pos_sig_ptr->copyof->cptr;
+		if (DTPRINT_FILE) printf ("StillDup %s\t  %s\n", pos_sig_ptr->signame, pos_sig_ptr->copyof->signame);
+	    } else {
+		if (!signal_by_pos[pos]) {
+		    signal_by_pos[pos] = pos_sig_ptr;
+		} else {
+		    /* If already assigned, this is a signal that was womp_128ed. */
+		    /* or, we're saving duplicates */
+		}
+	    }
 	}
     }
 
     /* Print the pos array */
-    if (DTPRINT_FILE) verilog_print_pos (max_pos);
+    if (DTPRINT_FILE) verilog_print_pos ();
+}
+
+static inline void verilog_prep_busses (
+    Signal	*sig_ptr,
+    int bit,
+    int state,
+    int first_data)
+    /* About to do sub-bit changes on this signal, get last value */	
+{
+    int b;
+    if (sig_ptr->file_value.siglw.stbits.state == 0) {
+	/* First change to this signal */
+	*(signal_update_array_last_pptr++) = sig_ptr;
+	val_zero (&(sig_ptr->file_value));
+	if (first_data) { /* Default to X of appropriate width */
+	    for (b=0; b < sig_ptr->bits; b++) {
+		sig_ptr->file_value.number[4 + (b>>5)] |= (1<<(b&31));
+	    }
+	} else {
+	    Value_t *pcptr;
+	    pcptr = sig_ptr->cptr;
+	    /*if (DTPRINT_FILE) { printf ("Copied: "); print_cptr (pcptr); print_sig_info (sig_ptr);} */
+	    /*Extract to T128 form for next comparison */
+	    switch (pcptr->siglw.stbits.state) {
+	    case STATE_0:
+		break;
+	    case STATE_1:
+		sig_ptr->file_value.number[0] = 1;
+		break;
+	    case STATE_U:
+		for (b=0; b < sig_ptr->bits; b++) {
+		    sig_ptr->file_value.number[4 + (b>>5)] |= (1<<(b&31));
+		}
+		break;
+	    case STATE_Z:
+		for (b=0; b < sig_ptr->bits; b++) {
+		    sig_ptr->file_value.number[0 + (b>>5)] |= (1<<(b&31));
+		    sig_ptr->file_value.number[4 + (b>>5)] |= (1<<(b&31));
+		}
+		break;
+	    case STATE_F32:
+		sig_ptr->file_value.number[0] = pcptr->number[0];
+		sig_ptr->file_value.number[4] = pcptr->number[1];
+		break;
+	    case STATE_F128:
+		/* FALLTHRU */
+		sig_ptr->file_value.number[7] = pcptr->number[7];
+		sig_ptr->file_value.number[6] = pcptr->number[6];
+		sig_ptr->file_value.number[5] = pcptr->number[5];
+		sig_ptr->file_value.number[4] = pcptr->number[4];
+	    case STATE_B128:
+		/* FALLTHRU */
+		sig_ptr->file_value.number[3] = pcptr->number[3];
+		sig_ptr->file_value.number[2] = pcptr->number[2];
+		sig_ptr->file_value.number[1] = pcptr->number[1];
+	    case STATE_B32:
+		sig_ptr->file_value.number[0] = pcptr->number[0];
+		break;
+	    }
+	}
+	sig_ptr->file_value.siglw.stbits.state = STATE_F128;
+    }
+    /*if (DTPRINT_FILE) { printf ("Prechg: "); print_cptr (&(sig_ptr->file_value)); } */
+    if (state & 1) {
+	sig_ptr->file_value.number[(bit>>5)] |= (1<<(bit&31));
+    } else {
+	sig_ptr->file_value.number[(bit>>5)] &= ~(1<<(bit&31));
+    }
+    if (state & 2) {
+	sig_ptr->file_value.number[4 + (bit>>5)] |= (1<<(bit&31));
+    } else {
+	sig_ptr->file_value.number[4 + (bit>>5)] &= ~(1<<(bit&31));
+    }
+    if (bit>127) printf ("%%E, Signal too wide on line %d of %s\n",
+			 verilog_line_num, current_file);
+    /*if (DTPRINT_FILE) { printf ("Aftchg: "); print_cptr (&(sig_ptr->file_value)); } */
 }
 
 static void	verilog_enter_busses (
@@ -442,6 +545,7 @@ static void	verilog_enter_busses (
 	sig_ptr = *sig_upd_pptr;
 	if (sig_ptr->file_value.siglw.stbits.state) {
 	    /*if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } */
+	    if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } 
 
 	    /* Make cptr have correct state */
 	    val_minimize (&(sig_ptr->file_value));
@@ -450,13 +554,7 @@ static void	verilog_enter_busses (
 	    sig_ptr->file_value.time = time;
 	    fil_add_cptr (sig_ptr, &(sig_ptr->file_value), first_data);
 
-	    /* If T32, switch back to T128 form for next comparison */
-	    if (sig_ptr->file_value.siglw.stbits.state == STATE_F32) {
-		sig_ptr->file_value.number[4] = sig_ptr->file_value.number[1];
-		sig_ptr->file_value.number[1] = 0;
-	    }
-
-	    /* Zero the state and keep the value for next time */
+	    /* Zero the state for next time */
 	    sig_ptr->file_value.siglw.number = 0;
 	    /*if (DTPRINT_FILE) { printf ("Exited: "); print_cptr (&(sig_ptr->file_value)); } */
 	}
@@ -470,7 +568,7 @@ static void	verilog_read_data (
     FILE	*readfp)
 {
     char	*value_strg, *line, *code;
-    DTime	time;
+    DTime_t	time;
     Boolean_t	first_data=TRUE;
     Boolean_t	got_data=FALSE;
     Boolean_t	got_time=FALSE;
@@ -478,11 +576,15 @@ static void	verilog_read_data (
     Signal	*sig_ptr;
     int		pos;
     int		state;
+    char	*scratchline;
 
     if (DTPRINT_ENTRY) printf ("In verilog_read_data\n");
 
     time = 0;
-
+    scratchline = (char *)XtMalloc(100+verilog_max_bits);
+    /* Make sure we have space for longest line (will realloc if miss guess... that's ok */
+    fgets_dynamic_extend (&verilog_line_storage, &verilog_line_length, verilog_max_bits+100);
+    
     while (1) {
 	fgets_dynamic (&verilog_line_storage, &verilog_line_length, readfp);
 	verilog_line_num++;
@@ -514,7 +616,7 @@ static void	verilog_read_data (
 
 	    verilog_read_parameter (line, code);
 	    pos = VERILOG_ID_TO_POS(code);
-	    sig_ptr = signal_by_pos[ pos ];
+	    sig_ptr = VERILOG_POS_TO_SIG(pos);
 	    if (sig_ptr) {
 		/* printf ("\tsignal '%s'=%d %s  state %d\n", code, pos, sig_ptr->signame, state); */
 		if (sig_ptr->bits < 2) {
@@ -527,21 +629,7 @@ static void	verilog_read_data (
 		else {	/* Unary signal made into a vector */
 		    register int bit = sig_ptr->bits - 1 - (pos - sig_ptr->file_pos); 
 		    /* Mark this for update at next time stamp */
-		    *(signal_update_array_last_pptr++) = sig_ptr;
-		    sig_ptr->file_value.siglw.stbits.state = STATE_F128;
-		    /* printf ("Pre: "); print_cptr (&(sig_ptr->file_value)); */
-		    if (state & 0) {
-			sig_ptr->file_value.number[(bit>>5)] |= (1<<(bit&31));
-		    } else {
-			sig_ptr->file_value.number[(bit>>5)] &= ~(1<<(bit&31));
-		    }
-		    if (state & 1) {
-			sig_ptr->file_value.number[4 + (bit>>5)] |= (1<<(bit&31));
-		    } else {
-			sig_ptr->file_value.number[4 + (bit>>5)] &= ~(1<<(bit&31));
-		    }
-		    if (bit>127) printf ("%%E, Signal too wide on line %d of %s\n",
-					 verilog_line_num, current_file);
+		    verilog_prep_busses (sig_ptr, bit, state, first_data);
 		}
 		/* if (DTPRINT_FILE) print_cptr (&(sig_ptr->file_value)); */
 	    } /* if sig_ptr */
@@ -554,7 +642,7 @@ static void	verilog_read_data (
 	    verilog_read_parameter (line, value_strg);
 	    verilog_read_parameter (line, code);
 	    pos = VERILOG_ID_TO_POS(code);
-	    sig_ptr = signal_by_pos[ pos ];
+	    sig_ptr = VERILOG_POS_TO_SIG(pos);
 	    if (sig_ptr) {
 		if ((sig_ptr->bits < 2) || !sig_ptr->file_type.flag.perm_vector) {
 		    /* For some idiotic reason vpd2vcd likes to do this! */
@@ -576,34 +664,33 @@ static void	verilog_read_data (
 		    register int len;
 
 		    for (; sig_ptr; sig_ptr=sig_ptr->verilog_next) {
-			/* Verilog requires us to extend the value if it is too short */
-			len = (sig_ptr->bits) - strlen (value_strg);
-			if (len > 0) {
-			    /* This is rare, so not fast */
-			    /* 1's extend as 0's, x as x */
-			    register char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
-			    char *line_copy;
-			    
-			    line_copy = strdup(value_strg);
-			
-			    line = value_strg;
-			    while (len>0) {
-				*line++ = extend_char;
-				len--;
+			if (!sig_ptr->copyof) {
+			    /* Verilog requires us to extend the value if it is too short */
+			    len = (sig_ptr->bits) - strlen (value_strg);
+			    if (len > 0) {
+				/* This is rare, so not fast (see bradshaw.dmp)*/
+				/* 1's extend as 0's, x as x */
+				register char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
+				char *cp;
+				strcpy (scratchline, value_strg);
+				cp = value_strg;
+				while (len>0) {
+				    *cp++ = extend_char;
+				    len--;
+				}
+				*cp++ = '\0';
+				
+				strcat (value_strg, scratchline);	/* tack on the original value */
+				if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", scratchline, value_strg);
 			    }
-			    *line++ = '\0';
 			    
-			    strcat (line, line_copy);	/* tack on the original value */
-			    if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", value_strg, line);
-			    XtFree (line_copy);
+			    /* Store the file information */
+			    /*if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %d %s  value %s\n", code, pos, time, sig_ptr->signame, value_strg);*/
+			    ascii_string_add_cptr (sig_ptr, value_strg, time, first_data);
+			    
+			    /* Push string past this signal's bits */
+			    value_strg += sig_ptr->bits;
 			}
-
-			/* Store the file information */
-			/*if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %d %s  value %s\n", code, pos, time, sig_ptr->signame, value_strg);*/
-			ascii_string_add_cptr (sig_ptr, value_strg, time, first_data);
-
-			/* Push string past this signal's bits */
-			value_strg += sig_ptr->bits;
 		    }
 		}
 	    }
@@ -616,26 +703,25 @@ static void	verilog_read_data (
 	case '#':	/* Time stamp */
 	    verilog_enter_busses (trace, first_data, time);
 	    time = (atol (line) * time_scale) / time_divisor;	/* 1% of time in this division! */
-	    if (DTPRINT_FILE) {
-		printf (" %ld * ( %d / %d )\n", atol(line), time_scale, time_divisor);
-		printf ("Time %d start %d first %d got %d\n", time, trace->start_time, first_data, got_data);
-	    }
-	    if (first_data) {
-		if (got_time) {
-		    if (got_data) first_data = FALSE;
-		    got_data = FALSE;
-		}
-		got_time = TRUE;
+	    if (first_data && got_time && got_data) {
+		first_data = FALSE;
+	    } else if (first_data) {
 		trace->start_time = time;
+		got_time = TRUE;
+		got_data = FALSE;
 	    }
 	    trace->end_time = time;
+	    if (DTPRINT_FILE) {
+		printf ("Time %d start %d first %d got %d  ", time, trace->start_time, first_data, got_data);
+		printf (" %ld * ( %d / %d )\n", atol(line), time_scale, time_divisor);
+	    }
 	    break;
 
 	case 'r':	/* Real number */
 	    verilog_read_parameter (line, value_strg);
 	    verilog_read_parameter (line, code);
 	    pos = VERILOG_ID_TO_POS(code);
-	    sig_ptr = signal_by_pos[ pos ];
+	    sig_ptr = VERILOG_POS_TO_SIG(pos);
 	    if (sig_ptr && sig_ptr->bits == 64) {
 		double dnum = atof (value_strg);
 		val_zero (&value);
@@ -664,6 +750,8 @@ static void	verilog_read_data (
 
     /* May be left overs from the last line */
     verilog_enter_busses (trace, first_data, time);
+
+    DFree (scratchline);
 }
 
 static void	verilog_process_lines (

@@ -7,7 +7,7 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-* Changes in Dinotrace 9.1a  10/30/98
+* Changes in Dinotrace 9.0d  11/30/98
 
 ** Enhancements:
 
@@ -15,10 +15,19 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 **	Signal Select now has two sorting functions.
 
+***	Fixed bug with saving signal ordering and slow reread times. [Dan
+	Lussier]
+
+***	Added save_duplicates config command to avoid deleting verilog
+	signals which occur many times.  [Dan Lussier]
+
 ***	Added hooks for linking other C programs to Dinotrace.  [Steve Hoover]
 
-****	Fixed bug which would make Customize Grid ignore resolution setting.
+****	Fixed crash on Verilog Dumps.  [Lee Bradshaw]
 
+****	Fixed crash with bad cursor X-11 error.  [Aki Niimura]
+
+****	Fixed bug which would make Customize Grid ignore resolution setting.
 
 * Changes in Dinotrace 9.0c  9/30/98
 

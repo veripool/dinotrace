@@ -115,8 +115,8 @@ static void draw_string_fit (
 static void draw_grid_line (
     Trace	*trace,
     Boolean_t	*textoccupied,
-    const Grid	*grid_ptr,		/* Grid information */
-    DTime	xtime,
+    const Grid_t *grid_ptr,		/* Grid information */
+    DTime_t	xtime,
     Position	ytop,
     Position	ymid,
     Position	ybot)
@@ -147,11 +147,11 @@ static void draw_grid_line (
 static void draw_grid (
     Trace	*trace,
     Boolean_t	*textoccupied,
-    const Grid	*grid_ptr)		/* Grid information */
+    const Grid_t *grid_ptr)		/* Grid information */
 {         
     char 	primary_dash[4];	/* Dash pattern */
     int		end_time;
-    DTime	xtime;
+    DTime_t	xtime;
     Position	ytop,ymid,ybot;
 
     if (grid_ptr->period < 1) return;
@@ -244,7 +244,7 @@ static void draw_cursors (
     int		len,end_time;
     int		last_drawn_xright;
     char 	strg[MAXTIMELEN];		/* String value to print out */
-    DCursor 	*csr_ptr;			/* Current cursor being printed */
+    DCursor_t 	*csr_ptr;			/* Current cursor being printed */
     Position	x1,mid;
     Position	ytop,ybot,ydelta;
     Dimension m_time_height = global->time_font->ascent;
@@ -795,7 +795,7 @@ static void draw_hscroll (
 {
     int ymin,ymax,x1,xmin,xmax,slider_xmin,slider_xmax;
     float xscale;
-    DCursor *csr_ptr;			/* Current cursor being printed */
+    DCursor_t *csr_ptr;			/* Current cursor being printed */
     Pixmap pixmap;
 
     if (DTPRINT_ENTRY) printf ("In draw_hscroll\n");
@@ -872,6 +872,7 @@ static void draw_vscroll (
     float yscale;
     Signal	*sig_ptr;
     Pixmap pixmap;
+    ColorNum_t color;
 
     if (DTPRINT_ENTRY) printf ("In draw_vscroll\n");
 
@@ -910,8 +911,9 @@ static void draw_vscroll (
 	    / (float)(trace->numsig);		/* number of signals */
 
     for (sig_ptr = trace->firstsig, signum=0; sig_ptr; sig_ptr = sig_ptr->forward, signum++) {
-	if (sig_ptr->color && ((signum < trace->numsigstart) ||
-			       (signum >= ( trace->numsigstart + trace->numsigvis)))) {
+	color = sig_ptr->color;
+	if (color && ((signum < trace->numsigstart) ||
+		      (signum >= ( trace->numsigstart + trace->numsigvis)))) {
 	    y1 = ymin + yscale * signum;
 
 	    /* If plotting it would overwrite the slider move it to one side or the other */
@@ -921,7 +923,7 @@ static void draw_vscroll (
 		else y1 = slider_ymax + 1;	/* Adjust down */
 	    }
 	    /* Change color */
-	    XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
+	    XSetForeground (global->display, trace->gc, trace->xcolornums[color]);
 	    XDrawLine (global->display, pixmap, trace->gc,
 		       xmin,y1,xmax,y1);
 	}

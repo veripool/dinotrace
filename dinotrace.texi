@@ -20,7 +20,7 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set VERSION 9.1a
+@set VERSION 9.0d
 @set UPDATED November 1998
 @set ID @value{VERSION}
 @c All functions use these for searching ease
@@ -236,14 +236,15 @@ Intel Corporation, and Maker Communications.
 The people who have contributed code or other major functionality are
 Allen Gallotta, Steve Hoover, Nathan Hughes, and Craig Ziegler.
 
-The people who have provided ideas for Dinotrace include Edward Arthur,
-Sally Barry, Josh Belkin, Yifat Ben-Shachar, Rachel Berman, Sass Berman,
-Mike Blake, Serge Bogdanov, Ronen Boneh, Gregg Bouchard, Bill Bruce,
-Lauren Carlson, Paul Chan, David Chen, Derrick Dacosta, Erik Debriae,
-Paul Dormitzer, Duane Galbi, Allen Gallotta, Steve Glaser, Mike Goulet,
-Larry Gust, Larry Herman, Dave Horan, Steve Hoover, Nathan Hughes, Tom
-Hunt, Tracey Jones, Mike Kagen, Dan Katz, Sol Katzman, Steve Kolecki,
-Steve Lang, Charlie Lind, Ben Marshall, Bob McNamara, John Murphy, Lisa
+The people who have provided ideas and feedback for Dinotrace include
+Edward Arthur, Sally Barry, Josh Belkin, Yifat Ben-Shachar, Lee
+Bradshaw, Rachel Berman, Sass Berman, Mike Blake, Serge Bogdanov, Ronen
+Boneh, Gregg Bouchard, Bill Bruce, Lauren Carlson, Paul Chan, David
+Chen, Derrick Dacosta, Erik Debriae, Paul Dormitzer, Duane Galbi, Allen
+Gallotta, Steve Glaser, Mike Goulet, Larry Gust, Larry Herman, Dave
+Horan, Steve Hoover, Nathan Hughes, Tom Hunt, Tracey Jones, Mike Kagen,
+Dan Katz, Sol Katzman, Steve Kolecki, Steve Lang, Charlie Lind, Dan
+Lussier, Ben Marshall, Bob McNamara, John Murphy, Aki Niimura, Lisa
 Noack, Mitch Norcross, Michael Quadri, Reinhard Schumann, Simcha, Jai
 Singh, Dean Sovie, Julie Staraitis, Bob Walsh, Paul Wasson, Steve
 Wilson, Bob Yodlowski, and Craig Ziegler.
@@ -1330,6 +1331,7 @@ is ignored in all but state names.  The commands are:
 * annotate::                    
 * resolution::                  
 * save_enables::                
+* save_duplicates::             
 * save_ordering::               
 * signal_goto::                 
 * time_goto::                   
@@ -1500,7 +1502,7 @@ Makes the annotation file, like the @dmenu{Value Annotate} menu.
 Sets the screen resolution, like the @widget{Resolution} Button on the
 bottom of the screen.
 
-@node save_enables, save_ordering, resolution, Configuration Commands
+@node save_enables, save_duplicates, resolution, Configuration Commands
 @subsection save_enables
 @findex save_enables
 @cindex Enables, Saving
@@ -1513,10 +1515,22 @@ the original signals.  When @config{save_enables} is on, the original
 signals are not deleted.  This is useful for debugging problems related
 to tristating.
 
-@node save_ordering, signal_goto, save_enables, Configuration Commands
+@node save_duplicates, save_ordering, save_enables, Configuration Commands
+@subsection save_duplicates
+@findex save_duplicates
+@cindex Signals, Duplicates, Saving
+@cindex Duplicate Signals, Saving
+@cindex Verilog, Duplicate Signals
+@config{save_duplicates}	ON | OFF
+
+When reading in verilog traces, Dinotrace by default drops signals that
+connect to a signal higher in the hiearchy.  This saves space and
+reduces clutter.  When @config{save_duplicates} is on, the duplicate
+signals are not deleted, except under rare situations.
+
+@node save_ordering, signal_goto, save_duplicates, Configuration Commands
 @subsection save_ordering
 @findex save_ordering
-
 @config{save_ordering}	ON | OFF
 
 When set, Dinotrace will attempt to preserve signal colors, ordering,
@@ -2183,7 +2197,7 @@ in the design.  To cut down on the clutter, Dinotrace removes any signal
 that is identical to a signal higher up in the design hierarchy.  For
 example, if the signal @samp{top.cpu.cache.index_addr[7:0]} is the same
 net as @samp{top.cpu.addr[27:20]}, then only the latter will be shown in
-Dinotrace.
+Dinotrace.  This can be disabled with @config{save_duplicates}.
 
 To save disk space you may wish to store files as gziped.  This will
 result in about a 10 times space savings, and Dinotrace will uncompress

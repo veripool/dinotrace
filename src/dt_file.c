@@ -825,10 +825,14 @@ void fil_make_busses (
 	    + ((sig_ptr->file_type.flag.four_state) ? 2:1) * (sig_ptr->bits-1);
 	
 	/* allocate the data storage memory */
-	sig_ptr->blocks = BLK_SIZE;
-	sig_ptr->bptr = (Value_t *)XtMalloc ((sig_ptr->blocks*sizeof(uint_t))
-						+ (sizeof(Value_t)*2 + 2));
-	val_zero (sig_ptr->bptr);	/* So we know is empty */
+	if (!sig_ptr->copyof) {
+	    sig_ptr->blocks = BLK_SIZE;
+	    sig_ptr->bptr = (Value_t *)XtMalloc ((sig_ptr->blocks*sizeof(uint_t))
+						 + (sizeof(Value_t)*2 + 2));
+	    val_zero (sig_ptr->bptr);	/* So we know is empty */
+	} else {
+	    sig_ptr->bptr = NULL;
+	}
 	sig_ptr->cptr = sig_ptr->bptr;
     }
 

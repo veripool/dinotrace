@@ -234,7 +234,7 @@ static void	fil_decsim_binary_add_cptr (
     /* Add a cptr corresponding to the decsim value for this signal */
     Signal	*sig_ptr,
     const char	*buf,
-    DTime	time,
+    DTime_t	time,
     Boolean_t	nocheck)		/* don't compare against previous data */
 {
     register	int		state;
@@ -291,7 +291,7 @@ void decsim_read_binary (
     int		time;
     Signal	*sig_ptr,*last_sig_ptr;
     int		max_lw_pos=0;		/* Maximum position in buf that has trace data */
-    DTime	time_divisor;
+    DTime_t	time_divisor;
 
     time_divisor = time_units_to_multiplier (global->time_precision);
 
@@ -486,7 +486,7 @@ static void	fil_tempest_binary_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
     Signal	*sig_ptr,
     const uint_t *buf,
-    DTime	time,
+    DTime_t	time,
     Boolean_t	nocheck)		/* don't compare against previous data */
 {
     register int state=STATE_U, bit;

@@ -72,11 +72,8 @@
 /**** Protos */
 
 /* Set define if we have prototype for: gethostname */
-#ifdef  _LINUX_C_LIB_VERSION	/* Linux has it */
+/* Default to yes */
 #define HAVE_GETHOSTNAME_PROTO 1
-#else
-#define HAVE_GETHOSTNAME_PROTO 0
-#endif
 
 /**********************************************************************/
 /**** Headers */

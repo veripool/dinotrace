@@ -404,7 +404,7 @@ void res_zoom_click_ev (
     Trace	*trace,
     XButtonPressedEvent	*ev)
 {
-    DTime		time,tmp;
+    DTime_t		time,tmp;
 
     if (DTPRINT_ENTRY) printf ("In res_zoom_click1_ev - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -622,7 +622,7 @@ void    win_goto_ok_cb (
     XmSelectionBoxCallbackStruct *cb)
 {
     char	*strg;
-    DTime	time;
+    DTime_t	time;
     char	*note = NULL;
 
     if (DTPRINT_ENTRY) printf ("In win_goto_ok_cb - trace=%p\n",trace);

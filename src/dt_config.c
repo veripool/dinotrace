@@ -80,6 +80,7 @@
 #	file_format	DECSIM | TEMPEST | VERILOG
 #	save_enables	ON | OFF
 #	save_ordering	ON | OFF
+#	save_duplicates	ON | OFF
 #	signal_states	<signal_pattern> = {<State>, <State>...}
 #	vector_separator "<char>"
 #	hierarchy_separator "<chars>"
@@ -517,7 +518,7 @@ static int	config_read_on_off (
 static int	config_read_color (
     Trace	*trace,
     char 	*line,
-    ColorNum	*color,
+    ColorNum_t	*color,
     Boolean_t	warn)
     /* Read color name from line, return <= 0 and print msg if bad */
 {
@@ -561,7 +562,7 @@ static int	config_read_color (
 int	config_read_grid (
     Trace	*trace,
     char 	*line,
-    Grid	**grid_pptr)
+    Grid_t	**grid_pptr)
     /* Read grid number name from line, return < 0 and print msg if bad */
 {
     int 	outlen;
@@ -628,7 +629,7 @@ static void	config_process_line_internal (
 {
     char cmd[MAXSIGLEN];
     int value;
-    Grid	*grid_ptr;
+    Grid_t	*grid_ptr;
     char pattern[MAXSIGLEN];
     char *cmt;
     
@@ -737,6 +738,13 @@ static void	config_process_line_internal (
 	    line += config_read_on_off (trace, line, &value);
 	    if (value >= 0) {
 		global->save_ordering=value;
+	    }
+	}
+	else if (!strcmp(cmd, "SAVE_DUPLICATES")) {
+	    value=global->save_duplicates;
+	    line += config_read_on_off (trace, line, &value);
+	    if (value >= 0) {
+		global->save_duplicates=value;
 	    }
 	}
 	else if (!strcmp(cmd, "TIME_REP")) {
@@ -913,7 +921,7 @@ static void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "GRID_COLOR")) {
-	    ColorNum color;
+	    ColorNum_t color;
 	    line += config_read_grid (trace, line, &grid_ptr);
 	    line += config_read_color (trace, line, &color, TRUE);
 	    if (grid_ptr && color>=0) {
@@ -955,7 +963,7 @@ static void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
-	    ColorNum color;
+	    ColorNum_t color;
 	    line += config_read_pattern (trace, line, pattern);
 	    if (pattern[0]) {
 		line += config_read_color (trace, line, &color, TRUE);
@@ -993,7 +1001,7 @@ static void	config_process_line_internal (
 	    char pattern2[MAXSIGLEN];
 	    line += config_read_pattern (trace, line, pattern);
 	    if (pattern[0]) {
-		ColorNum color;
+		ColorNum_t color;
 		line += config_read_string (trace, line, pattern2);
 		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (global->deleted_trace_head, pattern);
@@ -1007,7 +1015,7 @@ static void	config_process_line_internal (
 	    char pattern2[MAXSIGLEN];
 	    line += config_read_pattern (trace, line, pattern);
 	    if (pattern[0]) {
-		ColorNum color;
+		ColorNum_t color;
 		line += config_read_pattern (trace, line, pattern2);
 		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (NULL, pattern);
@@ -1022,7 +1030,7 @@ static void	config_process_line_internal (
 	    line += config_read_pattern (trace, line, pattern);
 	    line += config_read_pattern (trace, line, pattern2);
 	    if (pattern[0] && pattern2[0]) {
-		ColorNum color;
+		ColorNum_t color;
 		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (NULL, pattern);
 		sig_rename_selected (pattern2);
@@ -1035,7 +1043,7 @@ static void	config_process_line_internal (
 	    char pattern2[MAXSIGLEN];
 	    line += config_read_pattern (trace, line, pattern);
 	    if (pattern[0]) {
-		ColorNum color;
+		ColorNum_t color;
 		line += config_read_pattern (trace, line, pattern2);
 		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (NULL, pattern);
@@ -1069,7 +1077,7 @@ static void	config_process_line_internal (
 	    char strg[MAXSIGLEN],flag[MAXSIGLEN],signal[MAXSIGLEN]="*";
 	    ValSearch_t *vs_ptr;
 	    Boolean_t show_value=FALSE, add_cursor=FALSE;
-	    VSearchNum search_pos;
+	    VSearchNum_t search_pos;
 	    line += config_read_value (trace, line, strg);
 	    line += config_read_color (trace, line, &search_pos, TRUE);
 	    search_pos--;
@@ -1090,8 +1098,8 @@ static void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "CURSOR_ADD")) {
-	    ColorNum color;
-	    DTime ctime;
+	    ColorNum_t color;
+	    DTime_t ctime;
 	    char strg[MAXSIGLEN],flag[MAXSIGLEN];
 	    char note[MAXSIGLEN]="";
 	    CursorType_t type = CONFIG;
@@ -1116,9 +1124,9 @@ static void	config_process_line_internal (
 	    cur_step ( - grid_primary_period (trace));
 	}
 	else if (!strcmp(cmd, "TIME_GOTO")) {
-	    DTime ctime;
+	    DTime_t ctime;
 	    char strg[MAXSIGLEN];
-	    DTime end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
+	    DTime_t end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
 	    
 	    line += config_read_string (trace, line, strg);
 	    ctime = string_to_time (trace, strg);
@@ -1130,7 +1138,7 @@ static void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "RESOLUTION")) {
-	    DTime restime;
+	    DTime_t restime;
 	    char strg[MAXSIGLEN];
 	    
 	    line += config_read_string (trace, line, strg);
@@ -1376,7 +1384,7 @@ void config_write_file (
     FILE	*writefp;
     Signal	*sig_ptr;
     int		grid_num;
-    Grid	*grid_ptr;
+    Grid_t	*grid_ptr;
     int		i;
     char	strg[MAXSIGLEN];
     char	*c;	/* Comment or null */
@@ -1406,6 +1414,7 @@ void config_write_file (
 	fprintf (writefp, "%srefreshing\t%s\n", c, global->redraw_manually?"MANUAL":"AUTO");
 	fprintf (writefp, "%ssave_enables\t%s\n", c, global->save_enables?"ON":"OFF");
 	fprintf (writefp, "%ssave_ordering\t%s\n", c, global->save_ordering?"ON":"OFF");
+	fprintf (writefp, "%ssave_duplicates\t%s\n", c, global->save_duplicates?"ON":"OFF");
 	fprintf (writefp, "%sclick_to_edge\t%s\n", c, global->click_to_edge?"ON":"OFF");
 	fprintf (writefp, "%ssignal_height\t%d\n", c, global->sighgt);
 	fprintf (writefp, "%srise_fall_time\t%d\n", c, global->sigrf);

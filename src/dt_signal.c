@@ -306,7 +306,7 @@ void	sig_wildmat_select (
     const char		*pattern)
 {
     Signal		*sig_ptr;
-    SignalList		*siglst_ptr;
+    SignalList_t		*siglst_ptr;
     Boolean_t		trace_list;
     
     trace_list = (trace == NULL);
@@ -323,7 +323,7 @@ void	sig_wildmat_select (
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    if (wildmat (sig_ptr->signame, pattern)) {
 		/* printf ("Selected: %s\n", sig_ptr->signame); */
-		siglst_ptr = XtNew (SignalList);
+		siglst_ptr = XtNew (SignalList_t);
 		siglst_ptr->trace = trace;
 		siglst_ptr->signal = sig_ptr;
 		siglst_ptr->forward = global->select_head;
@@ -355,14 +355,15 @@ void	sig_move (
 #endif
 }
 
-void	sig_delete (
+static void	sig_delete (
     Trace	*trace,
     Signal	*sig_ptr,	/* Signal to remove */
-    Boolean_t	preserve)	/* TRUE if should preserve deletion on rereading */
+    Boolean_t	preserve,	/* TRUE if should preserve deletion on rereading */
+    Signal	*after_sig_ptr)	/* Signal to place after or ADD_LAST */
     /* Delete the given signal */
 {
     if (sig_ptr) {
-	sig_move (trace, sig_ptr, global->deleted_trace_head, ADD_LAST);
+	sig_move (trace, sig_ptr, global->deleted_trace_head, after_sig_ptr);
 	sig_ptr->deleted = TRUE;
 	sig_ptr->deleted_preserve = preserve;
     }
@@ -527,7 +528,7 @@ void    sig_highlight_selected (
     int		color)
 {
     Signal	*sig_ptr;
-    SignalList	*siglst_ptr;
+    SignalList_t	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_highlight_selected\n");
     
@@ -536,6 +537,10 @@ void    sig_highlight_selected (
 	/* Change the color */
 	sig_ptr->color = color;
 	sig_ptr->search = 0;
+	if (sig_ptr->copyof) {
+	    sig_ptr->copyof->color = color;
+	    sig_ptr->copyof->search = 0;
+	}
     }
 
     draw_all_needed ();
@@ -545,7 +550,7 @@ void    sig_radix_selected (
     Radix_t	*radix_ptr)
 {
     Signal	*sig_ptr;
-    SignalList	*siglst_ptr;
+    SignalList_t	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_radix_selected\n");
     
@@ -565,7 +570,7 @@ void    sig_move_selected (
 {
     Trace	*old_trace;
     Signal	*sig_ptr, *after_sig_ptr;
-    SignalList	*siglst_ptr;
+    SignalList_t	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_move_selected aft='%s'\n", after_pattern);
 
@@ -589,7 +594,7 @@ void    sig_rename_selected (
     const char	*new_name)
 {
     Signal	*sig_ptr;
-    SignalList	*siglst_ptr;
+    SignalList_t	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_rename_selected new='%s'\n", new_name);
 
@@ -611,7 +616,7 @@ void    sig_copy_selected (
 {
     Trace	*old_trace;
     Signal	*sig_ptr, *after_sig_ptr;
-    SignalList	*siglst_ptr;
+    SignalList_t	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_copy_pattern - aft='%s'\n", after_pattern);
 
@@ -635,7 +640,7 @@ void    sig_delete_selected (
 {
     Trace	*trace;
     Signal	*sig_ptr;
-    SignalList	*siglst_ptr;
+    SignalList_t	*siglst_ptr;
     
 
     if (DTPRINT_ENTRY) printf ("In sig_delete_selected %d %d\n", constant_flag, ignorexz);
@@ -646,7 +651,7 @@ void    sig_delete_selected (
 	if (!sig_ptr || !sig_ptr->bptr) abort();
 	if (sig_ptr==NULL) abort();
 	if  ( constant_flag || sig_is_constant (trace, sig_ptr, ignorexz)) {
-	    sig_delete (trace, sig_ptr, constant_flag );
+	    sig_delete (trace, sig_ptr, constant_flag, ADD_LAST );
 	}
     }
 
@@ -659,7 +664,7 @@ void    sig_note_selected (
     const char *note)
 {
     Signal	*sig_ptr;
-    SignalList	*siglst_ptr;
+    SignalList_t	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_note_selected\n");
 
@@ -1202,7 +1207,7 @@ void    sig_delete_ev (
     if (!sig_ptr) return;
     
     /* remove the signal from the queue */
-    sig_delete (trace, sig_ptr, TRUE);
+    sig_delete (trace, sig_ptr, TRUE, ADD_LAST);
     
     /* add signame to list box */
     if ( trace->signal.add != NULL ) {
@@ -1231,6 +1236,10 @@ void    sig_highlight_ev (
     /* Change the color */
     sig_ptr->color = global->highlight_color;
     sig_ptr->search = 0;
+    if (sig_ptr->copyof) {
+	sig_ptr->copyof->color = global->highlight_color;
+	sig_ptr->copyof->search = 0;
+    }
 
     draw_all_needed ();
 }
@@ -1508,7 +1517,8 @@ static void    sig_sel_update_pattern (
     /* go through the list again and make the array */
     sel_count = 0;
     for (sig_ptr = head_sig_ptr; sig_ptr; sig_ptr = sig_ptr->forward) {
-	if (wildmat (sig_ptr->signame, pattern)) {
+	if ((pattern[0] == '*' && pattern[1] == '\0')
+	    || wildmat (sig_ptr->signame, pattern)) {
 	    (*xs_list)[sel_count] = sig_ptr->xsigname;
 	    (*xs_sigs)[sel_count] = sig_ptr;
 	    sel_count++;
@@ -1607,7 +1617,7 @@ void    sig_sel_del_all_cb (
     for (i=0; 1; i++) {
 	sig_ptr = (trace->select.del_signals)[i];
 	if (!sig_ptr) break;
-	sig_delete (trace, sig_ptr, TRUE);
+	sig_delete (trace, sig_ptr, TRUE, ADD_LAST);
     }
     sig_sel_pattern_cb (NULL, trace, NULL);
 }
@@ -1628,7 +1638,7 @@ void    sig_sel_del_const (
 
 	/* Delete it */
 	if (sig_is_constant (trace, sig_ptr, ignorexz)) {
-	    sig_delete (trace, sig_ptr, FALSE);
+	    sig_delete (trace, sig_ptr, FALSE, ADD_LAST);
 	}
     }
     sig_sel_pattern_cb (NULL, trace, NULL);
@@ -1689,7 +1699,7 @@ void    sig_sel_del_list_cb (
 	/*if (DTPRINT) printf ("Pos %d sig '%s'\n", i, sig_ptr->signame);*/
 
 	/* Delete it */
-	sig_delete (trace, sig_ptr, TRUE);
+	sig_delete (trace, sig_ptr, TRUE, ADD_LAST);
     }
     sig_sel_pattern_cb (NULL, trace, NULL);
 }
@@ -1900,7 +1910,7 @@ void sig_cross_restore (
 		new_sig_ptr = old_sig_ptr->new_trace_sig;
 		if (old_sig_ptr->deleted_preserve && (NULL != new_sig_ptr)) {
 		    if (DTPRINT_PRESERVE) printf ("Preserve: Please delete %s\n", old_sig_ptr->signame);
-		    sig_delete (trace, new_sig_ptr, TRUE);
+		    sig_delete (trace, new_sig_ptr, TRUE, NULL/*killorder-faster*/);
 		}
 	    }
 	}
@@ -1916,8 +1926,7 @@ void sig_cross_restore (
 	/* Other signals */
 	if (DTPRINT_PRESERVE) printf ("Preserve: Copy/move to other\n");
 	for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
-	    for (old_sig_ptr = trace_ptr->firstsig; old_sig_ptr; old_sig_ptr = old_sig_ptr->forward) {
-		
+	    for (old_sig_ptr = global->preserved_trace->firstsig; old_sig_ptr; old_sig_ptr = old_sig_ptr->forward) {
 		if (    (old_sig_ptr->trace == global->preserved_trace)	/* Sig from old trace */
 		    &&  (trace_ptr != global->preserved_trace) ) {	/* Not in old trace */
 		    if (old_sig_ptr->copyof) {

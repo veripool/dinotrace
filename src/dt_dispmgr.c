@@ -92,7 +92,7 @@ Widget	dmanage_last;	/* Last DManageChild()'d widget */
    SteelBlue, Tan, Thistle, Turquoise, Violet, VioletRed, Wheat, Yellow,
    YellowGreen */
 
-#define Offset(field) XtOffsetOf(Global, field)
+#define Offset(field) XtOffsetOf(Global_t, field)
 XtResource resources[] = {
     {"barcolor", "Barcolor", XtRString, sizeof(String), Offset(barcolor_name), XtRImmediate, (XtPointer) NULL},
     {"color1", "Color1", XtRString, sizeof(String), Offset(color_names[1]), XtRImmediate, (XtPointer) "White"},
@@ -170,12 +170,12 @@ void set_cursor (
     int		cursor_num)		/* Entry in xcursors to display */
 {
     Trace	*trace;			/* Display information */
+    if (DTPRINT_ENTRY) printf ("in set_cursor(%d)\n", cursor_num);
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->wind) {
 	    XDefineCursor (global->display, trace->wind, global->xcursors[cursor_num]);
 	}
     }
-    XmSetMenuCursor (global->display, global->xcursors[cursor_num]);
     last_set_cursor_num = cursor_num;
 }
 
@@ -350,7 +350,7 @@ void init_globals (void)
 
     if (DTPRINT_ENTRY) printf ("in init_globals\n");
 
-    global = DNewCalloc (Global);
+    global = DNewCalloc (Global_t);
     global->trace_head = NULL;
     global->directory[0] = '\0';
     global->res = RES_SCALE/ (float)(250);
@@ -904,6 +904,21 @@ Trace *create_trace (
     /* Accelerators should have the same effect, but a bug in lessTif prevents */
     /* them from working */
 
+    /* create the vertical scroll bar */
+    XtSetArg (arglist[0], XmNorientation, XmVERTICAL );
+    XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM );
+    XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
+    XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_FORM );
+    XtSetArg (arglist[4], XmNbottomOffset, 40);
+    XtSetArg (arglist[5], XmNwidth, 18);
+    trace->vscroll = XmCreateScrollBar ( trace->command.form, "vscroll", arglist, 6);
+    DAddCallback (trace->vscroll, XmNincrementCallback, vscroll_unitinc_cb, trace);
+    DAddCallback (trace->vscroll, XmNdecrementCallback, vscroll_unitdec_cb, trace);
+    DAddCallback (trace->vscroll, XmNdragCallback, vscroll_drag_cb, trace);
+    DAddCallback (trace->vscroll, XmNpageIncrementCallback, vscroll_pageinc_cb, trace);
+    DAddCallback (trace->vscroll, XmNpageDecrementCallback, vscroll_pagedec_cb, trace);
+    DManageChild (trace->vscroll, trace, MC_GLOBALKEYS);
+
     /*** create begin button in command region ***/
     XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Begin") );
     XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
@@ -925,10 +940,11 @@ Trace *create_trace (
     
     /*** create end button in command region ***/
     XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("End") );
-    XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM );
-    XtSetArg (arglist[2], XmNrightOffset, 15);
-    XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_FORM );
-    trace->command.end_but = XmCreatePushButton (trace->command.form, "end", arglist, 4);
+    XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_WIDGET );
+    XtSetArg (arglist[2], XmNrightOffset, 3);
+    XtSetArg (arglist[3], XmNrightWidget, trace->vscroll);
+    XtSetArg (arglist[4], XmNbottomAttachment, XmATTACH_FORM );
+    trace->command.end_but = XmCreatePushButton (trace->command.form, "end", arglist, 5);
     DAddCallback (trace->command.end_but, XmNactivateCallback, win_end_cb, trace);
     DManageChild (trace->command.end_but, trace, MC_GLOBALKEYS);
     
@@ -954,21 +970,6 @@ Trace *create_trace (
     XtSetArg (arglist[0], XmNrecomputeSize, FALSE );
     XtSetValues (trace->command.reschg_but,arglist,1);
     
-    /* create the vertical scroll bar */
-    XtSetArg (arglist[0], XmNorientation, XmVERTICAL );
-    XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM );
-    XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
-    XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_FORM );
-    XtSetArg (arglist[4], XmNbottomOffset, 40);
-    XtSetArg (arglist[5], XmNwidth, 18);
-    trace->vscroll = XmCreateScrollBar ( trace->command.form, "vscroll", arglist, 6);
-    DAddCallback (trace->vscroll, XmNincrementCallback, vscroll_unitinc_cb, trace);
-    DAddCallback (trace->vscroll, XmNdecrementCallback, vscroll_unitdec_cb, trace);
-    DAddCallback (trace->vscroll, XmNdragCallback, vscroll_drag_cb, trace);
-    DAddCallback (trace->vscroll, XmNpageIncrementCallback, vscroll_pageinc_cb, trace);
-    DAddCallback (trace->vscroll, XmNpageDecrementCallback, vscroll_pagedec_cb, trace);
-    DManageChild (trace->vscroll, trace, MC_GLOBALKEYS);
-
     /* create the horizontal scroll bar */
     XtSetArg (arglist[0], XmNorientation, XmHORIZONTAL );
     XtSetArg (arglist[1], XmNbottomAttachment, XmATTACH_WIDGET );

@@ -80,12 +80,12 @@ extern void	grid_customize_align_cb (Widget w, Trace *trace, XmAnyCallbackStruct
 
 /****************************** UTILITIES ******************************/
 
-DTime	grid_primary_period (
+DTime_t	grid_primary_period (
     const Trace	*trace)
 {
     int		grid_num;
-    const Grid	*grid_ptr;
-    DTime	step;
+    const Grid_t	*grid_ptr;
+    DTime_t	step;
     step = 0;
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 	grid_ptr = &(trace->grid[grid_num]);
@@ -102,7 +102,7 @@ DTime	grid_primary_period (
 
 static void	grid_calc_auto (
     Trace	*trace,
-    Grid	*grid_ptr)
+    Grid_t	*grid_ptr)
 {
     Signal	*sig_ptr;
     Value_t	*cptr;
@@ -209,8 +209,8 @@ void	grid_calc_autos (
 char *grid_examine_string (
     /* Return string with examine information in it */
     Trace	*trace,
-    Grid	*grid_ptr,
-    DTime	time)
+    Grid_t	*grid_ptr,
+    DTime_t	time)
 {
     static char	strg[2000];
     char	strg2[2000];
@@ -242,9 +242,9 @@ char *grid_examine_string (
 
 static void    grid_align_choose (
     Trace	*trace,
-    Grid	*grid_ptr)
+    Grid_t	*grid_ptr)
 {
-    DTime	time;
+    DTime_t	time;
     Position	x1,x2,y1,y2;
     int		last_x;
     XEvent	event;
@@ -360,7 +360,7 @@ void grid_reset_cb (
 {
     Trace *trace = widget_to_trace(w);
     int		grid_num;
-    Grid	*grid_ptr;
+    Grid_t	*grid_ptr;
 
     if (DTPRINT_ENTRY) printf ("In grid_reset_cb - trace=%p\n",trace);
 
@@ -423,7 +423,7 @@ void    grid_customize_widget_update_cb (
     XmAnyCallbackStruct *cb)
 {
     int		grid_num;
-    Grid	*grid_ptr;
+    Grid_t	*grid_ptr;
     char	strg[MAXTIMELEN];
     int		opt;
 
@@ -679,7 +679,7 @@ void    grid_customize_ok_cb (
     XmAnyCallbackStruct *cb)
 {
     int			grid_num;
-    Grid	*grid_ptr;
+    Grid_t	*grid_ptr;
 
     if (DTPRINT_ENTRY) printf ("In grid_customize_ok_cb - trace=%p\n",trace);
 

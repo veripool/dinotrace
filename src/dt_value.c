@@ -527,7 +527,7 @@ void	val_update_search ()
     Value_t	*cptr;
     int		cursorize;
     register int i;
-    DCursor	*csr_ptr;
+    DCursor_t	*csr_ptr;
     Boolean_t	any_enabled;
     Boolean_t	matches[MAX_SRCH];	/* Cache the wildmat for each bit, so searching is faster */
     static Boolean_t enabled_lasttime = FALSE;
@@ -749,7 +749,7 @@ char *val_examine_string (
     /* Return string with examine information in it */
     Trace	*trace,
     Signal	*sig_ptr,
-    DTime	time)
+    DTime_t	time)
 {
     Value_t	*cptr;
     static char	strg[2000];
@@ -885,7 +885,7 @@ static void    val_examine_popup (
     Trace	*trace,
     XButtonPressedEvent	*ev)
 {
-    DTime	time;
+    DTime_t	time;
     Signal	*sig_ptr;
     char	*strg = "No information here";
     XmString	xs;
@@ -908,11 +908,11 @@ static void    val_examine_popup (
 	}
     } else {
 	if (ev->y <= trace->ystart) {
-	    DTime grid_time;
-	    Grid *grid_ptr = posx_to_grid (trace, ev->x, &grid_time);
+	    DTime_t grid_time;
+	    Grid_t *grid_ptr = posx_to_grid (trace, ev->x, &grid_time);
 	    if (grid_ptr) strg = grid_examine_string (trace, grid_ptr, grid_time);
 	} else {
-	    DCursor *csr_ptr = posx_to_cursor (trace, ev->x);
+	    DCursor_t *csr_ptr = posx_to_cursor (trace, ev->x);
 	    if (csr_ptr) strg = cur_examine_string (trace, csr_ptr);
 	}
     }
@@ -1067,7 +1067,7 @@ void    val_examine_popup_act (
 static void    val_search_widget_update (
     Trace	*trace)
 {
-    VSearchNum search_pos;
+    VSearchNum_t search_pos;
     char	strg[MAXVALUELEN];
 
     /* Copy settings to local area to allow cancel to work */
@@ -1286,7 +1286,7 @@ void    val_highlight_ev (
     Trace	*trace,
     XButtonPressedEvent	*ev)
 {
-    DTime	time;
+    DTime_t	time;
     Signal	*sig_ptr;
     Value_t	*cptr;
     
@@ -1558,7 +1558,7 @@ void    val_annotate_do_cb (
     Trace	*trace_loop;
     Value_t	*cptr;
     FILE	*dump_fp;
-    DCursor 	*csr_ptr;		/* Current cursor being printed */
+    DCursor_t 	*csr_ptr;		/* Current cursor being printed */
     char	strg[1000];
     int		csr_num, csr_num_incl;
     

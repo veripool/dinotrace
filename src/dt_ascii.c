@@ -72,7 +72,7 @@ void	ascii_string_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
     Signal	*sig_ptr,
     const char	*value_strg,
-    DTime	time,
+    DTime_t	time,
     Boolean_t	nocheck)		/* don't compare against previous data */
 {
     register uint_t state;
@@ -328,7 +328,7 @@ void ascii_read (
     Signal	*sig_ptr;
     long	time_stamp;
     char	*pchar;
-    DTime	time_divisor;
+    DTime_t	time_divisor;
     int		ch;
 
     char	*header_start, *header_ptr;

@@ -72,7 +72,7 @@ uint_t		file_format=FF_VERILOG;	/* Type of trace to support */
 char		message[1000];		/* generic string for messages */
 XGCValues	xgcv;
 Arg		arglist[20];
-Global		*global;
+Global_t	*global;
 /* filetypes must be in the same order that the FF_* defines are */
 struct st_filetypes filetypes[FF_NUMFORMATS] = {
     { 0, "Auto",		"?",	"*.*"		},
@@ -129,6 +129,7 @@ int    main (
 	    }
 	    else if ( !strcmp (sw, "version") ) {
 		version();
+		exit(0);
 	    }
 	    else if ( !strcmp (sw, "print") ) {
 		if ((i+1)<argc && isdigit(argv[i+1][0])) {
@@ -208,6 +209,11 @@ int    main (
 	*/
 
 #endif
+
+    /* info in case someone mails me the print listing */
+    if (DTPRINT) {
+	version();
+    }
 
     /* create global information */
     create_globals (0, argv, sync);
@@ -295,8 +301,8 @@ void usage()
 
 void version()
 {
-    printf ("%s\n", DTVERSION);
-    exit (0);
+    printf ("%s\nDistributed %s\nConfigured %s for %s\n",
+	    DTVERSION, DIST_DATE_STRG, CONFIG_DATE_STRG, HOST);
 }
 
 char	*help_message ()
