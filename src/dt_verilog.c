@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_verilog.c --- Verilog dump file reading
  *
@@ -55,27 +55,11 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#ifdef VMS
-# include <file.h>
-# include <unixio.h>
-# include <math.h> /* removed for Ultrix support... */
-#endif
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
-
 #include "dinotrace.h"
+
 #include "functions.h"
 
+/**********************************************************************/
 /* File locals */
 static int verilog_line_num=0;
 static char *current_file="";
@@ -87,17 +71,17 @@ static int	scope_level;
 static DTime	time_divisor, time_scale;
 
 static char	*verilog_line_storage;
-static int	verilog_line_length;
+static uint_t	verilog_line_length;
 
-static SIGNAL	*last_sig_ptr;		/* last signal read in */
+static Signal	*last_sig_ptr;		/* last signal read in */
 
 /* Pointer to array of signals sorted by pos. (Special hash table) */
 /* *(signal_by_pos[VERILOG_ID_TO_POS ("abc")]) gives signal ABC */
-static SIGNAL	**signal_by_pos;	
+static Signal	**signal_by_pos;	
 
 /* List of signals that need updating */
-static SIGNAL	**signal_update_array;	
-static SIGNAL	**signal_update_array_last_pptr;
+static Signal	**signal_update_array;	
+static Signal	**signal_update_array_last_pptr;
 
 /* Convert a 4 letter <identifier_code> to an id number */
 /* <identifier_code> uses chars 33-126 = '!' - '~' */
@@ -138,7 +122,7 @@ void	verilog_read_till_end (
 }
 
 void	verilog_read_timescale (
-    TRACE	*trace,
+    Trace	*trace,
     char	*line,
     FILE	*readfp)
 {
@@ -192,12 +176,12 @@ void	verilog_read_timescale (
 
 void	verilog_process_var (
     /* Process a VAR statement (read a signal) */
-    TRACE	*trace,
+    Trace	*trace,
     char	*line)
 {
     char	*type, *cmd, *code;
     int		bits;
-    SIGNAL	*new_sig_ptr;
+    Signal	*new_sig_ptr;
     char	signame[10000];
     int		t, len;
 
@@ -230,7 +214,7 @@ void	verilog_process_var (
     }
 
     /* Allocate new signal structure */
-    new_sig_ptr = DNewCalloc (SIGNAL);
+    new_sig_ptr = DNewCalloc (Signal);
     new_sig_ptr->trace = trace;
     new_sig_ptr->file_pos = VERILOG_ID_TO_POS(code);
     new_sig_ptr->bits = bits - 1;
@@ -273,10 +257,10 @@ For a large trace, here's a table of frequency of signals of each number of bits
 
 void	verilog_womp_128s (
     /* Take signals of 128+ signals and split into several signals */
-    TRACE	*trace)
+    Trace	*trace)
 {
-    SIGNAL	*new_sig_ptr;
-    SIGNAL	*sig_ptr;
+    Signal	*new_sig_ptr;
+    Signal	*sig_ptr;
     int		len;
     int		chop;
 
@@ -287,8 +271,8 @@ void	verilog_womp_128s (
 	    if (DTPRINT_FILE) printf ("Adjusting signal %s [%d - %d]   %d > 128\n",
 				      sig_ptr->signame, sig_ptr->lsb_index, sig_ptr->msb_index, sig_ptr->bits);
 	    /* Allocate new signal structure */
-	    new_sig_ptr = XtNew (SIGNAL);
-	    memcpy (new_sig_ptr, sig_ptr, sizeof (SIGNAL));
+	    new_sig_ptr = XtNew (Signal);
+	    memcpy (new_sig_ptr, sig_ptr, sizeof (Signal));
 	    len = strlen (sig_ptr->signame);
 	    new_sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
 	    strcpy (new_sig_ptr->signame, sig_ptr->signame);
@@ -332,7 +316,7 @@ void	verilog_print_pos (
     /* Print the pos array */
 {
     int pos;
-    SIGNAL	*pos_sig_ptr, *sig_ptr;
+    Signal	*pos_sig_ptr, *sig_ptr;
 
     printf ("POS array:\n");
     for (pos=0; pos<=max_pos; pos++) {
@@ -348,13 +332,13 @@ void	verilog_print_pos (
 
 void	verilog_process_definitions (
     /* Process the definitions */
-    TRACE	*trace)
+    Trace	*trace)
 {
-    int		max_pos;
-    SIGNAL	*sig_ptr;
-    SIGNAL	*pos_sig_ptr, *next_sig_ptr;
-    int		pos_level, level;
-    int		pos;
+    uint_t	max_pos;
+    Signal	*sig_ptr;
+    Signal	*pos_sig_ptr, *next_sig_ptr;
+    uint_t	pos_level, level;
+    uint_t	pos;
     char	*tp;
     
     /* if (DTPRINT_FILE) print_sig_names (NULL, trace); */
@@ -367,11 +351,11 @@ void	verilog_process_definitions (
     
     /* Allocate space for one signal pointer for each of the possible codes */
     /* This will, of course, use a lot of memory for large traces.  It will be very fast though */
-    signal_by_pos = (SIGNAL **)XtMalloc (sizeof (SIGNAL *) * (max_pos + 1));
-    memset (signal_by_pos, 0, sizeof (SIGNAL *) * (max_pos + 1));
+    signal_by_pos = (Signal **)XtMalloc (sizeof (Signal *) * (max_pos + 1));
+    memset (signal_by_pos, 0, sizeof (Signal *) * (max_pos + 1));
 
     /* Also set aside space so every signal could change in a single cycle */
-    signal_update_array = (SIGNAL **)XtMalloc (sizeof (SIGNAL *) * (max_pos + 1));
+    signal_update_array = (Signal **)XtMalloc (sizeof (Signal *) * (max_pos + 1));
     signal_update_array_last_pptr = signal_update_array;
     
     /* Assign signals to the pos array.  The array points to the "original" */
@@ -429,7 +413,7 @@ void	verilog_process_definitions (
     /* Assign signals to the pos array **AGAIN**. */
     /* Since busses now exist, the pointers will all be different */
     if (DTPRINT_FILE) printf ("Reassigning signals to pos array./n");
-    memset (signal_by_pos, 0, sizeof (SIGNAL *) * (max_pos + 1));
+    memset (signal_by_pos, 0, sizeof (Signal *) * (max_pos + 1));
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	for (pos = sig_ptr->file_pos; 
 	     pos <= sig_ptr->file_pos + ((sig_ptr->file_type.flag.perm_vector)?0:sig_ptr->bits);
@@ -446,12 +430,12 @@ void	verilog_process_definitions (
 void	verilog_enter_busses (
     /* If at a new time a signal has had its state non zero then */
     /* enter the file_value as a new cptr */
-    TRACE	*trace,
+    Trace	*trace,
     int		first_data,
     int		time)
 {
-    SIGNAL	*sig_ptr;
-    SIGNAL	**sig_upd_pptr;
+    Signal	*sig_ptr;
+    Signal	**sig_upd_pptr;
 
     for (sig_upd_pptr = signal_update_array; sig_upd_pptr < signal_update_array_last_pptr; sig_upd_pptr++) {
 	sig_ptr = *sig_upd_pptr;
@@ -472,7 +456,7 @@ void	verilog_enter_busses (
 }
 
 void	verilog_read_data (
-    TRACE	*trace,
+    Trace	*trace,
     FILE	*readfp)
 {
     char	*value_strg, *line, *code;
@@ -480,8 +464,8 @@ void	verilog_read_data (
     Boolean	first_data=TRUE;
     Boolean	got_data=FALSE;
     Boolean	got_time=FALSE;
-    VALUE	value;
-    SIGNAL	*sig_ptr;
+    Value	value;
+    Signal	*sig_ptr;
     int		pos;
     int		state;
 
@@ -715,7 +699,7 @@ void	verilog_read_data (
 }
 
 void	verilog_process_lines (
-    TRACE	*trace,
+    Trace	*trace,
     FILE	*readfp)
 {
     char	*cmd, *tp;
@@ -796,7 +780,7 @@ void	verilog_process_lines (
 }
 
 void verilog_read (
-    TRACE	*trace,
+    Trace	*trace,
     int		read_fd)
 {
     FILE	*readfp;

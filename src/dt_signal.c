@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_signal.c --- signal handling, searching, etc
  *
@@ -55,17 +55,10 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
+#include "dinotrace.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
-/*#include <descrip.h> - removed for Ultrix support... */
-#include <sys/types.h>
-#include <sys/stat.h>
 
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
 #include <Xm/Form.h>
 #include <Xm/PushB.h>
 #include <Xm/ToggleB.h>
@@ -75,8 +68,9 @@ static char rcsid[] = "$Id$";
 #include <Xm/BulletinB.h>
 #include <Xm/Label.h>
 
-#include "dinotrace.h"
 #include "functions.h"
+
+/**********************************************************************/
 
 extern void 
     sig_sel_ok_cb(), sig_sel_apply_cb(),
@@ -89,13 +83,13 @@ extern void
 
 void sig_free (
     /* Free a signal structure, and unlink all traces of it */
-    TRACE	*trace,
-    SIGNAL	*sig_ptr,	/* Pointer to signal to be deleted */
+    Trace	*trace,
+    Signal	*sig_ptr,	/* Pointer to signal to be deleted */
     Boolean	select,		/* True = selectively pick trace's signals from the list */
     Boolean	recursive)	/* True = recursively do the entire list */
 {
-    SIGNAL	*del_sig_ptr;
-    TRACE	*trace_ptr;
+    Signal	*del_sig_ptr;
+    Trace	*trace_ptr;
 
     /* loop and free signal data and each signal structure */
     while (sig_ptr) {
@@ -112,9 +106,9 @@ void sig_free (
 	    del_sig_ptr = sig_ptr;
 
 	    if (sig_ptr->forward)
-		((SIGNAL *)(sig_ptr->forward))->backward = sig_ptr->backward;
+		((Signal *)(sig_ptr->forward))->backward = sig_ptr->backward;
 	    if (sig_ptr->backward)
-		((SIGNAL *)(sig_ptr->backward))->forward = sig_ptr->forward;
+		((Signal *)(sig_ptr->backward))->forward = sig_ptr->forward;
 	    sig_ptr = sig_ptr->forward;
 	
 	    /* free the signal structure */
@@ -134,11 +128,11 @@ void sig_free (
 
 
 void    remove_signal_from_queue (
-    TRACE	*trace,
-    SIGNAL	*sig_ptr)	/* Signal to remove */
+    Trace	*trace,
+    Signal	*sig_ptr)	/* Signal to remove */
     /* Removes the signal from the current and any other ques that it is in */
 {
-    SIGNAL	*next_sig_ptr, *prev_sig_ptr;
+    Signal	*next_sig_ptr, *prev_sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In remove_signal_from_queue - trace=%p sig %p\n",trace,sig_ptr);
     
@@ -166,13 +160,13 @@ void    remove_signal_from_queue (
     trace->numsig--;
 }
 
-#define ADD_LAST ((SIGNAL *)(-1))
+#define ADD_LAST ((Signal *)(-1))
 void    add_signal_to_queue (
-    TRACE	*trace,
-    SIGNAL	*sig_ptr,	/* Signal to add */
-    SIGNAL	*loc_sig_ptr)	/* Pointer to signal ahead of one to add, NULL=1st, ADD_LAST=last */
+    Trace	*trace,
+    Signal	*sig_ptr,	/* Signal to add */
+    Signal	*loc_sig_ptr)	/* Pointer to signal ahead of one to add, NULL=1st, ADD_LAST=last */
 {
-    SIGNAL	*next_sig_ptr, *prev_sig_ptr;
+    Signal	*next_sig_ptr, *prev_sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In add_signal_to_queue - trace=%p   loc=%p%s\n",trace,
 			       loc_sig_ptr, loc_sig_ptr==ADD_LAST?"=last":"");
@@ -230,20 +224,20 @@ void    add_signal_to_queue (
     }
 }
 
-SIGNAL *replicate_signal (
-    TRACE	*trace,
-    SIGNAL	*sig_ptr)	/* Signal to remove */
+Signal *sig_replicate (
+    Trace	*trace,
+    Signal	*sig_ptr)	/* Signal to remove */
     /* Makes a duplicate copy of the signal */
 {
-    SIGNAL	*new_sig_ptr;
+    Signal	*new_sig_ptr;
     
-    if (DTPRINT_ENTRY) printf ("In replicate_signal - trace=%p\n",trace);
+    if (DTPRINT_ENTRY) printf ("In sig_replicate - trace=%p\n",trace);
     
     /* Create new structure */
-    new_sig_ptr = XtNew (SIGNAL);
+    new_sig_ptr = XtNew (Signal);
 
     /* Copy data */
-    memcpy (new_sig_ptr, sig_ptr, sizeof (SIGNAL));
+    memcpy (new_sig_ptr, sig_ptr, sizeof (Signal));
 
     /* Erase new links */
     new_sig_ptr->forward = NULL;
@@ -255,12 +249,12 @@ SIGNAL *replicate_signal (
     return (new_sig_ptr);
 }
 
-/* Returns SIGNAL or NULL if not found */
-SIGNAL *sig_find_signame (
-    TRACE	*trace,
+/* Returns Signal or NULL if not found */
+Signal *sig_find_signame (
+    Trace	*trace,
     char	*signame)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	if (!strcmp (sig_ptr->signame, signame)) return (sig_ptr);
@@ -269,12 +263,12 @@ SIGNAL *sig_find_signame (
 }
 
 
-/* Returns SIGNAL or NULL if not found */
-SIGNAL *sig_wildmat_signame (
-    TRACE	*trace,
+/* Returns Signal or NULL if not found */
+Signal *sig_wildmat_signame (
+    Trace	*trace,
     char	*signame)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	if (wildmat (sig_ptr->signame, signame)) {
@@ -286,11 +280,11 @@ SIGNAL *sig_wildmat_signame (
 
 void	sig_wildmat_select (
     /* Create list of selected signals */
-    TRACE	  	*trace,		/* NULL= do all traces */
+    Trace	  	*trace,		/* NULL= do all traces */
     char		*pattern)
 {
-    SIGNAL		*sig_ptr;
-    SIGNAL_LIST		*siglst_ptr;
+    Signal		*sig_ptr;
+    SignalList		*siglst_ptr;
     Boolean		trace_list;
     
     trace_list = (trace == NULL);
@@ -307,7 +301,7 @@ void	sig_wildmat_select (
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    if (wildmat (sig_ptr->signame, pattern)) {
 		/* printf ("Selected: %s\n", sig_ptr->signame); */
-		siglst_ptr = XtNew (SIGNAL_LIST);
+		siglst_ptr = XtNew (SignalList);
 		siglst_ptr->trace = trace;
 		siglst_ptr->signal = sig_ptr;
 		siglst_ptr->forward = global->select_head;
@@ -318,10 +312,10 @@ void	sig_wildmat_select (
 }
 
 void	sig_move (
-    TRACE	*old_trace,
-    SIGNAL	*sig_ptr,	/* Signal to move */
-    TRACE	*new_trace,
-    SIGNAL	*after_sig_ptr)	/* Signal to place after or ADD_LAST */
+    Trace	*old_trace,
+    Signal	*sig_ptr,	/* Signal to move */
+    Trace	*new_trace,
+    Signal	*after_sig_ptr)	/* Signal to place after or ADD_LAST */
 {
 
     if (sig_ptr) {
@@ -340,8 +334,8 @@ void	sig_move (
 }
 
 void	sig_delete (
-    TRACE	*trace,
-    SIGNAL	*sig_ptr,	/* Signal to remove */
+    Trace	*trace,
+    Signal	*sig_ptr,	/* Signal to remove */
     Boolean	preserve)	/* TRUE if should preserve deletion on rereading */
     /* Delete the given signal */
 {
@@ -353,19 +347,19 @@ void	sig_delete (
 }
 
 void	sig_copy (
-    TRACE	*old_trace,
-    SIGNAL	*sig_ptr,	/* Signal to move */
-    TRACE	*new_trace,
-    SIGNAL	*after_sig_ptr)	/* Signal to place after or ADD_LAST */
+    Trace	*old_trace,
+    Signal	*sig_ptr,	/* Signal to move */
+    Trace	*new_trace,
+    Signal	*after_sig_ptr)	/* Signal to place after or ADD_LAST */
 {
-    SIGNAL	*new_sig_ptr;
+    Signal	*new_sig_ptr;
 
     if (sig_ptr) {
 	if (sig_ptr->deleted) {
 	    sig_move (old_trace, sig_ptr, new_trace, after_sig_ptr);
 	}
 	else {
-	    new_sig_ptr = replicate_signal (old_trace, sig_ptr);
+	    new_sig_ptr = sig_replicate (old_trace, sig_ptr);
 	    sig_ptr->deleted = FALSE;
 	    add_signal_to_queue (new_trace, new_sig_ptr, after_sig_ptr);
 	}
@@ -374,8 +368,8 @@ void	sig_copy (
 
 void	sig_update_search ()
 {
-    TRACE	*trace;
-    SIGNAL	*sig_ptr;
+    Trace	*trace;
+    Signal	*sig_ptr;
     register int i;
 
     if (DTPRINT_ENTRY) printf ("In sig_update_search\n");
@@ -400,12 +394,12 @@ void	sig_update_search ()
 }
 
 Boolean sig_is_constant (
-    TRACE	*trace,
-    SIGNAL	*sig_ptr,
+    Trace	*trace,
+    Signal	*sig_ptr,
     Boolean	ignorexz)		/* TRUE = ignore xz */
 {
     Boolean 	changes;
-    SIGNAL_LW	*cptr;
+    SignalLW	*cptr;
     int		new_value[4];
     int		old_value[4];
     int		old_state = STATE_U;
@@ -414,7 +408,7 @@ Boolean sig_is_constant (
     /* Is there a transition? */
     changes=FALSE;
     old_got_value = FALSE;
-    for (cptr = (SIGNAL_LW *)sig_ptr->bptr ; cptr->sttime.time != EOT; cptr += sig_ptr->lws ) {
+    for (cptr = (SignalLW *)sig_ptr->bptr ; cptr->sttime.time != EOT; cptr += sig_ptr->lws ) {
 	if (cptr->sttime.time == trace->end_time) {
 	    break;
 	}
@@ -452,8 +446,8 @@ Boolean sig_is_constant (
 void    sig_highlight_selected (
     int		color)
 {
-    SIGNAL	*sig_ptr;
-    SIGNAL_LIST	*siglst_ptr;
+    Signal	*sig_ptr;
+    SignalList	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_highlight_selected\n");
     
@@ -469,12 +463,12 @@ void    sig_highlight_selected (
 
 void    sig_move_selected (
     /* also used for adding deleted signals */
-    TRACE	*new_trace,
+    Trace	*new_trace,
     char	*after_pattern)
 {
-    TRACE	*old_trace;
-    SIGNAL	*sig_ptr, *after_sig_ptr;
-    SIGNAL_LIST	*siglst_ptr;
+    Trace	*old_trace;
+    Signal	*sig_ptr, *after_sig_ptr;
+    SignalList	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_move_selected aft='%s'\n", after_pattern);
 
@@ -497,8 +491,8 @@ void    sig_rename_selected (
     /* also used for adding deleted signals */
     char	*new_name)
 {
-    SIGNAL	*sig_ptr;
-    SIGNAL_LIST	*siglst_ptr;
+    Signal	*sig_ptr;
+    SignalList	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_rename_selected new='%s'\n", new_name);
 
@@ -515,12 +509,12 @@ void    sig_rename_selected (
 
 
 void    sig_copy_selected (
-    TRACE	*new_trace,
+    Trace	*new_trace,
     char	*after_pattern)
 {
-    TRACE	*old_trace;
-    SIGNAL	*sig_ptr, *after_sig_ptr;
-    SIGNAL_LIST	*siglst_ptr;
+    Trace	*old_trace;
+    Signal	*sig_ptr, *after_sig_ptr;
+    SignalList	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_copy_pattern - aft='%s'\n", after_pattern);
 
@@ -542,9 +536,9 @@ void    sig_delete_selected (
     Boolean	constant_flag,		/* FALSE = only delete constants */
     Boolean	ignorexz)		/* TRUE = if deleting constants, ignore xz */
 {
-    TRACE	*trace;
-    SIGNAL	*sig_ptr;
-    SIGNAL_LIST	*siglst_ptr;
+    Trace	*trace;
+    Signal	*sig_ptr;
+    SignalList	*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_delete_selected %d %d\n", constant_flag, ignorexz);
 
@@ -562,11 +556,11 @@ void    sig_delete_selected (
 
 
 void    sig_goto_pattern (
-    TRACE	*trace,
+    Trace	*trace,
     char	*pattern)
 {
-    SIGNAL	*sig_ptr;
-    int		numprt;
+    Signal	*sig_ptr;
+    uint_t	numprt;
     int		inc;
     Boolean	on_screen, found;
     
@@ -613,10 +607,10 @@ void    sig_goto_pattern (
 
 void    sig_add_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     Widget	list_wid;
     
     if (DTPRINT_ENTRY) printf ("In sig_add_cb - trace=%p\n",trace);
@@ -629,10 +623,10 @@ void    sig_add_cb (
 	XtSetArg (arglist[4], XmNlistVisibleItemCount, 5);
 	XtSetArg (arglist[5], XmNlistLabelString, XmStringCreateSimple ("Select Signal than Location"));
 	trace->signal.add = XmCreateSelectionDialog (trace->work,"",arglist,6);
-	/* XtAddCallback (trace->signal.add, XmNsingleCallback, sig_add_sel_cb, trace); */
-	XtAddCallback (trace->signal.add, XmNokCallback, sig_add_sel_cb, trace);
-	XtAddCallback (trace->signal.add, XmNapplyCallback, sig_add_sel_cb, trace);
-	XtAddCallback (trace->signal.add, XmNcancelCallback, sig_cancel_cb, trace);
+	/* DAddCallback (trace->signal.add, XmNsingleCallback, sig_add_sel_cb, trace); */
+	DAddCallback (trace->signal.add, XmNokCallback, sig_add_sel_cb, trace);
+	DAddCallback (trace->signal.add, XmNapplyCallback, sig_add_sel_cb, trace);
+	DAddCallback (trace->signal.add, XmNcancelCallback, sig_cancel_cb, trace);
 	XtUnmanageChild ( XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_HELP_BUTTON));
 	XtUnmanageChild ( XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_APPLY_BUTTON));
 	XtUnmanageChild ( XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_PROMPT_LABEL));
@@ -659,10 +653,10 @@ void    sig_add_cb (
 
 void    sig_add_sel_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_add_sel_cb - trace=%p\n",trace);
     
@@ -692,7 +686,7 @@ void    sig_add_sel_cb (
 
 void    sig_cancel_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In sig_cancel_cb - trace=%p\n",trace);
@@ -706,7 +700,7 @@ void    sig_cancel_cb (
 
 void    sig_mov_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In sig_mov_cb - trace=%p\n",trace);
@@ -724,7 +718,7 @@ void    sig_mov_cb (
 
 void    sig_copy_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In sig_copy_cb - trace=%p\n",trace);
@@ -742,7 +736,7 @@ void    sig_copy_cb (
 
 void    sig_del_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In sig_del_cb - trace=%p\n",trace);
@@ -757,7 +751,7 @@ void    sig_del_cb (
 
 void    sig_highlight_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In sig_highlight_cb - trace=%p\n",trace);
@@ -775,7 +769,7 @@ void    sig_highlight_cb (
 
 void    sig_search_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     int		i;
@@ -829,7 +823,7 @@ void    sig_search_cb (
 	    XtSetArg (arglist[4], XmNresizeHeight, FALSE);
 	    XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
 	    trace->signal.text[i] = XmCreateText (trace->signal.search,"textn",arglist,6);
-	    XtAddCallback (trace->signal.text[i], XmNactivateCallback, sig_search_ok_cb, trace);
+	    DAddCallback (trace->signal.text[i], XmNactivateCallback, sig_search_ok_cb, trace);
 	    XtManageChild (trace->signal.text[i]);
 	    
 	    y += 40;
@@ -842,7 +836,7 @@ void    sig_search_cb (
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNy, y);
 	trace->signal.ok = XmCreatePushButton (trace->signal.search,"ok",arglist,3);
-	XtAddCallback (trace->signal.ok, XmNactivateCallback, sig_search_ok_cb, trace);
+	DAddCallback (trace->signal.ok, XmNactivateCallback, sig_search_ok_cb, trace);
 	XtManageChild (trace->signal.ok);
 	
 	/* create apply button */
@@ -850,7 +844,7 @@ void    sig_search_cb (
 	XtSetArg (arglist[1], XmNx, 70);
 	XtSetArg (arglist[2], XmNy, y);
 	trace->signal.apply = XmCreatePushButton (trace->signal.search,"apply",arglist,3);
-	XtAddCallback (trace->signal.apply, XmNactivateCallback, sig_search_apply_cb, trace);
+	DAddCallback (trace->signal.apply, XmNactivateCallback, sig_search_apply_cb, trace);
 	XtManageChild (trace->signal.apply);
 	
 	/* create cancel button */
@@ -858,7 +852,7 @@ void    sig_search_cb (
 	XtSetArg (arglist[1], XmNx, 140);
 	XtSetArg (arglist[2], XmNy, y);
 	trace->signal.cancel = XmCreatePushButton (trace->signal.search,"cancel",arglist,3);
-	XtAddCallback (trace->signal.cancel, XmNactivateCallback, unmanage_cb, trace->signal.search);
+	DAddCallback (trace->signal.cancel, XmNactivateCallback, unmanage_cb, trace->signal.search);
 
 	XtManageChild (trace->signal.cancel);
     }
@@ -879,7 +873,7 @@ void    sig_search_cb (
 
 void    sig_search_ok_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     char	*strg;
@@ -907,7 +901,7 @@ void    sig_search_ok_cb (
 
 void    sig_search_apply_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     if (DTPRINT_ENTRY) printf ("In sig_search_apply_cb - trace=%p\n",trace);
@@ -920,10 +914,10 @@ void    sig_search_apply_cb (
 
 void    sig_add_ev (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XButtonPressedEvent	*ev)
 {
-    SIGNAL		*sig_ptr;
+    Signal		*sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_add_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -962,10 +956,10 @@ void    sig_add_ev (
 
 void    sig_move_ev (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XButtonPressedEvent	*ev)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_move_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -1008,10 +1002,10 @@ void    sig_move_ev (
 
 void    sig_copy_ev (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XButtonPressedEvent	*ev)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_copy_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -1046,10 +1040,10 @@ void    sig_copy_ev (
 
 void    sig_delete_ev (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XButtonPressedEvent	*ev)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_delete_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -1082,10 +1076,10 @@ void    sig_delete_ev (
 
 void    sig_highlight_ev (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XButtonPressedEvent	*ev)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_highlight_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -1105,7 +1099,7 @@ void    sig_highlight_ev (
 
 void    sig_select_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct 	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In sig_select_cb - trace=%p\n",trace);
@@ -1134,7 +1128,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNbottomAttachment, XmATTACH_FORM );
 	trace->select.ok = XmCreatePushButton (trace->select.select,"ok",arglist,3);
-	XtAddCallback (trace->select.ok, XmNactivateCallback, sig_sel_ok_cb, trace);
+	DAddCallback (trace->select.ok, XmNactivateCallback, sig_sel_ok_cb, trace);
 	XtManageChild (trace->select.ok);
 
 	/* Create apply button */
@@ -1143,7 +1137,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[2], XmNleftPosition, 45);
 	XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_FORM );
 	trace->select.apply = XmCreatePushButton (trace->select.select,"apply",arglist,4);
-	XtAddCallback (trace->select.apply, XmNactivateCallback, sig_sel_apply_cb, trace);
+	DAddCallback (trace->select.apply, XmNactivateCallback, sig_sel_apply_cb, trace);
 	XtManageChild (trace->select.apply);
 
 	/* create cancel button */
@@ -1152,8 +1146,8 @@ void    sig_select_cb (
 	XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNbottomAttachment, XmATTACH_FORM );
 	trace->select.cancel = XmCreatePushButton (trace->select.select,"cancel",arglist,3);
-	/* XtAddCallback (trace->select.cancel, XmNactivateCallback, unmanage_cb, trace->select.select); */
-	XtAddCallback (trace->select.cancel, XmNactivateCallback, unmanage_cb, trace->select.select);
+	/* DAddCallback (trace->select.cancel, XmNactivateCallback, unmanage_cb, trace->select.select); */
+	DAddCallback (trace->select.cancel, XmNactivateCallback, unmanage_cb, trace->select.select);
 	XtManageChild (trace->select.cancel);
 #endif
 
@@ -1175,7 +1169,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[8], XmNrightPosition, 50);
 	XtSetArg (arglist[9], XmNvalue, "*");
 	trace->select.add_pat = XmCreateText (trace->select.select,"dpat",arglist,10);
-	XtAddCallback (trace->select.add_pat, XmNactivateCallback, sig_sel_pattern_cb, trace);
+	DAddCallback (trace->select.add_pat, XmNactivateCallback, sig_sel_pattern_cb, trace);
 	XtManageChild (trace->select.add_pat);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Add All") );
@@ -1184,7 +1178,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[3], XmNbottomWidget, trace->select.ok);
 	trace->select.add_all = XmCreatePushButton (trace->select.select,"aall",arglist,4);
 	XtRemoveAllCallbacks (trace->select.add_all, XmNactivateCallback);
-	XtAddCallback (trace->select.add_all, XmNactivateCallback, sig_sel_add_all_cb, trace);
+	DAddCallback (trace->select.add_all, XmNactivateCallback, sig_sel_add_all_cb, trace);
 	XtManageChild (trace->select.add_all);
 
 	XtSetArg (arglist[0], XmNlabelString, string_create_with_cr ("Select a signal to add it\nto the displayed signals."));
@@ -1206,7 +1200,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[9], XmNselectionPolicy, XmEXTENDED_SELECT);
 	XtSetArg (arglist[10], XmNitems, 0);
 	trace->select.add_sigs = XmCreateScrolledList (trace->select.select,"",arglist,11);
-	XtAddCallback (trace->select.add_sigs, XmNextendedSelectionCallback, sig_sel_add_list_cb, trace);
+	DAddCallback (trace->select.add_sigs, XmNextendedSelectionCallback, sig_sel_add_list_cb, trace);
 	XtManageChild (trace->select.add_sigs);
 
 	/*** Delete (existing list) section ***/
@@ -1228,7 +1222,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[7], XmNtopWidget, trace->select.label2);
 	XtSetArg (arglist[8], XmNrightAttachment, XmATTACH_FORM );
 	trace->select.delete_pat = XmCreateText (trace->select.select,"apat",arglist,9);
-	XtAddCallback (trace->select.delete_pat, XmNactivateCallback, sig_sel_pattern_cb, trace);
+	DAddCallback (trace->select.delete_pat, XmNactivateCallback, sig_sel_pattern_cb, trace);
 	XtManageChild (trace->select.delete_pat);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Delete All") );
@@ -1238,7 +1232,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[4], XmNbottomWidget, trace->select.ok);
 	trace->select.delete_all = XmCreatePushButton (trace->select.select,"dall",arglist,5);
 	XtRemoveAllCallbacks (trace->select.delete_all, XmNactivateCallback);
-	XtAddCallback (trace->select.delete_all, XmNactivateCallback, sig_sel_del_all_cb, trace);
+	DAddCallback (trace->select.delete_all, XmNactivateCallback, sig_sel_del_all_cb, trace);
 	XtManageChild (trace->select.delete_all);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Delete Constant Valued") );
@@ -1248,7 +1242,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[4], XmNbottomWidget, trace->select.ok);
 	trace->select.delete_const = XmCreatePushButton (trace->select.select,"dcon",arglist,5);
 	XtRemoveAllCallbacks (trace->select.delete_const, XmNactivateCallback);
-	XtAddCallback (trace->select.delete_const, XmNactivateCallback, sig_sel_del_const_cb, trace);
+	DAddCallback (trace->select.delete_const, XmNactivateCallback, sig_sel_del_const_cb, trace);
 	XtManageChild (trace->select.delete_const);
 
 	XtSetArg (arglist[0], XmNlabelString, string_create_with_cr ("Select a signal to delete it\nfrom the displayed signals."));
@@ -1271,7 +1265,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[9], XmNselectionPolicy, XmEXTENDED_SELECT);
 	XtSetArg (arglist[10], XmNitems, 0);
 	trace->select.delete_sigs = XmCreateScrolledList (trace->select.select,"",arglist,11);
-	XtAddCallback (trace->select.delete_sigs, XmNextendedSelectionCallback, sig_sel_del_list_cb, trace);
+	DAddCallback (trace->select.delete_sigs, XmNextendedSelectionCallback, sig_sel_del_list_cb, trace);
 	XtManageChild (trace->select.delete_sigs);
     }
     
@@ -1284,13 +1278,13 @@ void    sig_select_cb (
 
 void    sig_sel_update_pattern (
     Widget	w,			/* List widget to update */
-    SIGNAL	*head_sig_ptr,		/* Head signal in the list */
+    Signal	*head_sig_ptr,		/* Head signal in the list */
     char	*pattern,		/* Pattern to match to the list */
     XmString	**xs_list,		/* Static storage for string list */
-    SIGNAL	***xs_sigs,		/* Static storage for signal list */
+    Signal	***xs_sigs,		/* Static storage for signal list */
     int		*xs_size)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     int		sel_count;
 
     /* loop thru signals on deleted queue and add to list */
@@ -1305,12 +1299,12 @@ void    sig_sel_update_pattern (
     /* Make sure that we have somewhere to store the signals */
     if (! *xs_list) {
 	*xs_list = (XmString *)XtMalloc (sel_count * sizeof (XmString));
-	*xs_sigs = (SIGNAL **)XtMalloc (sel_count * sizeof (SIGNAL *));
+	*xs_sigs = (Signal **)XtMalloc (sel_count * sizeof (Signal *));
 	*xs_size = sel_count;
     }
     else if (*xs_size < sel_count) {
 	*xs_list = (XmString *)XtRealloc ((char*)*xs_list, sel_count * sizeof (XmString));
-	*xs_sigs = (SIGNAL **)XtRealloc ((char*)*xs_sigs, sel_count * sizeof (SIGNAL *));
+	*xs_sigs = (Signal **)XtRealloc ((char*)*xs_sigs, sel_count * sizeof (Signal *));
 	*xs_size = sel_count;
     }
 
@@ -1335,7 +1329,7 @@ void    sig_sel_update_pattern (
 
 void    sig_sel_pattern_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct		*cb)
     /* Called by creation or call back - create the list of signals with a possibly new pattern */
 {
@@ -1356,7 +1350,7 @@ void    sig_sel_pattern_cb (
 
 void    sig_sel_ok_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct		*cb)
 {
     draw_needupd_sig_start ();
@@ -1365,7 +1359,7 @@ void    sig_sel_ok_cb (
 
 void    sig_sel_apply_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct 	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In sig_sel_apply_cb - trace=%p\n",trace);
@@ -1376,10 +1370,10 @@ void    sig_sel_apply_cb (
 
 void    sig_sel_add_all_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct 	*cb)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     int		i;
 
     if (DTPRINT_ENTRY) printf ("In sig_sel_add_all_cb - trace=%p\n",trace);
@@ -1397,10 +1391,10 @@ void    sig_sel_add_all_cb (
 
 void    sig_sel_del_all_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct 	*cb)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     int		i;
 
     if (DTPRINT_ENTRY) printf ("In sig_sel_del_all_cb - trace=%p\n",trace);
@@ -1416,10 +1410,10 @@ void    sig_sel_del_all_cb (
 
 void    sig_sel_del_const_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct 	*cb)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     int		i;
 
     if (DTPRINT_ENTRY) printf ("In sig_sel_del_const_cb - trace=%p\n",trace);
@@ -1439,11 +1433,11 @@ void    sig_sel_del_const_cb (
 
 void    sig_sel_add_list_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmListCallbackStruct 	*cb)
 {
     int		sel, i;
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
 
     if (DTPRINT_ENTRY) printf ("In sig_sel_add_list_cb - trace=%p\n",trace);
 
@@ -1461,11 +1455,11 @@ void    sig_sel_add_list_cb (
 
 void    sig_sel_del_list_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmListCallbackStruct	 *cb)
 {
     int		sel, i;
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
 
     if (DTPRINT_ENTRY) printf ("In sig_sel_del_list_cb - trace=%p\n",trace);
 
@@ -1500,10 +1494,10 @@ void    sig_sel_del_list_cb (
 
 void sig_cross_preserve (
     /* This is pre-cleanup when preserving signal information for a new trace to be read */
-    TRACE	*trace)
+    Trace	*trace)
 {
-    SIGNAL	*sig_ptr;
-    TRACE	*trace_ptr;
+    Signal	*sig_ptr;
+    Trace	*trace_ptr;
 
     if (DTPRINT_ENTRY) printf ("In sig_cross_preserve - trace=%p\n",trace);
 
@@ -1515,8 +1509,8 @@ void sig_cross_preserve (
 	return;
     }
 
-    global->preserved_trace = XtNew (TRACE);
-    memcpy (global->preserved_trace, trace, sizeof (TRACE));
+    global->preserved_trace = XtNew (Trace);
+    memcpy (global->preserved_trace, trace, sizeof (Trace));
     
     /* Other signals, AND deleted signals */
     for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
@@ -1542,11 +1536,11 @@ void sig_cross_preserve (
 void sig_cross_sigmatch (
     /* Look through each signal in the old list, attempt to match with
        signal from the new_trace.  When found create new_trace_sig link to/from old & new signal */
-    TRACE	*new_trace,
-    SIGNAL	*old_sig_ptr)
+    Trace	*new_trace,
+    Signal	*old_sig_ptr)
 {
-    register SIGNAL	*new_sig_ptr;		/* New signal now searching on */
-    register SIGNAL	*start_sig_ptr;		/* Signal search began with */
+    register Signal	*new_sig_ptr;		/* New signal now searching on */
+    register Signal	*start_sig_ptr;		/* Signal search began with */
     register char	*old_signame;		/* Searching for this signame */
     register int	old_bits;		/* Searching for this # bits */
 
@@ -1595,17 +1589,17 @@ nextsig:
 
 void sig_cross_restore (
     /* Try to make new trace's signal placement match the old placement */
-    TRACE	*trace)		/* New trace */
+    Trace	*trace)		/* New trace */
 {
-    SIGNAL	*old_sig_ptr;
-    TRACE	*trace_ptr;
-    SIGNAL	*new_sig_ptr;	/* Pointer to new trace's signal */
-    SIGNAL	*next_sig_ptr;
+    Signal	*old_sig_ptr;
+    Trace	*trace_ptr;
+    Signal	*new_sig_ptr;	/* Pointer to new trace's signal */
+    Signal	*next_sig_ptr;
 
-    SIGNAL	*newlist_firstsig;
-    SIGNAL	**back_sig_pptr;
+    Signal	*newlist_firstsig;
+    Signal	**back_sig_pptr;
 
-    SIGNAL	*new_dispsig;
+    Signal	*new_dispsig;
 
     if (DTPRINT_ENTRY) printf ("In sig_cross_restore - trace=%p\n",trace);
     
@@ -1760,25 +1754,15 @@ void sig_cross_restore (
 
 /****************************** Enable COMBINING ******************************/
 
-#if ! HAVE_STRDUP
-char *strdup(char *s)
-{
-    char *d;
-    d=(char *)malloc(strlen(s)+1);
-    strcpy (d, s);
-    return (d);
-}
-#endif
-
 void sig_modify_en_signal (
-    TRACE	*trace,
-    SIGNAL	*en_sig_ptr,
-    SIGNAL	*base_sig_ptr,
+    Trace	*trace,
+    Signal	*en_sig_ptr,
+    Signal	*base_sig_ptr,
     Boolean	is_cosmos)
 {
-    SIGNAL	*new_sig_ptr;
-    SIGNAL_LW	*base_cptr, *en_cptr;
-    VALUE	new_value, base_value, en_value;
+    Signal	*new_sig_ptr;
+    SignalLW	*base_cptr, *en_cptr;
+    Value	new_value, base_value, en_value;
     int		has_ones;
     int		has_zeros;
     Boolean	first_last_data=TRUE;
@@ -1794,16 +1778,16 @@ void sig_modify_en_signal (
 	return;
     }
     
-    new_sig_ptr = replicate_signal (trace, base_sig_ptr);
+    new_sig_ptr = sig_replicate (trace, base_sig_ptr);
     /* Forget this is a copy, and allocate new data storage space */
     new_sig_ptr->signame = strdup (new_sig_ptr->signame);
     new_sig_ptr->copyof = NULL;
     new_sig_ptr->blocks = BLK_SIZE;
-    new_sig_ptr->bptr = (SIGNAL_LW *)XtMalloc ((new_sig_ptr->blocks*sizeof(unsigned int)) + (sizeof(VALUE)*2 + 2));
+    new_sig_ptr->bptr = (SignalLW *)XtMalloc ((new_sig_ptr->blocks*sizeof(uint_t)) + (sizeof(Value)*2 + 2));
     new_sig_ptr->cptr = new_sig_ptr->bptr;
 
-    base_cptr = (SIGNAL_LW *)(base_sig_ptr->bptr),
-    en_cptr = (SIGNAL_LW *)(en_sig_ptr->bptr);
+    base_cptr = (SignalLW *)(base_sig_ptr->bptr),
+    en_cptr = (SignalLW *)(en_sig_ptr->bptr);
     cptr_to_value (base_cptr, &base_value);
     cptr_to_value (en_cptr, &en_value);
 
@@ -1935,9 +1919,9 @@ void strcpy_overlap (
 }
 
 void sig_modify_enables (
-    TRACE	*trace)
+    Trace	*trace)
 {
-    SIGNAL	*sig_ptr, *en_sig_ptr, *base_sig_ptr;
+    Signal	*sig_ptr, *en_sig_ptr, *base_sig_ptr;
     char	*tp, *nonenablename;
     Boolean	did_one=FALSE;
     Boolean	is_cosmos=FALSE;

@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_socket.c --- socket interface to command engine
  *
@@ -55,35 +55,24 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
+#include "dinotrace.h"
 
 #if HAVE_SOCKETS
+
 #include <sys/signal.h>
 #include <sys/file.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/param.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <stdio.h>
 #include <errno.h>
 #include <netdb.h>
 
-#if HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-#if HAVE_FCNTL_H
-# include <fcntl.h>
-#endif
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
-
-#include "dinotrace.h"
 #include "functions.h"
+
+/**********************************************************************/
 
 #define MAXCMDLEN	2000		/* Maximum length of command line */
 
@@ -97,6 +86,7 @@ typedef struct st_client {
     char	command[MAXCMDLEN];	/* Command being formed */
 } CLIENT;
 
+extern void gethostname (char *, int);
 
 /*** MAIN ********************************************************************/
 
@@ -234,7 +224,7 @@ void socket_create ()
     gethostname (host_name, MAXHOSTNAMELEN);
     he_server_ptr = gethostbyname (host_name);
 
-    /* Assign to specific port, network visible on this machine */
+    /* Assign to any port, network visible on this machine */
     memset ((char *) &sa_server, 0, sizeof(sa_server));
     memcpy ((char *) &sa_server.sin_addr, he_server_ptr->h_addr, 
 	    he_server_ptr->h_length);

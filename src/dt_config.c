@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_config.c --- configuration file reading
  *
@@ -96,7 +96,7 @@ static char rcsid[] = "$Id$";
 !	signal_rename	<signal_pattern> <new_signal_name>	[<color>]
 !	signal_highlight <color> <signal_pattern>
 !	cursor_add	<color> <time>	[-USER]
-!	value_highlight <color>	<value>	[<signal_pattern>] [-CURSOR] [-VALUE]
+!	value_highlight <color>	<value>	[<signal_pattern>] [-Cursor] [-Value]
 ! Display changes:
 !	time_goto	<time>
 !	signal_goto	<signal_pattern>	(if not on screen, first match)
@@ -105,33 +105,12 @@ static char rcsid[] = "$Id$";
 !	annotate
  *****************************************************************************/
 
-#include <config.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#ifdef VMS
-# include <file.h>
-# include <strdef.h>
-# include <math.h> /* removed for Ultrix support... */
-#endif
-
-#if HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-#if HAVE_FCNTL_H
-# include <sys/fcntl.h>
-#endif
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
 
 #include "dinotrace.h"
+
 #include "functions.h"
+
+/**********************************************************************/
 
 /* See the ascii map to have this make sense */
 #define issigchr(ch)  ( ((ch)>' ') && ((ch)!='=') && ((ch)!='\"') && ((ch)!='\'') )
@@ -330,11 +309,11 @@ int wildmat(
 *	SUPPORT FUNCTIONS
 **********************************************************************/
 
-SIGNALSTATE	*find_signal_state (
-    TRACE	*trace,
+SignalState	*find_signal_state (
+    Trace	*trace,
     char *name)
 {
-    register SIGNALSTATE *sig;
+    register SignalState *sig;
 
     for (sig=global->signalstate_head; sig; sig=sig->next) {
 	/* printf ("'%s'\t'%s'\n", name, sig->signame); */
@@ -345,10 +324,10 @@ SIGNALSTATE	*find_signal_state (
 }
 
 void	add_signal_state (
-    TRACE	*trace,
-    SIGNALSTATE *info)
+    Trace	*trace,
+    SignalState *info)
 {
-    SIGNALSTATE *new;
+    SignalState *new;
     int t;
 
     for (new = global->signalstate_head; new ; new=new->next) {
@@ -356,8 +335,8 @@ void	add_signal_state (
     }
     if (! new) {
       /* Not found, add & relink */
-      new = XtNew (SIGNALSTATE);
-      memcpy ((void *)new, (void *)info, sizeof(SIGNALSTATE));
+      new = XtNew (SignalState);
+      memcpy ((void *)new, (void *)info, sizeof(SignalState));
       new->next = global->signalstate_head;
       global->signalstate_head = new;
       draw_needupd_val_states ();
@@ -365,7 +344,7 @@ void	add_signal_state (
     else {
       /* Found, overwrite old */
       info->next = new->next;	/* Don't loose the link */
-      memcpy ((void *)new, (void *)info, sizeof(SIGNALSTATE));
+      memcpy ((void *)new, (void *)info, sizeof(SignalState));
     }
 
     /*printf ("Signal '%s' Assigned States:\n", new->signame);*/
@@ -379,7 +358,7 @@ void	add_signal_state (
 
 void	free_signal_states (void)
 {
-    SIGNALSTATE *sstate_ptr, *last_ptr;
+    SignalState *sstate_ptr, *last_ptr;
 
     sstate_ptr = global->signalstate_head;
     while (sstate_ptr) {
@@ -392,9 +371,9 @@ void	free_signal_states (void)
 
 void	print_signal_states (
     Widget	w,
-    TRACE	*trace)
+    Trace	*trace)
 {
-    SIGNALSTATE *sstate_ptr;
+    SignalState *sstate_ptr;
     int i;
 
     sstate_ptr = global->signalstate_head;
@@ -410,11 +389,12 @@ void	print_signal_states (
 
 void	config_parse_geometry (
     char	*line,
-    GEOMETRY	*geometry)
+    Geometry	*geometry)
     /* Like XParseGeometry, but handles percentages */
 {
-    int		flags, x, y;
-    unsigned int wid, hei;
+    int		flags;
+    int		x,y;
+    uint_t	wid, hei;
     char	noper_line[100];
     char	*tp;
 
@@ -454,7 +434,7 @@ void	config_parse_geometry (
 
 
 void	config_error_ack (
-    TRACE	*trace,
+    Trace	*trace,
     char	*message)
 {
     char	newmessage[1000];
@@ -476,7 +456,7 @@ void	config_error_ack (
 **********************************************************************/
 
 int	config_read_on_off (
-    TRACE	*trace,
+    Trace	*trace,
     char *line,
     int *out)
     /* Read boolean flag line, return <= 0 and print msg if bad */
@@ -501,7 +481,7 @@ int	config_read_on_off (
 }
 
 int	config_read_color (
-    TRACE	*trace,
+    Trace	*trace,
     char 	*line,
     ColorNum	*color,
     Boolean	warn)
@@ -536,9 +516,9 @@ int	config_read_color (
 }
 
 int	config_read_grid (
-    TRACE	*trace,
+    Trace	*trace,
     char 	*line,
-    GRID	**grid_pptr)
+    Grid	**grid_pptr)
     /* Read grid number name from line, return < 0 and print msg if bad */
 {
     int 	outlen;
@@ -564,9 +544,9 @@ int	config_read_grid (
 **********************************************************************/
 
 int	config_process_state (
-    TRACE	*trace,
+    Trace	*trace,
     char 	*line,
-    SIGNALSTATE *sstate_ptr)
+    SignalState *sstate_ptr)
 {
     char newstate[MAXVALUELEN];
     int	statenum = sstate_ptr->numstates;
@@ -598,16 +578,16 @@ int	config_process_state (
 **********************************************************************/
 
 void	config_process_line_internal (
-    TRACE	*trace,
+    Trace	*trace,
     char	*line,
     Boolean	eof)		/* Final call of process_line with EOF */
 {
     char cmd[MAXSIGLEN];
     int value;
-    GRID	*grid_ptr;
+    Grid	*grid_ptr;
     char pattern[MAXSIGLEN];
     
-    static SIGNALSTATE newsigst;
+    static SignalState newsigst;
     static Boolean processing_sig_state = FALSE;
 
   re_process_line:
@@ -967,7 +947,7 @@ void	config_process_line_internal (
 	    char pattern2[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
-		config_error_ack (trace, "Signal_copy signal name must not be null\n");
+		config_error_ack (trace, "Signal_Copy signal name must not be null\n");
 	    }
 	    else {
 		ColorNum color;
@@ -1049,7 +1029,7 @@ void	config_process_line_internal (
 	else if (!strcmp(cmd, "TIME_GOTO")) {
 	    DTime ctime;
 	    char strg[MAXSIGLEN];
-	    int end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
+	    DTime end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
 	    
 	    line += config_read_signal (line, strg);
 	    ctime = string_to_time (trace, strg);
@@ -1104,7 +1084,7 @@ void	config_process_line_internal (
 	    config_parse_geometry (line, &(global->shrink_geometry));
 	}
 	else if (!strcmp(cmd, "SIGNAL_STATES")) {
-	    memset (&newsigst, 0, sizeof (SIGNALSTATE));
+	    memset (&newsigst, 0, sizeof (SignalState));
 	    line += config_read_signal (line, newsigst.signame);
 	    processing_sig_state = TRUE;
 	    /* if (DTPRINT) printf ("config_process_states  signal=%s\n", newsigst.signame); */
@@ -1121,7 +1101,7 @@ void	config_process_line_internal (
 #define config_process_line(trace, line)	config_process_line_internal(trace, line, FALSE)
 
 /* EOF */
-void	config_process_eof (TRACE *trace)
+void	config_process_eof (Trace *trace)
 {
     char	line[3];
     line[0]='\0';	/* MIPS: no automatic aggregate initialization */
@@ -1135,7 +1115,7 @@ void	config_process_eof (TRACE *trace)
  **********************************************************************/
 
 void config_read_file (
-    TRACE	*trace,
+    Trace	*trace,
     char	*filename,	/* Specific filename of CONFIG file */
     Boolean	report_notfound,
     Boolean	report_errors)
@@ -1225,7 +1205,7 @@ void config_read_socket (
 *	config_read_defaults
 **********************************************************************/
 
-void config_update_filenames (TRACE *trace)
+void config_update_filenames (Trace *trace)
 {
     char *pchar;
 
@@ -1253,7 +1233,7 @@ void config_update_filenames (TRACE *trace)
 }
 
 void config_read_defaults (
-    TRACE	*trace,
+    Trace	*trace,
     Boolean	report_errors)
 {
     int		cfg_num;
@@ -1283,13 +1263,13 @@ void config_read_defaults (
 **********************************************************************/
 
 void config_write_file (
-    TRACE	*trace,
+    Trace	*trace,
     char	*filename)	/* Specific filename of CONFIG file */
 {
     FILE	*writefp;
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     int		grid_num;
-    GRID	*grid_ptr;
+    Grid	*grid_ptr;
     
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Writing config file %s\n", filename);
     
@@ -1304,7 +1284,7 @@ void config_write_file (
     fprintf (writefp, "! Customization Write by %s\n", DTVERSION);
     fprintf (writefp, "! Created %s\n", date_string(0));
 
-    fprintf (writefp, "\n! ** GLOBAL FLAGS **\n");
+    fprintf (writefp, "\n! ** Global FLAGS **\n");
     /* Debug and Print skipped */
     fprintf (writefp, "!debug\t\t%s\n", DTDEBUG?"ON":"OFF");
     fprintf (writefp, "!print\t\t%x\n", DTPRINT);
@@ -1335,7 +1315,7 @@ void config_write_file (
     /*cursor_add*/
     /*time & position*/
 
-    fprintf (writefp, "\n! ** TRACE FLAGS **\n");
+    fprintf (writefp, "\n! ** Trace FLAGS **\n");
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
 	    fprintf (writefp, "!set_trace\t%s\n", trace->filename);
@@ -1364,10 +1344,10 @@ void config_write_file (
 	}
     }
 
-    fprintf (writefp, "\n! ** GLOBAL INFORMATION **\n");
+    fprintf (writefp, "\n! ** Global INFORMATION **\n");
     cur_print (writefp);
     
-    fprintf (writefp, "\n! ** TRACE INFORMATION **\n");
+    fprintf (writefp, "\n! ** Trace INFORMATION **\n");
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	fprintf (writefp, "!set_trace %s\n", trace->filename);
 	/* Save signal colors */
@@ -1383,7 +1363,7 @@ void config_write_file (
 
 void config_write_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     char newfilename[MAXFNAMELEN];
@@ -1405,7 +1385,7 @@ void config_write_cb (
 **********************************************************************/
 
 void config_trace_defaults (
-    TRACE	*trace)
+    Trace	*trace)
 {
     trace->sighgt = 20;	/* was 25 */
     trace->cursor_vis = TRUE;

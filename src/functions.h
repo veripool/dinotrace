@@ -58,16 +58,8 @@
 /***********************************************************************/
 /* Defined functions.... Really inlines, but old VMS compiler chokes */
 
-/* Schedule a redraw for trace or everybody */
-#define draw_expose_needed(_trace_)	{ global->redraw_needed |= GRD_TRACE; (_trace_)->redraw_needed |= TRD_EXPOSE; }
-#define draw_needed(_trace_)		{ global->redraw_needed |= GRD_TRACE; (_trace_)->redraw_needed |= TRD_REDRAW; }
-#define draw_all_needed() 		{ global->redraw_needed |= GRD_ALL; }
-#define draw_manual_needed() 		{ global->redraw_needed |= GRD_MANUAL; }
-#define draw_needupd_sig_start()	{ global->updates_needed |= GUD_SIG_START; }
-#define draw_needupd_sig_search()	{ global->updates_needed |= GUD_SIG_SEARCH; }
-#define draw_needupd_val_search()	{ global->updates_needed |= GUD_VAL_SEARCH; }
-#define draw_needupd_val_states()	{ global->updates_needed |= GUD_VAL_STATES; }
-
+/***********************************************************************/
+/* Relatively generic stuff */
 
 /* Utilities */
 #ifndef MAX
@@ -103,12 +95,6 @@
 # endif
 #endif
 
-#define TIME_TO_XPOS(_xtime_) \
-        ( ((_xtime_) - global->time) * global->res + global->xstart )
-
-#define	TIME_WIDTH(_trace_) \
-	((DTime)( ((_trace_)->width - XMARGIN - global->xstart) / global->res ))
-
 /* Avoid binding error messages on XtFree, NOTE ALSO clears the pointer! */
 #define DFree(ptr) { XtFree((char *)ptr); ptr = NULL; }
 
@@ -118,6 +104,43 @@
 /* Useful for debugging messages */
 #define DeNull(_str_) ( ((_str_)==NULL) ? "NULL" : (_str_) )
 #define DeNullSignal(_sig_) ( ((_sig_)==NULL) ? "NULLPTR" : (DeNull((_sig_)->signame) ) )
+
+/* Correct endianness (little is stored in files, since that's what the program originally used) */
+#if WORDS_BIGENDIAN
+#define LITTLEENDIANIZE32(_lw_) \
+    ( (  (_lw_<<24)&0xff000000) | ((_lw_<< 8)&0x00ff0000) \
+      | ((_lw_>> 8)&0x0000ff00)  | ((_lw_>>24)&0x000000ff))
+#else
+#define LITTLEENDIANIZE32(_lw_) (_lw_)
+#endif
+
+/***********************************************************************/
+/* Dinotrace specifics */
+
+/* Callback.. force a prototype declaration to avoid warnings */
+#define DAddCallback(widget, callback, func, trace) \
+    (XtAddCallback ((widget), (callback),  (XtCallbackProc)(func), (trace)))
+
+/* Schedule a redraw for trace or everybody */
+#define draw_expose_needed(_trace_)	{ global->redraw_needed |= GRD_TRACE; (_trace_)->redraw_needed |= TRD_EXPOSE; }
+#define draw_needed(_trace_)		{ global->redraw_needed |= GRD_TRACE; (_trace_)->redraw_needed |= TRD_REDRAW; }
+#define draw_all_needed() 		{ global->redraw_needed |= GRD_ALL; }
+#define draw_manual_needed() 		{ global->redraw_needed |= GRD_MANUAL; }
+#define draw_needupd_sig_start()	{ global->updates_needed |= GUD_SIG_START; }
+#define draw_needupd_sig_search()	{ global->updates_needed |= GUD_SIG_SEARCH; }
+#define draw_needupd_val_search()	{ global->updates_needed |= GUD_VAL_SEARCH; }
+#define draw_needupd_val_states()	{ global->updates_needed |= GUD_VAL_STATES; }
+
+/* dino_message_ack types */
+#define	dino_error_ack(tr,msg)		dino_message_ack (tr, 0, msg)
+#define	dino_warning_ack(tr,msg)	dino_message_ack (tr, 1, msg)
+#define	dino_information_ack(tr,msg)	dino_message_ack (tr, 2, msg)
+
+#define TIME_TO_XPOS(_xtime_) \
+        ( ((_xtime_) - global->time) * global->res + global->xstart )
+
+#define	TIME_WIDTH(_trace_) \
+	((DTime)( ((_trace_)->width - XMARGIN - global->xstart) / global->res ))
 
 #define	cptr_to_value(cptr,value_ptr) \
 {\
@@ -131,222 +154,278 @@
 /* Also identical commented function in dt_file if this isn't defined */
 #define	fil_add_cptr(sig_ptr, value_ptr, nocheck) \
 {\
-    SIGNAL_LW	*cptr;\
-    long diff;\
-    cptr = ((SIGNAL *)(sig_ptr))->cptr - ((SIGNAL *)(sig_ptr))->lws;\
+    SignalLW	*cptr;\
+    ulong_t diff;\
+    cptr = ((Signal *)(sig_ptr))->cptr - ((Signal *)(sig_ptr))->lws;\
     if ( (nocheck)\
-	|| ( cptr->sttime.state != ((VALUE *)(value_ptr))->siglw.sttime.state )\
-	|| ( cptr[1].number != ((VALUE *)(value_ptr))->number[0] )\
-	|| ( cptr[2].number != ((VALUE *)(value_ptr))->number[1] )\
-	|| ( cptr[3].number != ((VALUE *)(value_ptr))->number[2] )\
-	|| ( cptr[4].number != ((VALUE *)(value_ptr))->number[3] ) )\
+	|| ( cptr->sttime.state != ((Value *)(value_ptr))->siglw.sttime.state )\
+	|| ( cptr[1].number != ((Value *)(value_ptr))->number[0] )\
+	|| ( cptr[2].number != ((Value *)(value_ptr))->number[1] )\
+	|| ( cptr[3].number != ((Value *)(value_ptr))->number[2] )\
+	|| ( cptr[4].number != ((Value *)(value_ptr))->number[3] ) )\
 	{\
-	diff = ((SIGNAL *)sig_ptr)->cptr - ((SIGNAL *)sig_ptr)->bptr;\
+	diff = ((Signal *)sig_ptr)->cptr - ((Signal *)sig_ptr)->bptr;\
 	if (diff > (sig_ptr)->blocks) {\
-	    ((SIGNAL *)(sig_ptr))->blocks += BLK_SIZE;\
-	    ((SIGNAL *)(sig_ptr))->bptr = (SIGNAL_LW *)XtRealloc ((char*)((SIGNAL *)(sig_ptr))->bptr,\
-		       (((SIGNAL *)(sig_ptr))->blocks*sizeof(unsigned int)) + (sizeof(VALUE)*2 + 2));\
-	    ((SIGNAL *)(sig_ptr))->cptr = ((SIGNAL *)(sig_ptr))->bptr+diff;\
+	    ((Signal *)(sig_ptr))->blocks += BLK_SIZE;\
+	    ((Signal *)(sig_ptr))->bptr = (SignalLW *)XtRealloc ((char*)((Signal *)(sig_ptr))->bptr,\
+		       (((Signal *)(sig_ptr))->blocks*sizeof(unsigned int)) + (sizeof(Value)*2 + 2));\
+	    ((Signal *)(sig_ptr))->cptr = ((Signal *)(sig_ptr))->bptr+diff;\
 	}\
-	(((SIGNAL *)(sig_ptr))->cptr)[0].number = ((VALUE *)(value_ptr))->siglw.number;\
-	(((SIGNAL *)(sig_ptr))->cptr)[1].number = ((VALUE *)(value_ptr))->number[0];\
-	(((SIGNAL *)(sig_ptr))->cptr)[2].number = ((VALUE *)(value_ptr))->number[1];\
-	(((SIGNAL *)(sig_ptr))->cptr)[3].number = ((VALUE *)(value_ptr))->number[2];\
-	(((SIGNAL *)(sig_ptr))->cptr)[4].number = ((VALUE *)(value_ptr))->number[3];\
-	(((SIGNAL *)(sig_ptr))->cptr) += ((SIGNAL *)(sig_ptr))->lws;\
+	(((Signal *)(sig_ptr))->cptr)[0].number = ((Value *)(value_ptr))->siglw.number;\
+	(((Signal *)(sig_ptr))->cptr)[1].number = ((Value *)(value_ptr))->number[0];\
+	(((Signal *)(sig_ptr))->cptr)[2].number = ((Value *)(value_ptr))->number[1];\
+	(((Signal *)(sig_ptr))->cptr)[3].number = ((Value *)(value_ptr))->number[2];\
+	(((Signal *)(sig_ptr))->cptr)[4].number = ((Value *)(value_ptr))->number[3];\
+	(((Signal *)(sig_ptr))->cptr) += ((Signal *)(sig_ptr))->lws;\
     }\
  }
 
 
 /***********************************************************************/
+/* Prototypes */
 
 /* Dinotrace.c */
-extern char	*help_message();
+extern char *	help_message (void);
 
 /* dt_dispmgr.c */
-extern TRACE	*create_trace();
-extern TRACE	*trace_create_split_window();
-extern TRACE	*malloc_trace();
-extern TRACE	*open_trace();
-extern void
-    trace_open_cb(), trace_close_cb(), trace_exit_cb(), trace_clear_cb(),
-    init_globals(),
-    create_globals(int argc, char **argv, Boolean sync),
-    set_cursor();
-extern int	last_set_cursor ();
+extern Trace *	create_trace (int xs, int ys, int xp, int yp);
+extern Trace *	trace_create_split_window (Trace *trace);
+extern Trace *	malloc_trace (void);
+extern void	init_globals (void);
+extern void	create_globals (int argc, char **argv, Boolean sync);
+extern void	set_cursor (Trace *trace, int cursor_num);
+extern int	last_set_cursor (void);
+
+extern void	trace_open_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	trace_close_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	trace_clear_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	trace_exit_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
 
 /* dt_customize.c routines */
-extern void
-    cus_dialog_cb(), cus_read_cb(), 
-    cus_ok_cb(), cus_apply_cb(), 
-    cus_hit_return(), cus_restore_cb(), cus_reread_cb(), cus_read_cb(), cus_read_ok_cb();
-    
+extern void	cus_dialog_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cus_read_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackStruct *cb);
+extern void	cus_read_ok_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackStruct *cb);
+extern void	cus_ok_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cus_apply_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cus_restore_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cus_reread_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+
 /* dt_cursor.c routines */
-extern void
-    cur_add_cb(), cur_mov_cb(), cur_del_cb(), cur_clr_cb(),
-    cur_highlight_cb(), cur_highlight_ev(),
-    cur_add_ev(), cur_move_ev(), cur_delete_ev(),
-    cur_add (DTime, ColorNum, CursorType),
-    cur_remove (CURSOR *),
-    cur_delete_of_type ();
-extern DTime cur_time_first();
-extern DTime cur_time_last();
-    
+extern void	cur_add (DTime, ColorNum, CursorType);
+extern void	cur_remove (DCursor *);
+extern void	cur_delete_of_type (CursorType type);
+extern DTime	cur_time_first (Trace *trace);
+extern DTime	cur_time_last (Trace *trace);
+extern void	cur_print (FILE *);
+
+extern void	cur_add_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cur_mov_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cur_del_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cur_clr_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cur_highlight_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cur_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	cur_add_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	cur_move_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	cur_delete_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+
 /* dt_config.c routines */
-extern void
-    config_write_cb(),
-    print_signal_states(),
-    config_read_defaults (TRACE *, Boolean),
-    config_read_file (TRACE *, char *, Boolean, Boolean),
-    config_trace_defaults (TRACE *),
-    config_global_defaults (void),
-    config_parse_geometry (char *, GEOMETRY *);
-extern void config_update_filenames (TRACE *trace);
-extern void config_read_socket (char *line, char *name, int cmdnum, Boolean eof);
-extern SIGNALSTATE *find_signal_state (TRACE *, char *);
+extern void	print_signal_states (Widget w, Trace *trace);
+extern void	config_read_defaults (Trace *, Boolean);
+extern void	config_read_file (Trace *, char *, Boolean, Boolean);
+extern void	config_trace_defaults (Trace *);
+extern void	config_global_defaults (void);
+extern void	config_parse_geometry (char *, Geometry *);
+extern void	config_update_filenames (Trace *trace);
+extern void	config_read_socket (char *line, char *name, int cmdnum, Boolean eof);
+extern SignalState *find_signal_state (Trace *, char *);
 extern int	wildmat ();
-    
+
+extern void	config_write_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+
 /* dt_grid.c routines */
-extern void
-    grid_customize_cb(),
-    grid_align_cb(), grid_res_cb(), grid_reset_cb(),
-    grid_align_ev();
-extern void grid_calc_autos();
-    
+extern void	grid_calc_autos (Trace *trace);
+
+extern void	grid_customize_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	grid_reset_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	grid_align_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+
 /* dt_signal.c routines */
-extern void
-    sig_update_search(),
-    sig_free (TRACE *trace, SIGNAL *sig_ptr, Boolean select, Boolean recurse),
-    sig_highlight_selected (int),
-    /**/
-    sig_add_cb(), sig_add_ev(), sig_mov_cb(), sig_move_ev(),
-    sig_del_cb(), sig_delete_ev(), sig_copy_cb(), sig_copy_ev(),
-    sig_highlight_cb(), sig_highlight_ev(), sig_reset_cb(), 
-    sig_selected_cb(), sig_cancel_cb(),
-    sig_examine_cb(), sig_examine_ev(),
-    sig_search_cb(), sig_search_ok_cb(), sig_search_apply_cb(),
-    sig_select_cb(), sig_select_ok_cb(), sig_select_apply_cb();
-extern void sig_modify_enables (TRACE *);
-extern void sig_delete_selected (Boolean constant_flag, Boolean ignorexz);
-extern void sig_move_selected (/*Boolean*/);
-extern void sig_copy_selected (/*Boolean*/);
-extern void sig_rename_selected (char *);
-extern void sig_wildmat_select (TRACE *, char *);
-extern void sig_goto_pattern (TRACE *, char *);
-extern void sig_cross_preserve (TRACE *);
-extern void sig_cross_restore (TRACE *);
-#if ! HAVE_STRDUP
-extern char *strdup(char *);
-#endif
-    
+extern void	sig_update_search (void);
+extern void	sig_free (Trace *trace, Signal *sig_ptr, Boolean select, Boolean recurse);
+extern void	sig_highlight_selected (int color);
+extern void	sig_modify_enables (Trace *);
+extern void	sig_move_selected (Trace *new_trace, char *after_pattern);
+extern void	sig_rename_selected (char *new_name);
+extern void	sig_copy_selected (Trace *new_trace, char *after_pattern);
+extern void	sig_delete_selected (Boolean constant_flag, Boolean ignorexz);
+extern void	sig_wildmat_select (Trace *, char *);
+extern void	sig_goto_pattern (Trace *, char *);
+extern void	sig_cross_preserve (Trace *trace);
+extern void	sig_cross_restore (Trace *trace) ;
+extern Signal *	sig_find_signame (Trace *trace, char *signame);
+extern Signal *	sig_wildmat_signame (Trace *trace, char *signame);
+
+extern void	sig_add_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	sig_mov_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	sig_copy_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	sig_del_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	sig_add_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	sig_move_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	sig_copy_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	sig_delete_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	sig_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	sig_highlight_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	sig_select_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	sig_cancel_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	sig_search_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	sig_search_ok_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	sig_search_apply_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+
 /* dt_value.c routines */
-extern void
-    val_annotate_cb(), val_annotate_do_cb(), val_annotate_ok_cb(), val_annotate_apply_cb(),
-    val_examine_cb(), val_examine_ev(),
-    val_search_cb(), val_search_ok_cb(), val_search_apply_cb(),
-    val_highlight_cb(), val_highlight_ev(),
-    val_update_search();
-extern void value_to_string (TRACE *trace, char *strg, unsigned int cptr[], char seperator);
-extern void val_states_update ();
-extern void cptr_to_search_value ();
-    
+extern void	val_update_search (void);
+extern void	val_states_update (void);
+extern void	value_to_string (Trace *trace, char *strg, unsigned int cptr[], char seperator);
+extern void	cptr_to_search_value (SignalLW *cptr, uint_t value[]);
+
+extern void	val_annotate_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	val_annotate_ok_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	val_annotate_apply_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	val_annotate_do_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	val_examine_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	val_examine_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	val_search_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	val_search_ok_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	val_search_apply_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	val_highlight_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	val_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+
 /* dt_printscreen routines */
-extern void
-    ps_print_internal(), ps_print_req_cb(), ps_print_direct_cb(),
-    ps_range_sensitives_cb(Widget w, RANGE_WDGTS *range_ptr, XmSelectionBoxCallbackStruct *cb),
-    ps_print_all(), ps_dialog(), ps_reset();
-extern void cur_print (FILE *);
-    
+extern void	ps_print_internal (Trace *trace);
+
+extern void	ps_dialog_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	ps_reset_cb  (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	ps_print_direct_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	ps_print_req_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	ps_range_sensitives_cb (Widget w, RangeWidgets *range_ptr, XmSelectionBoxCallbackStruct *cb);
+
 /* dt_binary.c routines */
-extern void
-    tempest_read(), decsim_read_binary();
+extern void	tempest_read (Trace *trace, int read_fd);
+extern void	decsim_read_binary (Trace *trace, int read_fd);
 
 /* dt_file.c routines */
-extern void
-    trace_read_cb(), trace_reread_cb(), trace_reread_all_cb(),
-    free_data(),
-    read_make_busses(TRACE *trace, Boolean not_tempest),
-    fil_string_to_value(),
-    decsim_read_ascii(), 
-    read_trace_end(), help_cb(), help_trace_cb(), help_doc_cb();
-extern void  fil_select_set_pattern (TRACE *trace, Widget dialog, char *pattern);
-extern void fgets_dynamic ();
-extern void fil_string_add_cptr (SIGNAL	*sig_ptr, char *value_strg, DTime time, Boolean nocheck);
+extern void	free_data (Trace *trace);
+extern void	read_make_busses (Trace *trace, Boolean not_tempest);
+extern void	decsim_read_ascii (Trace *trace, int read_fd, FILE *decsim_z_readfp);
+extern void	read_trace_end (Trace *trace);
+extern void 	fil_select_set_pattern (Trace *trace, Widget dialog, char *pattern);
+extern void	fil_string_add_cptr (Signal	*sig_ptr, char *value_strg, DTime time, Boolean nocheck);
 #ifndef fil_add_cptr
-extern void fil_add_cptr();
+extern void	fil_add_cptr ();
 #endif
 
+extern void	fil_read_cb (Trace *trace);
+extern void	fil_format_option_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	fil_ok_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackStruct *cb);
+extern void	trace_read_cb (Widget w, Trace *trace);
+extern void	trace_reread_all_cb (Widget w, Trace *trace);
+extern void	trace_reread_cb (Widget w, Trace *trace);
+extern void	help_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	help_trace_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	help_doc_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+
 /* dt_util routines */
-extern void
-    upcase_string(),
-    unmanage_cb(),
-    add_event(), remove_all_events(), 
-    file_directory(), change_title(),
-    new_time(TRACE *), new_res(TRACE *, float), get_geometry(),
-    get_file_name(),
-    cancel_all_events(),
-    dino_message_ack(), 
-    fil_read_cb(), get_data_popup(),
-    fil_format_option_cb(),
-    print_sig_names(), print_screen_traces(), print_sig_info(SIGNAL *);
-extern TRACE	*widget_to_trace (Widget);
-extern SIGNAL_LW *cptr_at_time ();
-extern char	*extract_first_xms_segment (XmString);
+extern void	fgets_dynamic (char **line_pptr, uint_t *length_ptr, FILE *readfp);
+extern void	upcase_string (char *tp);
+extern void	file_directory (char *strg);
+extern char *	extract_first_xms_segment (XmString);
+extern char *	date_string (time_t time_num);
+#if ! HAVE_STRDUP
+extern char *	strdup (char *);
+#endif
+
+extern void	add_event (int type, void (*callback)());
+extern void	remove_all_events (Trace *trace);
+extern void	change_title (Trace *trace);
+extern void	new_time (Trace *);
+extern void	get_geometry (Trace *trace);
+extern void	get_file_name (Trace *trace);
+extern void	cancel_all_events (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	dino_message_ack (Trace *trace, int type, char *msg);
+extern void	get_data_popup (Trace *trace, char *string, int type);
+extern void	print_sig_names (Widget w, Trace *trace);
+extern void	print_screen_traces (Widget w, Trace *trace);
+extern void	print_sig_info (Signal *);
+extern Trace *	widget_to_trace (Widget);
+extern SignalLW *cptr_at_time (Signal *sig_ptr, DTime ctime);
 extern XmString	string_create_with_cr (char *);
-extern char	*date_string ();
-extern DTime	posx_to_time (TRACE *trace, Position x);
-extern DTime	posx_to_time_edge (TRACE *trace, Position x, Position y);
-extern DTime	string_to_time ();
-extern DTime	time_units_to_multiplier ();
-extern void	time_to_string (TRACE *trace, char *strg, DTime ctime, Boolean relative);
-extern char	*time_units_to_string (TimeRep timerep, Boolean showvalue);
-extern SIGNAL	*posy_to_signal (TRACE *trace, Position y);
-extern CURSOR	*posx_to_cursor (TRACE *trace, Position x);
-extern CURSOR	*time_to_cursor ();
-extern ColorNum submenu_to_color (TRACE *trace, Widget, int);
-extern void     cptr_to_string ();
-extern void     string_to_value ();
-extern int	option_to_number ();
-extern SIGNAL	*sig_find_signame ();
-extern SIGNAL	*sig_wildmat_signame ();
-    
+extern DTime	posx_to_time (Trace *trace, Position x);
+extern DTime	posx_to_time_edge (Trace *trace, Position x, Position y);
+extern DTime	string_to_time (Trace *trace, char *strg);
+extern DTime 	time_units_to_multiplier (TimeRep timerep);
+extern void	time_to_string (Trace *trace, char *strg, DTime ctime, Boolean relative);
+extern char *	time_units_to_string (TimeRep timerep, Boolean showvalue);
+extern Signal *	posy_to_signal (Trace *trace, Position y);
+extern DCursor *posx_to_cursor (Trace *trace, Position x);
+extern DCursor *time_to_cursor (DTime xtime);
+extern ColorNum submenu_to_color (Trace *trace, Widget, int);
+extern void	cptr_to_string (SignalLW *cptr, char *strg);
+extern void	string_to_value (Trace *trace, char *strg, uint_t cptr[]);
+extern int	option_to_number (Widget w, Widget *entry0_ptr, int maxnumber);
+
+extern void	unmanage_cb (Widget w, Widget tag, XmAnyCallbackStruct *cb);
+
 /* dt_window routines */
-extern void
-    win_expose_cb(), win_resize_cb(), win_refresh_cb(),
-    win_goto_cb(), win_goto_option_cb(),
-    win_goto_ok_cb(), win_goto_cancel_cb(),
-    win_chg_res_cb(), win_inc_res_cb(), win_dec_res_cb(), 
-    win_begin_cb(), win_end_cb(), win_zoom_res_cb(), win_full_res_cb(), 
-    res_zoom_click_ev(),
-    debug_toggle_print_cb(),
-    debug_integrity_check_cb(),
-    debug_increase_debugtemp_cb(),
-    debug_decrease_debugtemp_cb(),
-    hscroll_unitinc(), hscroll_unitdec(), hscroll_drag(), 
-    hscroll_pageinc(), hscroll_pagedec(), 
-    hscroll_bot(), hscroll_top(), 
-    vscroll_unitinc(), vscroll_unitdec(), vscroll_drag(), 
-    vscroll_pageinc(), vscroll_pagedec(), 
-    vscroll_bot(), vscroll_top();
-extern void win_namescroll_change (Widget w, TRACE *trace, XmScrollBarCallbackStruct *cb);
-extern int	win_goto_number();
-extern void	vscroll_new();
+extern void	vscroll_new (Trace *trace, int inc);
+extern void	new_res (Trace *, float res_new);
+
+extern void	win_expose_cb (Widget w, Trace *trace);
+extern void	win_resize_cb (Widget w, Trace *trace);
+extern void	win_refresh_cb (Widget w, Trace *trace);
+extern void	win_goto_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	win_goto_option_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	win_goto_ok_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	win_goto_cancel_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	win_chg_res_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	win_begin_cb (Widget w, Trace *trace);
+extern void	win_end_cb (Widget w, Trace *trace);
+extern void	win_inc_res_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	win_dec_res_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	win_full_res_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	win_zoom_res_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	res_zoom_click_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	debug_toggle_print_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	debug_integrity_check_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	debug_increase_debugtemp_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	debug_decrease_debugtemp_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	hscroll_unitinc_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	hscroll_unitdec_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	hscroll_pageinc_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	hscroll_pagedec_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	hscroll_drag_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	hscroll_bot_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	hscroll_top_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	vscroll_unitinc_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	vscroll_unitdec_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	vscroll_pageinc_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	vscroll_pagedec_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	vscroll_drag_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	vscroll_bot_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	vscroll_top_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
+extern void	win_namescroll_change_cb (Widget w, Trace *trace, XmScrollBarCallbackStruct *cb);
 
 /* dt_socket */
-extern void	socket_create();
+extern void	socket_create (void);
 
 /* dt_draw */
-extern void
-    draw_update_sigstart(),
-    draw_perform(),
-    draw_update(),
-    draw();
+extern void	draw_update_sigstart (void);
+extern void	draw_perform (void);
+extern void	draw_update (void);
+extern void	draw_scroll_hook_cb_expose (void);
 
 /* dt_icon */
-extern Pixmap	icon_dinos ();
-extern Pixmap	icon_make (Display *, Drawable, char *, Dimension, Dimension);
+extern Pixmap	icon_dinos (void);
 
 /* dt_verilog */
-extern void	verilog_read();
-extern void	verilog_womp_128s(TRACE *);
+extern void	verilog_read (Trace *trace, int read_fd);
+extern void	verilog_womp_128s (Trace *);
 

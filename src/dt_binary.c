@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_binary.c --- CCLI tempest trace reading
  *
@@ -55,30 +55,12 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#if HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-
-#ifdef VMS
-# include <file.h>
-# include <unixio.h>
-# include <math.h> /* removed for Ultrix support... */
-#endif
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
-
 #include "dinotrace.h"
+
 #include "functions.h"
 #include "bintradef.h"
+
+/**********************************************************************/
 
 #ifdef VMS
 #define TRA$W_NODNAMLEN tra$r_data.tra$$r_nnr_data.tra$r_fill_11.tra$r_fill_12.tra$w_nodnamlen
@@ -98,22 +80,22 @@ static char rcsid[] = "$Id$";
 
 #if 0
 int	EXTRACT_2STATE (
-     unsigned int pos,
-     unsigned long *buf)
+     uint_t pos,
+     ulong_t *buf)
 {
-    register unsigned int bitcnt, bit_pos;
-    register unsigned int bit_mask;
-    register unsigned int bit_pos_in_lw;
-    register unsigned int *lw_ptr;
-    register unsigned int data;
-    unsigned int bit_data;
+    register uint_t bitcnt, bit_pos;
+    register uint_t bit_mask;
+    register uint_t bit_pos_in_lw;
+    register uint_t *lw_ptr;
+    register uint_t data;
+    uint_t bit_data;
 
-    return (((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 1);
+    return (((*((ulong_t *)(((ulong_t)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 1);
 
     if (DTPRINT_FILE) printf ("extr2st buf %x pos %x temp %x ", buf, pos);
 
     /*
-      (( ( *((((unsigned long *)_buf_) + ((_pos_)>>5))) ) >> ((_pos_) & 0x1F) )&1)
+      (( ( *((((ulong_t *)_buf_) + ((_pos_)>>5))) ) >> ((_pos_) & 0x1F) )&1)
       */
 
     lw_ptr = buf + ( pos >> 5 );
@@ -135,11 +117,11 @@ int	EXTRACT_2STATE (
 
 #pragma inline (read_4state_to_value)
 int	read_4state_to_value (
-    SIGNAL	*sig_ptr,
+    Signal	*sig_ptr,
     char	*buf,
-    VALUE	*value_ptr)
+    Value	*value_ptr)
 {
-    register int state = STATE_0;	/* Unknown */
+    register uint_t state = STATE_0;	/* Unknown */
     register int bitcnt, bit_pos;
 
     /* Preset the state to be based upon first bit (to speed things up) */
@@ -242,9 +224,9 @@ int	read_4state_to_value (
 
 #pragma inline (read_2state_to_value)
 int	read_2state_to_value (
-    SIGNAL	*sig_ptr,
+    Signal	*sig_ptr,
     char	*buf,
-    VALUE	*value_ptr)
+    Value	*value_ptr)
 {
     register int bitcnt, bit_pos;
 
@@ -284,13 +266,13 @@ int	read_2state_to_value (
 #pragma inline (fil_decsim_binary_add_cptr)
 void	fil_decsim_binary_add_cptr (
     /* Add a cptr corresponding to the decsim value for this signal */
-    SIGNAL	*sig_ptr,
+    Signal	*sig_ptr,
     char	*buf,
     DTime	time,
     Boolean	nocheck)		/* don't compare against previous data */
 {
     register	int		state;
-    register	VALUE	value;
+    register	Value	value;
 
     /* zero the value */
     value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
@@ -335,7 +317,7 @@ void	fil_decsim_binary_add_cptr (
 }
 
 void decsim_read_binary (
-    TRACE	*trace,
+    Trace	*trace,
     int		read_fd)
 {
     static struct bintrarec *buf, *last_buf;
@@ -345,7 +327,7 @@ void decsim_read_binary (
     int		len;
     int		next_different_lw_pos;	/* LW pos with different value than last time slice */
     int		time;
-    SIGNAL	*sig_ptr,*last_sig_ptr;
+    Signal	*sig_ptr,*last_sig_ptr;
     int		max_lw_pos=0;		/* Maximum position in buf that has trace data */
     DTime	time_divisor;
 
@@ -410,7 +392,7 @@ void decsim_read_binary (
 
 		/**** TYPE: Node format data ****/
 	      case tra$k_nfd:
-		sig_ptr = DNewCalloc (SIGNAL);
+		sig_ptr = DNewCalloc (Signal);
 		sig_ptr->trace = trace;
 		sig_ptr->file_pos = buf->TRA$L_BITPOS;
 		/* if (DTPRINT_FILE) printf ("Reading signal format data, ptr=%d\n", sig_ptr); */
@@ -538,16 +520,16 @@ void decsim_read_binary (
 #pragma inline (fil_tempest_binary_add_cptr)
 void	fil_tempest_binary_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
-    SIGNAL	*sig_ptr,
-    unsigned int *buf,
+    Signal	*sig_ptr,
+    uint_t *buf,
     DTime	time,
     Boolean	nocheck)		/* don't compare against previous data */
 {
     register int state=STATE_U, bit;
-    register unsigned int value_index;
-    register unsigned int data_index;
-    register unsigned int data_mask;
-    VALUE	value;
+    register uint_t value_index;
+    register uint_t data_index;
+    register uint_t data_mask;
+    Value	value;
 
     /* zero the value */
     value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
@@ -615,26 +597,39 @@ void	fil_tempest_binary_add_cptr (
     value.siglw.sttime.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
 
-    /*if (DTPRINT_FILE) printf ("SIg %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
+    /*if (DTPRINT_FILE) printf ("Sig %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
       value.number[0]);*/
 }
 
+uint_t bin_read_little_uint_t32 (int read_fd)
+    /* Read a little endian 32 bit uint_t, correct to internal representation */
+{
+    uint_t	status;
+    uint_t	littledata;
+    uint_t	naturaldata;
+
+    status = read (read_fd, &littledata, 4);
+    /* Actually it's ANTILITTLE, but it's a symetric function */
+    naturaldata = LITTLEENDIANIZE32 (littledata);
+    return (naturaldata);
+}
+
 void tempest_read (
-    TRACE	*trace,
+    Trace	*trace,
     int		read_fd)
 {
-    int		status;
-    int		numBytes,numRows,numBitsRow,numBitsRowPad;
-    int		sigChars,sigFlags,sigOffset,sigWidth;
-    char		chardata[1024];
-    unsigned int	*data;
-    unsigned int	*data_xor;
-    int		first_data;
-    int		i,j;
-    int		pad_len;
-    unsigned int	time, last_time=EOT;
-    register	SIGNAL	*sig_ptr=NULL;
-    SIGNAL	*last_sig_ptr=NULL;
+    uint_t	status;
+    uint_t	numBytes,numRows,numBitsRow,numBitsRowPad;
+    uint_t	sigChars,sigFlags,sigOffset,sigWidth;
+    char	chardata[1024];
+    uint_t	*data;
+    uint_t	*data_xor;
+    Boolean	first_data;
+    uint_t	i,j;
+    uint_t	pad_len;
+    uint_t	time, last_time=EOT;
+    register	Signal	*sig_ptr=NULL;
+    Signal	*last_sig_ptr=NULL;
     int 	index;
     Boolean	verilator_xor_format;
 
@@ -649,11 +644,12 @@ void tempest_read (
 	dino_error_ack(trace, message);
 	return;
     }
-    status = read (read_fd, &numBytes, 4);
-    status = read (read_fd, &trace->numsig, 4);
-    status = read (read_fd, &numRows, 4);
-    status = read (read_fd, &numBitsRow, 4);
-    status = read (read_fd, &numBitsRowPad, 4);
+
+    numBytes      = bin_read_little_uint_t32 (read_fd);
+    trace->numsig = bin_read_little_uint_t32 (read_fd);
+    numRows       = bin_read_little_uint_t32 (read_fd);
+    numBitsRow    = bin_read_little_uint_t32 (read_fd);
+    numBitsRowPad = bin_read_little_uint_t32 (read_fd);
 
     if (DTPRINT_FILE) {
 	if (verilator_xor_format) printf ("This is Verilator Compressed XOR format.\n");
@@ -669,10 +665,10 @@ void tempest_read (
     trace->firstsig=NULL;
     for (i=0;i<trace->numsig;i++)
     {
-	status = read (read_fd, &sigFlags, 4);
-	status = read (read_fd, &sigOffset, 4);
-	status = read (read_fd, &sigWidth, 4);
-	status = read (read_fd, &sigChars, 4);
+	sigFlags  = bin_read_little_uint_t32 (read_fd);
+	sigOffset = bin_read_little_uint_t32 (read_fd);
+	sigWidth  = bin_read_little_uint_t32 (read_fd);
+	sigChars  = bin_read_little_uint_t32 (read_fd);
 	status = read (read_fd, chardata, sigChars);
 	chardata[sigChars] = '\0';
 	
@@ -686,7 +682,7 @@ void tempest_read (
 	     ** Initialize all pointers and other stuff in the signal
 	     ** description block
 	     */
-	    sig_ptr = DNewCalloc (SIGNAL);
+	    sig_ptr = DNewCalloc (Signal);
 	    sig_ptr->trace = trace;
 	    sig_ptr->forward = NULL;
 	    if (trace->firstsig==NULL) {
@@ -705,7 +701,7 @@ void tempest_read (
 		sig_ptr->bit_index = -1;
 		sig_ptr->bits = 0;
 	    }
-	    if (index==sigWidth-1) sig_ptr->file_type.flag.vector_msb = TRUE;
+	    if ((unsigned)index == sigWidth-1) sig_ptr->file_type.flag.vector_msb = TRUE;
 	    sig_ptr->file_pos = sigOffset + index;
 	    
 	    /* These could be simplified as they map 1:1, but safer not to */
@@ -744,8 +740,8 @@ void tempest_read (
     read_make_busses (trace, FALSE);
 
     /* Make storage space, with some overhead */
-    data     = (unsigned int *)XtCalloc (32 + numBitsRowPad/32, sizeof(unsigned int));
-    data_xor = (unsigned int *)XtCalloc (32 + numBitsRowPad/32, sizeof(unsigned int));
+    data     = (uint_t *)XtCalloc (32 + numBitsRowPad/32, sizeof(uint_t));
+    data_xor = (uint_t *)XtCalloc (32 + numBitsRowPad/32, sizeof(uint_t));
 
     /* Read the signal trace data
      * Pass 0-(numRows-1) reads the data, pass numRows processes last line */
@@ -761,14 +757,25 @@ void tempest_read (
 	    if (status < numBitsRowPad/8) break;	/* End of data */
 
 	    /* Un-exor the data */
-	    for (j = 0; j <= (numBitsRowPad/(sizeof(unsigned int)*8)); j++) {
-		data[j] ^= data_xor[j];
+	    /* Correct endianization */
+	    for (j = 0; j <= (numBitsRowPad/(sizeof(uint_t)*8)); j++) {
+		uint_t littledata = data_xor[j];
+		littledata = LITTLEENDIANIZE32 (littledata);
+		data[j] ^= littledata;
 	    }
 	}
 	else {
 	    /* Regular format */
 	    status = read (read_fd, data, numBitsRowPad/8);
 	    if (status < numBitsRowPad/8) break;	/* End of data */
+
+	    /* Correct endianization */
+#if WORDS_BIGENDIAN	/* If little, make sure whole loop goes away */
+	    for (j = 0; j <= (numBitsRowPad/(sizeof(uint_t)*8)); j++) {
+		uint_t littledata = data[j];
+		data[j] = LITTLEENDIANIZE32 (littledata);
+	    }
+#endif
 	}
 
 	/*
@@ -780,6 +787,7 @@ void tempest_read (
 	/** Extract the phase - this will be used as a 'time' value and
 	 ** is multiplied by 100 to make the trace easier to read
 	 */
+
 	time = data[0] * global->tempest_time_mult;
 	if (time == last_time) time++;
 	last_time = time;

@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_file.c --- trace file reading
  *
@@ -55,56 +55,39 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
+#include "dinotrace.h"
 
-#include <stdio.h>
-#include <math.h> /* removed for Ultrix support... */
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-#if TM_IN_SYS_TIME
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#ifdef VMS
-# include <file.h>
-# include <unixio.h>
-#endif
-
-#if HAVE_UNISTD_H
-# include <unistd.h>
-#endif
-#if HAVE_FCNTL_H
-# include <sys/fcntl.h>
-#endif
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
 #include <Xm/Text.h>
 #include <Xm/MessageB.h>
 #include <Xm/SelectioB.h>
+#include <Xm/FileSB.h>
+#include <Xm/Form.h>
+#include <Xm/PushB.h>
+#include <Xm/PushBG.h>
+#include <Xm/ToggleB.h>
+#include <Xm/RowColumn.h>
 
-#include "dinotrace.h"
 #include "functions.h"
+
 #if HAVE_DINODOC_H
 #include "dinodoc.h"
 #else
 char dinodoc[] = "Unavailable";
 #endif
 
+/**********************************************************************/
+
 int fil_line_num=0;
+
+#define FIL_SIZE_INC	1024	/* Characters to increase length by */
 
 /****************************** UTILITIES ******************************/
 
 void free_data (
     /* Free trace information, also used when deleting preserved structure */
-    TRACE	*trace)
+    Trace	*trace)
 {
-    TRACE	*trace_ptr;
+    Trace	*trace_ptr;
 
     if (DTPRINT_ENTRY) printf ("In free_data - trace=%p\n",trace);
 
@@ -124,7 +107,7 @@ void free_data (
 
 void trace_read_cb (
     Widget		w,
-    TRACE		*trace)
+    Trace		*trace)
 {
     if (DTPRINT_ENTRY) printf ("In trace_read_cb - trace=%p\n",trace);
 
@@ -137,7 +120,7 @@ void trace_read_cb (
 
 void trace_reread_all_cb (
     Widget		w,
-    TRACE		*trace)
+    Trace		*trace)
 {
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
@@ -148,7 +131,7 @@ void trace_reread_all_cb (
 
 void trace_reread_cb (
     Widget		w,
-    TRACE		*trace)
+    Trace		*trace)
 {
     char *semi;
     int		read_fd;
@@ -182,7 +165,7 @@ void trace_reread_cb (
 }
 
 void fil_read_cb (
-    TRACE	*trace)
+    Trace	*trace)
 {
     int		read_fd;
     FILE	*read_fp;	/* Routines are responsible for assigning this! */
@@ -335,9 +318,150 @@ void fil_read_cb (
     if (DTPRINT_ENTRY) printf ("fil_read_cb done!\n");
 }
 
+void  fil_select_set_pattern (
+    Trace	*trace,
+    Widget	dialog,
+    char	*pattern)
+    /* Set the file requester pattern information (called in 2 places) */
+{
+    char mask[MAXFNAMELEN], *dirname;
+    XmString	xs_dirname;
+
+    /* Grab directory information */
+    XtSetArg (arglist[0], XmNdirectory, &xs_dirname);
+    XtGetValues (dialog, arglist, 1);
+    dirname = extract_first_xms_segment (xs_dirname);
+
+    /* Pattern information */
+    strcpy (mask, dirname);
+    strcat (mask, pattern);
+    XtSetArg (arglist[0], XmNdirMask, XmStringCreateSimple (mask) );
+    XtSetArg (arglist[1], XmNpattern, XmStringCreateSimple (pattern) );
+    XtSetValues (dialog,arglist,2);
+}
+
+
+void  get_file_name (
+    Trace	*trace)
+{
+    int		i;
+    
+    if (DTPRINT_ENTRY) printf ("In get_file_name trace=%p\n",trace);
+    
+    if (!trace->fileselect.dialog) {
+	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Open Trace File") );
+
+	trace->fileselect.dialog = XmCreateFileSelectionDialog ( trace->main, "file", arglist, 2);
+	DAddCallback (trace->fileselect.dialog, XmNokCallback, fil_ok_cb, trace);
+	DAddCallback (trace->fileselect.dialog, XmNcancelCallback, (XtCallbackProc)unmanage_cb, trace->fileselect.dialog);
+	XtUnmanageChild ( XmFileSelectionBoxGetChild (trace->fileselect.dialog, XmDIALOG_HELP_BUTTON));
+	
+	trace->fileselect.work_area = XmCreateWorkArea (trace->fileselect.dialog, "wa", arglist, 0);
+
+	/* Create FILE FORMAT */
+	trace->fileselect.format_menu = XmCreatePulldownMenu (trace->fileselect.work_area,"fmtrad",arglist,0);
+
+	for (i=0; i<FF_NUMFORMATS; i++) {
+	    if (filetypes[i].selection) {
+		XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (filetypes[i].name) );
+		trace->fileselect.format_item[i] =
+		    XmCreatePushButtonGadget (trace->fileselect.format_menu,"pdbutton",arglist,1);
+		XtManageChild (trace->fileselect.format_item[i]);
+		DAddCallback (trace->fileselect.format_item[i], XmNactivateCallback, fil_format_option_cb, trace);
+	    }
+	}
+
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Format"));
+	XtSetArg (arglist[1], XmNsubMenuId, trace->fileselect.format_menu);
+	trace->fileselect.format_option = XmCreateOptionMenu (trace->fileselect.work_area,"format",arglist,2);
+	XtManageChild (trace->fileselect.format_option);
+
+	/* Create save_ordering button */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Preserve Signal Ordering"));
+	XtSetArg (arglist[1], XmNx, 0);
+	XtSetArg (arglist[2], XmNy, 100);
+	XtSetArg (arglist[3], XmNshadowThickness, 1);
+	trace->fileselect.save_ordering = XmCreateToggleButton (trace->fileselect.work_area,"save_ordering",arglist,4);
+	XtManageChild (trace->fileselect.save_ordering);
+	
+	XtManageChild (trace->fileselect.work_area);
+	
+	XSync (global->display,0);
+    }
+    
+    XtManageChild (trace->fileselect.dialog);
+
+    /* Ordering */
+    XtSetArg (arglist[0], XmNset, global->save_ordering ? 1:0);
+    XtSetValues (trace->fileselect.save_ordering,arglist,1);
+    
+    /* File format */
+    if (filetypes[file_format].selection) {
+	XtSetArg (arglist[0], XmNmenuHistory, trace->fileselect.format_item[file_format]);
+	XtSetValues (trace->fileselect.format_option, arglist, 1);
+    }
+    
+    /* Set directory */
+    XtSetArg (arglist[0], XmNdirectory, XmStringCreateSimple (global->directory) );
+    XtSetValues (trace->fileselect.dialog,arglist,1);
+
+    fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
+
+    XSync (global->display,0);
+}
+
+void    fil_format_option_cb (
+    Widget	w,
+    Trace	*trace,
+    XmSelectionBoxCallbackStruct *cb)
+{
+    int 	i;
+    if (DTPRINT_ENTRY) printf ("In fil_format_option_cb trace=%p\n",trace);
+
+    for (i=0; i<FF_NUMFORMATS; i++) {
+	if (w == trace->fileselect.format_item[i]) {
+	    file_format = i;	/* Change global verion */
+	    trace->fileformat = i;	/* Specifically make this file use this format */
+	    fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
+	}
+    }
+}
+
+void fil_ok_cb (
+    Widget	w,
+    Trace	*trace,
+    XmFileSelectionBoxCallbackStruct *cb)
+{
+    char	*tmp;
+    
+    if (DTPRINT_ENTRY) printf ("In fil_ok_cb trace=%p\n",trace);
+    
+    /*
+     ** Unmanage the file select widget here and wait for sync so
+     ** the window goes away before the read process begins in case
+     ** the idle is very big.
+     */
+    XtUnmanageChild (trace->fileselect.dialog);
+    XSync (global->display,0);
+    
+    tmp = extract_first_xms_segment (cb->value);
+    if (DTPRINT_FILE) printf ("filename=%s\n",tmp);
+    
+    global->save_ordering = XmToggleButtonGetState (trace->fileselect.save_ordering);
+    
+    strcpy (trace->filename, tmp);
+    
+    DFree (tmp);
+    
+    if (DTPRINT_FILE) printf ("In fil_ok_cb Filename=%s\n",trace->filename);
+    fil_read_cb (trace);
+}
+
+
 void help_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("in help_cb\n");
@@ -347,7 +471,7 @@ void help_cb (
 
 void help_trace_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     static char msg[2000];
@@ -382,7 +506,7 @@ void help_trace_cb (
 
 void help_doc_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("in help_doc_cb\n");
@@ -395,7 +519,7 @@ void help_doc_cb (
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Dinotrace Documentation") );
 	trace->help_doc = XmCreateInformationDialog (trace->work, "info", arglist, 2);
-	XtAddCallback (trace->help_doc, XmNokCallback, unmanage_cb, trace->help_doc);
+	DAddCallback (trace->help_doc, XmNokCallback, unmanage_cb, trace->help_doc);
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->help_doc, XmDIALOG_CANCEL_BUTTON));
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->help_doc, XmDIALOG_HELP_BUTTON));
 
@@ -420,16 +544,16 @@ void help_doc_cb (
 void	fil_string_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
     /* WARNING: Similar verilog_string_to_value in dt_verilog for speed reasons */
-    SIGNAL	*sig_ptr,
+    Signal	*sig_ptr,
     char	*value_strg,
     DTime	time,
     Boolean	nocheck)		/* don't compare against previous data */
 {
-    register unsigned int state;
+    register uint_t state;
     register char	*cp, *cep;
     register char 	state_chr;
     register int	len, bitcnt;
-    VALUE	value;
+    Value	value;
 
     /* zero the value */
     /* We do NOT need to set value.siglw.number, as is set later */
@@ -519,12 +643,12 @@ void	fil_string_add_cptr (
 #pragma inline (fil_add_cptr)
 /* WARNING, INLINED CODE IN CALLBACKS.H */
 void	fil_add_cptr (
-    SIGNAL	*sig_ptr,
-    VALUE	*value_ptr,
+    Signal	*sig_ptr,
+    Value	*value_ptr,
     Boolean	nocheck)		/* compare against previous data */
 {
     long	diff;
-    SIGNAL_LW	*cptr;
+    SignalLW	*cptr;
 
     printf ("Checking st %d tm %d with st %d time %d\n",
 	    value_ptr->siglw.sttime.state,
@@ -545,8 +669,8 @@ void	fil_add_cptr (
 	diff = sig_ptr->cptr - sig_ptr->bptr;
 	if (diff > sig_ptr->blocks ) {
 	    sig_ptr->blocks += BLK_SIZE;
-	    sig_ptr->bptr = (SIGNAL_LW *)XtRealloc ((char*)sig_ptr->bptr,
-						    (sig_ptr->blocks*sizeof(unsigned int)) + (sizeof(VALUE)*2 + 2));
+	    sig_ptr->bptr = (SignalLW *)XtRealloc ((char*)sig_ptr->bptr,
+						    (sig_ptr->blocks*sizeof(uint_t)) + (sizeof(Value)*2 + 2));
 	    sig_ptr->cptr = sig_ptr->bptr + diff;
 	}
        
@@ -563,11 +687,11 @@ void	fil_add_cptr (
 void read_make_busses (
     /* Take the list of signals and make it into a list of busses */
     /* Also do the common stuff required for each signal. */
-    TRACE	*trace,
+    Trace	*trace,
     Boolean	not_tempest)	/* Use the name of the bus to find the bit vectors */
 {
-    SIGNAL	*sig_ptr;	/* ptr to current signal (lower bit number) */
-    SIGNAL	*bus_sig_ptr;	/* ptr to signal which is being bussed (upper bit number) */
+    Signal	*sig_ptr;	/* ptr to current signal (lower bit number) */
+    Signal	*bus_sig_ptr;	/* ptr to signal which is being bussed (upper bit number) */
     char	*bbeg;		/* bus beginning */
     char	*sep;		/* seperator position */
     int		pos;
@@ -719,7 +843,7 @@ void read_make_busses (
     }
     
     /* Calculate numsig */
-    /* and allocate SIGNAL's cptr, bptr, blocks, inc, type */
+    /* and allocate Signal's cptr, bptr, blocks, inc, type */
     trace->numsig = 0;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	/* Stash the characters after the bus name */
@@ -789,7 +913,7 @@ void read_make_busses (
 	
 	/* allocate the data storage memory */
 	sig_ptr->blocks = BLK_SIZE;
-	sig_ptr->bptr = (SIGNAL_LW *)XtMalloc ((sig_ptr->blocks*sizeof(unsigned int)) + (sizeof(VALUE)*2 + 2));
+	sig_ptr->bptr = (SignalLW *)XtMalloc ((sig_ptr->blocks*sizeof(uint_t)) + (sizeof(Value)*2 + 2));
 	sig_ptr->cptr = sig_ptr->bptr;
     }
 
@@ -798,11 +922,11 @@ void read_make_busses (
 
 
 void read_mark_cptr_end (
-    TRACE	*trace)
+    Trace	*trace)
 {
-    SIGNAL	*sig_ptr;
-    SIGNAL_LW	*cptr;
-    VALUE	value;
+    Signal	*sig_ptr;
+    SignalLW	*cptr;
+    Value	value;
 
     /* loop thru each signal */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -831,9 +955,9 @@ void read_mark_cptr_end (
 
 void read_trace_end (
     /* Perform stuff at end of trace - common across all reading routines */
-    TRACE	*trace)
+    Trace	*trace)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
 
     if (DTPRINT_FILE) printf ("In read_trace_end\n");
 
@@ -886,35 +1010,8 @@ void read_trace_end (
 
 /****************************** DECSIM ASCII ******************************/
 
-#define FIL_SIZE_INC	1024	/* Characters to increase length by */
-
-void fgets_dynamic (
-    /* fgets a line, with dynamically allocated line storage */
-    char **line_pptr,	/* & Line pointer */
-    int	*length_ptr,	/* & Length of the buffer */
-    FILE *readfp)
-{
-    if (*length_ptr == 0) {
-	*length_ptr = FIL_SIZE_INC;
-	*line_pptr = XtMalloc (*length_ptr);
-    }
-
-    fgets ((*line_pptr), (*length_ptr), readfp);
-    
-    /* Did fgets overflow the string? */
-    while (*((*line_pptr) + *length_ptr - 2)!='\n'
-	   && strlen(*line_pptr)==(*length_ptr - 1)) {
-	/* Alloc more */
-	*length_ptr += FIL_SIZE_INC;
-	*line_pptr = XtRealloc (*line_pptr, *length_ptr);
-	/* Read remainder */
-	fgets (((*line_pptr) + *length_ptr - 2) + 1 - FIL_SIZE_INC,
-	       FIL_SIZE_INC+1, readfp);
-    }
-}
-
 void decsim_read_ascii_header (
-    TRACE	*trace,
+    Trace	*trace,
     char	*header_start,
     char	*data_begin_ptr,
     int		sig_start_pos,
@@ -922,7 +1019,7 @@ void decsim_read_ascii_header (
     int		header_lines)
 {
     int		line,col;
-    SIGNAL	*sig_ptr,*last_sig_ptr=NULL;
+    Signal	*sig_ptr,*last_sig_ptr=NULL;
     char	*line_ptr, *tmp_ptr;
     char	*signame_array;
     Boolean	hit_name_block, past_name_block, no_names;
@@ -935,7 +1032,7 @@ void decsim_read_ascii_header (
     /* Make a signal structure for each signal */
     trace->firstsig = NULL;
     for ( col=sig_start_pos; col < sig_end_pos; col++) {
-	sig_ptr = DNewCalloc (SIGNAL);
+	sig_ptr = DNewCalloc (Signal);
 
 	/* initialize all the pointers that aren't NULL */
 	if (trace->firstsig==NULL) {
@@ -1030,14 +1127,14 @@ void decsim_read_ascii_header (
 }
 
 void decsim_read_ascii (
-    TRACE	*trace,
+    Trace	*trace,
     int		read_fd,
     FILE	*decsim_z_readfp)	/* Only pre-set if FF_DECSIM_Z */
 {
     FILE	*readfp;
     Boolean	first_data;
     char	*line_in;
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     long	time_stamp;
     char	*pchar;
     DTime	time_divisor;
@@ -1073,7 +1170,7 @@ void decsim_read_ascii (
     header_ptr = header_start;
 
     /* Read characters */
-    while (! got_start && (EOF != (ch = fgetc (readfp)))) {
+    while (! got_start && (EOF != (ch = getc (readfp)))) {
 	switch (ch) {
 	  case '\n':
 	  case '\r':

@@ -1,6 +1,6 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
- * dt_icon.c --- create dinotrace icon
+ * dt_icon.c --- create Dinotrace icon
  *
  * This file is part of Dinotrace.  
  *
@@ -55,16 +55,9 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
-
 #include "dinotrace.h"
+
+/**********************************************************************/
 
 /*
  * Editor's Note: Thanks go to Sally C. Barry, former employee of DEC,

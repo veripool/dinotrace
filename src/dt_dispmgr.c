@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_dispmgr.c --- display manager, main window
  *
@@ -55,19 +55,12 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
+#include "dinotrace.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <assert.h>
 
-#include <X11/Xlib.h>
 #include <X11/cursorfont.h>
 #include <X11/StringDefs.h>
-#include <Xm/Xm.h>
 #include <Xm/Form.h>
 #include <Xm/PushB.h>
 #include <Xm/PushBG.h>
@@ -78,8 +71,9 @@ static char rcsid[] = "$Id$";
 #include <Xm/CascadeB.h>
 #include <Xm/MainW.h>
 
-#include "dinotrace.h"
 #include "functions.h"
+
+/**********************************************************************/
 
 /* Application Resources */
 /* Colors:
@@ -94,7 +88,7 @@ static char rcsid[] = "$Id$";
    SteelBlue, Tan, Thistle, Turquoise, Violet, VioletRed, Wheat, Yellow,
    YellowGreen */
 
-#define Offset(field) XtOffsetOf(GLOBAL, field)
+#define Offset(field) XtOffsetOf(Global, field)
 XtResource resources[] = {
     {"barcolor", "Barcolor", XtRString, sizeof(String), Offset(barcolor_name), XtRImmediate, (XtPointer) NULL},
     {"color1", "Color1", XtRString, sizeof(String), Offset(color_names[1]), XtRImmediate, (XtPointer) "White"},
@@ -114,10 +108,16 @@ XtResource resources[] = {
 
 void debug_event_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmDrawingAreaCallbackStruct	*cb)
 {
     printf ("DEBUG_EVENT_CB %p %s\n",w, ""/*(events[cb->event->type]*/);
+}
+
+extern void vscroll_unitinc_act (Widget	w)
+{
+    printf ("unitinc act %p\n", w);
+    widget_to_trace (w);
 }
 
 extern void    val_examine_popup_act ();
@@ -136,7 +136,7 @@ int  last_set_cursor ()
 {return (last_set_cursor_num);}
 
 void set_cursor (
-    TRACE	*trace,			/* Display information */
+    Trace	*trace,			/* Display information */
     int		cursor_num)		/* Entry in xcursors to display */
 {
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
@@ -149,7 +149,7 @@ void set_cursor (
 /* Make the close menu options on all of the menus be active */
 void set_menu_closes ()
 {
-    TRACE	*trace;
+    Trace	*trace;
     int		sensitive;
 
     sensitive = (global->trace_head && global->trace_head->next_trace)?TRUE:FALSE;
@@ -161,12 +161,12 @@ void set_menu_closes ()
 }
 
 /* Split the current trace, return new trace */
-TRACE *trace_create_split_window (
-    TRACE	*trace)
+Trace *trace_create_split_window (
+    Trace	*trace)
 {
     Position x,y,width,height;
     Position new_x,new_y,new_width,new_height;
-    TRACE	*trace_new;
+    Trace	*trace_new;
 
     if (DTPRINT_ENTRY) printf ("In trace_open_split_window - trace=%p\n",trace);
 
@@ -209,10 +209,10 @@ TRACE *trace_create_split_window (
 
 void trace_open_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
-    TRACE	*trace_new;
+    Trace	*trace_new;
 
     trace_new = trace_create_split_window (trace);
 
@@ -223,10 +223,10 @@ void trace_open_cb (
 
 void trace_close_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
-    TRACE	*trace_ptr;
+    Trace	*trace_ptr;
 
     if (DTPRINT_ENTRY) printf ("In trace_close - trace=%p\n",trace);
 
@@ -257,11 +257,11 @@ void trace_close_cb (
 
 void trace_clear_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
-    TRACE	*trace_ptr;
-    TRACE	*trace_next;
+    Trace	*trace_ptr;
+    Trace	*trace_next;
 
     if (DTPRINT_ENTRY) printf ("In clear_trace - trace=%p\n",trace);
 
@@ -286,10 +286,10 @@ void trace_clear_cb (
 
 void trace_exit_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
-    TRACE		*trace_next;
+    Trace		*trace_next;
 
     if (DTPRINT_ENTRY) printf ("In trace_exit_cb - trace=%p\n",trace);
 
@@ -313,7 +313,7 @@ void init_globals (void)
 
     if (DTPRINT_ENTRY) printf ("in init_globals\n");
 
-    global = DNewCalloc (GLOBAL);
+    global = DNewCalloc (Global);
     global->trace_head = NULL;
     global->directory[0] = '\0';
     global->res = RES_SCALE/ (float)(250);
@@ -369,11 +369,11 @@ void init_globals (void)
 	global->color_names[i] = NULL;
 
 	/* Value */
-	memset ((char *)&global->val_srch[i], 0, sizeof (VALSEARCH));
+	memset ((char *)&global->val_srch[i], 0, sizeof (ValSearch));
 	strcpy (global->val_srch[i].signal, "*");
 
 	/* Signal */
-	memset ((char *)&global->sig_srch[i], 0, sizeof (SIGSEARCH));
+	memset ((char *)&global->sig_srch[i], 0, sizeof (SigSearch));
     }
 
     /* Config stuff */
@@ -457,14 +457,14 @@ void create_globals (
     config_global_defaults ();
 }
 
-TRACE *malloc_trace (void)
+Trace *malloc_trace (void)
     /* Allocate a trace structure and return it */
     /* This should NOT do any windowing initialization */
 {
-    TRACE	*trace;
+    Trace	*trace;
     
     /*** alloc space for trace to display state block ***/
-    trace = DNewCalloc (TRACE);
+    trace = DNewCalloc (Trace);
     trace->next_trace = global->trace_head;
     global->trace_head = trace;
     if (global->deleted_trace_head) global->deleted_trace_head->next_trace = global->trace_head;
@@ -493,7 +493,7 @@ TRACE *malloc_trace (void)
     
 
 void dm_menu_title (
-    TRACE *trace,
+    Trace *trace,
     char *title,	
     char key		/* Or '\0' for none */
     )
@@ -511,7 +511,7 @@ void dm_menu_title (
 }
 	
 void dm_menu_entry (
-    TRACE *trace,
+    Trace *trace,
     char *title,	
     char key,		/* Or '\0' for none */
     char *accel,	/* Accelerator, or NULL */
@@ -527,12 +527,12 @@ void dm_menu_entry (
     if (key != '\0') { XtSetArg (arglist[arg], XmNmnemonic, key );	arg++; }
     if (accel != NULL) { XtSetArg (arglist[arg], XmNacceleratorText, XmStringCreateSimple (accel_string) );	arg++; }
     if (accel_string != NULL) { XtSetArg (arglist[arg], XmNaccelerator, accel );	arg++; }
-    trace->menu.pdentrybutton[trace->menu.pdm] = XmCreatePushButtonGadget (trace->menu.pdmenu[trace->menu.pde], "me", arglist, arg);
-    XtAddCallback (trace->menu.pdentrybutton[trace->menu.pdm], XmNactivateCallback, callback, trace);
+     trace->menu.pdentrybutton[trace->menu.pdm] = XmCreatePushButtonGadget (trace->menu.pdmenu[trace->menu.pde], "me", arglist, arg);
+    DAddCallback (trace->menu.pdentrybutton[trace->menu.pdm], XmNactivateCallback, callback, trace);
     XtManageChild (trace->menu.pdentrybutton[trace->menu.pdm]);
 }
 
-void dm_menu_subtitle (TRACE *trace,
+void dm_menu_subtitle (Trace *trace,
 		       char *title,	
 		       char key			/* Or '\0' for none */
 		       )
@@ -550,7 +550,7 @@ void dm_menu_subtitle (TRACE *trace,
 }
 				
 void dm_menu_subentry (
-    TRACE *trace,
+    Trace *trace,
     char *title,	
     char key,		/* Or '\0' for none */
     char *accel,	/* Accelerator, or NULL */
@@ -567,12 +567,12 @@ void dm_menu_subentry (
     if (accel != NULL) { XtSetArg (arglist[arg], XmNacceleratorText, XmStringCreateSimple (accel_string) );	arg++; }
     if (accel_string != NULL) { XtSetArg (arglist[arg], XmNaccelerator, accel );	arg++; }
     trace->menu.pdsubbutton[trace->menu.pds] = XmCreatePushButtonGadget (trace->menu.pdentry[trace->menu.pdm], "mse", arglist, arg);
-    XtAddCallback (trace->menu.pdsubbutton[trace->menu.pds], XmNactivateCallback, callback, trace);
+    DAddCallback (trace->menu.pdsubbutton[trace->menu.pds], XmNactivateCallback, callback, trace);
     XtManageChild (trace->menu.pdsubbutton[trace->menu.pds]);
 }
 
 void dm_menu_subentry_colors (
-    TRACE *trace,
+    Trace *trace,
     char *cur_accel,	/* Accelerator, or NULL */
     char *cur_accel_string,	/* Accelerator string, or NULL */
     char *next_accel,	/* Accelerator, or NULL */
@@ -589,7 +589,7 @@ void dm_menu_subentry_colors (
 	XtSetArg (arglist[1], XmNmarginBottom, 8);
 	/*XtSetArg (arglist[2], XmNmarginRight, 50);*/
 	trace->menu.pdsubbutton[trace->menu.pds] = XmCreatePushButton (trace->menu.pdentry[trace->menu.pdm], "", arglist, 2);
-	XtAddCallback (trace->menu.pdsubbutton[trace->menu.pds], XmNactivateCallback, callback, trace);
+	DAddCallback (trace->menu.pdsubbutton[trace->menu.pds], XmNactivateCallback, callback, trace);
 	XtManageChild (trace->menu.pdsubbutton[trace->menu.pds]);
     }
     dm_menu_subentry (trace, (cur_accel ? "Curr":"Current"), 'C', cur_accel, cur_accel_string, callback);
@@ -603,7 +603,7 @@ void dm_menu_subentry_colors (
 *  but that crashes if a font isn't found.
 */
 XFontStruct *grab_font (
-    TRACE	*trace,
+    Trace	*trace,
     char	*font_name)		/* Name of the font */
 {
     int	num;
@@ -621,7 +621,7 @@ XFontStruct *grab_font (
 }
 
 /* Create a trace display and link it into the global information */
-TRACE *create_trace (
+Trace *create_trace (
     int		xs,
     int		ys,
     int		xp,
@@ -630,7 +630,7 @@ TRACE *create_trace (
     /*    int		x1,x2;
 	  unsigned int junk; */
     int		i;
-    TRACE	*trace;
+    Trace	*trace;
     int		argc_copy;
     char	**argv_copy;
     XColor	xcolor,xcolor2;
@@ -673,7 +673,7 @@ TRACE *create_trace (
     XtSetArg (arglist[1], XmNy, 350);
     /*CCCCCC XtSetArg (arglist[4], XmNacceptFocus, TRUE); */
     trace->main = XmCreateMainWindow (trace->toplevel,"main", arglist, 2);
-    /*XtAddCallback (trace->main, XmNfocusCallback, win_focus_cb, trace);*/
+    /*DAddCallback (trace->main, XmNfocusCallback, win_focus_cb, trace);*/
     
     /* Find the colors to use */
     XtSetArg (arglist[0], XmNcolormap, &cmap);
@@ -759,7 +759,7 @@ TRACE *create_trace (
     dm_menu_entry (trace, 	"Cancel", 	'l',	NULL, NULL,	cancel_all_events);
 
     dm_menu_title (trace, "Value", 'V');
-    dm_menu_entry (trace,	"Annotate", 	'\0',	"<Key>F2:", "F2", val_annotate_do_cb);
+    dm_menu_entry (trace,	"Annotate", 	'A',	"<Key>F2:", "F2", val_annotate_do_cb);
     dm_menu_entry (trace, 	"Annotate...",	'n', 	NULL, NULL,	val_annotate_cb);
     dm_menu_entry (trace, 	"Examine",	'E',	NULL, NULL,	val_examine_cb);
     XtSetArg (arglist[0], XmNacceleratorText, XmStringCreateSimple ("MB2") );
@@ -771,9 +771,9 @@ TRACE *create_trace (
     dm_menu_entry (trace, 	"Cancel", 	'l',	NULL, NULL,	cancel_all_events);
 
     dm_menu_title (trace, "Print", 'P');
-    dm_menu_entry (trace, 	"Print...",	'i',	NULL, NULL,	ps_dialog);
+    dm_menu_entry (trace, 	"Print...",	'i',	NULL, NULL,	ps_dialog_cb);
     dm_menu_entry (trace, 	"Print",	'P',	NULL, NULL,	ps_print_direct_cb);
-    dm_menu_entry (trace, 	"Reset",	'e',	NULL, NULL,	ps_reset);
+    dm_menu_entry (trace, 	"Reset",	'e',	NULL, NULL,	ps_reset_cb);
     
     if (DTDEBUG) {
 	dm_menu_title (trace, "Debug", 'D');
@@ -806,7 +806,7 @@ TRACE *create_trace (
     XtSetArg (arglist[2], XmNleftOffset, 7);
     XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_FORM );
     trace->command.begin_but = XmCreatePushButton (trace->command.command, "begin", arglist, 4);
-    XtAddCallback (trace->command.begin_but, XmNactivateCallback, win_begin_cb, trace);
+    DAddCallback (trace->command.begin_but, XmNactivateCallback, win_begin_cb, trace);
     XtManageChild (trace->command.begin_but);
     
     /*** create goto button in command region ***/
@@ -816,7 +816,7 @@ TRACE *create_trace (
     XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_FORM );
     XtSetArg (arglist[4], XmNleftWidget, trace->command.begin_but);
     trace->command.goto_but = XmCreatePushButton (trace->command.command, "goto", arglist, 5);
-    XtAddCallback (trace->command.goto_but, XmNactivateCallback, win_goto_cb, trace);
+    DAddCallback (trace->command.goto_but, XmNactivateCallback, win_goto_cb, trace);
     XtManageChild (trace->command.goto_but);
     
     /*** create end button in command region ***/
@@ -825,7 +825,7 @@ TRACE *create_trace (
     XtSetArg (arglist[2], XmNrightOffset, 15);
     XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_FORM );
     trace->command.end_but = XmCreatePushButton (trace->command.command, "end", arglist, 4);
-    XtAddCallback (trace->command.end_but, XmNactivateCallback, win_end_cb, trace);
+    DAddCallback (trace->command.end_but, XmNactivateCallback, win_end_cb, trace);
     XtManageChild (trace->command.end_but);
     
     /*** create refresh button in command region ***/
@@ -835,7 +835,7 @@ TRACE *create_trace (
     XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_FORM );
     XtSetArg (arglist[4], XmNrightWidget, trace->command.end_but);
     trace->command.refresh_but = XmCreatePushButton (trace->command.command, "refresh", arglist, 5);
-    XtAddCallback (trace->command.refresh_but, XmNactivateCallback, win_refresh_cb, trace);
+    DAddCallback (trace->command.refresh_but, XmNactivateCallback, win_refresh_cb, trace);
     XtManageChild (trace->command.refresh_but);
     
     /*** create resolution button in command region ***/
@@ -844,7 +844,7 @@ TRACE *create_trace (
     XtSetArg (arglist[2], XmNbottomAttachment, XmATTACH_FORM );
     XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple ("Res=123456.7 units") );
     trace->command.reschg_but = XmCreatePushButton (trace->command.command, "res", arglist, 4);
-    XtAddCallback (trace->command.reschg_but, XmNactivateCallback, win_chg_res_cb, trace);
+    DAddCallback (trace->command.reschg_but, XmNactivateCallback, win_chg_res_cb, trace);
     XtManageChild (trace->command.reschg_but);
     /* No more size changes */
     XtSetArg (arglist[0], XmNrecomputeSize, FALSE );
@@ -858,13 +858,13 @@ TRACE *create_trace (
     XtSetArg (arglist[4], XmNbottomOffset, 40);
     XtSetArg (arglist[5], XmNwidth, 18);
     trace->vscroll = XmCreateScrollBar ( trace->command.command, "vscroll", arglist, 6);
-    XtAddCallback (trace->vscroll, XmNincrementCallback, vscroll_unitinc, trace);
-    XtAddCallback (trace->vscroll, XmNdecrementCallback, vscroll_unitdec, trace);
-    XtAddCallback (trace->vscroll, XmNdragCallback, vscroll_drag, trace);
-    XtAddCallback (trace->vscroll, XmNtoBottomCallback, vscroll_bot, trace);
-    XtAddCallback (trace->vscroll, XmNtoTopCallback, vscroll_top, trace);
-    XtAddCallback (trace->vscroll, XmNpageIncrementCallback, vscroll_pageinc, trace);
-    XtAddCallback (trace->vscroll, XmNpageDecrementCallback, vscroll_pagedec, trace);
+    DAddCallback (trace->vscroll, XmNincrementCallback, vscroll_unitinc_cb, trace);
+    DAddCallback (trace->vscroll, XmNdecrementCallback, vscroll_unitdec_cb, trace);
+    DAddCallback (trace->vscroll, XmNdragCallback, vscroll_drag_cb, trace);
+    DAddCallback (trace->vscroll, XmNtoBottomCallback, vscroll_bot_cb, trace);
+    DAddCallback (trace->vscroll, XmNtoTopCallback, vscroll_top_cb, trace);
+    DAddCallback (trace->vscroll, XmNpageIncrementCallback, vscroll_pageinc_cb, trace);
+    DAddCallback (trace->vscroll, XmNpageDecrementCallback, vscroll_pagedec_cb, trace);
     XtManageChild (trace->vscroll);
 
     /* create the horizontal scroll bar */
@@ -876,13 +876,11 @@ TRACE *create_trace (
     XtSetArg (arglist[5], XmNrightWidget, trace->vscroll);
     XtSetArg (arglist[6], XmNheight, 18);
     trace->hscroll = XmCreateScrollBar ( trace->command.command, "hscroll", arglist, 7);
-    XtAddCallback (trace->hscroll, XmNincrementCallback, hscroll_unitinc, trace);
-    XtAddCallback (trace->hscroll, XmNdecrementCallback, hscroll_unitdec, trace);
-    XtAddCallback (trace->hscroll, XmNdragCallback, hscroll_drag, trace);
-    XtAddCallback (trace->hscroll, XmNtoBottomCallback, hscroll_bot, trace);
-    XtAddCallback (trace->hscroll, XmNtoTopCallback, hscroll_top, trace);
-    XtAddCallback (trace->hscroll, XmNpageIncrementCallback, hscroll_pageinc, trace);
-    XtAddCallback (trace->hscroll, XmNpageDecrementCallback, hscroll_pagedec, trace);
+    DAddCallback (trace->hscroll, XmNincrementCallback, hscroll_unitinc_cb, trace);
+    DAddCallback (trace->hscroll, XmNdecrementCallback, hscroll_unitdec_cb, trace);
+    DAddCallback (trace->hscroll, XmNdragCallback, hscroll_drag_cb, trace);
+    DAddCallback (trace->hscroll, XmNpageIncrementCallback, hscroll_pageinc_cb, trace);
+    DAddCallback (trace->hscroll, XmNpageDecrementCallback, hscroll_pagedec_cb, trace);
     XtManageChild (trace->hscroll);
     
     /* create the signal name horizontal scroll bar */
@@ -895,8 +893,8 @@ TRACE *create_trace (
     XtSetArg (arglist[6], XmNheight, 18);
     XtSetArg (arglist[7], XmNprocessingDirection, XmMAX_ON_LEFT);
     trace->command.namescroll = XmCreateScrollBar ( trace->command.command, "namescroll", arglist, 8);
-    XtAddCallback (trace->command.namescroll, XmNvalueChangedCallback, (XtCallbackProc)win_namescroll_change, trace);
-    XtAddCallback (trace->command.namescroll, XmNdragCallback,  (XtCallbackProc)win_namescroll_change, trace);
+    DAddCallback (trace->command.namescroll, XmNvalueChangedCallback, win_namescroll_change_cb, trace);
+    DAddCallback (trace->command.namescroll, XmNdragCallback,  win_namescroll_change_cb, trace);
     XtManageChild (trace->command.namescroll);
     
     /*** create full button in command region ***/
@@ -906,7 +904,7 @@ TRACE *create_trace (
     XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple ("Full") );
     XtSetArg (arglist[4], XmNbottomAttachment, XmATTACH_FORM );
     trace->command.resfull_but = XmCreatePushButton (trace->command.command, "full", arglist, 5);
-    XtAddCallback (trace->command.resfull_but, XmNactivateCallback, win_full_res_cb, trace);
+    DAddCallback (trace->command.resfull_but, XmNactivateCallback, win_full_res_cb, trace);
     XtManageChild (trace->command.resfull_but);
     
     /*** create zoom button in command region ***/
@@ -916,7 +914,7 @@ TRACE *create_trace (
     XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple ("Zoom") );
     XtSetArg (arglist[4], XmNbottomAttachment, XmATTACH_FORM );
     trace->command.reszoom_but = XmCreatePushButton (trace->command.command, "zoom", arglist, 5);
-    XtAddCallback (trace->command.reszoom_but, XmNactivateCallback, win_zoom_res_cb, trace);
+    DAddCallback (trace->command.reszoom_but, XmNactivateCallback, win_zoom_res_cb, trace);
     XtManageChild (trace->command.reszoom_but);
 
     /*** create resolution decrease button in command region ***/
@@ -927,7 +925,7 @@ TRACE *create_trace (
     XtSetArg (arglist[4], XmNbottomAttachment, XmATTACH_FORM );
     XtSetArg (arglist[5], XmNarrowDirection, XmARROW_LEFT );
     trace->command.resdec_but = XmCreateArrowButton (trace->command.command, "decres", arglist, 6);
-    XtAddCallback (trace->command.resdec_but, XmNactivateCallback, win_dec_res_cb, trace);
+    DAddCallback (trace->command.resdec_but, XmNactivateCallback, win_dec_res_cb, trace);
     XtManageChild (trace->command.resdec_but);
     
     /*** create resolution increase button in command region ***/
@@ -938,7 +936,7 @@ TRACE *create_trace (
     XtSetArg (arglist[4], XmNbottomAttachment, XmATTACH_FORM );
     XtSetArg (arglist[5], XmNarrowDirection, XmARROW_RIGHT );
     trace->command.resinc_but = XmCreateArrowButton (trace->command.command, "incres", arglist, 6);
-    XtAddCallback (trace->command.resinc_but, XmNactivateCallback, win_inc_res_cb, trace);
+    DAddCallback (trace->command.resinc_but, XmNactivateCallback, win_inc_res_cb, trace);
     XtManageChild (trace->command.resinc_but);
     
     /****************************************
@@ -954,8 +952,9 @@ TRACE *create_trace (
     XtSetArg (arglist[6], XtNtranslations, XtParseTranslationTable (translations));
     trace->work = XmCreateDrawingArea (trace->command.command,"work", arglist, 7);
 
-    XtAddCallback (trace->work, XmNexposeCallback, win_expose_cb, trace);
-    XtAddCallback (trace->work, XmNresizeCallback, win_resize_cb, trace);
+    DAddCallback (trace->work, XmNexposeCallback, win_expose_cb, trace);
+    DAddCallback (trace->work, XmNresizeCallback, win_resize_cb, trace);
+    XtInstallAllAccelerators (trace->work, trace->work);
     XtManageChild (trace->work);
     
     XtManageChild (trace->main);
@@ -972,7 +971,11 @@ TRACE *create_trace (
 
     XSetFont (global->display, trace->gc, global->signal_font->fid);
 
-    ps_reset (NULL, trace, NULL);
+    /* Hack into scroll bar intrinsics */
+    draw_scroll_hook_cb_expose ();
+
+    /* Reset requestors and prepare a redraw */
+    ps_reset_cb (NULL, trace, NULL);
 
     config_trace_defaults (trace);
     

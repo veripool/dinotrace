@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_cursor.c --- cursor requestors, events, etc
  *
@@ -55,23 +55,17 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
 #include "dinotrace.h"
+
 #include "functions.h"
 
 /****************************** UTILITIES ******************************/
 
 void    cur_remove (
     /* Cursor is removed from list, but not freed! */
-    CURSOR	*csr_ptr)	/* Cursor to remove */
+    DCursor	*csr_ptr)	/* Cursor to remove */
 {
-    CURSOR	*next_csr_ptr, *prev_csr_ptr;
+    DCursor	*next_csr_ptr, *prev_csr_ptr;
     
     if (DTPRINT_ENTRY) printf ("In cur_remove\n");
     
@@ -98,12 +92,12 @@ void cur_add (
     ColorNum	color,
     CursorType	type)
 {
-    CURSOR *new_csr_ptr;
-    CURSOR *prev_csr_ptr, *csr_ptr;
+    DCursor *new_csr_ptr;
+    DCursor *prev_csr_ptr, *csr_ptr;
     
     if (DTPRINT_ENTRY) printf ("In cur_add - time=%d\n",ctime);
     
-    new_csr_ptr = DNewCalloc (CURSOR);
+    new_csr_ptr = DNewCalloc (DCursor);
     new_csr_ptr->time = ctime;
     new_csr_ptr->color = color;
     new_csr_ptr->type = type;
@@ -145,7 +139,7 @@ void cur_add (
 void cur_delete_of_type (
     CursorType	type)
 {
-    CURSOR	*csr_ptr,*new_csr_ptr;
+    DCursor	*csr_ptr,*new_csr_ptr;
 
     for (csr_ptr = global->cursor_head; csr_ptr; ) {
 	new_csr_ptr = csr_ptr;
@@ -159,7 +153,7 @@ void cur_delete_of_type (
 
 void cur_print (FILE *writefp)
 {
-    CURSOR	*csr_ptr;
+    DCursor	*csr_ptr;
     char strg[MAXTIMELEN];
 
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
@@ -178,10 +172,10 @@ void cur_print (FILE *writefp)
 }
 
 DTime cur_time_first (
-    TRACE 	*trace)
+    Trace 	*trace)
     /* Return time of the first cursor, or BOT if none */
 {
-    CURSOR	*csr_ptr;
+    DCursor	*csr_ptr;
 
     csr_ptr = global->cursor_head;
     if (csr_ptr) {
@@ -193,10 +187,10 @@ DTime cur_time_first (
 }
 
 DTime cur_time_last (
-    TRACE 	*trace)
+    Trace 	*trace)
     /* Return time of the last cursor, or EOT if none */
 {
-    CURSOR	*csr_ptr;
+    DCursor	*csr_ptr;
 
     for (csr_ptr = global->cursor_head; csr_ptr && csr_ptr->next; csr_ptr = csr_ptr->next) ;
     if (csr_ptr) {
@@ -212,7 +206,7 @@ DTime cur_time_last (
 
 void    cur_add_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In cur_add_cb - trace=%p\n",trace);
@@ -230,7 +224,7 @@ void    cur_add_cb (
 
 void    cur_mov_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     
@@ -246,7 +240,7 @@ void    cur_mov_cb (
 
 void    cur_del_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     
@@ -262,10 +256,10 @@ void    cur_del_cb (
 
 void    cur_clr_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
-    CURSOR	*csr_ptr;
+    DCursor	*csr_ptr;
     
     if (DTPRINT_ENTRY) printf ("In cur_clr_cb.\n");
     
@@ -284,7 +278,7 @@ void    cur_clr_cb (
 
 void    cur_highlight_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In cur_highlight_cb - trace=%p\n",trace);
@@ -304,7 +298,7 @@ void    cur_highlight_cb (
 
 void    cur_add_ev (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XButtonPressedEvent	*ev)
 {
     DTime	time;
@@ -324,14 +318,14 @@ void    cur_add_ev (
 
 void    cur_move_ev (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XButtonPressedEvent	*ev)
 {
     DTime	time;
     Position	x1,x2,y1,y2;
     static	last_x = 0;
     XEvent	event;
-    CURSOR	*csr_ptr;
+    DCursor	*csr_ptr;
     XMotionEvent *em;
     XButtonEvent *eb;
     
@@ -425,10 +419,10 @@ void    cur_move_ev (
 
 void    cur_delete_ev (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XButtonPressedEvent	*ev)
 {
-    CURSOR	*csr_ptr;
+    DCursor	*csr_ptr;
     
     if (DTPRINT_ENTRY) printf ("In cur_delete_ev - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -445,10 +439,10 @@ void    cur_delete_ev (
 
 void    cur_highlight_ev (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XButtonPressedEvent	*ev)
 {
-    CURSOR	*csr_ptr;
+    DCursor	*csr_ptr;
     
     if (DTPRINT_ENTRY) printf ("In cur_highlight_ev - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
     if (ev->type != ButtonPress || ev->button!=1) return;

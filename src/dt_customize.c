@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_customize.c --- customization requestor
  *
@@ -55,14 +55,8 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
+#include "dinotrace.h"
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
 #include <Xm/FileSB.h>
 #include <Xm/Form.h>
 #include <Xm/RowColumn.h>
@@ -74,14 +68,14 @@ static char rcsid[] = "$Id$";
 #include <Xm/Label.h>
 #include <Xm/BulletinB.h>
 
-#include "dinotrace.h"
 #include "functions.h"
 
+/***********************************************************************/
 
 
 void cus_dialog_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct *cb)
 {
     char		title[MAXFNAMELEN + 15];
@@ -249,7 +243,7 @@ void cus_dialog_cb (
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNy, 300);
 	trace->custom.b1 = XmCreatePushButton (trace->custom.customize,"ok",arglist,3);
-	XtAddCallback (trace->custom.b1, XmNactivateCallback, cus_ok_cb, trace);
+	DAddCallback (trace->custom.b1, XmNactivateCallback, cus_ok_cb, trace);
 	XtManageChild (trace->custom.b1);
 	
 	/* create apply button */
@@ -257,7 +251,7 @@ void cus_dialog_cb (
 	XtSetArg (arglist[1], XmNx, 70);
 	XtSetArg (arglist[2], XmNy, 300);
 	trace->custom.b2 = XmCreatePushButton (trace->custom.customize,"apply",arglist,3);
-	XtAddCallback (trace->custom.b2, XmNactivateCallback, cus_apply_cb, trace);
+	DAddCallback (trace->custom.b2, XmNactivateCallback, cus_apply_cb, trace);
 	XtManageChild (trace->custom.b2);
 	
 	/* create cancel button */
@@ -265,7 +259,7 @@ void cus_dialog_cb (
 	XtSetArg (arglist[1], XmNx, 140);
 	XtSetArg (arglist[2], XmNy, 300);
 	trace->custom.b3 = XmCreatePushButton (trace->custom.customize,"cancel",arglist,3);
-	XtAddCallback (trace->custom.b3, XmNactivateCallback, unmanage_cb, trace->custom.customize);
+	DAddCallback (trace->custom.b3, XmNactivateCallback, unmanage_cb, trace->custom.customize);
 	XtManageChild (trace->custom.b3);
 	
 	XtManageChild (trace->custom.rpage);
@@ -318,7 +312,7 @@ void cus_dialog_cb (
 
 void cus_reread_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("in cus_reread_cb trace=%p\n",trace);
@@ -331,7 +325,7 @@ void cus_reread_cb (
 
 void	cus_restore_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("in cus_restore_cb trace=%p\n",trace);
@@ -346,7 +340,7 @@ void	cus_restore_cb (
 
 void	cus_ok_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     int hgt;
@@ -392,7 +386,7 @@ void	cus_ok_cb (
 
 void	cus_apply_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In cus_apply_cb - trace=%p\n",trace);
@@ -408,7 +402,7 @@ void	cus_apply_cb (
 
 void cus_read_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmFileSelectionBoxCallbackStruct *cb)
 {
     int		cfg_num;
@@ -419,8 +413,8 @@ void cus_read_cb (
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Read Dinotrace File") );
 	trace->cusread.dialog = XmCreateFileSelectionDialog ( trace->main, "file", arglist, 2);
-	XtAddCallback (trace->cusread.dialog, XmNokCallback, cus_read_ok_cb, trace);
-	XtAddCallback (trace->cusread.dialog, XmNcancelCallback, unmanage_cb, trace->cusread.dialog);
+	DAddCallback (trace->cusread.dialog, XmNokCallback, cus_read_ok_cb, trace);
+	DAddCallback (trace->cusread.dialog, XmNcancelCallback, unmanage_cb, trace->cusread.dialog);
 	XtUnmanageChild ( XmFileSelectionBoxGetChild (trace->cusread.dialog, XmDIALOG_HELP_BUTTON));
 	
 	XtSetArg (arglist[0], XmNhorizontalSpacing, 10);
@@ -488,7 +482,7 @@ void cus_read_cb (
 
 void cus_read_ok_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmFileSelectionBoxCallbackStruct *cb)
 {
     char	*tmp;

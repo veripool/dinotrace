@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dinotrace.c --- main routine and documentation
  *
@@ -55,15 +55,8 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
+#include "dinotrace.h"
 
-#include <stdio.h>
-#include <math.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
 #include <Xm/Form.h>
 #include <Xm/PushB.h>
 #include <Xm/ToggleB.h>
@@ -71,18 +64,18 @@ static char rcsid[] = "$Id$";
 #include <Xm/Text.h>
 #include <Xm/BulletinB.h>
 #include <Xm/RowColumn.h>
+#include <Xm/RowColumnP.h>
 #include <Xm/Label.h>
+#include <Xm/LabelP.h>
 
-#include "dinotrace.h"
 #include "functions.h"
-
 
 /****************************** UTILITIES ******************************/
 
 void    value_to_string (
-    TRACE *trace,
+    Trace *trace,
     char *strg,
-    unsigned int cptr[],
+    uint_t cptr[],
     char seperator)		/* What to print between the values */
 {
     if (cptr[3]) {
@@ -120,13 +113,13 @@ void    value_to_string (
 }
 
 void    string_to_value (
-    TRACE *trace,
+    Trace *trace,
     char *strg,
-    unsigned int cptr[])
+    uint_t cptr[])
 {
     register char value;
-    unsigned int MSO = (7<<29);		/* Most significant hex digit */
-    unsigned int MSH = (15<<28);	/* Most significant octal digit */
+    uint_t MSO = (7<<29);		/* Most significant hex digit */
+    uint_t MSH = (15<<28);	/* Most significant octal digit */
     register char *cp;
 
     cptr[0] = cptr[1] = cptr[2] = cptr[3] = 0;
@@ -163,8 +156,8 @@ void    string_to_value (
 }
 
 void    cptr_to_search_value (
-    SIGNAL_LW	*cptr,
-    unsigned int value[])
+    SignalLW	*cptr,
+    uint_t value[])
 {
     value[0] = value[1] = value[2] = value[3] = 0;
     switch (cptr->sttime.state) {
@@ -178,26 +171,26 @@ void    cptr_to_search_value (
 	break;
 	
       case STATE_B32:
-	value[0] = *((unsigned int *)cptr+1);
+	value[0] = *((uint_t *)cptr+1);
 	break;
 	
       case STATE_B128:
-	value[0] = *((unsigned int *)cptr+1);
-	value[1] = *((unsigned int *)cptr+2);
-	value[2] = *((unsigned int *)cptr+3);
-	value[3] = *((unsigned int *)cptr+4);
+	value[0] = *((uint_t *)cptr+1);
+	value[1] = *((uint_t *)cptr+2);
+	value[2] = *((uint_t *)cptr+3);
+	value[3] = *((uint_t *)cptr+4);
 	break;
     } /* switch */
 }
 
 void	val_update_search ()
 {
-    TRACE	*trace;
-    SIGNAL	*sig_ptr;
-    SIGNAL_LW	*cptr;
+    Trace	*trace;
+    Signal	*sig_ptr;
+    SignalLW	*cptr;
     int		cursorize;
     register int i;
-    CURSOR	*csr_ptr;
+    DCursor	*csr_ptr;
     Boolean	any_enabled;
     Boolean	matches[MAX_SRCH];	/* Cache the wildmat for each bit, so searching is faster */
 
@@ -231,12 +224,12 @@ void	val_update_search ()
 		    sig_ptr->srch_ena[i] = FALSE;
 		}
 
-		cptr = (SIGNAL_LW *)(sig_ptr->bptr);
+		cptr = (SignalLW *)(sig_ptr->bptr);
 		for (; (cptr->sttime.time != EOT); cptr += sig_ptr->lws) {
 		    switch (cptr->sttime.state) {
 		      case STATE_B32:
 			for (i=0; i<MAX_SRCH; i++) {
-			    if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
+			    if ( ( global->val_srch[i].value[0]== *((uint_t *)cptr+1) )
 				&& ( global->val_srch[i].value[1] == 0) 
 				&& ( global->val_srch[i].value[2] == 0)
 				&& ( global->val_srch[i].value[3] == 0)
@@ -251,10 +244,10 @@ void	val_update_search ()
 			
 		      case STATE_B128:
 			for (i=0; i<MAX_SRCH; i++) {
-			    if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
-				&& ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
-				&& ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
-				&& ( global->val_srch[i].value[3]== *((unsigned int *)cptr+4) )
+			    if ( ( global->val_srch[i].value[0]== *((uint_t *)cptr+1) )
+				&& ( global->val_srch[i].value[1]== *((uint_t *)cptr+2) )
+				&& ( global->val_srch[i].value[2]== *((uint_t *)cptr+3) )
+				&& ( global->val_srch[i].value[3]== *((uint_t *)cptr+4) )
 				&& ( matches[i] || wildmat (sig_ptr->signame, global->val_srch[i].signal))  ) {
 				matches[i] = TRUE;
 				if ( global->val_srch[i].color != 0)  sig_ptr->srch_ena[i] = TRUE;
@@ -291,8 +284,8 @@ void	val_update_search ()
 
 void	val_states_update ()
 {
-    TRACE	*trace;
-    SIGNAL	*sig_ptr;
+    Trace	*trace;
+    Signal	*sig_ptr;
 
     if (DTPRINT_ENTRY) printf ("In update_signal_states\n");
 
@@ -310,7 +303,7 @@ void	val_states_update ()
 
 void    val_examine_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     
@@ -326,7 +319,7 @@ void    val_examine_cb (
 
 void    val_highlight_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In val_highlight_cb - trace=%p\n",trace);
@@ -345,17 +338,48 @@ void    val_highlight_cb (
 
 /****************************** EVENTS ******************************/
 
-char *val_examine_popup_string (
+char *val_examine_popup_sig_string (
     /* Return string with examine information in it */
-    TRACE	*trace,
-    DTime	time,
-    SIGNAL	*sig_ptr)
+    Trace	*trace,
+    Signal	*sig_ptr)
 {
-    SIGNAL_LW	*cptr;
     static char	strg[2000];
     char	strg2[2000];
-    int		value[4];
-    int		rows, cols, bit, bit_value, row, col, par;
+    
+    if (DTPRINT_ENTRY) printf ("val_examine_popup_sig_string\n");
+
+    strcpy (strg, sig_ptr->signame);
+	
+    /* Debugging information */
+    if (DTDEBUG) {
+	sprintf (strg2, "\nType %d   Lws %d   Blocks %ld\n",
+		 sig_ptr->type, sig_ptr->lws, sig_ptr->blocks);
+	strcat (strg, strg2);
+	sprintf (strg2, "Bits %d   Index %d - %d  Srch_ena %p\n",
+		 sig_ptr->bits, sig_ptr->msb_index, sig_ptr->lsb_index, sig_ptr->srch_ena);
+	strcat (strg, strg2);
+	sprintf (strg2, "File_type %x  File_Pos %d-%d  Mask %08x\n",
+		 sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->file_end_pos, sig_ptr->pos_mask);
+	strcat (strg, strg2);
+	sprintf (strg2, "Value_mask %08x %08x %08x %08x\n",
+		 sig_ptr->value_mask[3], sig_ptr->value_mask[2], sig_ptr->value_mask[1], sig_ptr->value_mask[0]);
+	strcat (strg, strg2);
+    }
+    return (strg);
+}
+	
+char *val_examine_popup_cptr_string (
+    /* Return string with examine information in it */
+    Trace	*trace,
+    Signal	*sig_ptr,
+    DTime	time)
+{
+    SignalLW	*cptr;
+    static char	strg[2000];
+    char	strg2[2000];
+    uint_t	value[4];
+    int		rows, cols, bit, row, col, par;
+    uint_t	bit_value;
     char	*format;
     
     if (DTPRINT_ENTRY) printf ("\ttime = %d, signal = %s\n", time, sig_ptr->signame);
@@ -463,52 +487,36 @@ char *val_examine_popup_string (
 	
 	break;
     } /* Case */
-    
-    /* Debugging information */
-    if (DTDEBUG) {
-	sprintf (strg2, "\nState %d\n", cptr->sttime.state);
-	strcat (strg, strg2);
-	sprintf (strg2, "Type %d   Lws %d   Blocks %ld\n",
-		 sig_ptr->type, sig_ptr->lws, sig_ptr->blocks);
-	strcat (strg, strg2);
-	sprintf (strg2, "Bits %d   Index %d - %d  Srch_ena %p\n",
-		 sig_ptr->bits, sig_ptr->msb_index, sig_ptr->lsb_index, sig_ptr->srch_ena);
-	strcat (strg, strg2);
-	sprintf (strg2, "File_type %x  File_Pos %d-%d  Mask %08x\n",
-		 sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->file_end_pos, sig_ptr->pos_mask);
-	strcat (strg, strg2);
-	sprintf (strg2, "Value_mask %08x %08x %08x %08x\n",
-		 sig_ptr->value_mask[3], sig_ptr->value_mask[2], sig_ptr->value_mask[1], sig_ptr->value_mask[0]);
-	strcat (strg, strg2);
-    }
-    
     return (strg);
 }
 	
 void    val_examine_popup (
     /* Create the popup menu for val_examine, based on cursor position x,y */
-    TRACE	*trace,
-    Position	x,
-    Position	y,
+    Trace	*trace,
     XButtonPressedEvent	*ev)
 {
     DTime	time;
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     char	*strg = "No information here";
     XmString	xs;
     
-    time = posx_to_time (trace, x);
-    sig_ptr = posy_to_signal (trace, y);
+    time = posx_to_time (trace, ev->x);
+    sig_ptr = posy_to_signal (trace, ev->y);
+    if (DTPRINT_ENTRY) printf ("In val_examine_popup %d\n", __LINE__);
     
     if (trace->examine.popup && XtIsManaged(trace->examine.popup)) {
 	XtUnmanageChild (trace->examine.popup);
-	/* XtUnmanageChild (trace->examine.label); */
+	XtDestroyWidget (trace->examine.popup);
 	trace->examine.popup = NULL;
     }
       
-    if (time && sig_ptr) {
+    if (sig_ptr) {
 	/* Get information */
-	strg = val_examine_popup_string (trace, time, sig_ptr);
+	if (time>=0) {
+	    strg = val_examine_popup_cptr_string (trace, sig_ptr, time);
+	} else {
+	    strg = val_examine_popup_sig_string (trace, sig_ptr);
+	}
     }
 	
     XtSetArg (arglist[0], XmNentryAlignment, XmALIGNMENT_BEGINNING);
@@ -522,13 +530,19 @@ void    val_examine_popup (
 
     XmMenuPosition (trace->examine.popup, ev);
     XtManageChild (trace->examine.popup);
+
+    /* We definately shouldn't have to force exposure of the popup. */
+    /* However, the reality is lessTif doesn't seem to draw the text unless we do */
+    /* This is a unknown bug in lessTif; it works fine on the true Motif */
+    (xmRowColumnClassRec.core_class.expose) (trace->examine.popup, (XEvent*) ev, NULL);
+    (xmLabelClassRec.core_class.expose) (trace->examine.label, (XEvent*) ev, NULL);
 }
 	
 void    val_examine_unpopup_act (
     /* callback or action! */
     Widget		w)
 {
-    TRACE	*trace;		/* Display information */
+    Trace	*trace;		/* Display information */
     
     if (DTPRINT_ENTRY) printf ("In val_examine_unpopup_act\n");
     
@@ -554,11 +568,11 @@ char *events[40] = {"","", "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelea
 
 void    val_examine_ev (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XButtonPressedEvent	*ev)
 {
     XEvent	event;
-    XMotionEvent *em;
+    XButtonPressedEvent *em;
     int		update_pending = FALSE;
     
     if (DTPRINT_ENTRY) printf ("In val_examine_ev, button=%d state=%d\n", ev->button, ev->state);
@@ -573,7 +587,7 @@ void    val_examine_ev (
 		 ButtonReleaseMask|PointerMotionMask|StructureNotifyMask|ExposureMask);
     
     /* Create */
-    val_examine_popup (trace, ev->x, ev->y, ev);
+    val_examine_popup (trace, ev);
     
     /* loop and service events until button is released */
     while ( 1 ) {
@@ -600,8 +614,8 @@ void    val_examine_ev (
 	/* Do it later if events pending, otherwise dragging is SLOWWWW */
 	if (update_pending && !XPending (global->display)) {
 	    update_pending = FALSE;
-	    em = (XMotionEvent *)&event;
-	    val_examine_popup (trace, em->x, em->y, NULL);
+	    em = (XButtonPressedEvent *)&event;
+	    val_examine_popup (trace, em);
 	}
 
 	if (global->redraw_needed && !XtAppPending (global->appcontext)) {
@@ -624,7 +638,7 @@ void    val_examine_popup_act (
     String		params,
     Cardinal		*num_params)
 {
-    TRACE	*trace;		/* Display information */
+    Trace	*trace;		/* Display information */
     int		prev_cursor;
     
     if (ev->type != ButtonPress) return;
@@ -643,7 +657,7 @@ void    val_examine_popup_act (
 }
 
 void    val_search_widget_update (
-    TRACE	*trace)
+    Trace	*trace)
 {
     VSearchNum search_pos;
     char	strg[MAXVALUELEN];
@@ -669,7 +683,7 @@ void    val_search_widget_update (
 
 void    val_search_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     int		i;
@@ -769,7 +783,7 @@ void    val_search_cb (
 	    XtSetArg (arglist[8], XmNleftOffset, 20);
 	    XtSetArg (arglist[9], XmNleftWidget, trace->value.cursor[i]);
 	    trace->value.text[i] = XmCreateText (trace->value.form,"textn",arglist,10);
-	    XtAddCallback (trace->value.text[i], XmNactivateCallback, val_search_ok_cb, trace);
+	    DAddCallback (trace->value.text[i], XmNactivateCallback, val_search_ok_cb, trace);
 	    XtManageChild (trace->value.text[i]);
 	    
 	    /* create the signal text widget */
@@ -784,7 +798,7 @@ void    val_search_cb (
 	    XtSetArg (arglist[8], XmNleftOffset, 20);
 	    XtSetArg (arglist[9], XmNleftWidget, trace->value.text[i]);
 	    trace->value.signal[i] = XmCreateText (trace->value.form,"texts",arglist,10);
-	    XtAddCallback (trace->value.signal[i], XmNactivateCallback, val_search_ok_cb, trace);
+	    DAddCallback (trace->value.signal[i], XmNactivateCallback, val_search_ok_cb, trace);
 	    XtManageChild (trace->value.signal[i]);
 	}
 
@@ -795,7 +809,7 @@ void    val_search_cb (
 	XtSetArg (arglist[3], XmNtopOffset, 5);
 	XtSetArg (arglist[4], XmNtopWidget, trace->value.signal[MAX_SRCH-1]);
 	trace->value.ok = XmCreatePushButton (trace->value.form,"ok",arglist,5);
-	XtAddCallback (trace->value.ok, XmNactivateCallback, val_search_ok_cb, trace);
+	DAddCallback (trace->value.ok, XmNactivateCallback, val_search_ok_cb, trace);
 	XtManageChild (trace->value.ok);
 	
 	/* create apply button */
@@ -805,7 +819,7 @@ void    val_search_cb (
 	XtSetArg (arglist[3], XmNtopOffset, 5);
 	XtSetArg (arglist[4], XmNtopWidget, trace->value.signal[MAX_SRCH-1]);
 	trace->value.apply = XmCreatePushButton (trace->value.form,"apply",arglist,5);
-	XtAddCallback (trace->value.apply, XmNactivateCallback, val_search_apply_cb, trace);
+	DAddCallback (trace->value.apply, XmNactivateCallback, val_search_apply_cb, trace);
 	XtManageChild (trace->value.apply);
 	
 	/* create cancel button */
@@ -815,7 +829,7 @@ void    val_search_cb (
 	XtSetArg (arglist[3], XmNtopOffset, 5);
 	XtSetArg (arglist[4], XmNtopWidget, trace->value.signal[MAX_SRCH-1]);
 	trace->value.cancel = XmCreatePushButton (trace->value.form,"cancel",arglist,5);
-	XtAddCallback (trace->value.cancel, XmNactivateCallback, unmanage_cb, trace->value.search);
+	DAddCallback (trace->value.cancel, XmNactivateCallback, unmanage_cb, trace->value.search);
 	XtManageChild (trace->value.cancel);
     }
     
@@ -828,7 +842,7 @@ void    val_search_cb (
 
 void    val_search_ok_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     char		*strg;
@@ -866,7 +880,7 @@ void    val_search_ok_cb (
 
 void    val_search_apply_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     if (DTPRINT_ENTRY) printf ("In val_search_apply_cb - trace=%p\n",trace);
@@ -877,12 +891,12 @@ void    val_search_apply_cb (
 
 void    val_highlight_ev (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XButtonPressedEvent	*ev)
 {
     DTime	time;
-    SIGNAL	*sig_ptr;
-    SIGNAL_LW	*cptr;
+    Signal	*sig_ptr;
+    SignalLW	*cptr;
     VSearchNum	search_pos;
     
     if (DTPRINT_ENTRY) printf ("In val_highlight_ev - trace=%p\n",trace);
@@ -921,7 +935,7 @@ void    val_highlight_ev (
 
 void    val_annotate_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
     
 {
@@ -950,7 +964,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
 	trace->annotate.text = XmCreateText (trace->annotate.dialog,"",arglist,6);
 	XtManageChild (trace->annotate.text);
-	XtAddCallback (trace->annotate.text, XmNactivateCallback, val_annotate_ok_cb, trace);
+	DAddCallback (trace->annotate.text, XmNactivateCallback, val_annotate_ok_cb, trace);
 	
 	/* Cursor enables */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include which user (solid) cursor colors:") );
@@ -1008,7 +1022,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNy, 280);
 	trace->annotate.ok = XmCreatePushButton (trace->annotate.dialog,"ok",arglist,3);
-	XtAddCallback (trace->annotate.ok, XmNactivateCallback, val_annotate_ok_cb, trace);
+	DAddCallback (trace->annotate.ok, XmNactivateCallback, val_annotate_ok_cb, trace);
 	XtManageChild (trace->annotate.ok);
 	
 	/* create apply button */
@@ -1016,7 +1030,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[1], XmNx, 70);
 	XtSetArg (arglist[2], XmNy, 280);
 	trace->annotate.apply = XmCreatePushButton (trace->annotate.dialog,"apply",arglist,3);
-	XtAddCallback (trace->annotate.apply, XmNactivateCallback, val_annotate_apply_cb, trace);
+	DAddCallback (trace->annotate.apply, XmNactivateCallback, val_annotate_apply_cb, trace);
 	XtManageChild (trace->annotate.apply);
 	
 	/* create cancel button */
@@ -1024,7 +1038,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[1], XmNx, 140);
 	XtSetArg (arglist[2], XmNy, 280);
 	trace->annotate.cancel = XmCreatePushButton (trace->annotate.dialog,"cancel",arglist,3);
-	XtAddCallback (trace->annotate.cancel, XmNactivateCallback, unmanage_cb, trace->annotate.dialog);
+	DAddCallback (trace->annotate.cancel, XmNactivateCallback, unmanage_cb, trace->annotate.dialog);
 
 	XtManageChild (trace->annotate.cancel);
     }
@@ -1053,7 +1067,7 @@ void    val_annotate_cb (
 
 void    val_annotate_ok_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct *cb)
 {
     char		*strg;
@@ -1081,7 +1095,7 @@ void    val_annotate_ok_cb (
 
 void    val_annotate_apply_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In sig_search_apply_cb - trace=%p\n",trace);
@@ -1092,14 +1106,14 @@ void    val_annotate_apply_cb (
 
 void    val_annotate_do_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     int		i;
-    SIGNAL	*sig_ptr;
-    SIGNAL_LW	*cptr;
+    Signal	*sig_ptr;
+    SignalLW	*cptr;
     FILE	*dump_fp;
-    CURSOR 	*csr_ptr;		/* Current cursor being printed */
+    DCursor 	*csr_ptr;		/* Current cursor being printed */
     char	strg[1000];
     int		csr_num, csr_num_incl;
     int		value[4];
@@ -1115,7 +1129,7 @@ void    val_annotate_do_cb (
     draw_update ();
 
     /* Socket connection */
-#ifndef HAVE_SOCKETS
+#if HAVE_SOCKETS
     socket_create ();
 #endif
 
@@ -1191,7 +1205,7 @@ void    val_annotate_do_cb (
 	    fprintf (dump_fp, "\t(\"%s\"\t", sig_ptr->signame);
 	    if (global->anno_ena_signal[sig_ptr->color]) fprintf (dump_fp, "%d\t(", sig_ptr->color);
 	    else     fprintf (dump_fp, "nil\t(");
-	    cptr = (SIGNAL_LW *)sig_ptr->cptr;
+	    cptr = (SignalLW *)sig_ptr->cptr;
 
 	    csr_num=0;
 	    for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
@@ -1205,7 +1219,7 @@ void    val_annotate_do_cb (
 			cptr += sig_ptr->lws;
 		    }
 		    if ( (cptr->sttime.time > csr_ptr->time)
-			&& ( cptr != (SIGNAL_LW *)sig_ptr->cptr)) {
+			&& ( cptr != (SignalLW *)sig_ptr->cptr)) {
 			cptr -= sig_ptr->lws;
 		    }
 

@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_printscreen.c --- postscript output routines
  *
@@ -55,22 +55,8 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
+#include "dinotrace.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#ifdef VMS
-# include <math.h>
-# include <descrip.h>
-#endif
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
 #include <Xm/Form.h>
 #include <Xm/PushB.h>
 #include <Xm/PushBG.h>
@@ -81,9 +67,11 @@ static char rcsid[] = "$Id$";
 #include <Xm/Scale.h>
 #include <Xm/Label.h>
 
-#include "dinotrace.h"
 #include "functions.h"
+
 #include "dt_post.h"
+
+/**********************************************************************/
 
 extern void	ps_drawsig(), ps_draw(), ps_draw_grid(), ps_draw_cursors();
 
@@ -92,13 +80,13 @@ extern void	ps_drawsig(), ps_draw(), ps_draw_grid(), ps_draw_cursors();
 
 void    ps_range_sensitives_cb (
     Widget		w,
-    RANGE_WDGTS		*range_ptr,	/* <<<< NOTE not TRACE!!! */
+    RangeWidgets		*range_ptr,	/* <<<< NOTE not Trace!!! */
     XmSelectionBoxCallbackStruct *cb)
 {
     int		opt;
     int		active;
     char	strg[MAXTIMELEN];
-    TRACE	*trace;
+    Trace	*trace;
 
     if (DTPRINT_ENTRY) printf ("In ps_range_sensitives_cb\n");
 
@@ -138,8 +126,8 @@ void    ps_range_sensitives_cb (
 
 
 void    ps_range_create (
-    TRACE		*trace,
-    RANGE_WDGTS		*range_ptr,
+    Trace		*trace,
+    RangeWidgets		*range_ptr,
     Widget		above,		/* Upper widget for form attachment */
     char		*descrip,	/* Description of selection */
     Boolean		type)		/* True if END, else beginning */
@@ -167,7 +155,7 @@ void    ps_range_create (
 	else XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Window Right Edge") );
 	range_ptr->time_pulldownbutton[3] =
 	    XmCreatePushButtonGadget (range_ptr->time_pulldown,"pdbutton0",arglist,1);
-	XtAddCallback (range_ptr->time_pulldownbutton[3], XmNactivateCallback, (XtCallbackProc)ps_range_sensitives_cb, range_ptr);
+	DAddCallback (range_ptr->time_pulldownbutton[3], XmNactivateCallback, (XtCallbackProc)ps_range_sensitives_cb, range_ptr);
 	XtManageChild (range_ptr->time_pulldownbutton[3]);
 
 	if (range_ptr->type == BEGIN)
@@ -175,7 +163,7 @@ void    ps_range_create (
 	else XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Trace End") );
 	range_ptr->time_pulldownbutton[2] =
 	    XmCreatePushButtonGadget (range_ptr->time_pulldown,"pdbutton0",arglist,1);
-	XtAddCallback (range_ptr->time_pulldownbutton[2], XmNactivateCallback, (XtCallbackProc)ps_range_sensitives_cb, range_ptr);
+	DAddCallback (range_ptr->time_pulldownbutton[2], XmNactivateCallback, (XtCallbackProc)ps_range_sensitives_cb, range_ptr);
 	XtManageChild (range_ptr->time_pulldownbutton[2]);
 
 	if (range_ptr->type == BEGIN)
@@ -183,13 +171,13 @@ void    ps_range_create (
 	else XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Last Cursor") );
 	range_ptr->time_pulldownbutton[1] =
 	    XmCreatePushButtonGadget (range_ptr->time_pulldown,"pdbutton0",arglist,1);
-	XtAddCallback (range_ptr->time_pulldownbutton[1], XmNactivateCallback, (XtCallbackProc)ps_range_sensitives_cb, range_ptr);
+	DAddCallback (range_ptr->time_pulldownbutton[1], XmNactivateCallback, (XtCallbackProc)ps_range_sensitives_cb, range_ptr);
 	XtManageChild (range_ptr->time_pulldownbutton[1]);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Entered Time") );
 	range_ptr->time_pulldownbutton[0] =
 	    XmCreatePushButtonGadget (range_ptr->time_pulldown,"pdbutton0",arglist,1);
-	XtAddCallback (range_ptr->time_pulldownbutton[0], XmNactivateCallback, (XtCallbackProc)ps_range_sensitives_cb, range_ptr);
+	DAddCallback (range_ptr->time_pulldownbutton[0], XmNactivateCallback, (XtCallbackProc)ps_range_sensitives_cb, range_ptr);
 	XtManageChild (range_ptr->time_pulldownbutton[0]);
 
 	XtSetArg (arglist[0], XmNsubMenuId, range_ptr->time_pulldown);
@@ -223,7 +211,7 @@ void    ps_range_create (
 
 
 DTime	ps_range_value (
-    RANGE_WDGTS		*range_ptr)
+    RangeWidgets		*range_ptr)
     /* Read the range value */
 {
     /* Make sure have latest cursor, etc */
@@ -233,9 +221,9 @@ DTime	ps_range_value (
 }
 
 
-void    ps_dialog (
+void    ps_dialog_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
     
 {
@@ -271,7 +259,7 @@ void    ps_dialog (
 	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
 	trace->prntscr.text = XmCreateText (trace->prntscr.form,"",arglist,8);
 	XtManageChild (trace->prntscr.text);
-	XtAddCallback (trace->prntscr.text, XmNactivateCallback, ps_print_req_cb, trace);
+	DAddCallback (trace->prntscr.text, XmNactivateCallback, ps_print_req_cb, trace);
 	
 	/* create label widget for notetext widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Note") );
@@ -293,7 +281,7 @@ void    ps_dialog (
 	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
 	trace->prntscr.notetext = XmCreateText (trace->prntscr.form,"notetext",arglist,8);
 	XtManageChild (trace->prntscr.notetext);
-	XtAddCallback (trace->prntscr.notetext, XmNactivateCallback, ps_print_req_cb, trace);
+	DAddCallback (trace->prntscr.notetext, XmNactivateCallback, ps_print_req_cb, trace);
 	
 	/* Create radio box for page size */
 	trace->prntscr.size_menu = XmCreatePulldownMenu (trace->prntscr.form,"size",arglist,0);
@@ -347,7 +335,7 @@ void    ps_dialog (
 	XtSetArg (arglist[3], XmNtopOffset, 5);
 	XtSetArg (arglist[4], XmNtopWidget, trace->prntscr.end_range.time_text);
 	trace->prntscr.print = XmCreatePushButton (trace->prntscr.form, "print",arglist,5);
-	XtAddCallback (trace->prntscr.print, XmNactivateCallback, ps_print_req_cb, trace);
+	DAddCallback (trace->prntscr.print, XmNactivateCallback, ps_print_req_cb, trace);
 	XtManageChild (trace->prntscr.print);
 	
 	/* create cancel button */
@@ -357,7 +345,7 @@ void    ps_dialog (
 	XtSetArg (arglist[3], XmNtopOffset, 5);
 	XtSetArg (arglist[4], XmNtopWidget, trace->prntscr.end_range.time_text);
 	trace->prntscr.cancel = XmCreatePushButton (trace->prntscr.form,"cancel",arglist,5);
-	XtAddCallback (trace->prntscr.cancel, XmNactivateCallback, unmanage_cb, trace->prntscr.customize);
+	DAddCallback (trace->prntscr.cancel, XmNactivateCallback, unmanage_cb, trace->prntscr.customize);
 	XtManageChild (trace->prntscr.cancel);
 	}
     
@@ -401,7 +389,7 @@ void    ps_dialog (
 
 void    ps_print_direct_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     ps_print_internal (trace);
@@ -409,7 +397,7 @@ void    ps_print_direct_cb (
 
 void    ps_print_req_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     Widget	clicked;
@@ -444,8 +432,7 @@ void    ps_print_req_cb (
     ps_print_internal (trace);
 }
     
-void    ps_print_internal (trace)
-    TRACE		*trace;
+void    ps_print_internal (Trace *trace)
 {
     FILE	*psfile=NULL;
     int		sigs_per_page;
@@ -455,8 +442,8 @@ void    ps_print_internal (trace)
     int		horiz_page, vert_page;
     char	*timeunits;
     int		encapsulated;
-    SIGNAL	*sig_ptr, *sig_end_ptr=NULL;
-    int		numprt;
+    Signal	*sig_ptr, *sig_end_ptr=NULL;
+    uint_t	numprt;
     DTime	printtime;	/* Time current page starts on */
     char	pagenum[20];
     char	sstrg[MAXTIMELEN];
@@ -630,10 +617,10 @@ void    ps_print_internal (trace)
     set_cursor (trace, DC_NORMAL);
 }
 
-void    ps_reset (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
+void    ps_reset_cb (
+    Widget		w,
+    Trace		*trace,
+    XmAnyCallbackStruct	*cb)
 {
     char 		*pchar;
     if (DTPRINT_ENTRY) printf ("In ps_reset - trace=%p",trace);
@@ -650,10 +637,10 @@ void    ps_reset (w,trace,cb)
 }
 
 void ps_draw_grid (trace, psfile, printtime, grid_ptr, draw_numbers)
-    TRACE	*trace;
+    Trace	*trace;
     FILE	*psfile;
     DTime	printtime;	/* Time to start on */
-    GRID	*grid_ptr;		/* Grid information */
+    Grid	*grid_ptr;		/* Grid information */
     Boolean	draw_numbers;		/* Whether to print the times or not */
 { 
     char 	strg[MAXTIMELEN];	/* String value to print out */
@@ -711,13 +698,13 @@ void ps_draw_grid (trace, psfile, printtime, grid_ptr, draw_numbers)
 }
 
 void ps_draw_grids (trace, psfile, printtime)
-    TRACE	*trace;
+    Trace	*trace;
     FILE	*psfile;
     DTime	printtime;
 {           
     int		grid_num;
-    GRID	*grid_ptr;
-    GRID	*grid_smallest_ptr;
+    Grid	*grid_ptr;
+    Grid	*grid_smallest_ptr;
 
     /* WARNING, major weedyness follows: */
     /* Determine which grid has the smallest period and only plot it's lines. */
@@ -744,15 +731,15 @@ void ps_draw_grids (trace, psfile, printtime)
 
 
 void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
-    TRACE	*trace;
+    Trace	*trace;
     FILE	*psfile;
-    SIGNAL	*sig_ptr;	/* Vertical signal to start on */
-    SIGNAL	*sig_end_ptr;	/* Last signal to print */
+    Signal	*sig_ptr;	/* Vertical signal to start on */
+    Signal	*sig_end_ptr;	/* Last signal to print */
     DTime	printtime;	/* Time to start on */
 {
     int c=0,adj,ymdpt,xloc,xend,xstart,ystart;
     int y1,y2;
-    SIGNAL_LW *cptr,*nptr;
+    SignalLW *cptr,*nptr;
     char dvstrg[MAXVALUELEN];
     char vstrg[MAXVALUELEN];
     unsigned int value;
@@ -775,10 +762,10 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	xloc = 0;
 	
 	/* find data start */
-	cptr = (SIGNAL_LW *)sig_ptr->bptr;
+	cptr = (SignalLW *)sig_ptr->bptr;
 	if (printtime >= (*cptr).sttime.time ) {
 	    while (((*cptr).sttime.time != EOT) &&
-		   (printtime > (* (SIGNAL_LW *)((cptr) + sig_ptr->lws)).sttime.time)) {
+		   (printtime > (* (SignalLW *)((cptr) + sig_ptr->lws)).sttime.time)) {
 		cptr += sig_ptr->lws;
 	    }
 	}
@@ -884,10 +871,10 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 
 
 void ps_drawsig (
-    TRACE	*trace,
+    Trace	*trace,
     FILE	*psfile,
-    SIGNAL	*sig_ptr,	/* Vertical signal to start on */
-    SIGNAL	*sig_end_ptr)	/* Last signal to print */
+    Signal	*sig_ptr,	/* Vertical signal to start on */
+    Signal	*sig_end_ptr)	/* Last signal to print */
 {
     int		c=0,ymdpt;
     int		y1;
@@ -914,14 +901,14 @@ void ps_drawsig (
 }
 
 void ps_draw_cursors (
-    TRACE	*trace,
+    Trace	*trace,
     FILE	*psfile,
     DTime	printtime)	/* Time to start on */
 {
     Position	x1,x2,y1,y2;
     char 	strg[MAXTIMELEN];
     int		adj,xend;
-    CURSOR	*csr_ptr;
+    DCursor	*csr_ptr;
     
     /* reset the line attributes */
     fprintf (psfile,"stroke [] 0 setdash\n");

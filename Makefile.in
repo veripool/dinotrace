@@ -156,7 +156,7 @@ configure: configure.in
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
 	@echo "rebuilding the deleted files requires makeinfo."
-	rm -f TAGS *.info* INSTALL
+	rm -f *.info* INSTALL configure
 
 clean mostlyclean distclean maintainer-clean::
 	for dir in $(SUBDIRS); do \
@@ -171,7 +171,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.ev *.evs *.ov *.ovs *.cv *.cvs *.ma *.mas
 
 distclean maintainer-clean::
-	rm -f Makefile config.status config.cache config.log dinotrace
+	rm -f Makefile config.status config.cache config.log dinotrace TAGS
 
 
 TAGFILES=${srcdir}/src/*.c ${srcdir}/src/*.h ${srcdir}/src/[a-z]*.in \

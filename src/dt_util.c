@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_util.c --- misc utilities
  *
@@ -55,33 +55,19 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
+#include "dinotrace.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-#if TM_IN_SYS_TIME
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
-#include <math.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <X11/Xlib.h>
 #include <Xm/MessageB.h>
 #include <Xm/SelectioB.h>
-#include <Xm/FileSB.h>
 #include <Xm/Form.h>
 #include <Xm/PushB.h>
 #include <Xm/PushBG.h>
 #include <Xm/ToggleB.h>
 #include <Xm/RowColumn.h>
 
-#include "dinotrace.h"
 #include "functions.h"
+
+/**********************************************************************/
 
 extern void prompt_ok_cb(), fil_ok_cb();
 
@@ -165,6 +151,69 @@ char *date_string (
 }
 
 
+#if ! HAVE_STRDUP
+char *strdup(char *s)
+{
+    char *d;
+    d=(char *)malloc(strlen(s)+1);
+    strcpy (d, s);
+    return (d);
+}
+#endif
+
+#define FGETS_SIZE_INC	1024	/* Characters to increase length by */
+
+void fgets_dynamic (
+    /* fgets a line, with dynamically allocated line storage */
+    char **line_pptr,	/* & Line pointer */
+    uint_t *length_ptr,	/* & Length of the buffer */
+    FILE *readfp)
+{
+    if (*length_ptr == 0) {
+	*length_ptr = FGETS_SIZE_INC;
+	*line_pptr = XtMalloc (*length_ptr);
+    }
+
+    fgets ((*line_pptr), (*length_ptr), readfp);
+    
+    /* Did fgets overflow the string? */
+    while (*((*line_pptr) + *length_ptr - 2)!='\n'
+	   && strlen(*line_pptr)==(*length_ptr - 1)) {
+	/* Alloc more */
+	*length_ptr += FGETS_SIZE_INC;
+	*line_pptr = XtRealloc (*line_pptr, *length_ptr);
+	/* Read remainder */
+	fgets (((*line_pptr) + *length_ptr - 2) + 1 - FGETS_SIZE_INC,
+	       FGETS_SIZE_INC+1, readfp);
+    }
+}
+
+/* Keep only the directory portion of a file spec */
+void file_directory (
+    char	*strg)
+{
+    char 	*pchar;
+    
+#ifdef VMS
+    if ((pchar=strrchr (strg,']')) != NULL )
+	* (pchar+1) = '\0';
+    else
+	if ((pchar=strrchr (strg,':')) != NULL )
+	    * (pchar+1) = '\0';
+	else
+	    strg[0] = '\0';
+#else
+    if ((pchar=strrchr (strg,'/')) != NULL )
+	* (pchar+1) = '\0';
+    else
+	strg[0] = '\0';
+#endif
+}
+
+
+/******************************************************************************/
+/* X-windows stuff */
+
 void    unmanage_cb (
     /* Generic unmanage routine, usually for cancel buttons */
     /* NOTE that you pass the widget in the tag area, not the trace!! */
@@ -180,7 +229,7 @@ void    unmanage_cb (
 
 void    cancel_all_events (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In cancel_all_events - trace=%p\n",trace);
@@ -232,42 +281,51 @@ void 	add_event (
     int		type,
     void	(*callback)())
 {
-    TRACE	*trace;
+    Trace	*trace;
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	XtAddEventHandler (trace->work, type, TRUE, callback, trace);
+	XtAddEventHandler (trace->work, type, TRUE,
+			   (XtEventHandler)callback, trace);
     }
 }
 
-void    remove_all_events (
-    TRACE	*trace)
+void    remove_event (
+    int		type,
+    void	(*callback)())
 {
-    TRACE	*trace_ptr;
+    Trace	*trace;
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	XtRemoveEventHandler (trace->work, type, TRUE,
+			      (XtEventHandler)callback, trace);
+    }
+}
 
+
+void    remove_all_events (
+    Trace	*trace)
+{
     if (DTPRINT_ENTRY) printf ("In remove_all_events - trace=%p\n",trace);
     
-    for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
-	/* remove all possible events due to res options */ 
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,res_zoom_click_ev,trace_ptr);
+    /* remove all possible events due to res options */ 
+    remove_event (ButtonPressMask, res_zoom_click_ev);
 	
-	/* remove all possible events due to cursor options */ 
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,cur_add_ev,trace_ptr);
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,cur_move_ev,trace_ptr);
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,cur_delete_ev,trace_ptr);
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,cur_highlight_ev,trace_ptr);
-	
-	/* remove all possible events due to signal options */ 
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,sig_add_ev,trace_ptr);
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,sig_move_ev,trace_ptr);
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,sig_copy_ev,trace_ptr);
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,sig_delete_ev,trace_ptr);
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,sig_highlight_ev,trace_ptr);
-
-	/* remove all possible events due to nvalue options */ 
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,val_examine_ev,trace_ptr);
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,val_highlight_ev,trace_ptr);
-    }
-
+    /* remove all possible events due to cursor options */ 
+    remove_event (ButtonPressMask, cur_add_ev);
+    remove_event (ButtonPressMask, cur_move_ev);
+    remove_event (ButtonPressMask, cur_delete_ev);
+    remove_event (ButtonPressMask, cur_highlight_ev);
+    
+    /* remove all possible events due to signal options */ 
+    remove_event (ButtonPressMask, sig_add_ev);
+    remove_event (ButtonPressMask, sig_move_ev);
+    remove_event (ButtonPressMask, sig_copy_ev);
+    remove_event (ButtonPressMask, sig_delete_ev);
+    remove_event (ButtonPressMask, sig_highlight_ev);
+    
+    /* remove all possible events due to nvalue options */ 
+    remove_event (ButtonPressMask, val_examine_ev);
+    remove_event (ButtonPressMask, val_highlight_ev);
+    
     global->selected_sig = NULL;
 
     /* Set the cursor back to normal */
@@ -275,7 +333,7 @@ void    remove_all_events (
 }
 
 ColorNum submenu_to_color (
-    TRACE	*trace,		/* Display information */
+    Trace	*trace,		/* Display information */
     Widget	w,
     int		base)		/* Loaded when the menu was loaded */
 {
@@ -315,10 +373,10 @@ int option_to_number (
     return (tempi);
 }
 
-TRACE	*widget_to_trace (
+Trace	*widget_to_trace (
     Widget	w)
 {
-    TRACE	*trace;		/* Display information */
+    Trace	*trace;		/* Display information */
     
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->work == w) break;
@@ -328,28 +386,28 @@ TRACE	*widget_to_trace (
 }
 
 void new_time_sigs (
-    SIGNAL	*sig_first_ptr)
+    Signal	*sig_first_ptr)
 {
-    SIGNAL	*sig_ptr;	
+    Signal	*sig_ptr;	
 
     for (sig_ptr = sig_first_ptr; sig_ptr; sig_ptr = sig_ptr->forward) {
 	/* if (DTPRINT)
-	   printf ("next time=%d\n", (* (SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time);
+	   printf ("next time=%d\n", (* (SignalLW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time);
 	   */
 	
 	if ( !sig_ptr->cptr ) {
 	    sig_ptr->cptr = sig_ptr->bptr;
 	}
 
-	if (global->time >= (* (SIGNAL_LW *)(sig_ptr->cptr)).sttime.time ) {
-	    while (((* (SIGNAL_LW *)(sig_ptr->cptr)).sttime.time != EOT) &&
-		   (global->time > (* (SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time)) {
+	if (global->time >= (* (SignalLW *)(sig_ptr->cptr)).sttime.time ) {
+	    while (((* (SignalLW *)(sig_ptr->cptr)).sttime.time != EOT) &&
+		   (global->time > (* (SignalLW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time)) {
 		(sig_ptr->cptr) += sig_ptr->lws;
 	    }
 	}
 	else {
 	    while ((sig_ptr->cptr > sig_ptr->bptr) &&
-		   (global->time < (* (SIGNAL_LW *)(sig_ptr->cptr)).sttime.time)) {
+		   (global->time < (* (SignalLW *)(sig_ptr->cptr)).sttime.time)) {
 		(sig_ptr->cptr) -= sig_ptr->lws;
 	    }
 	}
@@ -357,7 +415,7 @@ void new_time_sigs (
 }
 
 void new_time (
-    TRACE 	*trace)
+    Trace 	*trace)
 {
     if ( global->time > (trace->end_time - TIME_WIDTH (trace)) ) {
         if (DTPRINT_ENTRY) printf ("At end of trace...\n");
@@ -380,16 +438,16 @@ void new_time (
 
 /* Get window size, calculate what fits on the screen and update scroll bars */
 void get_geometry (
-    TRACE	*trace)
+    Trace	*trace)
 {
     int		x,y;
-    unsigned int	width,height,dret;
+    uint_t	width,height,dret;
     Dimension m_time_height = global->time_font->ascent + global->time_font->descent;
     
     XGetGeometry ( global->display, XtWindow (trace->work), (Window *)&dret,
 		 &x, &y, &width, &height, &dret, &dret);
     
-    trace->width = MIN(width, MAXSCREENWIDTH-2);
+    trace->width = MIN(width, (uint_t)MAXSCREENWIDTH-2);
 
     /* See comment in dinotrace.h about y layout */
     trace->height = height;
@@ -411,7 +469,6 @@ void get_geometry (
     trace->numsigvis = (trace->yend - trace->ystart) / trace->sighgt;
     
     /* Correct starting position to be reasonable */
-    if (global->namepos < 0) global->namepos=0;
     if (global->namepos > (global->namepos_hier + global->namepos_base - global->namepos_visible))
 	global->namepos = (global->namepos_hier + global->namepos_base - global->namepos_visible);
 
@@ -439,149 +496,8 @@ void get_geometry (
 			x,y,width,height);
 }
 
-void  fil_select_set_pattern (
-    TRACE	*trace,
-    Widget	dialog,
-    char	*pattern)
-    /* Set the file requester pattern information (called in 2 places) */
-{
-    char mask[MAXFNAMELEN], *dirname;
-    XmString	xs_dirname;
-
-    /* Grab directory information */
-    XtSetArg (arglist[0], XmNdirectory, &xs_dirname);
-    XtGetValues (dialog, arglist, 1);
-    dirname = extract_first_xms_segment (xs_dirname);
-
-    /* Pattern information */
-    strcpy (mask, dirname);
-    strcat (mask, pattern);
-    XtSetArg (arglist[0], XmNdirMask, XmStringCreateSimple (mask) );
-    XtSetArg (arglist[1], XmNpattern, XmStringCreateSimple (pattern) );
-    XtSetValues (dialog,arglist,2);
-}
-
-
-void  get_file_name (
-    TRACE	*trace)
-{
-    int		i;
-    
-    if (DTPRINT_ENTRY) printf ("In get_file_name trace=%p\n",trace);
-    
-    if (!trace->fileselect.dialog) {
-	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
-	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Open Trace File") );
-
-	trace->fileselect.dialog = XmCreateFileSelectionDialog ( trace->main, "file", arglist, 2);
-	XtAddCallback (trace->fileselect.dialog, XmNokCallback, fil_ok_cb, trace);
-	XtAddCallback (trace->fileselect.dialog, XmNcancelCallback, (XtCallbackProc)unmanage_cb, trace->fileselect.dialog);
-	XtUnmanageChild ( XmFileSelectionBoxGetChild (trace->fileselect.dialog, XmDIALOG_HELP_BUTTON));
-	
-	trace->fileselect.work_area = XmCreateWorkArea (trace->fileselect.dialog, "wa", arglist, 0);
-
-	/* Create FILE FORMAT */
-	trace->fileselect.format_menu = XmCreatePulldownMenu (trace->fileselect.work_area,"fmtrad",arglist,0);
-
-	for (i=0; i<FF_NUMFORMATS; i++) {
-	    if (filetypes[i].selection) {
-		XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (filetypes[i].name) );
-		trace->fileselect.format_item[i] =
-		    XmCreatePushButtonGadget (trace->fileselect.format_menu,"pdbutton",arglist,1);
-		XtManageChild (trace->fileselect.format_item[i]);
-		XtAddCallback (trace->fileselect.format_item[i], XmNactivateCallback, fil_format_option_cb, trace);
-	    }
-	}
-
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Format"));
-	XtSetArg (arglist[1], XmNsubMenuId, trace->fileselect.format_menu);
-	trace->fileselect.format_option = XmCreateOptionMenu (trace->fileselect.work_area,"format",arglist,2);
-	XtManageChild (trace->fileselect.format_option);
-
-	/* Create save_ordering button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Preserve Signal Ordering"));
-	XtSetArg (arglist[1], XmNx, 0);
-	XtSetArg (arglist[2], XmNy, 100);
-	XtSetArg (arglist[3], XmNshadowThickness, 1);
-	trace->fileselect.save_ordering = XmCreateToggleButton (trace->fileselect.work_area,"save_ordering",arglist,4);
-	XtManageChild (trace->fileselect.save_ordering);
-	
-	XtManageChild (trace->fileselect.work_area);
-	
-	XSync (global->display,0);
-    }
-    
-    XtManageChild (trace->fileselect.dialog);
-
-    /* Ordering */
-    XtSetArg (arglist[0], XmNset, global->save_ordering ? 1:0);
-    XtSetValues (trace->fileselect.save_ordering,arglist,1);
-    
-    /* File format */
-    if (filetypes[file_format].selection) {
-	XtSetArg (arglist[0], XmNmenuHistory, trace->fileselect.format_item[file_format]);
-	XtSetValues (trace->fileselect.format_option, arglist, 1);
-    }
-    
-    /* Set directory */
-    XtSetArg (arglist[0], XmNdirectory, XmStringCreateSimple (global->directory) );
-    XtSetValues (trace->fileselect.dialog,arglist,1);
-
-    fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
-
-    XSync (global->display,0);
-}
-
-void    fil_format_option_cb (
-    Widget	w,
-    TRACE	*trace,
-    XmSelectionBoxCallbackStruct *cb)
-{
-    int 	i;
-    if (DTPRINT_ENTRY) printf ("In fil_format_option_cb trace=%p\n",trace);
-
-    for (i=0; i<FF_NUMFORMATS; i++) {
-	if (w == trace->fileselect.format_item[i]) {
-	    file_format = i;	/* Change global verion */
-	    trace->fileformat = i;	/* Specifically make this file use this format */
-	    fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
-	}
-    }
-}
-
-void fil_ok_cb (
-    Widget	w,
-    TRACE	*trace,
-    XmFileSelectionBoxCallbackStruct *cb)
-{
-    char	*tmp;
-    
-    if (DTPRINT_ENTRY) printf ("In fil_ok_cb trace=%p\n",trace);
-    
-    /*
-     ** Unmanage the file select widget here and wait for sync so
-     ** the window goes away before the read process begins in case
-     ** the idle is very big.
-     */
-    XtUnmanageChild (trace->fileselect.dialog);
-    XSync (global->display,0);
-    
-    tmp = extract_first_xms_segment (cb->value);
-    if (DTPRINT_FILE) printf ("filename=%s\n",tmp);
-    
-    global->save_ordering = XmToggleButtonGetState (trace->fileselect.save_ordering);
-    
-    strcpy (trace->filename, tmp);
-    
-    DFree (tmp);
-    
-    if (DTPRINT_FILE) printf ("In fil_ok_cb Filename=%s\n",trace->filename);
-    fil_read_cb (trace);
-}
-
-
 void get_data_popup (
-    TRACE	*trace,
+    Trace	*trace,
     char	*string,
     int		type)
 {
@@ -596,8 +512,8 @@ void get_data_popup (
 	/* XtSetArg (arglist[1], XmNheight, DIALOG_HEIGHT); */
 	/* no width so autochosen XtSetArg (arglist[2], XmNwidth, DIALOG_WIDTH); */
 	trace->prompt_popup = XmCreatePromptDialog (trace->work,"", arglist, 1);
-	XtAddCallback (trace->prompt_popup, XmNokCallback, prompt_ok_cb, trace);
-	XtAddCallback (trace->prompt_popup, XmNcancelCallback, (XtCallbackProc)unmanage_cb, trace->prompt_popup);
+	DAddCallback (trace->prompt_popup, XmNokCallback, prompt_ok_cb, trace);
+	DAddCallback (trace->prompt_popup, XmNcancelCallback, (XtCallbackProc)unmanage_cb, trace->prompt_popup);
 
 	XtUnmanageChild ( XmSelectionBoxGetChild (trace->prompt_popup, XmDIALOG_HELP_BUTTON));
     }
@@ -613,7 +529,7 @@ void get_data_popup (
 
 void    prompt_ok_cb (
     Widget		w,
-    TRACE		*trace,
+    Trace		*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     char	*valstr;
@@ -649,7 +565,7 @@ void    prompt_ok_cb (
 
 
 void dino_message_ack (
-    TRACE	*trace,
+    Trace	*trace,
     int		type,	/* See dino_warning_ack macros, 1=warning */
     char	*msg)
 {
@@ -676,7 +592,7 @@ void dino_message_ack (
 	    trace->message = XmCreateErrorDialog (trace->work, "error", msg_arglist, 1);
 	    break;
 	}
-	XtAddCallback (trace->message, XmNokCallback, (XtCallbackProc)unmanage_cb, trace->message);
+	DAddCallback (trace->message, XmNokCallback, (XtCallbackProc)unmanage_cb, trace->message);
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->message, XmDIALOG_CANCEL_BUTTON));
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->message, XmDIALOG_HELP_BUTTON));
 	}
@@ -693,13 +609,13 @@ void dino_message_ack (
     XtManageChild (trace->message);
 }
 
-SIGNAL_LW *cptr_at_time (
+SignalLW *cptr_at_time (
     /* Return the CPTR for the given time */
-    SIGNAL	*sig_ptr,
+    Signal	*sig_ptr,
     DTime	ctime)
 {
-    SIGNAL_LW	*cptr;
-    for (cptr = (SIGNAL_LW *)(sig_ptr->cptr);
+    SignalLW	*cptr;
+    for (cptr = (SignalLW *)(sig_ptr->cptr);
 	 (cptr->sttime.time != EOT) && (((cptr + sig_ptr->lws)->sttime.time) <= ctime);
 	     cptr += sig_ptr->lws) ;
     return (cptr);
@@ -713,7 +629,7 @@ SIGNAL_LW *cptr_at_time (
  *****************************************************************************/
 
 void    cptr_to_string (
-    SIGNAL_LW	*cptr,
+    SignalLW	*cptr,
     char	*strg)
 {
     switch (cptr->sttime.state) {
@@ -757,9 +673,9 @@ void    cptr_to_string (
 
 void    print_sig_names (
     Widget	w,
-    TRACE	*trace)
+    Trace	*trace)
 {
-    SIGNAL	*sig_ptr, *back_sig_ptr;
+    Signal	*sig_ptr, *back_sig_ptr;
 
     if (DTPRINT_ENTRY) printf ("In print_sig_names\n");
 
@@ -784,10 +700,10 @@ void    print_sig_names (
 }
 
 void    print_cptr (
-    SIGNAL_LW	*cptr)
+    SignalLW	*cptr)
 {
     char strg[1000];
-    unsigned int	value[4];
+    uint_t	value[4];
 
     cptr_to_search_value (cptr, value);
     value_to_string (global->trace_head, strg, value, '_');
@@ -796,34 +712,33 @@ void    print_cptr (
 
 void    print_screen_traces (
     Widget	w,
-    TRACE	*trace)
+    Trace	*trace)
 {
-    int		i,num;
-    SIGNAL	*sig_ptr;
+    uint_t	i,num;
+    Signal	*sig_ptr;
     
     printf ("There are up to %d signals currently visible.\n",trace->numsigvis);
     printf ("Which signal do you wish to view [0-%d]: ",trace->numsigvis-1);
     scanf ("%d",&num);
-    if ( num < 0 || num > trace->numsigvis-1 )
-	{
+    if ( num > trace->numsigvis-1 ) {
 	printf ("Illegal Value.\n");
 	return;
-	}
+    }
     
-    sig_ptr = (SIGNAL *)trace->dispsig;
+    sig_ptr = (Signal *)trace->dispsig;
     for (i=0; i<num; i++) {
-	sig_ptr = (SIGNAL *)sig_ptr->forward;	
+	sig_ptr = (Signal *)sig_ptr->forward;	
     }
     
     print_sig_info (sig_ptr);
 }
 
 void    print_sig_info (
-    SIGNAL	*sig_ptr)
+    Signal	*sig_ptr)
 {
-    SIGNAL_LW	*cptr;
+    SignalLW	*cptr;
     
-    cptr = (SIGNAL_LW *)sig_ptr->bptr;
+    cptr = (SignalLW *)sig_ptr->bptr;
     
     printf ("Signal %s starts ",sig_ptr->signame);
     print_cptr (cptr);
@@ -836,14 +751,14 @@ void    print_sig_info (
 }
 
 void    debug_signal_integrity (
-    TRACE	*trace,
-    SIGNAL	*sig_ptr,
+    Trace	*trace,
+    Signal	*sig_ptr,
     char	*list_name,
     Boolean	del)
 {
-    SIGNAL_LW	*cptr;
+    SignalLW	*cptr;
     DTime	last_time;
-    int		nsigstart, nsig;
+    uint_t	nsigstart, nsig;
     Boolean	hitstart;
 
     if (!sig_ptr) return;
@@ -852,7 +767,7 @@ void    debug_signal_integrity (
 	printf ("%s, Backward pointer should be NULL on signal %s\n", list_name, sig_ptr->signame);
     }
 
-    nsig = 0; nsigstart = -1;
+    nsig = 0; nsigstart = 0;
     hitstart = FALSE;
     for (; sig_ptr; sig_ptr=sig_ptr->forward) {
 	/* Number of signals check */
@@ -873,7 +788,7 @@ void    debug_signal_integrity (
 
 	/* Change data */
 	last_time = -1;
-	for (cptr = (SIGNAL_LW *)sig_ptr->bptr; cptr->sttime.time != EOT; cptr += sig_ptr->lws) {
+	for (cptr = (SignalLW *)sig_ptr->bptr; cptr->sttime.time != EOT; cptr += sig_ptr->lws) {
 	    if ( cptr->sttime.time == last_time ) {
 		printf ("%s, Double time change at signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
 	    }
@@ -894,6 +809,7 @@ void    debug_signal_integrity (
 	if (!hitstart) {
 	    printf ("%s, Never found display starting point\n", list_name);
 	}
+	if (nsigstart) nsigstart--;
 	if (nsigstart != trace->numsigstart) {
 	    printf ("%s, Numsigstart is wrong, %d!=%d\n", list_name, nsigstart, trace->numsigstart);
         }
@@ -902,7 +818,7 @@ void    debug_signal_integrity (
 
 void    debug_integrity_check_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
@@ -914,7 +830,7 @@ void    debug_integrity_check_cb (
 
 void    debug_increase_debugtemp_cb (
     Widget	w,
-    TRACE	*trace,
+    Trace	*trace,
     XmAnyCallbackStruct	*cb)
 {
     DebugTemp++;
@@ -922,10 +838,10 @@ void    debug_increase_debugtemp_cb (
     draw_all_needed ();
 }
 
-void    debug_decrease_debugtemp_cb (w,trace,cb)
-    Widget		w;
-    TRACE	       	*trace;
-    XmAnyCallbackStruct	*cb;
+void    debug_decrease_debugtemp_cb (
+    Widget		w,
+    Trace	       	*trace,
+    XmAnyCallbackStruct	*cb)
 {
     DebugTemp--;
     printf ("New DebugTemp = %d\n", DebugTemp);
@@ -933,31 +849,8 @@ void    debug_decrease_debugtemp_cb (w,trace,cb)
 }
 
 
-/* Keep only the directory portion of a file spec */
-void file_directory (
-    char	*strg)
-{
-    char 	*pchar;
-    
-#ifdef VMS
-    if ((pchar=strrchr (strg,']')) != NULL )
-	* (pchar+1) = '\0';
-    else
-	if ((pchar=strrchr (strg,':')) != NULL )
-	    * (pchar+1) = '\0';
-	else
-	    strg[0] = '\0';
-#else
-    if ((pchar=strrchr (strg,'/')) != NULL )
-	* (pchar+1) = '\0';
-    else
-	strg[0] = '\0';
-#endif
-}
-
-
 void change_title (
-    TRACE	*trace)
+    Trace	*trace)
 {
     char title[300],icontitle[300],*pchar;
     
@@ -1003,7 +896,7 @@ void change_title (
 #pragma inline (posx_to_time)
 DTime	posx_to_time (
     /* convert x value to a time value, return -1 if invalid click */
-    TRACE 	*trace,
+    Trace 	*trace,
     Position 	x)
 {
     /* check if button has been clicked on trace portion of screen */
@@ -1017,13 +910,13 @@ DTime	posx_to_time (
 DTime	posx_to_time_edge (
     /* convert x value to a time value, return -1 if invalid click */
     /* allow clicking to a edge if it is enabled */
-    TRACE 	*trace,
+    Trace 	*trace,
     Position	x,
     Position	y)
 {
     DTime	xtime;
-    SIGNAL 	*sig_ptr;
-    SIGNAL_LW	*cptr;
+    Signal 	*sig_ptr;
+    SignalLW	*cptr;
     DTime	left_time, right_time;
 
     xtime = posx_to_time (trace,x);
@@ -1033,7 +926,7 @@ DTime	posx_to_time_edge (
     if (! (sig_ptr = posy_to_signal (trace,y))) return (xtime);
 
     /* Find time where signal changes */
-    for (cptr = (SIGNAL_LW *)(sig_ptr->cptr);
+    for (cptr = (SignalLW *)(sig_ptr->cptr);
 	 (cptr->sttime.time != EOT) && (((cptr + sig_ptr->lws)->sttime.time) < xtime);
 	 cptr += sig_ptr->lws) ;
     left_time = cptr->sttime.time;
@@ -1062,12 +955,12 @@ DTime	posx_to_time_edge (
 
 
 #pragma inline (posy_to_signal)
-SIGNAL	*posy_to_signal (
+Signal	*posy_to_signal (
     /* convert y value to a signal pointer, return NULL if invalid click */
-    TRACE	*trace,
+    Trace	*trace,
     Position 	y)
 {
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
     int num,i,max_y;
 
     /* return if there is no file */
@@ -1092,12 +985,12 @@ SIGNAL	*posy_to_signal (
 
 
 #pragma inline (posx_to_cursor)
-CURSOR *posx_to_cursor (
+DCursor *posx_to_cursor (
     /* convert x value to the index of the nearest cursor, return NULL if invalid click */
-    TRACE	*trace,
+    Trace	*trace,
     Position	x)
 {
-    CURSOR 	*csr_ptr;
+    DCursor 	*csr_ptr;
     DTime 	xtime;
 
     /* check if there are any cursors */
@@ -1124,12 +1017,12 @@ CURSOR *posx_to_cursor (
 
 
 #pragma inline (time_to_cursor)
-CURSOR *time_to_cursor (
+DCursor *time_to_cursor (
     /* convert specific time value to the index of the nearest cursor, return NULL if none */
     /* Unlike posx_to_cursor, this will not return a "close" one */
     DTime	xtime)
 {
-    CURSOR	*csr_ptr;
+    DCursor	*csr_ptr;
 
     /* find the closest cursor */
     csr_ptr = global->cursor_head;
@@ -1145,7 +1038,7 @@ CURSOR *time_to_cursor (
 #pragma inline (string_to_time)
 DTime string_to_time (
     /* convert integer to time value */
-    TRACE	*trace,
+    Trace	*trace,
     char	*strg)
 {
     double	f_time;
@@ -1170,7 +1063,7 @@ DTime string_to_time (
 #pragma inline (time_to_string)
 void time_to_string (
     /* convert specific time value into the string passed in */
-    TRACE	*trace,
+    Trace	*trace,
     char	*strg,
     DTime	ctime,
     Boolean	relative)	/* true = time is relative, so don't adjust */

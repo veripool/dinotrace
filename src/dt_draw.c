@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dt_draw.c --- screen trace drawing
  *
@@ -55,31 +55,26 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
+#include "dinotrace.h"
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
 #include <Xm/ScrollBar.h>
 #include <Xm/ScrollBarP.h>
 
-#include "dinotrace.h"
 #include "functions.h"
+
+/**********************************************************************/
 
 #define MAXCNT	4000		/* Maximum number of segment pairs to draw before stopping this signal */
 /* Don't make this above 4000, as some servers choke with that many points. */
 
 #define OVERLAPSPACE 2		/* Number of pixels within which two signal transitions are visualized as one */
 
-extern void draw_hscroll (),
-    draw_vscroll (),
-    draw_trace_signame (TRACE *trace, SIGNAL *sig_ptr, Position y);
+extern void draw_trace_signame (Trace *trace, Signal *sig_ptr, Position y);
+extern void draw_vscroll (Trace *trace);
+extern void draw_hscroll (Trace *trace);
 
 void draw_string_fit (
-    TRACE	*trace,
+    Trace	*trace,
     Boolean	*textoccupied,
     Position	x,
     Position	y,
@@ -116,9 +111,9 @@ void draw_string_fit (
 }
     
 void draw_grid_line (
-    TRACE	*trace,
+    Trace	*trace,
     Boolean	*textoccupied,
-    GRID	*grid_ptr,		/* Grid information */
+    Grid	*grid_ptr,		/* Grid information */
     DTime	xtime,
     Position	y0,
     Position	y1,
@@ -148,9 +143,9 @@ void draw_grid_line (
 }
 
 void draw_grid (
-    TRACE	*trace,
+    Trace	*trace,
     Boolean	*textoccupied,
-    GRID	*grid_ptr)		/* Grid information */
+    Grid	*grid_ptr)		/* Grid information */
 {         
     char 	primary_dash[4];	/* Dash pattern */
     int		end_time;
@@ -226,7 +221,7 @@ void draw_grid (
 }
 
 void draw_grids (
-    TRACE	*trace)
+    Trace	*trace)
 {           
     Boolean	textoccupied[MAXSCREENWIDTH];
     int	grid_num;
@@ -242,12 +237,12 @@ void draw_grids (
 
 
 void draw_cursors (
-    TRACE	*trace)
+    Trace	*trace)
 {         
     int		len,end_time;
     int		last_drawn_xloc;
     char 	strg[MAXTIMELEN];		/* String value to print out */
-    CURSOR 	*csr_ptr;			/* Current cursor being printed */
+    DCursor 	*csr_ptr;			/* Current cursor being printed */
     Position	x1,mid,x2;
     Position	ytop,ybot,ydelta;
     char 	nonuser_dash[2];		/* Dashed line for nonuser cursors */
@@ -386,19 +381,19 @@ void draw_cursors (
 
 
 void draw_trace (
-    TRACE	*trace)
+    Trace	*trace)
 {         
     int c=0,i,cnt,ymdpt,xloc,xend,du,len,mid,yfntloc;
     int last_drawn_xloc;
-    unsigned int last_drawn_state=EOT;
+    uint_t last_drawn_state=EOT;
     int	y1,y2;
-    int numprt;				/* Number of signals printed out on screen */
+    uint_t numprt;			/* Number of signals printed out on screen */
     int srch_this_color;		/* Color to print signal if matches search value */
     XPoint Pts[MAXCNT+100];		/* Array of points to plot */
     char strg[MAXVALUELEN];		/* String value to print out */
-    register SIGNAL_LW *cptr,*nptr;	/* Current value pointer and next value pointer */
-    SIGNAL *sig_ptr;			/* Current signal being printed */
-    unsigned int value;
+    register SignalLW *cptr,*nptr;	/* Current value pointer and next value pointer */
+    Signal *sig_ptr;			/* Current signal being printed */
+    uint_t value;
     /* int temp_color=0; */
     /* char temp_strg[20]; */
     int end_time;
@@ -458,7 +453,7 @@ void draw_trace (
 	y1 = trace->ystart + c * trace->sighgt + Y_SIG_SPACE;
 	ymdpt = y1 + (int)(trace->sighgt/2) - Y_SIG_SPACE;
 	y2 = y1 + trace->sighgt - 2*Y_SIG_SPACE;
-	cptr = (SIGNAL_LW *)sig_ptr->cptr;
+	cptr = (SignalLW *)sig_ptr->cptr;
 	cnt = 0;
 	c++;
 	
@@ -486,10 +481,12 @@ void draw_trace (
 	    
 	    /* find the x location for the end of this segment */
 	    xloc = TIME_TO_XPOS (nptr->sttime.time);
+	    xloc = MIN (xloc, xend);
 	    
 	    /* printf ("L %07x\t%d < %d < %d\n", cptr, last_drawn_xloc+OVERLAPSPACE, xloc, xend); */
-	    if ( (last_drawn_state==(cptr->sttime.state)) && ((last_drawn_xloc+OVERLAPSPACE) > xloc)
-		&& (xloc < xend-OVERLAPSPACE) ) {
+	    if ( ((uint_t)last_drawn_state==(uint_t)(cptr->sttime.state))
+		 && ((Position)(last_drawn_xloc+OVERLAPSPACE) > (Position)(xloc))
+		 && ((Position)(xloc) < (Position)(xend-OVERLAPSPACE)) ) {
 		/* Too close to previously drawn vector.  User won't see the difference */
 		/* printf ("\tskip\n"); */
 		goto next_state;
@@ -505,12 +502,17 @@ void draw_trace (
 		if ( xloc > xend ) xloc = xend;
 		Pts[cnt+1].x = Pts[cnt].x+trace->sigrf; Pts[cnt+1].y = y2;
 		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y2;
+		cnt += 2;
 		break;
 		
 	      case STATE_1:
 		if ( xloc > xend ) xloc = xend;
 		Pts[cnt+1].x = Pts[cnt].x+trace->sigrf; Pts[cnt+1].y = y1;
 		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y1;
+		Pts[cnt+3].x = xloc;                  Pts[cnt+3].y = y1+1;
+		Pts[cnt+4].x = Pts[cnt].x+trace->sigrf; Pts[cnt+4].y = y1+1;
+		Pts[cnt+5].x = xloc;                  Pts[cnt+5].y = y1+1; /* extranious, just to get endpoint right */
+		cnt += 5;
 		break;
 		
 	      case STATE_U:
@@ -542,19 +544,19 @@ void draw_trace (
 			}
 		    }
 		Pts[cnt].x = Pts[cnt-4].x = xloc;
-		cnt -= 2;
 		break;
 		
 	      case STATE_Z:
 		if ( xloc > xend ) xloc = xend;
 		Pts[cnt+1].x = Pts[cnt].x+trace->sigrf; Pts[cnt+1].y = ymdpt;
 		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = ymdpt;
+		cnt += 2;
 		break;
 		
 	      case STATE_B32:
 		if ( xloc > xend ) xloc = xend;
 		
-		value = * ((unsigned int *)cptr+1);
+		value = * ((uint_t *)cptr+1);
 		
 		/* Below evaluation left to right important to prevent error */
 		if ( (sig_ptr->decode != NULL) &&
@@ -592,15 +594,15 @@ void draw_trace (
 	      case STATE_B128:
 		if ( xloc > xend ) xloc = xend;
 
-		value_to_string (trace, strg, (unsigned int *)cptr+1, ' ');
+		value_to_string (trace, strg, (uint_t *)cptr+1, ' ');
 		
 		srch_this_color = 0;
 		for (i=0; i<MAX_SRCH; i++) {
 		    if (sig_ptr->srch_ena[i]
-			&& ( global->val_srch[i].value[3]== *((unsigned int *)cptr+4) )
-			&& ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
-			&& ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
-			&& ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) ) ) {
+			&& ( global->val_srch[i].value[3]== *((uint_t *)cptr+4) )
+			&& ( global->val_srch[i].value[2]== *((uint_t *)cptr+3) )
+			&& ( global->val_srch[i].value[1]== *((uint_t *)cptr+2) )
+			&& ( global->val_srch[i].value[0]== *((uint_t *)cptr+1) ) ) {
 			srch_this_color = global->val_srch[i].color;
 			break;
 		    }
@@ -648,15 +650,13 @@ void draw_trace (
 		Pts[cnt+7].x=Pts[cnt].x+trace->sigrf; Pts[cnt+7].y=y1;
 		Pts[cnt+8].x=xloc-trace->sigrf;       Pts[cnt+8].y=y1;
 		Pts[cnt+9].x=xloc;                  Pts[cnt+9].y=ymdpt;
-		cnt += 7;
+		cnt += 9;
 		break;
 		
 	      default:
 		printf ("Error: State=%d\n",cptr->sttime.state); break;
 	    } /* end switch */
 	    
-	    cnt += 2;
-
 	  next_state:
 
 	    cptr += sig_ptr->lws;
@@ -695,8 +695,8 @@ void draw_trace (
 
 
 void draw_trace_signame (
-    TRACE *trace,
-    SIGNAL *sig_ptr,
+    Trace *trace,
+    Signal *sig_ptr,
     Position y)
 {	
     Position x1;
@@ -728,10 +728,10 @@ void	draw_update_sigstart ()
     /* Update the starting coodinate of the signals. */
     /* Don't call directly, instead use draw_update_sig_start() it will log a request for the update */
 {
-    TRACE *trace;
-    SIGNAL *sig_ptr;
-    int widest_hier;
-    int widest_base;
+    Trace *trace;
+    Signal *sig_ptr;
+    Dimension widest_hier;
+    Dimension widest_base;
     Dimension xstart_sig, xstart_base;
     char *basename;
     Dimension smallest_width;
@@ -749,7 +749,7 @@ void	draw_update_sigstart ()
     widest_hier = 0;
     widest_base = 0;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	for (sig_ptr = (SIGNAL *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	for (sig_ptr = (Signal *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    if (NULL==(basename = strrchr (sig_ptr->signame, '.'))) {
 		basename = sig_ptr->signame;
 	    }
@@ -773,7 +773,7 @@ void	draw_update_sigstart ()
 
 void draw_perform ()
 {
-    TRACE		*trace;
+    Trace		*trace;
 
     if (DTPRINT_ENTRY) printf ("In draw_perform %d %d\n", global->redraw_needed, global->trace_head->redraw_needed);
 
@@ -829,22 +829,24 @@ void draw_update ()
 
 /**********************************************************************
  *	Scroll bar hacks (dependent on Motif internals)
+ *	Yes, these should just be a new widget class, but it's too late,
+ *	it already works.
  **********************************************************************/
 
 void	draw_hscroll (
-    TRACE *trace)
+    Trace *trace)
     /* Draw on the horizontal scroll bar - needs guts of the ScrollBarWidget */
 {
     int ymin,ymax,x1,xmin,xmax,slider_xmin,slider_xmax;
     float xscale;
-    CURSOR *csr_ptr;			/* Current cursor being printed */
+    DCursor *csr_ptr;			/* Current cursor being printed */
     char 	nonuser_dash[2];		/* Dashed line for nonuser cursors */
 
-    nonuser_dash[0]=2;	nonuser_dash[1]=2;	/* Can't auto-init in ultrix compiler */
-
-    XSync (global->display,0);
+    if (DTPRINT_ENTRY) printf ("In draw_hscroll\n");
 
     if (!trace->loaded || (trace->end_time == trace->start_time)) return;
+
+    nonuser_dash[0]=2;	nonuser_dash[1]=2;	/* Can't auto-init in ultrix compiler */
 
     /* initial the y colors for drawing */
     xmin = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_x;
@@ -893,13 +895,13 @@ void	draw_hscroll (
 }
 
 void	draw_vscroll (
-    TRACE *trace)
+    Trace *trace)
     /* Draw on the vertical scroll bar - needs guts of the ScrollBarWidget */
 {
     int ymin,ymax,y1,xmin,xmax,slider_ymin,slider_ymax;
-    int i;
+    uint_t signum;
     float yscale;
-    SIGNAL	*sig_ptr;
+    Signal	*sig_ptr;
 
     if (DTPRINT_ENTRY) printf ("In draw_vscroll\n");
 
@@ -930,10 +932,10 @@ void	draw_vscroll (
 	(float)((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_height	/* sc height */
 	    / (float)(trace->numsig);		/* number of signals */
 
-    for (sig_ptr = trace->firstsig, i=0; sig_ptr; sig_ptr = sig_ptr->forward, i++) {
-	if (sig_ptr->color && ((i < trace->numsigstart) ||
-			       (i >= ( trace->numsigstart + trace->numsigvis)))) {
-	    y1 = ymin + yscale * i;
+    for (sig_ptr = trace->firstsig, signum=0; sig_ptr; sig_ptr = sig_ptr->forward, signum++) {
+	if (sig_ptr->color && ((signum < trace->numsigstart) ||
+			       (signum >= ( trace->numsigstart + trace->numsigvis)))) {
+	    y1 = ymin + yscale * signum;
 
 	    /* If plotting it would overwrite the slider move it to one side or the other */
 	    if (y1 < slider_ymax && y1 > slider_ymin) {
@@ -947,5 +949,39 @@ void	draw_vscroll (
 		      trace->gc, xmin,y1,xmax,y1);
 	}
     }
+}
+
+XtExposeProc draw_orig_scroll_expose;	/* Original function for scroll exposure */
+
+void hscroll_expose (Widget w, XEvent *event, Region region)
+{
+    Trace *trace;
+    /* Draw the scroll bar normally */
+    (draw_orig_scroll_expose) (w, event, region);
+    /* See if it's a special widget of ours */
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	if (w == trace->vscroll) {
+	    draw_vscroll (trace);
+	    break;
+	}
+	else if (w == trace->hscroll) {
+	    draw_hscroll (trace);
+	    break;
+	}
+    }
+}
+
+void draw_scroll_hook_cb_expose ()
+    /* Change the callback for exposing scroll bars to the above hook
+       function.  It will look for our special hscroll and vscroll widgets
+       and draw appropriately */
+{
+    XtExposeProc unchanged, changeto;
+    changeto = hscroll_expose;
+    unchanged = xmScrollBarClassRec.core_class.expose;
+    if (unchanged != changeto) {
+	draw_orig_scroll_expose = unchanged;
+	xmScrollBarClassRec.core_class.expose = changeto;
+    } /* else already hooked */
 }
 
