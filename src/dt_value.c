@@ -1017,7 +1017,7 @@ static void    val_examine_popup (
     /* Don't manage this guy, he's just a container */
     XtSetArg (arglist[0], XmNallowShellResize, FALSE);
     XtSetArg (arglist[1], XmNshadowThickness, 2);
-#if 1  /* If you get a error on the above, try changing the 1 to a 0 */
+#if 1  /* If you get a error on the next line, try changing the 1 to a 0 */
     trace->examine.popup = (Widget)XmCreateGrabShell (trace->main, "examinepopup", arglist, 2);
 #else    
     trace->examine.popup = XtCreatePopupShell
