@@ -161,7 +161,7 @@ void cur_delete_of_type (
     }
 }
 
-void cur_write (FILE *writefp)
+void cur_write (FILE *writefp, char *c)
 {
     DCursor	*csr_ptr;
     char strg[MAXTIMELEN];
@@ -170,10 +170,10 @@ void cur_write (FILE *writefp)
 	time_to_string (global->trace_head, strg, csr_ptr->time, FALSE);
 	switch (csr_ptr->type) {
 	case USER:
-	    fprintf (writefp, "cursor_add %s %d -user\n", strg, csr_ptr->color);
+	    fprintf (writefp, "%scursor_add %s %d -user\n",c, strg, csr_ptr->color);
 	    break;
 	case CONFIG:
-	    fprintf (writefp, "cursor_add %s %d\n", strg, csr_ptr->color);
+	    fprintf (writefp, "%scursor_add %s %d\n",c, strg, csr_ptr->color);
 	    break;
 	default:
 	    break;
@@ -385,7 +385,7 @@ void    cur_move_ev (
     
     /* draw the first line */
     y1 = 25;
-    y2 = trace->height - trace->ystart + trace->sighgt;
+    y2 = trace->height - trace->ystart + global->sighgt;
     x1 = x2 = last_x = ev->x;
     XDrawLine (global->display,trace->wind,trace->gc,x1,y1,x2,y2);
     
@@ -402,7 +402,7 @@ void    cur_move_ev (
 	    em = (XMotionEvent *)&event;
 	    x1 = x2 = last_x;
 	    y1 = 25;
-	    y2 = trace->height - trace->ystart + trace->sighgt;
+	    y2 = trace->height - trace->ystart + global->sighgt;
 	    XDrawLine (global->display,trace->wind,trace->gc,x1,y1,x2,y2);
 	    x1 = x2 = em->x;
 	    XDrawLine (global->display,trace->wind,trace->gc,x1,y1,x2,y2);

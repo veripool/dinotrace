@@ -104,7 +104,7 @@
 
 #define MAXSIGLEN	256	/* Maximum length of signal names */
 #define MAXTIMELEN	20	/* Maximum length of largest time as a string */
-#define MAXFNAMELEN	200	/* Maximum length of file names */
+#define MAXFNAMELEN	256	/* Maximum length of file names */
 #define MAXSTATENAMES	512	/* Maximum number of state name translations */
 #define MAXVALUELEN	40	/* Maximum length of values or state names, 32hex digits + 4 sep + NULL */
 #define MAXGRIDS	4	/* Maximum number of grids */
@@ -203,6 +203,13 @@ typedef enum {
     PAGEINC_QUARTER=4
 } PageInc_t;
 
+/* Annotate trace selection widget enums */
+typedef enum {
+    TRACESEL_THIS=0,
+    TRACESEL_ALL=1,
+    TRACESEL_ALLDEL=2
+} TraceSel_t;
+
 /* Time representation enums */
 #define TIMEREP_PS 1.0
 #define TIMEREP_NS 1000.0
@@ -217,6 +224,20 @@ typedef enum {
     PRINTSIZE_EPSPORT,
     PRINTSIZE_EPSLAND
 } PrintSize_t;
+
+/* Config write sub-item enables */
+/* See static character array in dt_customize.c */
+typedef enum {
+    CUSWRITEM_COMMENT,
+    CUSWRITEM_PERSONAL,
+    CUSWRITEM_VALSEARCH,
+    CUSWRITEM_CURSORS,
+    CUSWRITEM_GRIDS,
+    CUSWRITEM_FORMAT,
+    CUSWRITEM_SIGHIGHLIGHT,
+    CUSWRITEM_SIGORDER,
+    CUSWRITEM_MAX
+} CusWrItem_t;
 
 /* Colors */
 #define MAX_SRCH	9		/* Maximum number of search values, or cursor/signal colors */
@@ -255,7 +276,6 @@ extern struct st_filetypes {
     char	       	*name;		/* Name of this file type */
     char		*extension;	/* File extension */
     char		*mask;		/* File Open mask */
-    /* void		(*routine);	/ * Routine to read it */
 } filetypes[FF_NUMFORMATS];
 
 extern char		message[1000];	/* generic string for messages */
@@ -263,6 +283,8 @@ extern char		message[1000];	/* generic string for messages */
 extern XGCValues	xgcv;
 
 extern Arg		arglist[20];
+
+extern Widget		dmanage_last;	/* Last DManageChild()'d widget */
 
 /* Define some types that are needed before defined */
 typedef struct st_trace Trace;
@@ -272,6 +294,14 @@ typedef struct st_signal Signal;
 /* Widget structures */
 
 typedef struct {
+    Widget	sep;
+    Widget	ok;
+    Widget	apply;
+    Widget	defaults;
+    Widget	cancel;
+} OkApplyWidgets_t;
+
+typedef struct {
     Widget	menu;
     Widget	pdmenu[11];
     Widget	pdmenubutton[11];
@@ -279,6 +309,7 @@ typedef struct {
     Widget	pdentry[22];
     Widget	pdentrybutton[72];
     Widget	pdsubbutton[4+(MAX_SRCH+2)*5+RADIX_MAX_MENU];
+    Widget	menu_close;	/* Pointer to menu_close widget */
     uint_t	sig_highlight_pds;
     uint_t	sig_radix_pds;
     uint_t	cur_highlight_pds;
@@ -304,23 +335,15 @@ typedef struct {
 
 typedef struct {
     Widget dialog;
-    Widget form;
-    Widget page_label;
-    Widget rpage, tpage1, tpage2, tpage3;
-    Widget bus_label;
-    Widget rbus;
-    Widget time_label;
-    Widget rtime, ttimens, ttimecyc, ttimeus, ttimeps;
+    Widget page_menu, page_option, page_item[3];
+    Widget time_menu, time_option, time_item[4];
     Widget sighgt_label;
     Widget s1;
     Widget rfwid;
     Widget cursor_state;
     Widget click_to_edge;
     Widget refreshing;
-    Widget sep;
-    Widget b1;
-    Widget b2;
-    Widget b3;
+    OkApplyWidgets_t okapply;
 } CustomWidgets_t;
 
 typedef struct {
@@ -337,7 +360,6 @@ typedef struct {
 
 typedef struct {
     Widget dialog;
-    Widget form;
     Widget size_menu;
     Widget size_option;
     Widget sizea;
@@ -352,10 +374,7 @@ typedef struct {
     Widget all_signals;
     RangeWidgets_t begin_range;
     RangeWidgets_t end_range;
-    Widget sep;
-    Widget print;
-    Widget defaults;
-    Widget cancel;
+    OkApplyWidgets_t okapply;
 } PrintWidgets_t;
 
 typedef struct {
@@ -365,39 +384,30 @@ typedef struct {
     Widget cursors_dotted[MAX_SRCH+1];
     Widget signals[MAX_SRCH+1];
     Widget text;
-    Widget sep;
-    Widget ok;
-    Widget apply;
-    Widget cancel;
+    Widget trace_label, trace_option, trace_pulldown;
+    Widget trace_button[TRACESEL_ALLDEL+1];
+    OkApplyWidgets_t okapply;
 } AnnotateWidgets_t;
 
 typedef struct {
-    Widget search;
-    Widget form;
+    Widget dialog;
     Widget add;
     Widget label1, label2, label3;
     Widget label4, label5;
     Widget enable[MAX_SRCH];
     Widget text[MAX_SRCH];
-    Widget sep;
-    Widget ok;
-    Widget apply;
-    Widget cancel;
+    OkApplyWidgets_t okapply;
 } SignalWidgets_t;
 
 typedef struct {
-    Widget search;
-    Widget form;
+    Widget dialog;
     Widget label1, label2, label3;
     Widget label4, label5, label6;
     Widget enable[MAX_SRCH];
     Widget cursor[MAX_SRCH];
     Widget text[MAX_SRCH];
     Widget signal[MAX_SRCH];
-    Widget sep;
-    Widget ok;
-    Widget apply;
-    Widget cancel;
+    OkApplyWidgets_t okapply;
 } ValueWidgets_t;
 
 typedef struct {
@@ -410,12 +420,21 @@ typedef struct {
 typedef struct {
     Widget dialog;
     Widget form;
-    Widget work_area;
     Widget save_ordering;
     Widget config_label;
     Widget config_enable[MAXCFGFILES];
     Widget config_filename[MAXCFGFILES];
 } CusReadWidgets_t;
+
+typedef struct {
+    Widget dialog;
+    Widget form;
+    Widget save_ordering;
+    Widget global_label;
+    Widget item[CUSWRITEM_MAX];
+    Widget trace_label, trace_option, trace_pulldown;
+    Widget trace_button[TRACESEL_ALLDEL+1];
+} CusWrWidgets_t;
 
 typedef struct {
     Widget popup;
@@ -424,7 +443,6 @@ typedef struct {
 
 typedef struct {
     Widget dialog;
-    Widget form;
     Widget text;
     Widget label1,label2;
     Widget pulldown;
@@ -432,9 +450,7 @@ typedef struct {
     Widget options;
     Widget notetext;
     Widget notelabel;
-    Widget sep;
-    Widget ok;
-    Widget cancel;
+    OkApplyWidgets_t okapply;
 } GotoWidgets_t;
 
 typedef struct {
@@ -460,26 +476,19 @@ typedef struct {
 
 typedef struct {
     Widget dialog;
-    Widget form;
     GridWidgets_t  grid[MAXGRIDS];
-    Widget sep;
-    Widget ok;
-    Widget apply;
-    Widget cancel;
+    OkApplyWidgets_t okapply;
 } GridsWidgets_t;
 
 typedef struct {
-    Widget select;
+    Widget dialog;
     Widget label1, label2, label3;
     Widget label4, label5;
     Widget enable[MAX_SRCH];
     Widget cursor[MAX_SRCH];
     Widget add_sigs, add_sigs_form, add_pat, add_all;
     Widget delete_sigs, delete_pat, delete_all, delete_const;
-    Widget sep;
-    Widget ok;
-    Widget apply;	/* ?? */
-    Widget cancel;
+    OkApplyWidgets_t okapply;
 
     XmString *del_strings;
     XmString *add_strings;
@@ -503,7 +512,7 @@ typedef struct st_signalstate {
     uint_t	 numstates;		/* Number of states in the structure */
     char signame[MAXSIGLEN];		/* Signal name to translate, Nil = wildcard */
     char statename[MAXSTATENAMES][MAXVALUELEN];	/* Name for each state, nil=keep */
-} SignalState;
+} SignalState_t;
 
 /* These serve as both a index into the Radix_t structure (if type < MAXRADIX) */
 /* and also as a type within Radix_t */
@@ -619,7 +628,7 @@ struct st_signal {
     char		*note;		/* Information for user, or NULL */
 
     Radix_t		*radix;		/* Number radix represtation */
-    SignalState		*decode;	/* Pointer to decode information, NULL if none */
+    SignalState_t	*decode;	/* Pointer to decode information, NULL if none */
 
     ColorNum		color;		/* Signal line's Color number (index into trace->xcolornum) */
     ColorNum		search;		/* Number of search color is for, 0 = manual */
@@ -680,7 +689,6 @@ struct st_trace {
     GC                  gc;
 
     MenuWidgets_t	menu;
-    Widget		menu_close;	/* Pointer to menu_close widget */
     CommandWidgets_t	command;
     CustomWidgets_t	custom;
     PrintWidgets_t	prntscr;
@@ -693,6 +701,7 @@ struct st_trace {
     SelectWidgets_t	select;
     FileWidgets_t	fileselect;
     CusReadWidgets_t	cusread;
+    CusWrWidgets_t	cuswr;
     Widget		shell;
     Widget		main;
     Widget		work;
@@ -707,7 +716,7 @@ struct st_trace {
     Widget		help_doc_text;	/* Help documentation */
 
     char		filename[MAXFNAMELEN];	/* Current file */
-    char		printname[MAXFNAMELEN];	/* Print filename */
+    char 		printname[MAXFNAMELEN];	/* Print filename */
     struct stat		filestat;	/* Information on the current file */
     uint_t		fileformat;	/* Type of trace file (see FF_*) */
     Boolean_t		loaded;		/* True if the filename is loaded in */
@@ -721,7 +730,6 @@ struct st_trace {
 
     Dimension		width;		/* Screen width */
     Dimension		width_last;	/* Last start X pos of signals on display */
-    Dimension		sighgt;		/* Height of signals (customize) */
 
     Position		ygridtime;	/* Start Y pos of grid times (get_geom) */
     Position		ystart;		/* Start Y pos of signals (get_geom) */
@@ -731,11 +739,7 @@ struct st_trace {
     Dimension		height;		/* Screen height */
     Position		xstart_last;	/* Last start X pos of signals on display */
 
-    uint_t		sigrf;		/* Signal rise/fall time spec */
-    TimeRep_t		timerep;	/* Time representation = TIMEREP_NS/TIMEREP_CYC */
-
     Grid		grid[MAXGRIDS];	/* Grid information */
-    Boolean_t		cursor_vis;	/* True if cursors are visible */
 
     DTime		start_time;	/* Time of beginning of trace */
     DTime		end_time;	/* Time of ending of trace */
@@ -758,7 +762,7 @@ typedef struct {
 
     SigSearch_t		sig_srch[MAX_SRCH];	/* Signal search information */
 
-    SignalState		*signalstate_head;	/* Head of signal state information */
+    SignalState_t	*signalstate_head;	/* Head of signal state information */
 
     XtAppContext	appcontext;	/* X App context */
     Display		*display;	/* X display pointer */
@@ -786,7 +790,8 @@ typedef struct {
     Geometry		open_geometry;	/* Geometry to open later traces with */
     Geometry		shrink_geometry; /* Geometry to shrink trace->open traces with */
 
-    Boolean_t		anno_poppedup;	/* Annotation has been poped up on some window */
+    Trace		*anno_last_trace;	/* Last trace annotated */
+    TraceSel_t		anno_traces;	/* Which traces to include */
     Boolean_t		anno_ena_signal[MAX_SRCH+1];   /* Annotation signal enables */
     Boolean_t		anno_ena_cursor[MAX_SRCH+1];    /* Annotation cursor enables */
     Boolean_t		anno_ena_cursor_dotted[MAX_SRCH+1];    /* Annotation cursor enables */
@@ -800,6 +805,10 @@ typedef struct {
     uint_t		tempest_time_mult;	/* Time multiplier for tempest */
     Boolean_t		save_enables;	/* True to save enable wires */
     Boolean_t		save_ordering;	/* True to save signal ordering */
+    Boolean_t		cursor_vis;	/* True if cursors are visible */
+    Dimension		sighgt;		/* Height of signals (customize) */
+    uint_t		sigrf;		/* Signal rise/fall time spec */
+    TimeRep_t		timerep;	/* Time representation = TIMEREP_NS/TIMEREP_CYC */
 
     char		printnote[MAXFNAMELEN];	/* Note to print */
     PrintSize_t		print_size;	/* Size of paper for dt_printscreen */
@@ -833,6 +842,9 @@ typedef struct {
 
     Boolean_t		config_enable[MAXCFGFILES];/* Read in this config file */
     char		config_filename[MAXCFGFILES][MAXFNAMELEN];	/* Config files */
+    char		*cuswr_filename;	/* Config write filename */
+    Boolean_t		cuswr_item[CUSWRITEM_MAX];	/* Config write item enables */
+    TraceSel_t		cuswr_traces;	/* Which traces to include */
 } Global;
 
 extern Global *global;

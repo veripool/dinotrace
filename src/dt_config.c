@@ -370,11 +370,11 @@ int wildmat(
 *	SUPPORT FUNCTIONS
 **********************************************************************/
 
-SignalState	*signalstate_find (
+SignalState_t	*signalstate_find (
     Trace	*trace,
     char *name)
 {
-    register SignalState *sig;
+    register SignalState_t *sig;
 
     for (sig=global->signalstate_head; sig; sig=sig->next) {
 	/* printf ("'%s'\t'%s'\n", name, sig->signame); */
@@ -386,9 +386,9 @@ SignalState	*signalstate_find (
 
 void	signalstate_add (
     Trace	*trace,
-    SignalState *info)
+    SignalState_t *info)
 {
-    SignalState *new;
+    SignalState_t *new;
     int t;
 
     for (new = global->signalstate_head; new ; new=new->next) {
@@ -396,8 +396,8 @@ void	signalstate_add (
     }
     if (! new) {
       /* Not found, add & relink */
-      new = XtNew (SignalState);
-      memcpy ((void *)new, (void *)info, sizeof(SignalState));
+      new = XtNew (SignalState_t);
+      memcpy ((void *)new, (void *)info, sizeof(SignalState_t));
       new->next = global->signalstate_head;
       global->signalstate_head = new;
       draw_needupd_val_states ();
@@ -405,7 +405,7 @@ void	signalstate_add (
     else {
       /* Found, overwrite old */
       info->next = new->next;	/* Don't loose the link */
-      memcpy ((void *)new, (void *)info, sizeof(SignalState));
+      memcpy ((void *)new, (void *)info, sizeof(SignalState_t));
     }
 
     /*printf ("Signal '%s' Assigned States:\n", new->signame);*/
@@ -419,7 +419,7 @@ void	signalstate_add (
 
 void	signalstate_free (void)
 {
-    SignalState *sstate_ptr, *last_ptr;
+    SignalState_t *sstate_ptr, *last_ptr;
 
     sstate_ptr = global->signalstate_head;
     while (sstate_ptr) {
@@ -431,22 +431,22 @@ void	signalstate_free (void)
 }
 
 void	signalstate_write (
-    FILE *writefp)
+    FILE *writefp, char *c)
 {
-    SignalState *sstate_ptr;
+    SignalState_t *sstate_ptr;
     int i;
 
-    fprintf (writefp, "\n## Signal States ##\n");
+    fprintf (writefp, "\n#### Global Signal States ####\n");
     
     for (sstate_ptr = global->signalstate_head; 
 	 sstate_ptr; sstate_ptr = sstate_ptr->next) {
-	printf("#signal_states %s {\n",sstate_ptr->signame);
+	printf("%ssignal_states %s {\n",c,sstate_ptr->signame);
 	for (i=0; i<MAXSTATENAMES; i++) {
 	    if (sstate_ptr->statename[i][0]) {
-		printf ("#\t%d=\"%s\",\n", i, sstate_ptr->statename[i]);
+		printf ("%s\t%d=\"%s\",\n",c, i, sstate_ptr->statename[i]);
 	    }
 	}
-	printf("#\t}\n");
+	printf("%s\t}\n",c);
     }
     printf ("\n");
 }
@@ -500,7 +500,7 @@ void	config_geometry_string (
     Geometry	*geometry,
     char *strg)
 {
-    sprintf (strg, "%d%sx%d%s+%d%s+%d%s\n",
+    sprintf (strg, "%d%sx%d%s+%d%s+%d%s",
 	     geometry->width,	geometry->widthp?"%":"",
 	     geometry->height,	geometry->heightp?"%":"", 
 	     geometry->x,	geometry->xp?"%":"",
@@ -602,7 +602,7 @@ int	config_read_grid (
 int	config_process_state (
     Trace	*trace,
     char 	*line,
-    SignalState *sstate_ptr)
+    SignalState_t *sstate_ptr)
 {
     char newstate[MAXVALUELEN];
     int	statenum = sstate_ptr->numstates;
@@ -644,7 +644,7 @@ void	config_process_line_internal (
     char pattern[MAXSIGLEN];
     char *cmt;
     
-    static SignalState newsigst;
+    static SignalState_t newsigst;
     static Boolean_t processing_sig_state = FALSE;
 
   re_process_line:
@@ -728,11 +728,11 @@ void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "CURSOR")) {
-	    value = trace->cursor_vis;
+	    value = global->cursor_vis;
 	    line += config_read_on_off (trace, line, &value);
 	    if (value >= 0) {
 		if (DTPRINT_CONFIG) printf ("Config: cursor_vis=%d\n",value);
-		trace->cursor_vis = value;
+		global->cursor_vis = value;
 	    }
 	}
 	else if (!strcmp(cmd, "CLICK_TO_EDGE")) {
@@ -753,10 +753,10 @@ void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "SIGNAL_HEIGHT")) {
-	    value = trace->sighgt;
+	    value = global->sighgt;
 	    line += config_read_int (line, &value);
 	    if (value >= 10 && value <= 50)
-		trace->sighgt = value;
+		global->sighgt = value;
 	    else {
 		config_error_ack (trace, "Signal_height must be 10-50\n");
 	    }
@@ -839,10 +839,10 @@ void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "RISE_FALL_TIME")) {
-	    value = trace->sigrf;
+	    value = global->sigrf;
 	    line += config_read_int (line, &value);
 	    /* Valid values not known... */
-	    trace->sigrf = value;
+	    global->sigrf = value;
 	}
 	else if (!strcmp(cmd, "PAGE_INC")) {
 	    value = global->pageinc;
@@ -857,17 +857,17 @@ void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "TIME_REP")) {
 	    switch (toupper(line[0])) {
-	      case 'N':	trace->timerep = TIMEREP_NS;	break;
-	      case 'U':	trace->timerep = TIMEREP_US;	break;
-	      case 'P':	trace->timerep = TIMEREP_PS;	break;
-	      case 'C':	trace->timerep = TIMEREP_CYC;	break;
+	      case 'N':	global->timerep = TIMEREP_NS;	break;
+	      case 'U':	global->timerep = TIMEREP_US;	break;
+	      case 'P':	global->timerep = TIMEREP_PS;	break;
+	      case 'C':	global->timerep = TIMEREP_CYC;	break;
 	      case '0': case '1': case '2': case '3': case '4':
 	      case '5': case '6': case '7': case '8': case '9': case '.':
-		trace->timerep = atof(line);	break;
+		global->timerep = atof(line);	break;
 	      default:
 		config_error_ack (trace, "Time_Rep must be PS, NS, US, or CYCLE\n");
 	    }
-	    if (DTPRINT_CONFIG) printf ("timerep = %f\n", trace->timerep);
+	    if (DTPRINT_CONFIG) printf ("timerep = %f\n", global->timerep);
 	}
 	else if (!strcmp(cmd, "TIME_PRECISION")) {
 	    switch (toupper(line[0])) {
@@ -1162,7 +1162,7 @@ void	config_process_line_internal (
 	    config_parse_geometry (line, &(global->shrink_geometry));
 	}
 	else if (!strcmp(cmd, "SIGNAL_STATES")) {
-	    memset (&newsigst, 0, sizeof (SignalState));
+	    memset (&newsigst, 0, sizeof (SignalState_t));
 	    line += config_read_pattern (trace, line, newsigst.signame);
 	    processing_sig_state = TRUE;
 	    /* if (DTPRINT) printf ("config_process_states  signal=%s\n", newsigst.signame); */
@@ -1350,6 +1350,8 @@ void config_write_file (
     Grid	*grid_ptr;
     int		i;
     char	strg[MAXSIGLEN];
+    char	*c;	/* Comment or null */
+    Trace	*trace_top = trace;
     
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Writing config file %s\n", filename);
     
@@ -1361,137 +1363,161 @@ void config_write_file (
 	return;
     }
 
-    fprintf (writefp, "### Customization Write by %s\n", DTVERSION);
-    fprintf (writefp, "### Created %s\n", date_string(0));
+    c = (global->cuswr_item[CUSWRITEM_COMMENT]) ? "#" : "";
 
-    fprintf (writefp, "\n#### Global FLAGS ##\n");
-    fprintf (writefp, "#debug\t\t%s\n", DTDEBUG?"ON":"OFF");
-    fprintf (writefp, "#print\t\t%x\n", DTPRINT);
-    fprintf (writefp, "#refreshing\t%s\n", global->redraw_manually?"MANUAL":"AUTO");
-    fprintf (writefp, "#save_enables\t%s\n", global->save_enables?"ON":"OFF");
-    fprintf (writefp, "#save_ordering\t%s\n", global->save_ordering?"ON":"OFF");
-    fprintf (writefp, "#click_to_edge\t%s\n", global->click_to_edge?"ON":"OFF");
-    fprintf (writefp, "#page_inc\t%d\n", 
-	     global->pageinc==PAGEINC_QUARTER ? 4 : (global->pageinc==PAGEINC_HALF?2:1) );
-    fprintf (writefp, "#print_size\t");
-    switch (global->print_size) {
-      case PRINTSIZE_A:		fprintf (writefp, "A\n");	break;
-      case PRINTSIZE_B:		fprintf (writefp, "B\n");	break;
-      case PRINTSIZE_EPSLAND:	fprintf (writefp, "EPSLAND\n");	break;
-      case PRINTSIZE_EPSPORT:	fprintf (writefp, "EPSPORT\n");	break;
-    }
+    fprintf (writefp, "##### Customization Write by %s\n", DTVERSION);
+    fprintf (writefp, "##### Created %s\n", date_string(0));
 
-    config_geometry_string (&global->start_geometry, strg);
-    fprintf (writefp, "#start_geometry\t%s\n", strg);
-    config_geometry_string (&global->open_geometry, strg);
-    fprintf (writefp, "#open_geometry\t%s\n", strg);
-    config_geometry_string (&global->shrink_geometry, strg);
-    fprintf (writefp, "#shrink_geometry\t%s\n", strg);
-
-    if (global->time_format[0])
-	fprintf (writefp, "#time_format\t%s\n", global->time_format);
-    fprintf (writefp, "#time_multiplier\t%d\n", global->tempest_time_mult);
-    fprintf (writefp, "#time_precision\t%s\n", time_units_to_string (global->time_precision, TRUE));
-
-    fprintf (writefp, "\n#### Trace FLAGS ##\n");
-    for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
-	if (trace->loaded) {
-	    fprintf (writefp, "####set_trace\t%s\n", trace->filename);
-	    fprintf (writefp, "#file_format\t%s\n", filetypes[trace->fileformat].name);
-	    fprintf (writefp, "#cursor\t\t%s\n", trace->cursor_vis?"ON":"OFF");
-	    fprintf (writefp, "#signal_height\t%d\n", trace->sighgt);
-	    fprintf (writefp, "#vector_separator\t\"%c\"\n", trace->vector_separator);
-	    fprintf (writefp, "#hierarchy_separator\t\"%c\"\n", trace->hierarchy_separator);
-	    fprintf (writefp, "#rise_fall_time\t%d\n", trace->sigrf);
-	    fprintf (writefp, "#time_rep\t%s\n", time_units_to_string (trace->timerep, TRUE));
-	    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
-		grid_ptr = &(trace->grid[grid_num]);
-
-		fprintf (writefp, "#grid\t\t%d\t%s\n", grid_num, grid_ptr->visible?"ON":"OFF");
-		fprintf (writefp, "#grid_type\t%d\t%s\n", grid_num, grid_ptr->wide_line?"WIDE":"NORMAL");
-		fprintf (writefp, "#grid_signal\t%d\t\"%s\"\n", grid_num, grid_ptr->signal);
-		fprintf (writefp, "#grid_color\t%d\t%d\n", grid_num, grid_ptr->color);
-		fprintf (writefp, "#grid_resolution\t%d\n", grid_num);
-		switch (grid_ptr->period_auto) {
-		  case PA_AUTO:		fprintf (writefp, "ASSERTION\n");	break;
-		  default:		fprintf (writefp, "%d\n", grid_ptr->period);	break;
-		}
-		fprintf (writefp, "#grid_align\t%d\t", grid_num);
-		switch (grid_ptr->align_auto) {
-		  case AA_ASS:		fprintf (writefp, "ASSERTION\n");	break;
-		  case AA_DEASS:	fprintf (writefp, "DEASSERTION\n");	break;
-		  default:		fprintf (writefp, "%d\n", grid_ptr->alignment);	break;
-		}
-	    }
+    if (global->cuswr_item[CUSWRITEM_PERSONAL]) {
+        fprintf (writefp, "\n#### Global Personal Preferences ####\n");
+	if (DTDEBUG) {
+	    fprintf (writefp, "%sdebug\t\t%s\n", c, DTDEBUG?"ON":"OFF");
+	    fprintf (writefp, "%sprint\t\t%x\n", c, DTPRINT);
 	}
-    }
-
-    fprintf (writefp, "\n#### Global INFORMATION ##\n");
-    fprintf (writefp, "\n## Value searches ##\n");
-    for (i=1; i<=MAX_SRCH; i++) {
-	ValSearch_t *vs_ptr = &global->val_srch[i-1];
-	char strg[MAXSIGLEN];
-	if (vs_ptr->color || vs_ptr->cursor) {
-	    val_to_string (vs_ptr->radix, strg, &vs_ptr->value, FALSE);
-	    fprintf (writefp, "#value_highlight %s %d \"%s\" %s %s\n",
-		     strg, i, vs_ptr->signal, 
-		     vs_ptr->color ? "-VALUE":"",
-		     vs_ptr->cursor ? "-CURSOR":"");
+	fprintf (writefp, "%srefreshing\t%s\n", c, global->redraw_manually?"MANUAL":"AUTO");
+	fprintf (writefp, "%ssave_enables\t%s\n", c, global->save_enables?"ON":"OFF");
+	fprintf (writefp, "%ssave_ordering\t%s\n", c, global->save_ordering?"ON":"OFF");
+	fprintf (writefp, "%sclick_to_edge\t%s\n", c, global->click_to_edge?"ON":"OFF");
+	fprintf (writefp, "%ssignal_height\t%d\n", c, global->sighgt);
+	fprintf (writefp, "%srise_fall_time\t%d\n", c, global->sigrf);
+	fprintf (writefp, "%stime_rep\t%s\n", c, time_units_to_string (global->timerep, TRUE));
+	fprintf (writefp, "%scursor\t\t%s\n", c, global->cursor_vis?"ON":"OFF");
+	fprintf (writefp, "%spage_inc\t%d\n", c,
+		 global->pageinc==PAGEINC_QUARTER ? 4 : (global->pageinc==PAGEINC_HALF?2:1) );
+	fprintf (writefp, "%sprint_size\t", c);
+	switch (global->print_size) {
+	  case PRINTSIZE_A:		fprintf (writefp, "A\n");	break;
+	  case PRINTSIZE_B:		fprintf (writefp, "B\n");	break;
+	  case PRINTSIZE_EPSLAND:	fprintf (writefp, "EPSLAND\n");	break;
+	  case PRINTSIZE_EPSPORT:	fprintf (writefp, "EPSPORT\n");	break;
 	}
+	
+	config_geometry_string (&global->start_geometry, strg);
+	fprintf (writefp, "%sstart_geometry\t%s\n",c, strg);
+	config_geometry_string (&global->open_geometry, strg);
+	fprintf (writefp, "%sopen_geometry\t%s\n",c,  strg);
+	config_geometry_string (&global->shrink_geometry, strg);
+	fprintf (writefp, "%sshrink_geometry\t%s\n",c, strg);
+	
+	if (global->time_format[0])
+	  fprintf (writefp, "%stime_format\t%s\n",c, global->time_format);
+	
+	signalstate_write (writefp, c);
     }
-
-    fprintf (writefp, "\n## Cursors ##\n");
-    cur_write (writefp);
     
-    signalstate_write (writefp);
+    if (global->cuswr_item[CUSWRITEM_VALSEARCH]) {
+	fprintf (writefp, "\n#### Value Searches ####\n");
+	for (i=1; i<=MAX_SRCH; i++) {
+	    ValSearch_t *vs_ptr = &global->val_srch[i-1];
+	    char strg[MAXSIGLEN];
+	    if (vs_ptr->color || vs_ptr->cursor) {
+		val_to_string (vs_ptr->radix, strg, &vs_ptr->value, FALSE);
+		fprintf (writefp, "%svalue_highlight %s %d \"%s\" %s %s\n",c,
+			 strg, i, vs_ptr->signal, 
+			 vs_ptr->color ? "-VALUE":"",
+			 vs_ptr->cursor ? "-CURSOR":"");
+	    }
+	}
+    }
     
-    fprintf (writefp, "\n#### Trace INFORMATION ##\n");
-    fprintf (writefp, "\n## Signal Highlighting, Commenting, etc #\n");
-    for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
-	fprintf (writefp, "###set_trace %s\n", trace->filename);
-	/* Save signal colors */
-	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    if (sig_ptr->color && !sig_ptr->search) {
-		fprintf (writefp, "#signal_highlight %s %d\n", sig_ptr->signame, sig_ptr->color);
+    if (global->cuswr_item[CUSWRITEM_CURSORS]) {
+	fprintf (writefp, "\n#### Cursors ####\n");
+	cur_write (writefp, c);
+    }
+    
+    if (global->cuswr_item[CUSWRITEM_FORMAT]) {
+	fprintf (writefp, "\n#### Trace Format ####\n");
+	for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	    if ((   global->cuswr_traces == TRACESEL_THIS && trace!=trace_top)
+		|| (global->cuswr_traces == TRACESEL_ALL && trace==global->deleted_trace_head)) {
+		continue;
 	    }
-	    if (sig_ptr->note) fprintf (writefp, "signal_note %s \"%s\"\n", sig_ptr->signame, sig_ptr->note);
-	    if (sig_ptr->radix != global->radixs[0]) {
-	        fprintf (writefp, "#signal_radix %s %s\n", sig_ptr->signame, sig_ptr->radix->name);
+	    if (trace->loaded) {
+		fprintf (writefp, "###set_trace\t%s\n", trace->filename);
+		fprintf (writefp, "%sfile_format\t%s\n",c, filetypes[trace->fileformat].name);
+		fprintf (writefp, "%svector_separator\t\"%c\"\n",c, trace->vector_separator);
+		fprintf (writefp, "%shierarchy_separator\t\"%c\"\n",c, trace->hierarchy_separator);
+		fprintf (writefp, "%stime_multiplier\t%d\n",c, global->tempest_time_mult);
+		fprintf (writefp, "%stime_precision\t%s\n",c, time_units_to_string (global->time_precision, TRUE));
 	    }
 	}
     }
-
-    fprintf (writefp, "\n#### Signal Ordering #\n");
-    for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	fprintf (writefp, "###set_trace %s\n", trace->filename);
-	fprintf (writefp, "#signal_delete *\n");
-	/* Save signal colors */
-	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    fprintf (writefp, "#signal_add %s\n", sig_ptr->signame);
+    
+    if (global->cuswr_item[CUSWRITEM_GRIDS]) {
+	fprintf (writefp, "\n#### Grids ####\n");
+	for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	    if ((   global->cuswr_traces == TRACESEL_THIS && trace!=trace_top)
+		|| (global->cuswr_traces == TRACESEL_ALL && trace==global->deleted_trace_head)) {
+		continue;
+	    }
+	    if (trace->loaded) {
+		fprintf (writefp, "###set_trace\t%s\n", trace->filename);
+		for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
+		    grid_ptr = &(trace->grid[grid_num]);
+		    
+		    fprintf (writefp, "%sgrid\t\t%d\t%s\n",c, grid_num, grid_ptr->visible?"ON":"OFF");
+		    fprintf (writefp, "%sgrid_type\t%d\t%s\n",c, grid_num, grid_ptr->wide_line?"WIDE":"NORMAL");
+		    fprintf (writefp, "%sgrid_signal\t%d\t\"%s\"\n",c, grid_num, grid_ptr->signal);
+		    fprintf (writefp, "%sgrid_color\t%d\t%d\n",c, grid_num, grid_ptr->color);
+		    fprintf (writefp, "%sgrid_resolution\t%d\t",c, grid_num);
+		    switch (grid_ptr->period_auto) {
+		      case PA_AUTO:		fprintf (writefp, "ASSERTION\n");	break;
+		      default:		fprintf (writefp, "%d\n", grid_ptr->period);	break;
+		    }
+		    fprintf (writefp, "%sgrid_align\t%d\t",c, grid_num);
+		    switch (grid_ptr->align_auto) {
+		      case AA_ASS:		fprintf (writefp, "ASSERTION\n");	break;
+		      case AA_DEASS:	fprintf (writefp, "DEASSERTION\n");	break;
+		      default:		fprintf (writefp, "%d\n", grid_ptr->alignment);	break;
+		    }
+		}
+	    }
 	}
     }
+	
+    if (global->cuswr_item[CUSWRITEM_SIGHIGHLIGHT]) {
+	fprintf (writefp, "\n#### Signal Highlighting, Commenting, etc ####\n");
+	for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
+	    if ((   global->cuswr_traces == TRACESEL_THIS && trace!=trace_top)
+		|| (global->cuswr_traces == TRACESEL_ALL && trace==global->deleted_trace_head)) {
+		continue;
+	    }
+	    fprintf (writefp, "###set_trace %s\n", trace->filename);
+	    /* Save signal colors */
+	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+		if (sig_ptr->color && !sig_ptr->search) {
+		    fprintf (writefp, "%ssignal_highlight %s %d\n",c, sig_ptr->signame, sig_ptr->color);
+		}
+		if (sig_ptr->note) fprintf (writefp, "%ssignal_note %s \"%s\"\n",c, sig_ptr->signame, sig_ptr->note);
+		if (sig_ptr->radix != global->radixs[0]) {
+		    fprintf (writefp, "%ssignal_radix %s %s\n",c, sig_ptr->signame, sig_ptr->radix->name);
+		}
+	    }
+	}
+    }
+	    
+    if (global->cuswr_item[CUSWRITEM_SIGORDER]) {
+	fprintf (writefp, "\n#### Signal Ordering ####\n");
+	for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	    if ((   global->cuswr_traces == TRACESEL_THIS && trace!=trace_top)
+		|| (global->cuswr_traces == TRACESEL_ALL && trace==global->deleted_trace_head)) {
+		continue;
+	    }
+	    fprintf (writefp, "###set_trace %s\n", trace->filename);
+	    fprintf (writefp, "%ssignal_delete *\n",c);
+	    /* Save signal colors */
+	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+		fprintf (writefp, "%ssignal_add %s\n",c, sig_ptr->signame);
+	    }
+	}
+    }
+	
+    fprintf (writefp, "\n\n##### Customization Write by %s\n", DTVERSION);
+    fprintf (writefp, "##### Created %s\n", date_string(0));
 
     fclose (writefp);
 }
-
-void config_write_cb (
-    Widget		w)
-{
-    Trace *trace = widget_to_trace(w);
-    char newfilename[MAXFNAMELEN];
-    char *pchar;
-
-#ifdef VMS
-    config_write_file (trace,"SYS$LOGIN:DINOTRACE.WCONFIG");
-#else
-    newfilename[0] = '\0';
-    if (NULL != (pchar = getenv ("HOME"))) strcpy (newfilename, pchar);
-    if (newfilename[0]) strcat (newfilename, "/");
-    strcat (newfilename, "dinotrace.wconfig");
-    config_write_file (trace,newfilename);
-#endif
-}
-
+	    
 /**********************************************************************
 *	config_restore_defaults
 **********************************************************************/
@@ -1499,10 +1525,6 @@ void config_write_cb (
 void config_trace_defaults (
     Trace	*trace)
 {
-    trace->sighgt = 20;	/* was 25 */
-    trace->cursor_vis = TRUE;
-    trace->sigrf = SIG_RF;
-    trace->timerep = global->time_precision;
     trace->hierarchy_separator = '.';
     trace->vector_separator = '[';
     trace->vector_endseparator = ']';
@@ -1517,8 +1539,12 @@ void config_global_defaults(void)
     draw_needupd_val_states ();
     draw_needupd_sig_start ();
     
+    global->sighgt = 20;	/* was 25 */
     global->pageinc = PAGEINC_FULL;
     global->save_ordering = TRUE;
+    global->cursor_vis = TRUE;
+    global->sigrf = SIG_RF;
+    global->timerep = global->time_precision;
 }
 
 

@@ -87,6 +87,8 @@ struct st_filetypes filetypes[FF_NUMFORMATS] = {
     { 0, "DECSIM Ascii",	"TRA",	"*.tra*"	},
 };
 
+void version(), usage();
+
 int    main (
     uint_t	argc,
     char	**argv)
@@ -108,60 +110,58 @@ int    main (
 	    i++;
 	}
 	else {
-	    /* Switch */
-	    if ( !strcmp (argv[i], "-debug") ) {
+	    char *sw = argv[i];
+	    /* Skip the - */
+	    sw++;
+	    /* Allow gnu -- switches */
+	    if (*sw=='-') sw++;
+
+	    /* Switch tests */
+	    if ( !strcmp (sw, "debug") ) {
 		DTDEBUG = TRUE;
 	    }
-	    else if ( !strcmp (argv[i], "-print") ) {
+	    else if ( !strcmp (sw, "version") ) {
+		version();
+	    }
+	    else if ( !strcmp (sw, "print") ) {
 		if ((i+1)<argc && isdigit(argv[i+1][0])) {
 		    shift;
-		    sscanf (argv[i], "%x", & DTPRINT );
+		    sscanf (sw, "%x", & DTPRINT );
 		}
 		else DTPRINT = -1;
 	    }
-	    else if ( !strcmp (argv[i], "-tempest") ) {
+	    else if ( !strcmp (sw, "tempest") ) {
 		file_format = FF_TEMPEST;
 	    }
-	    else if ( !strcmp (argv[i], "-decsim")
-		     || !strcmp (argv[i], "-decsim_z") ) {
+	    else if ( !strcmp (sw, "decsim")
+		     || !strcmp (sw, "decsim_z") ) {
 		file_format = FF_DECSIM;
 	    }
-	    else if ( !strcmp (argv[i], "-verilog") ) {
+	    else if ( !strcmp (sw, "verilog") ) {
 		file_format = FF_VERILOG;
 	    }
-	    else if ( !strcmp (argv[i], "-sync") ) {
+	    else if ( !strcmp (sw, "sync") ) {
 		sync = TRUE;
 	    }
-	    else if ( !strcmp (argv[i], "-geometry") && (i+1)<argc ) {
+	    else if ( !strcmp (sw, "geometry") && (i+1)<argc ) {
 		shift;
 		config_parse_geometry (argv[i], & (global->start_geometry));
 	    }
-	    else if ( !strcmp (argv[i], "-res") && (i+1)<argc ) {
+	    else if ( !strcmp (sw, "res") && (i+1)<argc ) {
 		float res;
-		
 		shift;
 		sscanf (argv[i],"%f",&res);
 		global->res = RES_SCALE/ (float)res;
 		global->res_default = FALSE;
 	    }
-	    else if ( !strcmp (argv[i], "-noconfig") ) {
+	    else if ( !strcmp (sw, "noconfig") ) {
 		int cfg_num;
 		for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
 		    global->config_enable[cfg_num] = FALSE;
 		}
 	    }
 	    else {
-		printf ("Invalid %s Option: %s\n", DTVERSION, argv[i]);
-		printf ("\n%s\n\n", help_message ());
-		printf ("DINOTRACE\t[-switches...]  [trace_name] [trace_name] ...\n");
-		printf ("Switches:\n");
-		printf ("\tDebug:\t-debug\t\tEnable debugging menus.\n");
-		printf ("\t\t-print value\tPrint debugging information.\n");
-		printf ("\tFormat:\t-decsim\t\tRead traces in DECSIM format.\n");
-		printf ("\t\t-tempest\tRead traces in Tempest format.\n");
-		printf ("\t\t-verilog\tRead traces in Verilog format.\n");
-		printf ("\tConfig:\t-noconfig\tSkip reading global config files.\n");
-		printf ("\tX-11:\t-geometry XxY+x+y  Specify starting geometry.\n\n");
+		printf ("Invalid %s Option: %s\n", DTVERSION, sw);
 		exit (-1);
 	    }
 	    shift;
@@ -193,6 +193,7 @@ int    main (
     config_read_defaults (trace, TRUE);
 
     /* Make the temporary trace the deleted signal trace */
+    strcpy (trace->filename, "DELETED");
     global->deleted_trace_head = trace;
     global->trace_head = NULL;
 
@@ -241,6 +242,30 @@ See the Help menu for more information.");
 	XtAppNextEvent (global->appcontext, &event);
 	XtDispatchEvent (&event);
     }
+}
+
+void usage()
+{
+    printf ("\n%s\n\n", help_message ());
+    printf ("DINOTRACE\t[-switches...]  [trace_name] [trace_name] ...\n");
+    printf ("Switches:\n");
+    /*
+    printf ("\tDebug:\t-debug\t\tEnable debugging menus.\n");
+    printf ("\t\t-print value\tPrint debugging information.\n");
+    */
+    printf ("\tFormat:\t-decsim\t\tRead traces in DECSIM format.\n");
+    printf ("\t\t-tempest\tRead traces in Tempest format.\n");
+    printf ("\t\t-verilog\tRead traces in Verilog format.\n");
+    printf ("\tConfig:\t-noconfig\tSkip reading global config files.\n");
+    printf ("\tX-11:\t-geometry XxY+x+y  Specify starting geometry.\n\n");
+    printf ("\t\t-display\tSpecify display device.\n\n");
+    exit (10);
+}
+
+void version()
+{
+    printf ("%s\n", DTVERSION);
+    exit (0);
 }
 
 char	*help_message ()

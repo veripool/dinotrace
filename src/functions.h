@@ -239,6 +239,8 @@ extern void	cus_ok_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
 extern void	cus_apply_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
 extern void	cus_restore_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
 extern void	cus_reread_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cus_write_cb (Widget w);
+extern void	cus_write_ok_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackStruct *cb);
 
 /* dt_cursor.c routines */
 extern void	cur_add (DTime time, ColorNum color, CursorType_t type, const char *note);
@@ -246,7 +248,7 @@ extern void	cur_remove (DCursor *);
 extern void	cur_delete_of_type (CursorType_t type);
 extern DTime	cur_time_first (Trace *trace);
 extern DTime	cur_time_last (Trace *trace);
-extern void	cur_write (FILE *);
+extern void	cur_write (FILE *, char *c);
 extern char *	cur_examine_string (Trace *trace, DCursor *cursor_ptr);
 
 extern void	cur_add_cb (Widget w);
@@ -267,10 +269,9 @@ extern void	config_global_defaults (void);
 extern void	config_parse_geometry (char *, Geometry *);
 extern void	config_update_filenames (Trace *trace);
 extern void	config_read_socket (char *line, char *name, int cmdnum, Boolean_t eof);
-extern SignalState *signalstate_find (Trace *, char *);
+extern void	config_write_file (Trace *trace, char *filename);
+extern SignalState_t *signalstate_find (Trace *, char *);
 extern int	wildmat ();
-
-extern void	config_write_cb (Widget w);
 
 /* dt_grid.c routines */
 extern void	grid_calc_autos (Trace *trace);
@@ -369,14 +370,17 @@ extern void	fil_ok_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackStruct 
 extern void	trace_read_cb (Widget w, Trace *trace);
 extern void	trace_reread_all_cb (Widget w, Trace *trace);
 extern void	trace_reread_cb (Widget w, Trace *trace);
-extern void	help_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
-extern void	help_trace_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
-extern void	help_doc_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	help_cb (Widget w);
+extern void	help_trace_cb (Widget w);
+extern void	help_doc_cb (Widget w);
 
 /* dt_util routines */
+extern void	strcpy_overlap (char *d, char *s);
 extern void	fgets_dynamic (char **line_pptr, uint_t *length_ptr, FILE *readfp);
 extern void	upcase_string (char *tp);
 extern void	file_directory (char *strg);
+extern void	ok_apply_cancel (OkApplyWidgets_t *wid_ptr, Widget, Widget, XtCallbackProc, Trace*, 
+				 XtCallbackProc, Trace*, XtCallbackProc, Trace*, XtCallbackProc, Trace*);
 extern char *	extract_first_xms_segment (XmString);
 extern char *	date_string (time_t time_num);
 #if ! HAVE_STRDUP
@@ -385,7 +389,6 @@ extern char *	strdup (char *);
 
 extern void	new_time (Trace *);
 extern void	get_geometry (Trace *trace);
-extern void	get_file_name (Trace *trace);
 extern void	get_data_popup (Trace *trace, char *string, int type);
 extern void	print_sig_info (Signal *sig_ptr);
 extern Trace *	widget_to_trace (Widget w);

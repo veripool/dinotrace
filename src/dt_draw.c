@@ -163,7 +163,7 @@ void draw_grid (
 
     /* create the dash pattern for the vertical grid lines */
     primary_dash[0] = PDASH_HEIGHT;
-    primary_dash[1] = trace->sighgt - primary_dash[0];
+    primary_dash[1] = global->sighgt - primary_dash[0];
 
     /* Other coordinates */
     y0 = trace->ystart - Y_GRID_TOP;
@@ -249,7 +249,7 @@ void draw_cursors (
     Position	ytop,ybot,ydelta;
     Dimension m_time_height = global->time_font->ascent;
 
-    if (!trace->cursor_vis) return;
+    if (!global->cursor_vis) return;
 
     XSetFont (global->display, trace->gc, global->time_font->fid);
 
@@ -386,8 +386,8 @@ void draw_trace (
     for (sig_ptr = trace->dispsig, numprt = 0; sig_ptr && numprt<trace->numsigvis;
 	 sig_ptr = sig_ptr->forward, numprt++) {
 	int yhigh, ylow;
-	yhigh = trace->ystart + numprt * trace->sighgt;
-	ylow = yhigh + trace->sighgt - Y_SIG_SPACE;
+	yhigh = trace->ystart + numprt * global->sighgt;
+	ylow = yhigh + global->sighgt - Y_SIG_SPACE;
 	if ( (numprt & 1) ^ (trace->numsigstart & 1) ) {
 	    SET_FOREGROUND (trace->barcolornum);
 	    XFillRectangle (global->display, trace->pixmap, trace->gc,
@@ -401,7 +401,7 @@ void draw_trace (
     /* Overall coordinates */
     star_width = XTextWidth (global->value_font,"*",1);
     xend = trace->width - XMARGIN;
-    xsigrf = MAX(1,trace->sigrf);
+    xsigrf = MAX(1,global->sigrf);
     
     /* Preset dash pattern for STATE_Z's */
     XSetDashes (global->display, trace->gc, 0, "\001\001", 2);
@@ -415,10 +415,10 @@ void draw_trace (
 	/* All drawing is from the midpoint of the X in _B32s ( ===X=== ) */
 
 	/* Calculate line position */
-	yhigh = trace->ystart + numprt * trace->sighgt;
-	ylow = yhigh + trace->sighgt - Y_SIG_SPACE;
+	yhigh = trace->ystart + numprt * global->sighgt;
+	ylow = yhigh + global->sighgt - Y_SIG_SPACE;
 	/* Steal space from Y_SIG_SPACE if we can, down to 2 pixels */
-	yspace = trace->sighgt - global->signal_font->max_bounds.ascent;
+	yspace = global->sighgt - global->signal_font->max_bounds.ascent;
 	yspace = MIN( yspace, Y_SIG_SPACE);  /* Bound reasonably */
 	yspace = MAX( yspace, 2);  /* Bound reasonably */
 	ymdpt = (yhigh + ylow)/2;
@@ -830,7 +830,7 @@ void draw_hscroll (
     XFillRectangle (global->display, pixmap, trace->gc,
 		   slider_xmax, ymin, xmax - slider_xmax , ymax-ymin);
 
-    if ( trace->cursor_vis ) {
+    if ( global->cursor_vis ) {
 	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 	    /* draw the cursor */
 	    x1 = xmin + xscale * (csr_ptr->time - trace->start_time);

@@ -63,10 +63,13 @@ exec_prefix = @exec_prefix@
 all: dinotrace
 
 clean mostlyclean distclean maintainer-clean::
-	rm -f *.o compile_date.h dinodoc.h
+	rm -f *.o
 
 distclean maintainer-clean::
 	rm -f Makefile config.h
+
+maintainer-clean::
+	rm -f dinodoc.h compile_date.h
 
 #### Modules
 

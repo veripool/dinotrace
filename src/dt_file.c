@@ -110,13 +110,74 @@ void trace_read_cb (
     Widget		w,
     Trace		*trace)
 {
+    int		i;
+
     if (DTPRINT_ENTRY) printf ("In trace_read_cb - trace=%p\n",trace);
 
     /* Clear the file format */
     trace->fileformat = FF_AUTO;
 
-    /* get the filename */
-    get_file_name (trace);
+    if (!trace->fileselect.dialog) {
+	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Open Trace File") );
+
+	trace->fileselect.dialog = XmCreateFileSelectionDialog ( trace->main, "file", arglist, 2);
+	DAddCallback (trace->fileselect.dialog, XmNokCallback, fil_ok_cb, trace);
+	DAddCallback (trace->fileselect.dialog, XmNcancelCallback, (XtCallbackProc)unmanage_cb, trace->fileselect.dialog);
+	XtUnmanageChild ( XmFileSelectionBoxGetChild (trace->fileselect.dialog, XmDIALOG_HELP_BUTTON));
+	
+	trace->fileselect.work_area = XmCreateWorkArea (trace->fileselect.dialog, "wa", arglist, 0);
+
+	/* Create FILE FORMAT */
+	trace->fileselect.format_menu = XmCreatePulldownMenu (trace->fileselect.work_area,"fmtrad",arglist,0);
+
+	for (i=0; i<FF_NUMFORMATS; i++) {
+	    if (filetypes[i].selection) {
+		XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (filetypes[i].name) );
+		trace->fileselect.format_item[i] =
+		    XmCreatePushButtonGadget (trace->fileselect.format_menu,"pdbutton",arglist,1);
+		DManageChild (trace->fileselect.format_item[i], trace, MC_NOKEYS);
+		DAddCallback (trace->fileselect.format_item[i], XmNactivateCallback, fil_format_option_cb, trace);
+	    }
+	}
+
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Format"));
+	XtSetArg (arglist[1], XmNsubMenuId, trace->fileselect.format_menu);
+	trace->fileselect.format_option = XmCreateOptionMenu (trace->fileselect.work_area,"format",arglist,2);
+	DManageChild (trace->fileselect.format_option, trace, MC_NOKEYS);
+
+	/* Create save_ordering button */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Preserve Signal Ordering"));
+	XtSetArg (arglist[1], XmNx, 0);
+	XtSetArg (arglist[2], XmNy, 100);
+	XtSetArg (arglist[3], XmNshadowThickness, 1);
+	trace->fileselect.save_ordering = XmCreateToggleButton (trace->fileselect.work_area,"save_ordering",arglist,4);
+	DManageChild (trace->fileselect.save_ordering, trace, MC_NOKEYS);
+	
+	DManageChild (trace->fileselect.work_area, trace, MC_NOKEYS);
+	
+	XSync (global->display,0);
+    }
+    
+    DManageChild (trace->fileselect.dialog, trace, MC_NOKEYS);
+
+    /* Ordering */
+    XtSetArg (arglist[0], XmNset, global->save_ordering ? 1:0);
+    XtSetValues (trace->fileselect.save_ordering,arglist,1);
+    
+    /* File format */
+    if (filetypes[file_format].selection) {
+	XtSetArg (arglist[0], XmNmenuHistory, trace->fileselect.format_item[file_format]);
+	XtSetValues (trace->fileselect.format_option, arglist, 1);
+    }
+    
+    /* Set directory */
+    XtSetArg (arglist[0], XmNdirectory, XmStringCreateSimple (global->directory) );
+    XtSetValues (trace->fileselect.dialog,arglist,1);
+
+    fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
+
+    XSync (global->display,0);
 }
 
 void trace_reread_all_cb (
@@ -341,77 +402,6 @@ void  fil_select_set_pattern (
     XtSetValues (dialog,arglist,2);
 }
 
-
-void  get_file_name (
-    Trace	*trace)
-{
-    int		i;
-    
-    if (DTPRINT_ENTRY) printf ("In get_file_name trace=%p\n",trace);
-    
-    if (!trace->fileselect.dialog) {
-	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
-	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Open Trace File") );
-
-	trace->fileselect.dialog = XmCreateFileSelectionDialog ( trace->main, "file", arglist, 2);
-	DAddCallback (trace->fileselect.dialog, XmNokCallback, fil_ok_cb, trace);
-	DAddCallback (trace->fileselect.dialog, XmNcancelCallback, (XtCallbackProc)unmanage_cb, trace->fileselect.dialog);
-	XtUnmanageChild ( XmFileSelectionBoxGetChild (trace->fileselect.dialog, XmDIALOG_HELP_BUTTON));
-	
-	trace->fileselect.work_area = XmCreateWorkArea (trace->fileselect.dialog, "wa", arglist, 0);
-
-	/* Create FILE FORMAT */
-	trace->fileselect.format_menu = XmCreatePulldownMenu (trace->fileselect.work_area,"fmtrad",arglist,0);
-
-	for (i=0; i<FF_NUMFORMATS; i++) {
-	    if (filetypes[i].selection) {
-		XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (filetypes[i].name) );
-		trace->fileselect.format_item[i] =
-		    XmCreatePushButtonGadget (trace->fileselect.format_menu,"pdbutton",arglist,1);
-		DManageChild (trace->fileselect.format_item[i], trace, MC_NOKEYS);
-		DAddCallback (trace->fileselect.format_item[i], XmNactivateCallback, fil_format_option_cb, trace);
-	    }
-	}
-
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Format"));
-	XtSetArg (arglist[1], XmNsubMenuId, trace->fileselect.format_menu);
-	trace->fileselect.format_option = XmCreateOptionMenu (trace->fileselect.work_area,"format",arglist,2);
-	DManageChild (trace->fileselect.format_option, trace, MC_NOKEYS);
-
-	/* Create save_ordering button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Preserve Signal Ordering"));
-	XtSetArg (arglist[1], XmNx, 0);
-	XtSetArg (arglist[2], XmNy, 100);
-	XtSetArg (arglist[3], XmNshadowThickness, 1);
-	trace->fileselect.save_ordering = XmCreateToggleButton (trace->fileselect.work_area,"save_ordering",arglist,4);
-	DManageChild (trace->fileselect.save_ordering, trace, MC_NOKEYS);
-	
-	DManageChild (trace->fileselect.work_area, trace, MC_NOKEYS);
-	
-	XSync (global->display,0);
-    }
-    
-    DManageChild (trace->fileselect.dialog, trace, MC_NOKEYS);
-
-    /* Ordering */
-    XtSetArg (arglist[0], XmNset, global->save_ordering ? 1:0);
-    XtSetValues (trace->fileselect.save_ordering,arglist,1);
-    
-    /* File format */
-    if (filetypes[file_format].selection) {
-	XtSetArg (arglist[0], XmNmenuHistory, trace->fileselect.format_item[file_format]);
-	XtSetValues (trace->fileselect.format_option, arglist, 1);
-    }
-    
-    /* Set directory */
-    XtSetArg (arglist[0], XmNdirectory, XmStringCreateSimple (global->directory) );
-    XtSetValues (trace->fileselect.dialog,arglist,1);
-
-    fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
-
-    XSync (global->display,0);
-}
-
 void    fil_format_option_cb (
     Widget	w,
     Trace	*trace,
@@ -461,20 +451,17 @@ void fil_ok_cb (
 
 
 void help_cb (
-    Widget		w,
-    Trace		*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("in help_cb\n");
-
     dino_information_ack (trace, help_message ());
 }
 
 void help_trace_cb (
-    Widget		w,
-    Trace		*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     static char msg[2000];
     static char msg2[1000];
 
@@ -484,9 +471,7 @@ void help_trace_cb (
 	sprintf (msg, "No trace is loaded.\n");
     }
     else {
-	sprintf (msg,
-	     "%s\n\
-\n", 	 trace->filename);
+	sprintf (msg, "%s\n\n", trace->filename);
 
 	sprintf (msg2, "File Format: %s\n", filetypes[trace->fileformat].name);
 	strcat (msg, msg2);
@@ -506,10 +491,10 @@ void help_trace_cb (
 
 
 void help_doc_cb (
-    Widget		w,
-    Trace		*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
+
     if (DTPRINT_ENTRY) printf ("in help_doc_cb\n");
 
     /* May be called before the window was opened, if so ignore the help_doc */
@@ -524,7 +509,7 @@ void help_doc_cb (
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->help_doc, XmDIALOG_CANCEL_BUTTON));
 	XtUnmanageChild ( XmMessageBoxGetChild (trace->help_doc, XmDIALOG_HELP_BUTTON));
 
-	/* create the file name text widget */
+	/* create scrolled text widget */
 	XtSetArg (arglist[0], XmNrows, 40);
 	XtSetArg (arglist[1], XmNcolumns, 80);
 	XtSetArg (arglist[2], XmNeditable, FALSE);
@@ -868,7 +853,7 @@ void fil_make_busses (
 		&& (sig_ptr->signame_buspos==NULL || !strcmp (sig_ptr->signame_buspos, bus_sig_ptr->signame_buspos))
 		/*  & the result would have < 128 bits */
 		&& (ABS(bus_sig_ptr->msb_index - sig_ptr->lsb_index) < 128 )
-		/* 	& have subscripts that are different by 1  (<20:10> and <9:5> are seperated by 10-9=1) */
+		/* 	& have subscripts that are different by 1  (<20:10> and <9:5> are separated by 10-9=1) */
 		&& ( ((bus_sig_ptr->msb_index >= sig_ptr->lsb_index)
 		      && ((bus_sig_ptr->lsb_index - 1) == sig_ptr->msb_index))
 		    || ((bus_sig_ptr->msb_index <= sig_ptr->lsb_index)

@@ -77,6 +77,8 @@
 
 /**********************************************************************/
 
+Widget	dmanage_last;	/* Last DManageChild()'d widget */
+
 /* Application Resources */
 /* Colors:
    Black, White, Aquamarine, Blue, BlueViolet, Brown, CadetBlue, Coral,
@@ -187,7 +189,7 @@ void set_menu_closes ()
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	XtSetArg (arglist[0], XmNsensitive, sensitive);
-	XtSetValues (trace->menu_close, arglist, 1);
+	XtSetValues (trace->menu.menu_close, arglist, 1);
     }
 }
 
@@ -275,6 +277,7 @@ void trace_close (
     for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	if (trace_ptr->next_trace == trace) trace_ptr->next_trace = trace->next_trace;
     }
+    if (trace == global->anno_last_trace) global->anno_last_trace = NULL;
 
     /* free the display structure */
     DFree (trace);
@@ -343,6 +346,7 @@ void init_globals (void)
     int i;
     char *pchar;
     int		cfg_num;
+    char	filename[MAXFNAMELEN];
 
     if (DTPRINT_ENTRY) printf ("in init_globals\n");
 
@@ -380,8 +384,18 @@ void init_globals (void)
 
     global->goto_color = -1;
 
+    global->cuswr_item[CUSWRITEM_COMMENT] = FALSE;
+    global->cuswr_item[CUSWRITEM_PERSONAL] = FALSE;
+    global->cuswr_item[CUSWRITEM_VALSEARCH] = TRUE;
+    global->cuswr_item[CUSWRITEM_CURSORS] = TRUE;
+    global->cuswr_item[CUSWRITEM_GRIDS] = TRUE;
+    global->cuswr_item[CUSWRITEM_FORMAT] = TRUE;
+    global->cuswr_item[CUSWRITEM_SIGHIGHLIGHT] = TRUE;
+    global->cuswr_item[CUSWRITEM_SIGORDER] = TRUE;
+
     /* Annotate stuff */
-    global->anno_poppedup = FALSE;
+    global->anno_traces = TRACESEL_ALL;
+    global->anno_last_trace = NULL;
     for (i=0; i <= MAX_SRCH; i++) {
 	global->anno_ena_signal[i] = (i!=0);
 	global->anno_ena_cursor[i] = (i!=0);
@@ -394,6 +408,16 @@ void init_globals (void)
     if (NULL != (pchar = getenv ("HOME"))) strcpy (global->anno_filename, pchar);
     if (global->anno_filename[0]) strcat (global->anno_filename, "/");
     strcat (global->anno_filename, "dinotrace.danno");
+#endif
+
+#ifdef VMS
+    global->cuswr_filename = "sys$login:written.dino";
+#else
+    filename[0] = '\0';
+    if (NULL != (pchar = getenv ("HOME"))) strcpy (filename, pchar);
+    if (filename[0]) strcat (filename, "/");
+    strcat (filename, "written.dino");
+    global->cuswr_filename = strdup (filename);
 #endif
 
     val_radix_init ();
@@ -684,6 +708,7 @@ void DManageChild (Widget w, Trace *trace, MCKeys_t keys)
     XtSetValues (w, arglist, 1);
     if (keys) XtOverrideTranslations (w, XtParseTranslationTable (key_translations));
     XtManageChild (w);
+    dmanage_last = w;
 }
 
 /* Create a trace display and link it into the global information */
@@ -785,7 +810,7 @@ Trace *create_trace (
     dm_menu_entry (trace, 	"ReRead All",	'A', "!Ctrl<Key>R:", "C-r", trace_reread_all_cb);
     dm_menu_entry (trace, 	"Open...",	'O', "!Ctrl<Key>O:", "C-o", trace_open_cb);
     dm_menu_entry (trace, 	"Close",	'C',	NULL, NULL,	trace_close_cb);
-    trace->menu_close = trace->menu.pdentrybutton[trace->menu.pdm];
+    trace->menu.menu_close = trace->menu.pdentrybutton[trace->menu.pdm];
     dm_menu_entry (trace, 	"Clear",	'l',	NULL, NULL,	trace_clear_cb);
     dm_menu_separator (trace);
     dm_menu_entry (trace, 	"Print...",	'i',	NULL, NULL,	ps_dialog_cb);
@@ -798,9 +823,7 @@ Trace *create_trace (
     dm_menu_entry (trace, 	"Grid...",	'G',	NULL, NULL,	grid_customize_cb);
     dm_menu_entry (trace, 	"Read...",	'R',	NULL, NULL,	cus_read_cb);
     dm_menu_entry (trace, 	"ReRead",	'e',	NULL, NULL,	cus_reread_cb);
-    if (DTDEBUG) {
-	dm_menu_entry (trace, 	"Write",	'W',	NULL, NULL,	config_write_cb);
-    }
+    dm_menu_entry (trace, 	"Save As...",	'S',	NULL, NULL,	cus_write_cb);
     dm_menu_entry (trace, 	"Restore",	'R',	NULL, NULL,	cus_restore_cb);
 
     dm_menu_title (trace, "Cursor", 'C');

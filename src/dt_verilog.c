@@ -442,7 +442,7 @@ void	verilog_enter_busses (
 	if (sig_ptr->file_value.siglw.stbits.state) {
 	    /*if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } */
 
-	    /* Fix cptr to correct state */
+	    /* Make cptr have correct state */
 	    val_minimize (&(sig_ptr->file_value));
 
 	    /* Enter the cptr */

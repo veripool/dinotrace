@@ -870,26 +870,24 @@ void    sig_search_cb (
     
     if (DTPRINT_ENTRY) printf ("In sig_search_cb - trace=%p\n",trace);
     
-    if (!trace->signal.search) {
+    if (!trace->signal.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Signal Search Requester") );
-	trace->signal.search = XmCreateBulletinBoardDialog (trace->work,"search",arglist,2);
-	
-	XtSetArg (arglist[0], XmNverticalSpacing, 0);
-	trace->signal.form = XmCreateForm (trace->signal.search, "form", arglist, 1);
-	DManageChild (trace->signal.form, trace, MC_NOKEYS);
+	XtSetArg (arglist[2], XmNverticalSpacing, 0);
+	trace->signal.dialog = XmCreateFormDialog (trace->work,"search",arglist,3);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Color"));
 	XtSetArg (arglist[1], XmNx, 5);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
-	trace->signal.label1 = XmCreateLabel (trace->signal.form,"label1",arglist,3);
+	XtSetArg (arglist[3], XmNtopOffset, 10);
+	trace->signal.label1 = XmCreateLabel (trace->signal.dialog,"label1",arglist,4);
 	DManageChild (trace->signal.label1, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Sig"));
 	XtSetArg (arglist[1], XmNx, 5);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->signal.label1);
-	trace->signal.label4 = XmCreateLabel (trace->signal.form,"label4",arglist,4);
+	XtSetArg (arglist[3], XmNtopWidget, dmanage_last);
+	trace->signal.label4 = XmCreateLabel (trace->signal.dialog,"label4",arglist,4);
 	DManageChild (trace->signal.label4, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString,
@@ -898,7 +896,7 @@ void    sig_search_cb (
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopWidget, trace->signal.label1);
 	XtSetArg (arglist[4], XmNverticalSpacing, 0);
-	trace->signal.label3 = XmCreateLabel (trace->signal.form,"label3",arglist,5);
+	trace->signal.label3 = XmCreateLabel (trace->signal.dialog,"label3",arglist,5);
 	DManageChild (trace->signal.label3, trace, MC_NOKEYS);
 	
 	above = trace->signal.label3;
@@ -910,7 +908,7 @@ void    sig_search_cb (
 	    XtSetArg (arglist[2], XmNtopWidget, above);
 	    XtSetArg (arglist[3], XmNselectColor, trace->xcolornums[i+1]);
 	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (""));
-	    trace->signal.enable[i] = XmCreateToggleButton (trace->signal.form,"togglen",arglist,5);
+	    trace->signal.enable[i] = XmCreateToggleButton (trace->signal.dialog,"togglen",arglist,5);
 	    DManageChild (trace->signal.enable[i], trace, MC_NOKEYS);
 
 	    /* create the file name text widget */
@@ -921,52 +919,20 @@ void    sig_search_cb (
 	    XtSetArg (arglist[4], XmNtopWidget, above);
 	    XtSetArg (arglist[5], XmNresizeHeight, FALSE);
 	    XtSetArg (arglist[6], XmNeditMode, XmSINGLE_LINE_EDIT);
-	    trace->signal.text[i] = XmCreateText (trace->signal.form,"textn",arglist,7);
+	    trace->signal.text[i] = XmCreateText (trace->signal.dialog,"textn",arglist,7);
 	    DAddCallback (trace->signal.text[i], XmNactivateCallback, sig_search_ok_cb, trace);
 	    DManageChild (trace->signal.text[i], trace, MC_NOKEYS);
 
 	    above = trace->signal.text[i];
 	}
 
-	/* Create Separator */
-	XtSetArg (arglist[0], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[1], XmNtopWidget, above);
-	XtSetArg (arglist[2], XmNtopOffset, 10);
-	XtSetArg (arglist[3], XmNleftAttachment, XmATTACH_FORM );
-	XtSetArg (arglist[4], XmNrightAttachment, XmATTACH_FORM );
-	trace->signal.sep = XmCreateSeparator (trace->signal.form, "sep",arglist,5);
-	DManageChild (trace->signal.sep, trace, MC_NOKEYS);
-	
-	/* Create OK button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
-	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->signal.sep);
-	XtSetArg (arglist[4], XmNtopOffset, 10);
-	trace->signal.ok = XmCreatePushButton (trace->signal.form,"ok",arglist,5);
-	DAddCallback (trace->signal.ok, XmNactivateCallback, sig_search_ok_cb, trace);
-	DManageChild (trace->signal.ok, trace, MC_NOKEYS);
-	
-	/* create apply button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Apply") );
-	XtSetArg (arglist[1], XmNx, 70);
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->signal.sep);
-	XtSetArg (arglist[4], XmNtopOffset, 10);
-	trace->signal.apply = XmCreatePushButton (trace->signal.form,"apply",arglist,5);
-	DAddCallback (trace->signal.apply, XmNactivateCallback, sig_search_apply_cb, trace);
-	DManageChild (trace->signal.apply, trace, MC_NOKEYS);
-	
-	/* create cancel button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
-	XtSetArg (arglist[1], XmNx, 140);
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->signal.sep);
-	XtSetArg (arglist[4], XmNtopOffset, 10);
-	trace->signal.cancel = XmCreatePushButton (trace->signal.form,"cancel",arglist,5);
-	DAddCallback (trace->signal.cancel, XmNactivateCallback, unmanage_cb, trace->signal.search);
-
-	DManageChild (trace->signal.cancel, trace, MC_NOKEYS);
+	/* Ok/apply/cancel */
+	ok_apply_cancel (&trace->signal.okapply, trace->signal.dialog,
+			 dmanage_last,
+			 (XtCallbackProc)sig_search_ok_cb, trace,
+			 (XtCallbackProc)sig_search_apply_cb, trace,
+			 NULL, NULL,
+			 (XtCallbackProc)unmanage_cb, (Trace*)trace->signal.dialog);
     }
     
     /* Copy settings to local area to allow cancel to work */
@@ -980,7 +946,7 @@ void    sig_search_cb (
     }
 
     /* manage the popup on the screen */
-    DManageChild (trace->signal.search, trace, MC_NOKEYS);
+    DManageChild (trace->signal.dialog, trace, MC_NOKEYS);
 }
 
 void    sig_search_ok_cb (
@@ -1004,7 +970,7 @@ void    sig_search_ok_cb (
 	strcpy (global->sig_srch[i].string, strg);
     }
     
-    XtUnmanageChild (trace->signal.search);
+    XtUnmanageChild (trace->signal.dialog);
 
     draw_needupd_sig_search ();
     draw_needupd_sig_start ();
@@ -1237,7 +1203,7 @@ void    sig_select_cb (
     /* return if there is no file */
     if (!trace->loaded) return;
     
-    if (!trace->select.select) {
+    if (!trace->select.dialog) {
 	trace->select.del_strings=NULL;
 	trace->select.add_strings=NULL;
 	trace->select.del_signals=NULL;
@@ -1249,7 +1215,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[3], XmNverticalSpacing, 7);
 	XtSetArg (arglist[4], XmNhorizontalSpacing, 10);
 	XtSetArg (arglist[5], XmNresizable, FALSE);
-	trace->select.select = XmCreateFormDialog (trace->work,"select",arglist,6);
+	trace->select.dialog = XmCreateFormDialog (trace->work,"select",arglist,6);
 	
 	/*** BUTTONS ***/
 
@@ -1257,44 +1223,35 @@ void    sig_select_cb (
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNbottomAttachment, XmATTACH_FORM );
-	trace->select.ok = XmCreatePushButton (trace->select.select,"ok",arglist,3);
-	DAddCallback (trace->select.ok, XmNactivateCallback, sig_sel_ok_cb, trace);
-	DManageChild (trace->select.ok, trace, MC_NOKEYS);
+	trace->select.okapply.ok = XmCreatePushButton (trace->select.dialog,"ok",arglist,3);
+	DAddCallback (trace->select.okapply.ok, XmNactivateCallback, sig_sel_ok_cb, trace);
+	DManageChild (trace->select.okapply.ok, trace, MC_NOKEYS);
 
 	/* Create apply button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Apply") );
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_POSITION );
 	XtSetArg (arglist[2], XmNleftPosition, 45);
 	XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_FORM );
-	trace->select.apply = XmCreatePushButton (trace->select.select,"apply",arglist,4);
-	DAddCallback (trace->select.apply, XmNactivateCallback, sig_sel_apply_cb, trace);
-	DManageChild (trace->select.apply, trace, MC_NOKEYS);
+	trace->select.okapply.apply = XmCreatePushButton (trace->select.dialog,"apply",arglist,4);
+	DAddCallback (trace->select.okapply.apply, XmNactivateCallback, sig_sel_apply_cb, trace);
+	DManageChild (trace->select.okapply.apply, trace, MC_NOKEYS);
 
-	/* create cancel button */
-#if 0 /*broken*/
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
-	XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM );
-	XtSetArg (arglist[2], XmNbottomAttachment, XmATTACH_FORM );
-	trace->select.cancel = XmCreatePushButton (trace->select.select,"cancel",arglist,3);
-	/* DAddCallback (trace->select.cancel, XmNactivateCallback, unmanage_cb, trace->select.select); */
-	DAddCallback (trace->select.cancel, XmNactivateCallback, unmanage_cb, trace->select.select);
-	DManageChild (trace->select.cancel, trace, MC_NOKEYS);
-#endif
+	/* cancel button is broken */
 
 	/* Create Separator */
 	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNbottomAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNbottomWidget, trace->select.ok );
+	XtSetArg (arglist[3], XmNbottomWidget, trace->select.okapply.ok );
 	XtSetArg (arglist[4], XmNbottomOffset, 10);
-	trace->select.sep = XmCreateSeparator (trace->select.select, "sep",arglist,5);
-	DManageChild (trace->select.sep, trace, MC_NOKEYS);
+	trace->select.okapply.sep = XmCreateSeparator (trace->select.dialog, "sep",arglist,5);
+	DManageChild (trace->select.okapply.sep, trace, MC_NOKEYS);
 
 	/*** Add (deleted list) section ***/
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Add Signal Pattern"));
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
-	trace->select.label2 = XmCreateLabel (trace->select.select,"label2",arglist,3);
+	trace->select.label2 = XmCreateLabel (trace->select.dialog,"label2",arglist,3);
 	DManageChild (trace->select.label2, trace, MC_NOKEYS);
 
 	XtSetArg (arglist[0], XmNrows, 1);
@@ -1307,15 +1264,15 @@ void    sig_select_cb (
 	XtSetArg (arglist[7], XmNrightAttachment, XmATTACH_POSITION );
 	XtSetArg (arglist[8], XmNrightPosition, 50);
 	XtSetArg (arglist[9], XmNvalue, "*");
-	trace->select.add_pat = XmCreateText (trace->select.select,"dpat",arglist,10);
+	trace->select.add_pat = XmCreateText (trace->select.dialog,"dpat",arglist,10);
 	DAddCallback (trace->select.add_pat, XmNactivateCallback, sig_sel_pattern_cb, trace);
 	DManageChild (trace->select.add_pat, trace, MC_NOKEYS);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Add All") );
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNbottomAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNbottomWidget, trace->select.sep);
-	trace->select.add_all = XmCreatePushButton (trace->select.select,"aall",arglist,4);
+	XtSetArg (arglist[3], XmNbottomWidget, trace->select.okapply.sep);
+	trace->select.add_all = XmCreatePushButton (trace->select.dialog,"aall",arglist,4);
 	XtRemoveAllCallbacks (trace->select.add_all, XmNactivateCallback);
 	DAddCallback (trace->select.add_all, XmNactivateCallback, sig_sel_add_all_cb, trace);
 	DManageChild (trace->select.add_all, trace, MC_NOKEYS);
@@ -1324,7 +1281,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopWidget, trace->select.add_pat);
-	trace->select.label1 = XmCreateLabel (trace->select.select,"label1",arglist,4);
+	trace->select.label1 = XmCreateLabel (trace->select.dialog,"label1",arglist,4);
 	DManageChild (trace->select.label1, trace, MC_NOKEYS);
 
 	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
@@ -1334,7 +1291,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[4], XmNbottomWidget, trace->select.add_all);
 	XtSetArg (arglist[5], XmNrightAttachment, XmATTACH_POSITION );
 	XtSetArg (arglist[6], XmNrightPosition, 50);
-	trace->select.add_sigs_form = XmCreateForm (trace->select.select, "add_sigs_form", arglist, 7);
+	trace->select.add_sigs_form = XmCreateForm (trace->select.dialog, "add_sigs_form", arglist, 7);
 	DManageChild (trace->select.add_sigs_form, trace, MC_NOKEYS);
 
 	/* This is under its own form to prevent child attachment errors */
@@ -1355,7 +1312,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[2], XmNleftWidget, trace->select.add_sigs_form);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_FORM );
-	trace->select.label4 = XmCreateLabel (trace->select.select,"label4",arglist,4);
+	trace->select.label4 = XmCreateLabel (trace->select.dialog,"label4",arglist,4);
 	DManageChild (trace->select.label4, trace, MC_NOKEYS);
 
 	XtSetArg (arglist[0], XmNrows, 1);
@@ -1368,7 +1325,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[6], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[7], XmNtopWidget, trace->select.label2);
 	XtSetArg (arglist[8], XmNrightAttachment, XmATTACH_FORM );
-	trace->select.delete_pat = XmCreateText (trace->select.select,"apat",arglist,9);
+	trace->select.delete_pat = XmCreateText (trace->select.dialog,"apat",arglist,9);
 	DAddCallback (trace->select.delete_pat, XmNactivateCallback, sig_sel_pattern_cb, trace);
 	DManageChild (trace->select.delete_pat, trace, MC_NOKEYS);
 
@@ -1376,8 +1333,8 @@ void    sig_select_cb (
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[2], XmNleftWidget, trace->select.add_sigs_form);
 	XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNbottomWidget, trace->select.sep);
-	trace->select.delete_all = XmCreatePushButton (trace->select.select,"dall",arglist,5);
+	XtSetArg (arglist[4], XmNbottomWidget, trace->select.okapply.sep);
+	trace->select.delete_all = XmCreatePushButton (trace->select.dialog,"dall",arglist,5);
 	XtRemoveAllCallbacks (trace->select.delete_all, XmNactivateCallback);
 	DAddCallback (trace->select.delete_all, XmNactivateCallback, sig_sel_del_all_cb, trace);
 	DManageChild (trace->select.delete_all, trace, MC_NOKEYS);
@@ -1386,8 +1343,8 @@ void    sig_select_cb (
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[2], XmNleftWidget, trace->select.delete_all);
 	XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNbottomWidget, trace->select.sep);
-	trace->select.delete_const = XmCreatePushButton (trace->select.select,"dcon",arglist,5);
+	XtSetArg (arglist[4], XmNbottomWidget, trace->select.okapply.sep);
+	trace->select.delete_const = XmCreatePushButton (trace->select.dialog,"dcon",arglist,5);
 	XtRemoveAllCallbacks (trace->select.delete_const, XmNactivateCallback);
 	DAddCallback (trace->select.delete_const, XmNactivateCallback, sig_sel_del_const_cb, trace);
 	DManageChild (trace->select.delete_const, trace, MC_NOKEYS);
@@ -1397,7 +1354,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[2], XmNleftWidget, trace->select.add_sigs_form);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[4], XmNtopWidget, trace->select.delete_pat);
-	trace->select.label3 = XmCreateLabel (trace->select.select,"label3",arglist,5);
+	trace->select.label3 = XmCreateLabel (trace->select.dialog,"label3",arglist,5);
 	DManageChild (trace->select.label3, trace, MC_NOKEYS);
 
 	XtSetArg (arglist[0], XmNrightAttachment, XmATTACH_FORM );
@@ -1411,13 +1368,13 @@ void    sig_select_cb (
 	XtSetArg (arglist[8], XmNlistSizePolicy, XmCONSTANT);
 	XtSetArg (arglist[9], XmNselectionPolicy, XmEXTENDED_SELECT);
 	XtSetArg (arglist[10], XmNitems, 0);
-	trace->select.delete_sigs = XmCreateScrolledList (trace->select.select,"",arglist,11);
+	trace->select.delete_sigs = XmCreateScrolledList (trace->select.dialog,"",arglist,11);
 	DAddCallback (trace->select.delete_sigs, XmNextendedSelectionCallback, sig_sel_del_list_cb, trace);
 	DManageChild (trace->select.delete_sigs, trace, MC_NOKEYS);
     }
     
     /* manage the popup on the screen */
-    DManageChild (trace->select.select, trace, MC_NOKEYS);
+    DManageChild (trace->select.dialog, trace, MC_NOKEYS);
 
     /* update patterns - leave under the "manage" or toolkit will complain */
     sig_sel_pattern_cb (NULL, trace, NULL);
@@ -1961,54 +1918,72 @@ void sig_modify_en_signal (
 	    val_copy (&en_value, en_cptr);
 	}
 
-	/** start of determining new value **/
-	switch (en_value.siglw.stbits.state) {
-	case STATE_0:
-	    has_ones = 0;
-	    has_zeros = 1;
-	    break;
-	case STATE_1:
-	    has_ones = 1;
-	    has_zeros = 0;
-	    break;
-	case STATE_B32:
-	case STATE_B128:
-	    has_ones =
-		( (en_value.number[0] & en_sig_ptr->value_mask[0])
-		 | (en_value.number[1] & en_sig_ptr->value_mask[1])
-		 | (en_value.number[2] & en_sig_ptr->value_mask[2])
-		 | (en_value.number[3] & en_sig_ptr->value_mask[3]) );
-	    has_zeros =
-		(  ((~ en_value.number[0]) & en_sig_ptr->value_mask[0])
-		 | ((~ en_value.number[1]) & en_sig_ptr->value_mask[1])
-		 | ((~ en_value.number[2]) & en_sig_ptr->value_mask[2])
-		 | ((~ en_value.number[3]) & en_sig_ptr->value_mask[3]) );
-	    break;
-	} /* switch */
-
-	/* printf ("has0=%d has1=%d\n", has_zeros, has_ones); */
-
 	val_copy (&new_value, &base_value);
 
-	if (is_cosmos) {
-	    if (has_ones) {
-		/* Cosmos	enable means force U	-> U */
-		new_value.siglw.stbits.state = STATE_U;
-	    }
-	}
-	else {
-	    if (has_zeros) {
-		if (has_ones) {
-		    /* Non-cosmos	mixed enables	-> U/F32/F128 */
-		    new_value.siglw.stbits.state = STATE_U;
-		    /*WPSFIX*/
-		}
-		else {
-		    /* Non-cosmos	zero enables	-> Z */
-		    new_value.siglw.stbits.state = STATE_Z;
-		}
-	    }
-	}
+	/* Determine new value */
+	/* Cosmos	enable means force 0/1	-> U */
+	/* Verilator	enable means force 0/1	-> Z */
+	switch (en_value.siglw.stbits.state) {
+	  case STATE_0:	/* Leave value normal */
+	    break;
+	  case STATE_1:	/* Single bit, disable it */
+	    new_value.siglw.stbits.state = is_cosmos ? STATE_U : STATE_Z;
+	    break;
+
+	    /* STATE_1 can't occur below in the base because we know */
+	    /* the width of the enable is the same as the width of the base */
+	    /* and STATE_1 can only occur with 1 bits, B32 with 2 or more bits */
+	  case STATE_B32:	/* Some bitmask of U's */
+	    switch (base_value.siglw.stbits.state) {
+	      case STATE_0:
+		new_value.number[0] = 0;
+		/* FALLTHRU */
+	      case STATE_B32:
+	      default:
+		new_value.siglw.stbits.state = STATE_F32;
+		if (is_cosmos) new_value.number[0] &= ~en_value.number[0]; /*U*/
+		else new_value.number[0] |= en_value.number[0]; /*Z*/
+		new_value.number[1] = en_value.number[0];
+		break;
+	      case STATE_B128:
+		new_value.siglw.stbits.state = STATE_F128;
+		if (is_cosmos) new_value.number[0] &= ~en_value.number[0]; /*U*/
+		else new_value.number[0] |= en_value.number[0]; /*Z*/
+		new_value.number[4] = en_value.number[0];
+		break;
+	    } /* en=B32, switch base_state */
+	    break;
+
+	  case STATE_B128:	/* Some bitmask of U's */
+	    switch (base_value.siglw.stbits.state) {
+	      case STATE_0:
+		new_value.number[0] = 0;
+		/* FALLTHRU */
+	      case STATE_B32:
+	      default:
+		/* Make it look like the base value is a B128 */
+		new_value.number[1] = 0;
+		new_value.number[2] = 0;
+		new_value.number[3] = 0;
+		/* FALLTHRU */
+	      case STATE_B128:
+		new_value.siglw.stbits.state = STATE_F128;
+		if (is_cosmos) new_value.number[0] &= ~en_value.number[0]; /*U*/
+		else new_value.number[0] |= en_value.number[0]; /*Z*/
+		if (is_cosmos) new_value.number[1] &= ~en_value.number[1]; /*U*/
+		else new_value.number[1] |= en_value.number[1]; /*Z*/
+		if (is_cosmos) new_value.number[2] &= ~en_value.number[2]; /*U*/
+		else new_value.number[2] |= en_value.number[2]; /*Z*/
+		if (is_cosmos) new_value.number[3] &= ~en_value.number[3]; /*U*/
+		else new_value.number[3] |= en_value.number[3]; /*Z*/
+		new_value.number[4] = en_value.number[0];
+		new_value.number[5] = en_value.number[1];
+		new_value.number[6] = en_value.number[2];
+		new_value.number[7] = en_value.number[3];
+		break;
+	    } /* en=B32, switch base_state */
+	    break;
+	} /* switch */
 	/** end of determining new value **/
 
 	/* Calc time */
@@ -2057,13 +2032,6 @@ void sig_modify_en_signal (
 	sig_free (trace, en_sig_ptr, FALSE, FALSE);
 	trace->numsig-=2;
     }
-}
-
-void strcpy_overlap (
-    char *d,
-    char *s)
-{
-    while ((*d++ = *s++)) ;
 }
 
 void sig_modify_enables (

@@ -143,13 +143,13 @@ void    ps_range_create (
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (descrip) );
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopOffset, 0);
+	XtSetArg (arglist[3], XmNtopOffset, 10);
 	XtSetArg (arglist[4], XmNtopWidget, above);
-	range_ptr->time_label = XmCreateLabel (trace->prntscr.form,"",arglist,5);
+	range_ptr->time_label = XmCreateLabel (trace->prntscr.dialog,"",arglist,5);
 	DManageChild (range_ptr->time_label, trace, MC_NOKEYS);
 	
 	/* Begin pulldown */
-	range_ptr->time_pulldown = XmCreatePulldownMenu (trace->prntscr.form,"time_pulldown",arglist,0);
+	range_ptr->time_pulldown = XmCreatePulldownMenu (trace->prntscr.dialog,"time_pulldown",arglist,0);
 
 	if (range_ptr->type == BEGIN)
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Window Left Edge") );
@@ -186,7 +186,7 @@ void    ps_range_create (
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopOffset, 0);
 	XtSetArg (arglist[4], XmNtopWidget, range_ptr->time_label);
-	range_ptr->time_option = XmCreateOptionMenu (trace->prntscr.form,"options",arglist,5);
+	range_ptr->time_option = XmCreateOptionMenu (trace->prntscr.dialog,"options",arglist,5);
 	DManageChild (range_ptr->time_option, trace, MC_NOKEYS);
 
 	/* Default */
@@ -196,13 +196,14 @@ void    ps_range_create (
 	/* Begin Text */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 10);
-	XtSetArg (arglist[2], XmNx, 200);
-	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNtopOffset, 0);
-	XtSetArg (arglist[5], XmNtopWidget, range_ptr->time_label);
-	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
-	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
-	range_ptr->time_text = XmCreateText (trace->prntscr.form,"textn",arglist,8);
+	XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNleftWidget, range_ptr->time_option );
+	XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[5], XmNtopOffset, 0);
+	XtSetArg (arglist[6], XmNtopWidget, range_ptr->time_label);
+	XtSetArg (arglist[7], XmNresizeHeight, FALSE);
+	XtSetArg (arglist[8], XmNeditMode, XmSINGLE_LINE_EDIT);
+	range_ptr->time_text = XmCreateText (trace->prntscr.dialog,"textn",arglist,9);
 	DManageChild (range_ptr->time_text, trace, MC_NOKEYS);
     }
 
@@ -229,22 +230,18 @@ void    ps_dialog_cb (
     if (DTPRINT_ENTRY) printf ("In print_screen - trace=%p\n",trace);
     
     if (!trace->prntscr.dialog) {
-	XtSetArg (arglist[0],XmNdefaultPosition, TRUE);
-	XtSetArg (arglist[1],XmNdialogTitle, XmStringCreateSimple ("Print Screen Menu"));
-	/* XtSetArg (arglist[2],XmNwidth, 300);
-	   XtSetArg (arglist[3],XmNheight, 225); */
-	trace->prntscr.dialog = XmCreateBulletinBoardDialog (trace->work, "print",arglist,2);
+	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Print Screen Menu"));
+	XtSetArg (arglist[2], XmNverticalSpacing, 10);
+	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
+	trace->prntscr.dialog = XmCreateFormDialog (trace->work, "print",arglist,3);
 	
-	XtSetArg (arglist[0], XmNverticalSpacing, 10);
-	trace->prntscr.form = XmCreateForm (trace->prntscr.dialog, "form", arglist, 1);
-	DManageChild (trace->prntscr.form, trace, MC_NOKEYS);
-
 	/* create label widget for text widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Name") );
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[3], XmNtopOffset, 5);
-	trace->prntscr.label = XmCreateLabel (trace->prntscr.form,"",arglist,4);
+	trace->prntscr.label = XmCreateLabel (trace->prntscr.dialog,"",arglist,4);
 	DManageChild (trace->prntscr.label, trace, MC_NOKEYS);
 	
 	/* create the file name text widget */
@@ -252,11 +249,11 @@ void    ps_dialog_cb (
 	XtSetArg (arglist[1], XmNcolumns, 30);
 	XtSetArg (arglist[2], XmNx, 10);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNtopOffset, 5);
-	XtSetArg (arglist[5], XmNtopWidget, trace->prntscr.label);
+	XtSetArg (arglist[4], XmNtopWidget, trace->prntscr.label);
+	XtSetArg (arglist[5], XmNtopOffset, 0);
 	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
-	trace->prntscr.text = XmCreateText (trace->prntscr.form,"",arglist,8);
+	trace->prntscr.text = XmCreateText (trace->prntscr.dialog,"",arglist,8);
 	DManageChild (trace->prntscr.text, trace, MC_NOKEYS);
 	DAddCallback (trace->prntscr.text, XmNactivateCallback, ps_print_req_cb, trace);
 	
@@ -264,9 +261,9 @@ void    ps_dialog_cb (
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Note") );
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopOffset, 5);
+	XtSetArg (arglist[3], XmNtopOffset, 10);
 	XtSetArg (arglist[4], XmNtopWidget, trace->prntscr.text);
-	trace->prntscr.label = XmCreateLabel (trace->prntscr.form,"",arglist,5);
+	trace->prntscr.label = XmCreateLabel (trace->prntscr.dialog,"",arglist,5);
 	DManageChild (trace->prntscr.label, trace, MC_NOKEYS);
 	
 	/* create the print note text widget */
@@ -274,16 +271,16 @@ void    ps_dialog_cb (
 	XtSetArg (arglist[1], XmNcolumns, 30);
 	XtSetArg (arglist[2], XmNx, 10);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNtopOffset, 0);
-	XtSetArg (arglist[5], XmNtopWidget, trace->prntscr.label);
+	XtSetArg (arglist[4], XmNtopWidget, trace->prntscr.label);
+	XtSetArg (arglist[5], XmNtopOffset, 0);
 	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
-	trace->prntscr.notetext = XmCreateText (trace->prntscr.form,"notetext",arglist,8);
+	trace->prntscr.notetext = XmCreateText (trace->prntscr.dialog,"notetext",arglist,8);
 	DAddCallback (trace->prntscr.notetext, XmNactivateCallback, ps_print_req_cb, trace);
 	DManageChild (trace->prntscr.notetext, trace, MC_NOKEYS);
 	
 	/* Create radio box for page size */
-	trace->prntscr.size_menu = XmCreatePulldownMenu (trace->prntscr.form,"size",arglist,0);
+	trace->prntscr.size_menu = XmCreatePulldownMenu (trace->prntscr.dialog,"size",arglist,0);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("A-Sized"));
 	trace->prntscr.sizea = XmCreatePushButtonGadget (trace->prntscr.size_menu,"sizea",arglist,1);
@@ -305,9 +302,9 @@ void    ps_dialog_cb (
 	XtSetArg (arglist[1], XmNlabelString, XmStringCreateSimple ("Layout"));
 	XtSetArg (arglist[2], XmNsubMenuId, trace->prntscr.size_menu);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNtopOffset, 0);
+	XtSetArg (arglist[4], XmNtopOffset, 10);
 	XtSetArg (arglist[5], XmNtopWidget, trace->prntscr.notetext);
-	trace->prntscr.size_option = XmCreateOptionMenu (trace->prntscr.form,"sizeo",arglist,6);
+	trace->prntscr.size_option = XmCreateOptionMenu (trace->prntscr.dialog,"sizeo",arglist,6);
 	DManageChild (trace->prntscr.size_option, trace, MC_NOKEYS);
 
 	/* Create all_signals button */
@@ -315,9 +312,9 @@ void    ps_dialog_cb (
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNshadowThickness, 1);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNtopOffset, 0);
+	XtSetArg (arglist[4], XmNtopOffset, 10);
 	XtSetArg (arglist[5], XmNtopWidget, trace->prntscr.size_option);
-	trace->prntscr.all_signals = XmCreateToggleButton (trace->prntscr.form,
+	trace->prntscr.all_signals = XmCreateToggleButton (trace->prntscr.dialog,
 							   "all_signals",arglist,6);
 	DManageChild (trace->prntscr.all_signals, trace, MC_NOKEYS);
 
@@ -327,40 +324,13 @@ void    ps_dialog_cb (
 	ps_range_create (trace, &(trace->prntscr.end_range),
 			 trace->prntscr.begin_range.time_text, "End Printing at:", 1);
 
-	/* Create Separator */
-	XtSetArg (arglist[0], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[1], XmNtopWidget, trace->prntscr.end_range.time_text);
-	XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_FORM );
-	XtSetArg (arglist[3], XmNrightAttachment, XmATTACH_FORM );
-	trace->prntscr.sep = XmCreateSeparator (trace->prntscr.form, "sep",arglist,4);
-	DManageChild (trace->prntscr.sep, trace, MC_NOKEYS);
-	
-	/* Create Print button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Print") );
-	XtSetArg (arglist[1], XmNx, 10 );
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->prntscr.sep);
-	trace->prntscr.print = XmCreatePushButton (trace->prntscr.form, "print",arglist,4);
-	DAddCallback (trace->prntscr.print, XmNactivateCallback, ps_print_req_cb, trace);
-	DManageChild (trace->prntscr.print, trace, MC_NOKEYS);
-	
-	/* create defaults button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Defaults") );
-	XtSetArg (arglist[1], XmNx, 140 );
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->prntscr.sep);
-	trace->prntscr.defaults = XmCreatePushButton (trace->prntscr.form,"defaults",arglist,4);
-	DAddCallback (trace->prntscr.defaults, XmNactivateCallback, ps_reset_cb, trace->prntscr.dialog);
-	DManageChild (trace->prntscr.defaults, trace, MC_NOKEYS);
-
-	/* create cancel button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
-	XtSetArg (arglist[1], XmNx, 230 );
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->prntscr.sep);
-	trace->prntscr.cancel = XmCreatePushButton (trace->prntscr.form,"cancel",arglist,4);
-	DAddCallback (trace->prntscr.cancel, XmNactivateCallback, unmanage_cb, trace->prntscr.dialog);
-	DManageChild (trace->prntscr.cancel, trace, MC_NOKEYS);
+	/* Ok/apply/cancel */
+	ok_apply_cancel (&trace->prntscr.okapply, trace->prntscr.dialog,
+			 dmanage_last,
+			 (XtCallbackProc)ps_print_req_cb, trace,
+			 NULL, NULL,
+			 (XtCallbackProc)ps_reset_cb, trace,
+			 (XtCallbackProc)unmanage_cb, (Trace*)trace->prntscr.dialog);
 	}
     
     /* reset page size */
@@ -395,7 +365,7 @@ void    ps_dialog_cb (
     
     /* if a file has been read in, make printscreen buttons active */
     XtSetArg (arglist[0],XmNsensitive, (trace->loaded)?TRUE:FALSE);
-    XtSetValues (trace->prntscr.print,arglist,1);
+    XtSetValues (trace->prntscr.okapply.ok,arglist,1);
     
     /* manage the popup on the screen */
     DManageChild (trace->prntscr.dialog, trace, MC_NOKEYS);
@@ -528,11 +498,11 @@ void    ps_print_internal (Trace *trace)
     fputs (dt_post, psfile);
     
     /* Grab units */
-    timeunits = time_units_to_string (trace->timerep, FALSE);
+    timeunits = time_units_to_string (global->timerep, FALSE);
 
     /* output the page scaling and rf time */
     fprintf (psfile,"\n%d %d %d %d %d %d PAGESCALE\n",
-	     trace->height, trace->width, global->xstart, trace->sigrf,
+	     trace->height, trace->width, global->xstart, global->sigrf,
 	     (int) ( ( (global->print_size==PRINTSIZE_B) ? 11.0 :  8.5) * 72.0),
 	     (int) ( ( (global->print_size==PRINTSIZE_B) ? 16.8 : 10.8) * 72.0)
 	     );
@@ -676,7 +646,7 @@ void ps_draw_grid (trace, psfile, printtime, grid_ptr, draw_numbers)
     }
 
     /* set the line attributes as the specified dash pattern */
-    fprintf (psfile,"stroke\n[%d YTRN %d YTRN] 0 setdash\n",Y_SIG_SPACE/2, trace->sighgt - Y_SIG_SPACE/2);
+    fprintf (psfile,"stroke\n[%d YTRN %d YTRN] 0 setdash\n",Y_SIG_SPACE/2, global->sighgt - Y_SIG_SPACE/2);
     
     /* Start to left of right edge */
     xtime = printtime;
@@ -693,7 +663,7 @@ void ps_draw_grid (trace, psfile, printtime, grid_ptr, draw_numbers)
 
     /* Other coordinates */
     yt = trace->height - 20;
-    yl = trace->sighgt;
+    yl = global->sighgt;
     yh = trace->height - trace->ystart + Y_SIG_SPACE/4;
 
     /* Start grid */
@@ -773,9 +743,9 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
     /* Loop and draw each signal individually */
     for (; sig_ptr && sig_ptr!=sig_end_ptr; sig_ptr = sig_ptr->forward) {
 
-	y1 = trace->height - trace->ystart - c * trace->sighgt - Y_SIG_SPACE;
-	ymdpt = y1 - (int)(trace->sighgt/2) + Y_SIG_SPACE;
-	y2 = y1 - trace->sighgt + 2*Y_SIG_SPACE;
+	y1 = trace->height - trace->ystart - c * global->sighgt - Y_SIG_SPACE;
+	ymdpt = y1 - (int)(global->sighgt/2) + Y_SIG_SPACE;
+	y2 = y1 - global->sighgt + 2*Y_SIG_SPACE;
 	c++;
 	xloc = 0;
 	
@@ -906,8 +876,8 @@ void ps_drawsig (
 	/* printf ("xstart=%d, %s\n",global->xstart, sig_ptr->signame); */
 	
 	/* calculate the y location to draw the signal name and draw it */
-	y1 = trace->height - trace->ystart - c * trace->sighgt - Y_SIG_SPACE;
-	ymdpt = y1 - (int)(trace->sighgt/2) + Y_SIG_SPACE;
+	y1 = trace->height - trace->ystart - c * global->sighgt - Y_SIG_SPACE;
+	ymdpt = y1 - (int)(global->sighgt/2) + Y_SIG_SPACE;
 	
 	fprintf (psfile,"sigwidth %d YADJ 3 sub MT (%s) RIGHTSHOW\n",
 		 ymdpt, sig_ptr->signame);
@@ -929,11 +899,11 @@ void ps_draw_cursors (
     fprintf (psfile,"stroke [] 0 setdash\n");
     
     /* draw the cursors if they are visible */
-    if ( trace->cursor_vis ) {
+    if ( global->cursor_vis ) {
 	/* initial the y values for drawing */
 	y1 = trace->height - 25 - 10;
-	y2 = trace->height - ( (int)((trace->height-trace->ystart)/trace->sighgt)-1) *
-	    trace->sighgt - trace->sighgt/2 - trace->ystart - 2;
+	y2 = trace->height - ( (int)((trace->height-trace->ystart)/global->sighgt)-1) *
+	    global->sighgt - global->sighgt/2 - trace->ystart - 2;
 	xend = trace->width - XMARGIN;
 	adj = printtime * global->res - global->xstart;
 

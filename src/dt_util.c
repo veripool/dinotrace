@@ -62,6 +62,7 @@
 #include <Xm/Form.h>
 #include <Xm/PushB.h>
 #include <Xm/PushBG.h>
+#include <Xm/Separator.h>
 #include <Xm/ToggleB.h>
 #include <Xm/RowColumn.h>
 
@@ -75,6 +76,14 @@ extern void prompt_ok_cb(), fil_ok_cb();
 void upcase_string (char *tp)
 {
     for (;*tp;tp++) *tp = toupper (*tp);
+}
+
+void strcpy_overlap (
+    /* Copy strings, maybe overlapping (strcpy would be unhappy) */
+    char *d,
+    char *s)
+{
+    while ((*d++ = *s++)) ;
 }
 
 /* get normal string from XmString */
@@ -473,7 +482,7 @@ void get_geometry (
     /* if there are cursors showing, leave room */
     trace->ycursortimeabs = trace->height - Y_TOP_BOTTOM; 
     if ( (global->cursor_head != NULL) &&
-	 trace->cursor_vis) {
+	 global->cursor_vis) {
 	trace->ycursortimerel = trace->ycursortimeabs - Y_TEXT_SPACE - m_time_height;
 	trace->yend = trace->ycursortimerel - Y_TEXT_SPACE - m_time_height - Y_GRID_BOTTOM;
     } else {
@@ -482,7 +491,7 @@ void get_geometry (
     }
     
     /* calulate the number of signals possibly visible on the screen */
-    trace->numsigvis = (trace->yend - trace->ystart) / trace->sighgt;
+    trace->numsigvis = (trace->yend - trace->ystart) / global->sighgt;
     
     /* Correct starting position to be reasonable */
     if (global->namepos > (global->namepos_hier + global->namepos_base - global->namepos_visible))
@@ -629,21 +638,86 @@ void dino_message_ack (
     DManageChild (trace->message, trace, MC_NOKEYS);
 }
 
-Value_t *value_at_time (
-    /* Return the value for the given time */
-    /* Must be on the screen! */
-    Signal	*sig_ptr,
-    DTime	ctime)
+void	ok_apply_cancel (
+    OkApplyWidgets_t *wid_ptr,
+    Widget form,		/* Form to add widgets under */
+    Widget above,		/* Widget above this one */
+    XtCallbackProc ok_cb,	/* Callbacks to activate on each button */
+    Trace *ok_trace,		 
+    XtCallbackProc apply_cb,
+    Trace *apply_trace,		 
+    XtCallbackProc defaults_cb,
+    Trace *defaults_trace,		 
+    XtCallbackProc cancel_cb,
+    Trace *cancel_trace		/* Often widget to unmanage */
+    )
 {
-    Value_t	*cptr;
-    for (cptr = sig_ptr->cptr;
-	 CPTR_TIME(cptr) != EOT
-	     && (CPTR_TIME(CPTR_NEXT(cptr)) <= ctime);
-	 cptr = CPTR_NEXT(cptr)) {
-    }
-    return (cptr);
-}
+    Trace *trace = ok_trace;
 
+    /* Create Separator */
+    XtSetArg (arglist[0], XmNtopAttachment, XmATTACH_WIDGET );
+    XtSetArg (arglist[1], XmNtopWidget, above );
+    XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_FORM );
+    XtSetArg (arglist[3], XmNrightAttachment, XmATTACH_FORM );
+    wid_ptr->sep = XmCreateSeparator (form, "sep",arglist,4);
+    DManageChild (wid_ptr->sep, trace, MC_NOKEYS);
+	
+    if (ok_cb) {
+        /* Create OK button */
+        XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNleftOffset, 10);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNtopWidget, wid_ptr->sep );
+	XtSetArg (arglist[5], XmNbottomOffset, 10);
+	XtSetArg (arglist[6], XmNbottomAttachment, XmATTACH_FORM);
+	wid_ptr->ok = XmCreatePushButton (form,"ok",arglist,7);
+	DAddCallback (wid_ptr->ok, XmNactivateCallback, ok_cb, ok_trace);
+	DManageChild (wid_ptr->ok, trace, MC_NOKEYS);
+    }
+	
+    if (apply_cb) {
+        /* create apply button */
+        XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Apply") );
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_POSITION );
+	XtSetArg (arglist[2], XmNleftPosition, (defaults_cb)?35:45);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNtopWidget, wid_ptr->sep );
+	XtSetArg (arglist[5], XmNbottomOffset, 10);
+	XtSetArg (arglist[6], XmNbottomAttachment, XmATTACH_FORM);
+	wid_ptr->apply = XmCreatePushButton (form,"apply",arglist,7);
+	DAddCallback (wid_ptr->apply, XmNactivateCallback, apply_cb, apply_trace);
+	DManageChild (wid_ptr->apply, trace, MC_NOKEYS);
+    }
+	
+    if (defaults_cb) {
+        /* create defaults button */
+        XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Defaults") );
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_POSITION );
+	XtSetArg (arglist[2], XmNleftPosition, (apply_cb)?55:45);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNtopWidget, wid_ptr->sep );
+	XtSetArg (arglist[5], XmNbottomOffset, 10);
+	XtSetArg (arglist[6], XmNbottomAttachment, XmATTACH_FORM);
+	wid_ptr->defaults = XmCreatePushButton (form,"defaults",arglist,7);
+	DAddCallback (wid_ptr->defaults, XmNactivateCallback, defaults_cb, defaults_trace);
+	DManageChild (wid_ptr->defaults, trace, MC_NOKEYS);
+    }
+	
+    if (cancel_cb) {
+        /* create cancel button */
+        XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
+	XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNrightOffset, 10);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNtopWidget, wid_ptr->sep );
+	XtSetArg (arglist[5], XmNbottomOffset, 10);
+	XtSetArg (arglist[6], XmNbottomAttachment, XmATTACH_FORM);
+	wid_ptr->cancel = XmCreatePushButton (form,"cancel",arglist,7);
+	DAddCallback (wid_ptr->cancel, XmNactivateCallback, cancel_cb, cancel_trace);
+	DManageChild (wid_ptr->cancel, trace, MC_NOKEYS);
+    }
+}
 
 /******************************************************************************
  *
@@ -845,28 +919,26 @@ void change_title (
     }
     
     /* For icon title drop extension and directory */
+    strcpy (icontitle, DTVERSION);
     if (trace->loaded) {
 	strcpy (icontitle, trace->filename);
+	if ((pchar=strrchr (icontitle,'/')) != NULL )
+	    strcpy_overlap (icontitle, pchar+1);
+	if ((pchar=strrchr (icontitle,'\\')) != NULL )
+	    strcpy_overlap (icontitle, pchar+1);
 #ifdef VMS
-	if ((pchar=strrchr (trace->filename,']')) != NULL )
-	    strcpy (icontitle, pchar+1);
-	else
-	    if ((pchar=strrchr (trace->filename,':')) != NULL )
-		strcpy (icontitle, pchar+1);
-	if ((pchar=strchr (icontitle,'.')) != NULL )
-	    * (pchar) = '\0';
+	if ((pchar=strrchr (icontitle,']')) != NULL )
+	    strcpy_overlap (icontitle, pchar+1);
+	if ((pchar=strrchr (trace->filename,':')) != NULL )
+	    strcpy_overlap (icontitle, pchar+1);
 	if ((pchar=strchr (icontitle,';')) != NULL )
 	    * (pchar) = '\0';
-	/* Tack on the version number */
+#endif
+#ifdef VMS
+	/* Tack back on the version number */
 	if ((pchar=strrchr (trace->filename,';')) != NULL )
 	    strcat (icontitle, pchar);
-#else
-	if ((pchar=strrchr (trace->filename,'/')) != NULL )
-	    strcpy (icontitle, pchar+1);
 #endif
-    }
-    else {
-	strcpy (icontitle, DTVERSION);
     }
     
     XtSetArg (arglist[0], XmNtitle, title);
@@ -885,6 +957,22 @@ DTime	posx_to_time (
 	return (-1);
     
     return (((x) + global->time * global->res - global->xstart) / global->res);
+}
+
+
+Value_t *value_at_time (
+    /* Return the value for the given time */
+    /* Must be on the screen! */
+    Signal	*sig_ptr,
+    DTime	ctime)
+{
+    Value_t	*cptr;
+    for (cptr = sig_ptr->cptr;
+	 CPTR_TIME(cptr) != EOT
+	     && (CPTR_TIME(CPTR_NEXT(cptr)) <= ctime);
+	 cptr = CPTR_NEXT(cptr)) {
+    }
+    return (cptr);
 }
 
 
@@ -950,11 +1038,11 @@ Signal	*posy_to_signal (
     
     /* make sure button has been clicked in in valid location of screen */
     max_y = MIN (trace->numsig,trace->numsigvis);
-    if ( y < trace->ystart || y > trace->ystart + max_y * trace->sighgt )
+    if ( y < trace->ystart || y > trace->ystart + max_y * global->sighgt )
 	return (NULL);
     
     /* figure out which signal has been selected */
-    num = (int)((y - trace->ystart) / trace->sighgt);
+    num = (int)((y - trace->ystart) / global->sighgt);
 
     /* set pointer to signal to 'highlight' */
     sig_ptr = trace->dispsig;
@@ -1065,13 +1153,13 @@ DTime string_to_time (
     f_time = atof (strg);
     if (f_time < 0) return (0);
 
-    if (trace->timerep == TIMEREP_CYC) {
+    if (global->timerep == TIMEREP_CYC) {
 	return ((DTime)(f_time * trace->grid[0].period
 			+ trace->grid[0].alignment % trace->grid[0].period));
     }
 
     /* First convert to picoseconds */
-    f_time *= trace->timerep;
+    f_time *= global->timerep;
 
     /* Then convert to internal units and return */
     f_time /= global->time_precision;
@@ -1097,7 +1185,7 @@ void time_to_string (
 	return;
     }
 
-    if (trace->timerep == TIMEREP_CYC) {
+    if (global->timerep == TIMEREP_CYC) {
 	if (!relative) {
 	    /* Adjust within one cycle so that grids are on .0 boundaries */
 	    f_time -= (double)(trace->grid[0].alignment % trace->grid[0].period);	/* Want integer remainder */
@@ -1109,14 +1197,14 @@ void time_to_string (
     else {
 	/* Convert time to picoseconds, Preserve fall through order in case statement */
 	f_time *= global->time_precision;
-	f_time /= trace->timerep;
+	f_time /= global->timerep;
 
 	if (global->time_precision >= TIMEREP_US) decimals = 0;
 	else if (global->time_precision >= TIMEREP_NS) decimals = 3;
 	else decimals = 6;
 
-	if (trace->timerep >= TIMEREP_US) decimals -= 0;
-	else if (trace->timerep >= TIMEREP_NS) decimals -= 3;
+	if (global->timerep >= TIMEREP_US) decimals -= 0;
+	else if (global->timerep >= TIMEREP_NS) decimals -= 3;
 	else decimals -= 6;
     }
 

@@ -327,7 +327,7 @@ void new_res (
 	/* change res button's value */
 	time_to_string (trace, timestrg, (int)(RES_SCALE/global->res), TRUE);
 	sprintf (string,"Res=%s %s", timestrg,
-		 time_units_to_string (trace->timerep, FALSE));
+		 time_units_to_string (global->timerep, FALSE));
 	XtSetArg (arglist[0],XmNlabelString,XmStringCreateSimple (string));
 	XtSetValues (trace->command.reschg_but,arglist,1);
     }
@@ -455,20 +455,17 @@ void    win_goto_cb (
     if (!trace->gotos.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Goto Time") );
-	trace->gotos.dialog = XmCreateFormDialog (trace->work,"goto",arglist,2);
+	XtSetArg (arglist[2], XmNverticalSpacing, 10);
+	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
+	trace->gotos.dialog = XmCreateFormDialog (trace->work,"goto",arglist,4);
 	DAddCallback (trace->gotos.dialog, XmNmapCallback, win_goto_option_cb, trace);
 	
-	XtSetArg (arglist[0], XmNverticalSpacing, 10);
-	XtSetArg (arglist[0], XmNhorizontalSpacing, 10);
-	trace->gotos.form = XmCreateForm (trace->gotos.dialog, "form", arglist, 2);
-	DManageChild (trace->gotos.form, trace, MC_NOKEYS);
-
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Time"));
 	XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopOffset, 5);
 	XtSetArg (arglist[3], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[4], XmNleftOffset, 5);
-	trace->gotos.label1 = XmCreateLabel (trace->gotos.form,"label1",arglist,5);
+	trace->gotos.label1 = XmCreateLabel (trace->gotos.dialog,"label1",arglist,5);
 	DManageChild (trace->gotos.label1, trace, MC_NOKEYS);
 	
 	/* create the goto text widget */
@@ -480,7 +477,7 @@ void    win_goto_cb (
 	XtSetArg (arglist[5], XmNleftWidget, trace->gotos.label1 );
 	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
-	trace->gotos.text = XmCreateText (trace->gotos.form,"textn",arglist,8);
+	trace->gotos.text = XmCreateText (trace->gotos.dialog,"textn",arglist,8);
 	DAddCallback (trace->gotos.text, XmNactivateCallback, win_goto_ok_cb, trace);
 	DManageChild (trace->gotos.text, trace, MC_NOKEYS);
 	    
@@ -489,11 +486,11 @@ void    win_goto_cb (
 	XtSetArg (arglist[2], XmNtopOffset, 5);
 	XtSetArg (arglist[3], XmNleftAttachment, XmATTACH_WIDGET );	
 	XtSetArg (arglist[4], XmNleftWidget, trace->gotos.text );
- 	trace->gotos.label2 = XmCreateLabel (trace->gotos.form,"label2",arglist,5);
+ 	trace->gotos.label2 = XmCreateLabel (trace->gotos.dialog,"label2",arglist,5);
 	DManageChild (trace->gotos.label2, trace, MC_NOKEYS);
 
 	/* Make option menu */
-	trace->gotos.pulldown = XmCreatePulldownMenu (trace->gotos.form,"pulldown",arglist,0);
+	trace->gotos.pulldown = XmCreatePulldownMenu (trace->gotos.dialog,"pulldown",arglist,0);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("None") );
 	trace->gotos.pulldownbutton[0] =
@@ -517,7 +514,7 @@ void    win_goto_cb (
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );	
 	XtSetArg (arglist[4], XmNtopWidget, trace->gotos.text );
 	XtSetArg (arglist[5], XmNsubMenuId, trace->gotos.pulldown);
-	trace->gotos.options = XmCreateOptionMenu (trace->gotos.form,"options",arglist,6);
+	trace->gotos.options = XmCreateOptionMenu (trace->gotos.dialog,"options",arglist,6);
 	DManageChild (trace->gotos.options, trace, MC_NOKEYS);
 	
 
@@ -528,7 +525,7 @@ void    win_goto_cb (
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[4], XmNtopOffset, 5);
 	XtSetArg (arglist[5], XmNtopWidget, trace->gotos.options);
-	trace->gotos.notelabel = XmCreateLabel (trace->gotos.form,"",arglist,6);
+	trace->gotos.notelabel = XmCreateLabel (trace->gotos.dialog,"",arglist,6);
 	DManageChild (trace->gotos.notelabel, trace, MC_NOKEYS);
 	
 	/* Create the print note text widget */
@@ -541,42 +538,22 @@ void    win_goto_cb (
 	XtSetArg (arglist[6], XmNtopWidget, trace->gotos.notelabel);
 	XtSetArg (arglist[7], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[8], XmNeditMode, XmSINGLE_LINE_EDIT);
-	trace->gotos.notetext = XmCreateText (trace->gotos.form,"notetext",arglist,9);
+	trace->gotos.notetext = XmCreateText (trace->gotos.dialog,"notetext",arglist,9);
 	DAddCallback (trace->gotos.notetext, XmNactivateCallback, win_goto_ok_cb, trace);
 	DManageChild (trace->gotos.notetext, trace, MC_NOKEYS);
 	
-	/* Create Separator */
-	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
-	XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM );
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->gotos.notetext );
-	XtSetArg (arglist[4], XmNtopOffset, 10);
-	trace->gotos.sep = XmCreateSeparator (trace->gotos.form, "sep",arglist,5);
-	DManageChild (trace->gotos.sep, trace, MC_NOKEYS);
-	
-	/* Create OK button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
-	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->gotos.sep );
-	XtSetArg (arglist[4], XmNtopOffset, 10);
-	trace->gotos.ok = XmCreatePushButton (trace->gotos.form,"ok",arglist,5);
-	DAddCallback (trace->gotos.ok, XmNactivateCallback, win_goto_ok_cb, trace);
-	DManageChild (trace->gotos.ok, trace, MC_NOKEYS);
-	
-	/* create cancel button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
-	XtSetArg (arglist[1], XmNx, 140);
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->gotos.sep );
-	XtSetArg (arglist[4], XmNtopOffset, 10);
-	trace->gotos.cancel = XmCreatePushButton (trace->gotos.form,"cancel",arglist,5);
-	DAddCallback (trace->gotos.cancel, XmNactivateCallback, win_goto_cancel_cb, trace);
-	DManageChild (trace->gotos.cancel, trace, MC_NOKEYS);
+	/* Ok/apply/cancel */
+	ok_apply_cancel (&trace->gotos.okapply, trace->gotos.dialog,
+			 dmanage_last,
+			 (XtCallbackProc)win_goto_ok_cb, trace,
+			 NULL, NULL,
+			 NULL, NULL,
+			 (XtCallbackProc)win_goto_cancel_cb, trace);
     }
     
     /* right units */
-    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (time_units_to_string (trace->timerep, FALSE)));
+    XtSetArg (arglist[0], XmNlabelString,
+	      XmStringCreateSimple (time_units_to_string (global->timerep, FALSE)));
     XtSetValues (trace->gotos.label2, arglist, 1);
 
     /* make right one active */
