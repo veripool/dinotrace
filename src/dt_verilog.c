@@ -158,7 +158,7 @@ void	verilog_process_var (trace, line)
 {
     char	*cmd, *code;
     int		bits;
-    SIGNAL	*sig_ptr;
+    SIGNAL	*new_sig_ptr;
     char	signame[1000];
     int		t, len;
 
@@ -186,30 +186,76 @@ void	verilog_process_var (trace, line)
     if (*cmd != '$' && strcmp(cmd, "[-1]")) strcat (signame, cmd);
     
     /* Allocate new signal structure */
-    sig_ptr = XtNew (SIGNAL);
-    memset (sig_ptr, 0, sizeof (SIGNAL));
-    sig_ptr->trace = trace;
-    sig_ptr->file_pos = VERILOG_ID_TO_POS(code);
-    sig_ptr->bits = bits - 1;
-    sig_ptr->msb_index = 0;
-    sig_ptr->lsb_index = 0;
+    new_sig_ptr = XtNew (SIGNAL);
+    memset (new_sig_ptr, 0, sizeof (SIGNAL));
+    new_sig_ptr->trace = trace;
+    new_sig_ptr->file_pos = VERILOG_ID_TO_POS(code);
+    new_sig_ptr->bits = bits - 1;
+    new_sig_ptr->msb_index = 0;
+    new_sig_ptr->lsb_index = 0;
 
-    sig_ptr->file_type.flags = 0;
-    sig_ptr->file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
+    new_sig_ptr->file_type.flags = 0;
+    new_sig_ptr->file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
 
-    sig_ptr->file_value.siglw.number = sig_ptr->file_value.number[0] =
-	sig_ptr->file_value.number[1] = sig_ptr->file_value.number[2] = 0;
+    new_sig_ptr->file_value.siglw.number = new_sig_ptr->file_value.number[0] =
+	new_sig_ptr->file_value.number[1] = new_sig_ptr->file_value.number[2] = 0;
 
     /* initialize all the pointers that aren't NULL */
-    if (last_sig_ptr) last_sig_ptr->forward = sig_ptr;
-    sig_ptr->backward = last_sig_ptr;
-    if (trace->firstsig==NULL) trace->firstsig = sig_ptr;
-    last_sig_ptr = sig_ptr;
+    if (last_sig_ptr) last_sig_ptr->forward = new_sig_ptr;
+    new_sig_ptr->backward = last_sig_ptr;
+    if (trace->firstsig==NULL) trace->firstsig = new_sig_ptr;
+    last_sig_ptr = new_sig_ptr;
 
     /* copy signal info */
     len = strlen (signame);
-    sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
-    strcpy (sig_ptr->signame, signame);
+    new_sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
+    strcpy (new_sig_ptr->signame, signame);
+    }
+
+
+void	verilog_womp_96s (trace)
+    /* Take signals of 96+ signals and split into several signals */
+    TRACE	*trace;
+{
+    SIGNAL	*new_sig_ptr;
+    SIGNAL	*sig_ptr;
+    int		len;
+
+    /*print_sig_names (NULL, trace);*/
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+
+	if (sig_ptr->bits > 96) {
+	    if (DTPRINT_FILE) printf ("Adjusting signal %s > 96\n", sig_ptr->signame);
+	    /* Allocate new signal structure */
+	    new_sig_ptr = XtNew (SIGNAL);
+	    memcpy (new_sig_ptr, sig_ptr, sizeof (SIGNAL));
+	    len = strlen (sig_ptr->signame);
+	    new_sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
+	    strcpy (new_sig_ptr->signame, sig_ptr->signame);
+
+	    new_sig_ptr->forward = sig_ptr->forward;
+	    sig_ptr->forward = new_sig_ptr;
+	    new_sig_ptr->backward = sig_ptr;
+	    if (new_sig_ptr->forward) new_sig_ptr->forward->backward = new_sig_ptr;
+	    
+	    /* Remember there are multiple signals under this coding */
+	    new_sig_ptr->verilog_next = sig_ptr->verilog_next;
+	    sig_ptr->verilog_next = new_sig_ptr;
+
+	    /* Make new be remainders */
+	    new_sig_ptr->bits = sig_ptr->bits - 96;
+	    new_sig_ptr->msb_index = sig_ptr->msb_index - 96;
+
+	    /* Shorten bits of old */
+	    sig_ptr->bits = 96 - 1;
+	    sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits;
+
+	    /* Next is new guy, may be >> 96 also */
+	    sig_ptr = new_sig_ptr->backward;
+	    }
+	}
+
+    /*print_sig_names (NULL, trace);*/
     }
 
 
@@ -303,8 +349,9 @@ void	verilog_process_definitions (trace)
 		next_sig_ptr = sig_ptr->verilog_next;
 		sig_free (trace, sig_ptr, FALSE, FALSE);
 		}
-	    pos_sig_ptr->verilog_next = NULL;
+	    pos_sig_ptr->verilog_next = NULL;		/* Zero in prep of make_busses */
 	    }
+	signal_by_pos[pos] = NULL;			/* Zero in prep of make_busses */
 	}
     
     /* Make the busses */
@@ -319,7 +366,8 @@ void	verilog_process_definitions (trace)
 	for (pos = sig_ptr->file_pos; 
 	     pos <= sig_ptr->file_pos + ((sig_ptr->file_type.flag.perm_vector)?0:sig_ptr->bits);
 	     pos++) {
-	    signal_by_pos[pos] = sig_ptr;
+	    /* If already assigned, this is a signal that was womp_96ed. */
+	    if (!signal_by_pos[pos]) signal_by_pos[pos] = sig_ptr;
 	    }
 	}
 
@@ -533,29 +581,35 @@ void	verilog_read_data (trace, readfp)
 		else {
 		    register int len;
 
-		    /* Verilog requires us to extend the value if it is too short */
-		    len = (sig_ptr->bits+1) - strlen (value_strg);
-		    if (len > 0) {
-			/* 1's extend as 0's */
-			register char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
+		    for (; sig_ptr; sig_ptr=sig_ptr->verilog_next) {
+			/* Verilog requires us to extend the value if it is too short */
+			len = (sig_ptr->bits+1) - strlen (value_strg);
+			if (len > 0) {
+			    /* This is rare, so not fast */
+			    /* 1's extend as 0's */
+			    register char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
 			
-			line = extend_line;
-			while (len>0) {
-			    *line++ = extend_char;
-			    len--;
+			    line = extend_line;
+			    while (len>0) {
+				*line++ = extend_char;
+				len--;
+				}
+			    *line++ = '\0';
+			    
+			    strcat (extend_line, value_strg);	/* tack on the original value */
+			    /*if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", value_strg, extend_line);*/
+			    value_strg = extend_line;
 			    }
-			*line++ = '\0';
-			
-			strcat (extend_line, value_strg);	/* tack on the original value */
-			/* if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", value_strg, extend_line); */
-			value_strg = extend_line;
-			}
 	
-		    /* Store the file information */
-		    /* if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %s  value %s\n", code, pos, sig_ptr->signame, value_strg); */
-		    fil_string_to_value (sig_ptr, value_strg, &value);
-		    value.siglw.sttime.time = time;
-		    fil_add_cptr (sig_ptr, &value, !first_data);
+			/* Store the file information */
+			/* if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %s  value %s\n", code, pos, sig_ptr->signame, value_strg); */
+			fil_string_to_value (sig_ptr, value_strg, &value);
+			value.siglw.sttime.time = time;
+			fil_add_cptr (sig_ptr, &value, !first_data);
+
+			/* Push string past this signal's bits */
+			value_strg += sig_ptr->bits+1;
+			}
 		    }
 		}
 	    else printf ("%%E, Unknown <identifier_code> '%s'\n", code);
