@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *

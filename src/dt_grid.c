@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -81,10 +81,10 @@ extern void	grid_customize_align_cb (Widget w, Trace *trace, XmAnyCallbackStruct
 /****************************** UTILITIES ******************************/
 
 DTime	grid_primary_period (
-    Trace	*trace)
+    const Trace	*trace)
 {
     int		grid_num;
-    Grid	*grid_ptr;
+    const Grid	*grid_ptr;
     DTime	step;
     step = 0;
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {

@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -239,6 +239,18 @@ char *strdup(const char *s)
     d=(char *)malloc(strlen(s)+1);
     strcpy (d, s);
     return (d);
+}
+#endif
+
+#if ! HAVE_STRCASECMP
+int strcasecmp(const char *a, const char *b)
+{
+    for (;*a && *b; a++, b++) {
+	if (*a == *b) continue;	/* Bypass toupper if we can */
+	if (toupper(*a) == toupper(*b)) continue;
+	break;
+    }
+    return (*a != *b);	/* Both null if match, return 0 */
 }
 #endif
 
@@ -827,6 +839,30 @@ void    print_cptr (
     }
 }
 
+void    print_sig_info_internal (
+    Signal	*sig_ptr,
+    Value_t	*cptr,
+    DTime	end_time)
+{
+    printf ("Signal %s, cptr %p  bptr %p\n",sig_ptr->signame, sig_ptr->cptr, sig_ptr->bptr);
+    
+    for ( ; cptr->siglw.stbits.size > 0; cptr = CPTR_NEXT(cptr) ) {
+	printf ("%p: %08x T:%08d  %08x %08x %08x %08x    ", cptr,
+		cptr->siglw.number, cptr->time,
+		cptr->number[0],cptr->number[1],
+		cptr->number[2],cptr->number[3]);
+	print_cptr (cptr);
+	/*printf ("s %d  sp %d\n", cptr->siglw.stbits.size, cptr->siglw.stbits.size_prev);*/
+	if (end_time && CPTR_TIME(cptr) > end_time) break;
+    }
+}
+
+void    print_sig_info (
+    Signal	*sig_ptr)
+{
+    print_sig_info_internal (sig_ptr, sig_ptr->bptr, 0);
+}
+
 void    debug_print_screen_traces_cb (
     Widget	w)
 {
@@ -847,26 +883,7 @@ void    debug_print_screen_traces_cb (
 	sig_ptr = (Signal *)sig_ptr->forward;	
     }
     
-    print_sig_info (sig_ptr);
-}
-
-void    print_sig_info (
-    Signal	*sig_ptr)
-{
-    Value_t	*cptr;
-    
-    cptr = sig_ptr->bptr;
-    
-    printf ("Signal %s, cptr %p  bptr %p\n",sig_ptr->signame, sig_ptr->cptr, sig_ptr->bptr);
-    
-    for ( ; cptr->siglw.stbits.size > 0; cptr = CPTR_NEXT(cptr) ) {
-	printf ("%p: %08x %08x %08x %08x %08x %08x    ", cptr,
-		cptr->siglw.number, cptr->time,
-		cptr->number[0],cptr->number[1],
-		cptr->number[2],cptr->number[3]);
-	print_cptr (cptr);
-	/*printf ("s %d  sp %d\n", cptr->siglw.stbits.size, cptr->siglw.stbits.size_prev);*/
-    }
+    print_sig_info_internal (sig_ptr, sig_ptr->cptr, global->time + TIME_WIDTH (trace));
 }
 
 void    debug_signal_integrity (

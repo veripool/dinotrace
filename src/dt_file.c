@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -530,7 +530,6 @@ void help_doc_cb (
 #pragma inline (fil_string_add_cptr)
 void	fil_string_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
-    /* WARNING: Similar verilog_string_to_value in dt_verilog for speed reasons */
     Signal	*sig_ptr,
     const char	*value_strg,
     DTime	time,
@@ -628,7 +627,6 @@ void	fil_string_add_cptr (
 		for (bitcnt=0; bitcnt <= (MIN (31,len)); bitcnt++, cp++) {
 		    value.number[0] = (value.number[0]<<1) | (*cp=='1') | (*cp=='z') | (*cp=='Z');
 		    value.number[1] = (value.number[1]<<1) | (((*cp)|1)!='1');
-		    cp++;
 		}
 	    } else {
 		state = STATE_F128;
@@ -653,7 +651,7 @@ void	fil_string_add_cptr (
 	}
     }
 
-    /*if (DTPRINT_FILE) printf ("time %d sig %s str %s cor %c cand %c state %d n0 %d n1 %d\n",				time, sig_ptr->signame, value_strg, chr_or, chr_and, state, value.number[0], value.number[1]); */
+    /*if (DTPRINT_FILE) printf ("time %d sig %s str %s cor %c cand %c state %d n0 %08x n1 %08x\n",				time, sig_ptr->signame, value_strg, chr_or, chr_and, state, value.number[0], value.number[1]); */
     value.siglw.stbits.state = state;
     value.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
@@ -788,7 +786,7 @@ void fil_make_busses (
 	    /* Mark this first digit, _, whatever as null (truncate the name) */
 	    *sep++ = '\0';
 	    /* Hunt for the end of the vector */
-	    while (*sep && *sep!=trace->vector_endseparator) sep++;
+	    while (*sep && *sep!=trace->vectorend_separator) sep++;
 	    /* Remember if there is stuff after the vector */
 	    if (*sep && *(sep+1)) sig_ptr->signame_buspos = sep+1;
 	}
@@ -1043,6 +1041,11 @@ void fil_trace_end (
     /* Read .dino file stuff yet again to get signal_highlights */
     /* Don't report errors, as they would pop up for a second time. */
     config_read_defaults (trace, FALSE);
+
+    /* Modify deleted trace to have latest options */
+    global->deleted_trace_head->hierarchy_separator = trace->hierarchy_separator;
+    global->deleted_trace_head->vector_separator = trace->hierarchy_separator;
+    global->deleted_trace_head->vectorend_separator = trace->vectorend_separator;
 
     /* Apply the statenames */
     draw_needupd_val_states ();

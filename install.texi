@@ -29,7 +29,7 @@ Dinotrace manual for configuration options.
 @enumerate
 @item
 The latest version of Dinotrace is available at 
-@uref{http://www.ultranet.com/~wsnyder/dinotrace}.
+@uref{http://www.ultranet.com/~wsnyder/veripool/dinotrace}.
 Download the latest package from that site, and decompress.
 @samp{gunzip dinotrace_version.tar.gz ; tar xvf dinotrace_version.tar}
 
@@ -55,22 +55,22 @@ from @uref{http://www.surefirev.com}.
 
 This version of Dinotrace has been built and tested on:
 
-@enumerate
+@itemize @bullet
 @item sparc-sun-solaris2.5.1
-@item sparc-sun-sunos-WPSFIX
-@end enumerate
+@item sparc-sun-sunos4.1.4
+@end itemize
 
 Previous versions of Dinotrace were once built, and probably will
 still build on:
 
-@enumerate
-@item alpha-dec-osf3
-@item alpha-dec-vms
+@itemize @bullet
+@item alpha-dec-osf3.2
+@item alpha-dec-vms6.0
 (see the special section on VMS installation.)
-@item vax-dec-vms
+@item vax-dec-vms6.0
 (see the special section on VMS installation.)
 @item mips-dec-ultrix
-@end enumerate
+@end itemize
 
 @node Unix Installation, Basic Installation, Supported Systems
 @section Unix Installation
@@ -254,7 +254,7 @@ command files are supplied to build Dinotrace.
 @item
 Change to the download directory of dinotrace.
 @example
-$ set default wheredownloaded
+$ set default WHERE_DOWNLOADED
 @end example
 
 @item

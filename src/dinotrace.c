@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -61,11 +61,7 @@
 
 #include "functions.h"
 
-#if HAVE_DIST_DATE_H
 #include "dist_date.h"
-#else
-#define DIST_DATE_STRG "Unknown"
-#endif
 
 /**********************************************************************/
 
@@ -284,8 +280,8 @@ char	*help_message ()
     static char msg[2000];
 
     sprintf (msg,
-	     "%s\n\
-Compiled %s for %s\n\
+	     "%s\nDistributed %s\n\
+Configured %s for %s\n\
 \n\
 Written by Wilson Snyder\n\
 <wsnyder@ultranet.com> or <wsnyder@iname.com>\n\
@@ -295,11 +291,10 @@ Copyright 1998 by Wilson Snyder\n\
 This software is covered by the GNU Public License,\n\
 and is WITHOUT ANY WARRANTY.\n\
 \n\
-Please see the help menu or %sdinotrace.txt
-for documentation.\n\
+Please see the help menu or %sdinotrace.txt for documentation.\n\
 \n\
 A complete Dinotrace kit is available on:\n\
-http://www.ultranet.com/~wsnyder/dinotrace\n\
+http://www.ultranet.com/~wsnyder/veripool/dinotrace\n\
 \n\
 For configuration information, Dinotrace reads in order:\n\
      %sdinotrace.dino\n\
@@ -309,6 +304,7 @@ For configuration information, Dinotrace reads in order:\n\
      %sCURRENT_TRACE_NAME.dino\n",
 	     DTVERSION,
 	     DIST_DATE_STRG,
+	     CONFIG_DATE_STRG,
 	     HOST,
 #ifdef VMS
 	     "DINODISK:",

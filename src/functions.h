@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -247,8 +247,8 @@ extern void	cus_write_ok_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackS
 extern void	cur_add (DTime time, ColorNum color, CursorType_t type, const char *note);
 extern void	cur_remove (DCursor *);
 extern void	cur_delete_of_type (CursorType_t type);
-extern DTime	cur_time_first (Trace *trace);
-extern DTime	cur_time_last (Trace *trace);
+extern DTime	cur_time_first (const Trace *trace);
+extern DTime	cur_time_last (const Trace *trace);
 extern void	cur_write (FILE *, char *c);
 extern char *	cur_examine_string (Trace *trace, DCursor *cursor_ptr);
 extern void	cur_step (DTime step);
@@ -274,10 +274,10 @@ extern void	config_parse_geometry (char *, Geometry *);
 extern void	config_update_filenames (Trace *trace);
 extern void	config_read_socket (char *line, char *name, int cmdnum, Boolean_t eof);
 extern void	config_write_file (Trace *trace, char *filename);
-extern SignalState_t *signalstate_find (Trace *, char *);
+extern SignalState_t *signalstate_find (const Trace *, const char *);
 
 /* dt_grid.c routines */
-extern DTime	grid_primary_period (Trace *trace);
+extern DTime	grid_primary_period (const Trace *trace);
 extern void	grid_calc_autos (Trace *trace);
 extern char *	grid_examine_string (Trace *trace, Grid *grid_ptr, DTime time);
 
@@ -290,20 +290,20 @@ extern void	sig_free (Trace *trace, Signal *sig_ptr, Boolean_t select, Boolean_t
 extern void	sig_highlight_selected (int color);
 extern void	sig_radix_selected (Radix_t *radix_ptr);
 extern void	sig_modify_enables (Trace *);
-extern void	sig_move_selected (Trace *new_trace, char *after_pattern);
-extern void	sig_rename_selected (char *new_name);
-extern void	sig_copy_selected (Trace *new_trace, char *after_pattern);
+extern void	sig_move_selected (Trace *new_trace, const char *after_pattern);
+extern void	sig_rename_selected (const char *new_name);
+extern void	sig_copy_selected (Trace *new_trace, const char *after_pattern);
 extern void	sig_delete_selected (Boolean_t constant_flag, Boolean_t ignorexz);
 extern void	sig_note_selected (const char *note);
-extern void	sig_wildmat_select (Trace *, char *);
-extern void	sig_goto_pattern (Trace *, char *);
+extern void	sig_wildmat_select (Trace *, const char *pattern);
+extern void	sig_goto_pattern (Trace *, const char *pattern);
 extern void	sig_cross_preserve (Trace *trace);
 extern void	sig_cross_restore (Trace *trace) ;
-extern Signal *	sig_find_signame (Trace *trace, char *signame);
-extern Signal *	sig_wildmat_signame (Trace *trace, char *signame);
-extern void	sig_print_names (Trace *trace);
-extern char *	sig_examine_string (Trace *trace, Signal *sig_ptr);
 extern char *	sig_basename (const Trace *trace, const Signal *sig_ptr);
+extern Signal *	sig_find_signame (const Trace *trace, const char *signame);
+extern Signal *	sig_wildmat_signame (const Trace *trace, const char *signame);
+extern void	sig_print_names (Trace *trace);
+extern char *	sig_examine_string (const Trace *trace, const Signal *sig_ptr);
 
 extern void	sig_add_cb (Widget w);
 extern void	sig_mov_cb (Widget w);

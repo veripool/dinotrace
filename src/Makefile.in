@@ -4,9 +4,9 @@
 # 
 # This file is part of Dinotrace.  
 # 
-# Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+# Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
 # 
-# Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+# Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
 # 
 #*****************************************************************************
 # 
@@ -41,7 +41,7 @@ INSTALL_DATA = @INSTALL_DATA@
 CC = @CC@
 LINK = @CC@
 
-CFLAGS = -I. -Wall @CFLAGS@ @X_CFLAGS@
+CFLAGS = -I. @CFLAGS@ @X_CFLAGS@
 CPPFLAGS = @CPPFLAGS@
 DEFS = @DEFS@
 LDFLAGS = @LDFLAGS@
@@ -69,6 +69,8 @@ distclean maintainer-clean::
 maintainer-clean::
 	rm -f dinodoc.h dist_date.h
 
+maintainer-copy::
+
 #### Modules
 
 SRCS = dt_binary.c dt_config.c dt_cursor.c dt_customize.c dt_dispmgr.c dt_draw.c \
@@ -92,9 +94,9 @@ ALL_HDRS = $(COMMON_HDRS) bintradef.h dist_date.h dt_post.h dinodoc.h
 dinodoc.h: ../dinotrace.txt dinodoc.pl
 	$(PERL) dinodoc.pl <../dinotrace.txt >dinodoc.h
 
-# Dependancies are somewhat arbitrary, we base them on common files that
-# might change
-dist_date.h: dist_date.pl dinotrace.h functions.h dinotrace.c
+# No dependancy on other files in case user extracted without preserving
+# date stamps
+dist_date.h:
 	$(PERL) dist_date.pl
 
 #### Object links

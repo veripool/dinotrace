@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -297,8 +297,8 @@ int	config_read_int (
 **********************************************************************/
 
 SignalState_t	*signalstate_find (
-    Trace	*trace,
-    char *name)
+    const Trace	*trace,
+    const char *name)
 {
     register SignalState_t *sig;
 
@@ -366,15 +366,15 @@ void	signalstate_write (
     
     for (sstate_ptr = global->signalstate_head; 
 	 sstate_ptr; sstate_ptr = sstate_ptr->next) {
-	printf("%ssignal_states %s {\n",c,sstate_ptr->signame);
+	fprintf (writefp, "%ssignal_states %s {\n",c,sstate_ptr->signame);
 	for (i=0; i<MAXSTATENAMES; i++) {
 	    if (sstate_ptr->statename[i][0]) {
-		printf ("%s\t%d=\"%s\",\n",c, i, sstate_ptr->statename[i]);
+		fprintf (writefp, "%s\t%d=\"%s\",\n",c, i, sstate_ptr->statename[i]);
 	    }
 	}
-	printf("%s\t}\n",c);
+	fprintf (writefp, "%s\t}\n",c);
     }
-    printf ("\n");
+    fprintf (writefp,"\n");
 }
 
 void	config_parse_geometry (
@@ -879,15 +879,15 @@ void	config_process_line_internal (
 	    }
 	    /* Take a stab at the ending character */
 	    switch (trace->vector_separator) {
-	      case '`':	trace->vector_endseparator = '\''; break;
-	      case '(':	trace->vector_endseparator = ')'; break;
-	      case '[':	trace->vector_endseparator = ']'; break;
-	    case '{':	trace->vector_endseparator = '}'; break;
-	      case '<':	trace->vector_endseparator = '>'; break;
-	      default:  trace->vector_endseparator = trace->vector_separator; break;	/* a wild guess SIG$20:1$? */
+	      case '`':	trace->vectorend_separator = '\''; break;
+	      case '(':	trace->vectorend_separator = ')'; break;
+	      case '[':	trace->vectorend_separator = ']'; break;
+	    case '{':	trace->vectorend_separator = '}'; break;
+	      case '<':	trace->vectorend_separator = '>'; break;
+	      default:  trace->vectorend_separator = trace->vector_separator; break;	/* a wild guess SIG$20:1$? */
 	    }
 	    if (DTPRINT_CONFIG) printf ("vector_separator = '%c'  End='%c'\n", 
-					trace->vector_separator, trace->vector_endseparator);
+					trace->vector_separator, trace->vectorend_separator);
 	}
 	else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
 	    ColorNum color;
@@ -1332,7 +1332,7 @@ void config_write_file (
         fprintf (writefp, "\n#### Global Personal Preferences ####\n");
 	if (DTDEBUG) {
 	    fprintf (writefp, "%sdebug\t\t%s\n", c, DTDEBUG?"ON":"OFF");
-	    fprintf (writefp, "%sprint\t\t%x\n", c, DTPRINT);
+	    /*fprintf (writefp, "%sprint\t\t%x\n", c, DTPRINT?DTPRINT:"OFF"); prints too much on reread*/
 	}
 	fprintf (writefp, "%srefreshing\t%s\n", c, global->redraw_manually?"MANUAL":"AUTO");
 	fprintf (writefp, "%ssave_enables\t%s\n", c, global->save_enables?"ON":"OFF");
@@ -1487,7 +1487,7 @@ void config_trace_defaults (
 {
     trace->hierarchy_separator = '.';
     trace->vector_separator = '[';
-    trace->vector_endseparator = ']';
+    trace->vectorend_separator = ']';
 
     grid_reset_cb (trace->main);
 }
@@ -1499,7 +1499,7 @@ void config_global_defaults(void)
     draw_needupd_val_states ();
     draw_needupd_sig_start ();
     
-    global->sighgt = 20;	/* was 25 */
+    global->sighgt = 15;
     global->pageinc = PAGEINC_FULL;
     global->save_ordering = TRUE;
     global->cursor_vis = TRUE;

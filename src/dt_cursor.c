@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -182,7 +182,7 @@ void cur_write (FILE *writefp, char *c)
 }
 
 DTime cur_time_first (
-    Trace 	*trace)
+    const Trace 	*trace)
     /* Return time of the first cursor, or BOT if none */
 {
     DCursor	*csr_ptr;
@@ -197,7 +197,7 @@ DTime cur_time_first (
 }
 
 DTime cur_time_last (
-    Trace 	*trace)
+    const Trace 	*trace)
     /* Return time of the last cursor, or EOT if none */
 {
     DCursor	*csr_ptr;

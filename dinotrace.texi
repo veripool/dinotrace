@@ -125,7 +125,7 @@ For the latest version, please see
 @uref{http://www.ultranet.com/~wsnyder/veripool/dinotrace}
 
 Please feel free to send comments and suggestions to
-@email{wsnyder@@ultranet.com} or @email{wsnyder@@world.std.com}.  If you install this
+@email{wsnyder@@ultranet.com} or @email{wsnyder@@iname.com}.  If you install this
 tool, please also send mail so that I can inform you of new
 releases.
 
@@ -230,8 +230,8 @@ signal support.
 Many people have provided ideas and other assistance with Dinotrace.
 
 The major corporate sponsors of Dinotrace, by providing funds or
-equipment grants, are Digital Equipment Corporation, Intel Corporation,
-and Maker Communications.
+equipment grants, are Digital Equipment Corporation and Maker
+Communications.
 
 The people who have provided ideas for Dinotrace include Edward Arthur,
 Sally Barry, Josh Belkin, Yifat Ben-Shachar, Rachel Berman, Sass Berman,
@@ -852,8 +852,9 @@ button on the @dmenu{Value Search} requester.
 @cindex Moving, Cursors by Grid
 @cindex Grids, Stepping Cursors by
 
-Selecting @dmenu{Cursor Step Forward} will move all user cursors forward the
-by grid #0's (or the first visible grid's) period.
+Selecting @dmenu{Cursor Step Forward} or pressing @kbd{>} will move all
+user cursors forward the by grid #0's (or the first visible grid's)
+period.
 
 @node Cursor Step Backward, Cursor Clear, Cursor Step Forward, Cursor Menu
 @subsection Cursor Step Backward
@@ -861,8 +862,9 @@ by grid #0's (or the first visible grid's) period.
 @cindex Moving, Cursors by Grid
 @cindex Grids, Stepping Cursors by
 
-Selecting @dmenu{Cursor Step Back} will move all user cursors backward the
-by grid #0's (or the first visible grid's) period.
+Selecting @dmenu{Cursor Step Back} or pressing @kbd{<} will move all
+user cursors backward the by grid #0's (or the first visible grid's)
+period.
 
 @node Cursor Clear, Cursor Cancel, Cursor Step Backward, Cursor Menu
 @subsection Cursor Clear
@@ -1189,6 +1191,11 @@ End of time.
 
 @item @key{esc}
 @dmenu{Signal Cancel}.
+
+@item >
+@dmenu{Cursor Step Forward}.
+@item <
+@dmenu{Cursor Step Backward}.
 
 @item a
 @dmenu{Value Annotate}.
@@ -2072,6 +2079,22 @@ where the value occurs.
 @kbd{C-x C-a S} will take the value the point is over, and highlight it
 using the next color.  With a prefix-arg, cursors will also be put where
 the value occurs.
+
+@item C-x C-a >
+@itemx M-x dinotrace-cursor-step-forward
+@kindex C-x C-a >
+
+@kbd{C-x C-a >} will move all cursors forward one grid #0 period and
+reannotate the buffer.  If the grid is set correctly, this will change
+the values to represent one clock period later.
+
+@item C-x C-a <
+@itemx M-x dinotrace-cursor-step-backward
+@kindex C-x C-a <
+
+@kbd{C-x C-a <} will move all cursors back one grid #0 period and
+reannotate the buffer.  If the grid is set correctly, this will change
+the values to represent one clock period earlier.
 
 @end table
 

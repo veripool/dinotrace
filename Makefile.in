@@ -4,9 +4,9 @@
 # 
 # This file is part of Dinotrace.  
 # 
-# Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+# Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
 # 
-# Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+# Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
 # 
 #*****************************************************************************
 # 
@@ -90,15 +90,17 @@ pkgdatadir = @pkgdatadir@
 
 SHELL = /bin/sh
 
-SUBDIRS = src
+SUBDIRS = src lisp
+
+INFOS = dinotrace.info INSTALL FAQ dinotrace.txt
 
 # Files that can be generated, but should be up to date for a distribution.
-DISTDEP = info Makefile src/dinodoc.pl src/dist_date.pl
+DISTDEP = $(INFOS) Makefile src/dinodoc.pl src/dist_date.pl
 # Files to distribute.
-DISTFILES = COPYING FAQ INSTALL NEWS TODO Makefile.in \
-	dinotrace.txt \
-	install.texi faq.texi *.com \
-	src/*.in src/*.h src/*.c src/*.pl src/*.com
+DISTFILES = $(INFOS) COPYING NEWS TODO configure *.in \
+	config.sub config.guess \
+	install-sh mkinstalldirs *.texi *.com \
+	src/*.in src/*.h src/*.c src/*.pl src/*.com lisp/* traces/*
 
 all: dinotrace_exe info
 
@@ -108,7 +110,6 @@ dinotrace_exe dinotrace:
 	echo making dinotrace in src ; \
 	  (cd src && $(MAKE) ../dinotrace) ; \
 
-INFOS = dinotrace.info INSTALL FAQ dinotrace.txt
 info: $(INFOS)
 
 # Use --no-split to avoid creating filenames > 14 chars.
@@ -133,41 +134,21 @@ dinotrace.dvi: dinotrace.texi
 	$(TEXI2DVI) $(srcdir)/dinotrace.texi
 
 installdirs:
-	$(SHELL) ${srcdir}/mkinstalldirs $(bindir) $(infodir) $(datadir)
+	$(SHELL) ${srcdir}/mkinstalldirs $(bindir) $(infodir)
 
-install: all $(M4FILES) acconfig.h installdirs install-info
-	@case `$(M4) --help < /dev/null 2>&1` in \
-	*reload-state*) echo installing frozen m4 files; \
-	  $(M4) -F $(datadir)/dinotrace.m4f -I${srcdir} ${srcdir}/dinotrace.m4 ; \
-	  $(M4) -F $(datadir)/autoheader.m4f -I${srcdir} ${srcdir}/autoheader.m4 ;; \
-	*traditional*) ;; \
-	*) echo Error: Dinotrace requires GNU m4 1.1 or later; exit 1 ;; \
-	esac
-	for p in $(ASCRIPTS); do \
-	  $(INSTALL_PROGRAM) $$p $(bindir)/`echo $$p|sed '$(transform)'`; \
+install: all info installdirs install-info
+	for p in dinotrace; do \
+	  $(INSTALL_PROGRAM) $$p $(bindir)/$p; \
 	done
-	for i in $(M4FILES) acconfig.h; do \
-	$(INSTALL_DATA) $(srcdir)/$$i $(datadir)/$$i; \
-	done
-	-if test -f autoscan; then \
-	$(INSTALL_PROGRAM) autoscan $(bindir)/`echo autoscan|sed '$(transform)'`; \
-	for i in acfunctions acheaders acidentifiers acprograms \
-	  acmakevars; do \
-	$(INSTALL_DATA) $(srcdir)/$$i $(datadir)/$$i; \
-	done; \
-	else :; fi
+	@echo ""
+	@echo "*** Lisp files not installed, you may want to"
+	@echo "*** cd lisp ; make"
 
 # Don't cd, to avoid breaking install-sh references.
 install-info: info installdirs
-	if test -f dinotrace.info; then \
-	  for i in *.info*; do \
-	    $(INSTALL_DATA) $$i $(infodir)/$$i; \
-	  done; \
-	else \
-	  for i in $(srcdir)/*.info*; do \
-	    $(INSTALL_DATA) $$i $(infodir)/`echo $$i | sed 's|^$(srcdir)/||'`; \
-	  done; \
-	fi
+	for i in *.info*; do \
+	  $(INSTALL_DATA) $$i $(infodir)/$$i; \
+	done
 
 uninstall:
 	rm -fr $(datadir)
@@ -195,7 +176,7 @@ maintainer-clean::
 	@echo "rebuilding the deleted files requires makeinfo."
 	rm -f *.info* $(INFOS) configure
 
-clean mostlyclean distclean maintainer-clean::
+clean mostlyclean distclean maintainer-clean maintainer-copy::
 	for dir in $(SUBDIRS); do \
 	  echo making $@ in $$dir ; \
 	  (cd $$dir && $(MAKE) $@) ; \
@@ -219,14 +200,15 @@ TAGS:	$(TAGFILES)
 
 # Don't depend on DISTFILES because there's no rule for "standards.info*".
 dist: $(DISTDEP)
-	distname=`sed -e '/define(AC_ACVERSION,/!d' \
-	-e 's/[^0-9.]*\([0-9.]*\).*/dinotrace-\1/' -e q acgeneral.m4`; \
+	distname=`sed -e '/DTVERSION/!d' \
+	-e 's/[^0-9]*\([0-9.a-z]*\).*/dinotrace-\1/' -e q src/config.h.in`; \
 	rm -fr $$distname; \
-	mkdir $$distname; \
+	mkdir $$distname $$distname/src $$distname/lisp $$distname/traces; \
 	for file in $(DISTFILES); do \
 	  ln $$file $$distname/$$file \
 	  || { echo copying $$file instead; cp -p $$file $$distname/$$file;}; \
 	done; \
-	chmod -R a+rX $$distname; \
-	tar -chz -f $$distname.tar.gz $$distname; \
+	chmod -R a+r $$distname; \
+	tar chf $$distname.tar $$distname; \
+	gzip --force --best $$distname.tar; \
 	rm -fr $$distname

@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -262,15 +262,15 @@ char *sig_basename (
     basename = strrchr ((sig_ptr->signame_buspos ?
 			 sig_ptr->signame_buspos : sig_ptr->signame),
 			trace->hierarchy_separator);
-    if (!basename) basename = sig_ptr->signame;
+    if (!basename || basename[0]=='\0') basename = sig_ptr->signame;
     else basename++;
     return (basename);
 }
 
 /* Returns Signal or NULL if not found */
 Signal *sig_find_signame (
-    Trace	*trace,
-    char	*signame)
+    const Trace	*trace,
+    const char	*signame)
 {
     Signal	*sig_ptr;
     
@@ -283,8 +283,8 @@ Signal *sig_find_signame (
 
 /* Returns Signal or NULL if not found */
 Signal *sig_wildmat_signame (
-    Trace	*trace,
-    char	*signame)
+    const Trace	*trace,
+    const char	*signame)
 {
     Signal	*sig_ptr;
     
@@ -299,7 +299,7 @@ Signal *sig_wildmat_signame (
 void	sig_wildmat_select (
     /* Create list of selected signals */
     Trace	  	*trace,		/* NULL= do all traces */
-    char		*pattern)
+    const char		*pattern)
 {
     Signal		*sig_ptr;
     SignalList		*siglst_ptr;
@@ -412,8 +412,8 @@ void	sig_update_search ()
 }
 
 Boolean_t sig_is_constant (
-    Trace	*trace,
-    Signal	*sig_ptr,
+    const Trace	*trace,
+    const Signal	*sig_ptr,
     Boolean_t	ignorexz)		/* TRUE = ignore xz */
 {
     Boolean_t 	changes;
@@ -517,7 +517,7 @@ void    sig_radix_selected (
 void    sig_move_selected (
     /* also used for adding deleted signals */
     Trace	*new_trace,
-    char	*after_pattern)
+    const char	*after_pattern)
 {
     Trace	*old_trace;
     Signal	*sig_ptr, *after_sig_ptr;
@@ -542,7 +542,7 @@ void    sig_move_selected (
 
 void    sig_rename_selected (
     /* also used for adding deleted signals */
-    char	*new_name)
+    const char	*new_name)
 {
     Signal	*sig_ptr;
     SignalList	*siglst_ptr;
@@ -563,7 +563,7 @@ void    sig_rename_selected (
 
 void    sig_copy_selected (
     Trace	*new_trace,
-    char	*after_pattern)
+    const char	*after_pattern)
 {
     Trace	*old_trace;
     Signal	*sig_ptr, *after_sig_ptr;
@@ -629,7 +629,7 @@ void    sig_note_selected (
 
 void    sig_goto_pattern (
     Trace	*trace,
-    char	*pattern)
+    const char	*pattern)
 {
     Signal	*sig_ptr;
     uint_t	numprt;
@@ -679,8 +679,8 @@ void    sig_goto_pattern (
 
 char *sig_examine_string (
     /* Return string with examine information in it */
-    Trace	*trace,
-    Signal	*sig_ptr)
+    const Trace	*trace,
+    const Signal	*sig_ptr)
 {
     static char	strg[2000];
     char	strg2[2000];

@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -63,6 +63,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <ctype.h>
 #include <memory.h>
 #include <sys/types.h>
@@ -77,11 +78,10 @@
 #if HAVE_FCNTL_H
 # include <fcntl.h>
 #endif
-#if TM_IN_SYS_TIME
-#include <sys/time.h>
-#else
-#include <time.h>
+#if HAVE_SYS_TIME
+# include <sys/time.h>
 #endif
+#include <time.h>
 
 #ifdef VMS
 # include <file.h>
@@ -723,7 +723,7 @@ struct st_trace {
     Boolean_t		loaded;		/* True if the filename is loaded in */
     char		hierarchy_separator;	/* Hiearchy separator character, usually "." */
     char		vector_separator;	/* Bus separator character, usually "[" */
-    char		vector_endseparator;	/* Bus ending separator character, usually "]" */
+    char		vectorend_separator;	/* Bus ending separator character, usually "]" */
 
     uint_t		redraw_needed;	/* Need to refresh the screen when get a chance, TRD_* bit fielded */
 #define				TRD_REDRAW	0x1

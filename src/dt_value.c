@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -496,7 +496,7 @@ Boolean_t  val_equal (
     return ((vptra->siglw.stbits.state == vptrb->siglw.stbits.state)
 	    && ((   (vptra->siglw.stbits.state == STATE_B32)
 		    & (vptra->number[0] == vptrb->number[0]))
-		|| ((vptra->siglw.stbits.state == STATE_B32)
+		|| ((vptra->siglw.stbits.state == STATE_B128)
 		    & (vptra->number[0] == vptrb->number[0])
 		    & (vptra->number[1] == vptrb->number[1])
 		    & (vptra->number[2] == vptrb->number[2])
@@ -535,8 +535,8 @@ void	val_update_search ()
     prev_cursor = last_set_cursor ();
     set_cursor (DC_BUSY);
 
-    /* If no searches are enabled, skip the cptr loop.  This saves */
-    /* 3% of the first reading time on large traces */
+    /* If no searches are enabled, skip the cptr loop.  */
+    /* This saves 3% of the first reading time on large traces */
     any_enabled = enabled_lasttime; 	/* if all get disabled, we still need to clean up enables */
     for (i=0; i<MAX_SRCH; i++) {
 	if (global->val_srch[i].color != 0) any_enabled = TRUE;
@@ -1546,6 +1546,7 @@ void    val_annotate_do_cb (
 {
     int		i;
     Signal	*sig_ptr;
+    Trace	*trace_loop;
     Value_t	*cptr;
     FILE	*dump_fp;
     DCursor 	*csr_ptr;		/* Current cursor being printed */
@@ -1644,7 +1645,9 @@ void    val_annotate_do_cb (
     /* Signal values */
     /* (basename [name color-num note values] nil(propertied)) */
     fprintf (dump_fp, "(setq dinotrace-signal-values '(\n");
-    for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
+    for (trace_loop = global->deleted_trace_head; trace_loop; trace_loop = trace_loop->next_trace) {
+	/* Process the deleted trace last, so visible values override deleted values */
+	trace = trace_loop->next_trace ? trace_loop->next_trace : global->deleted_trace_head;
         if ((   global->anno_traces == TRACESEL_THIS && trace!=global->anno_last_trace)
 	    || (global->anno_traces == TRACESEL_ALL && trace==global->deleted_trace_head)) {
 	    continue;

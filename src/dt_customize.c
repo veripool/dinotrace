@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -324,9 +324,9 @@ void	cus_ok_cb (
 
     XtSetArg (arglist[0], XmNmenuHistory, &clicked);
     XtGetValues (trace->custom.page_option, arglist, 1);
-    if (clicked == trace->custom.time_item[2])
+    if (clicked == trace->custom.page_item[2])
 	global->pageinc = PAGEINC_QUARTER;
-    else if (clicked == trace->custom.time_item[1])
+    else if (clicked == trace->custom.page_item[1])
 	global->pageinc = PAGEINC_HALF;
     else global->pageinc = PAGEINC_FULL;
     

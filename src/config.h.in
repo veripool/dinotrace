@@ -4,9 +4,9 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ * Author: Wilson Snyder <wsnyder@ultranet.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
  *
  ******************************************************************************
  *
@@ -55,11 +55,7 @@
 #endif
 
 /* Have inlining?  If supported, configure will define it */
-#ifndef inline
-#define	INLINE
-#else
-#define	INLINE inline
-#endif
+/*#undef	inline*/
 
 /**********************************************************************/
 /**** Functions */
@@ -83,8 +79,8 @@
 /* Set define if we have header: <unistd.h> */
 #define HAVE_UNISTD_H 0
 
-/* Set define if `time.h' does not define `struct tm' */
-#define TM_IN_SYS_TIME 0
+/* Set define if we have header: <sys/time.h> */
+#define HAVE_SYS_TIME 0
 
 /**********************************************************************/
 /**** System Information */
@@ -106,8 +102,8 @@
 /* Set define if documentation is inlinable (need perl) */
 #define HAVE_DINODOC_H 1
 
-/* Set define if we have compile date information */
-#define HAVE_DIST_DATE_H 1
+/* Information on when we were configured */
+#define CONFIG_DATE_STRG "Unknown"
 
 /* Typedefs that system includes should define, but may not */
 #if defined(__sun__) && !defined(__svr4__)
