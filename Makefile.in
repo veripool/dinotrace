@@ -1,0 +1,197 @@
+# $Id$
+#*****************************************************************************
+# Makefile.pl --- Makefile pre-configure version, for dinotrace top level
+# 
+# This file is part of Dinotrace.  
+# 
+# Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+# 
+# Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+# 
+#*****************************************************************************
+# 
+# This file is covered by the GNU public licence.
+# 
+# Dinotrace is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public Licens as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+# 
+# Dinotrace is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Dinotrace; see the file COPYING.  If not, write to
+# the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+# Boston, MA 02111-1307, USA.
+# 
+#****************************************************************************/
+
+#### Start of system configuration section. ####
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+MAKEINFO = makeinfo
+TEXI2DVI = texi2dvi
+PERL = @PERL@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+# Directory in which to install scripts.
+bindir = @bindir@
+
+# Directory in which to install library files.
+datadir = @datadir@
+
+# Directory in which to install documentation info files.
+infodir = @infodir@
+
+#### End of system configuration section. ####
+
+SHELL = /bin/sh
+
+SUBDIRS = src
+
+# Files that can be generated, but should be up to date for a distribution.
+DISTDEP = info Makefile
+# Files to distribute.
+DISTFILES = AUTHORS COPYING ChangeLog ChangeLog.1 INSTALL \
+	Makefile.in NEWS README TODO \
+	install.texi \
+	src/Makefile.in src/*.h src/*.c src/*.pl
+
+all: dinotrace_exe info
+
+.PHONY:dinotrace_exe
+.PHONY:dinotrace
+dinotrace_exe dinotrace:
+	echo making dinotrace in src ; \
+	  (cd src && $(MAKE) ../dinotrace) ; \
+
+info: dinotrace.info INSTALL
+
+# Use --no-split to avoid creating filenames > 14 chars.
+dinotrace.info: dinotrace.texi
+	$(MAKEINFO) -I$(srcdir) $(srcdir)/dinotrace.texi --no-split --output=$@
+
+INSTALL: install.texi
+	$(MAKEINFO) -I$(srcdir) $(srcdir)/install.texi --output=$@ \
+	--no-headers --no-validate
+
+dvi: dinotrace.dvi
+
+dinotrace.dvi: dinotrace.texi
+	$(TEXI2DVI) $(srcdir)/dinotrace.texi
+
+installdirs:
+	$(SHELL) ${srcdir}/mkinstalldirs $(bindir) $(infodir) $(acdatadir)
+
+install: all $(M4FILES) acconfig.h installdirs install-info
+	@case `$(M4) --help < /dev/null 2>&1` in \
+	*reload-state*) echo installing frozen m4 files; \
+	  $(M4) -F $(acdatadir)/dinotrace.m4f -I${srcdir} ${srcdir}/dinotrace.m4 ; \
+	  $(M4) -F $(acdatadir)/autoheader.m4f -I${srcdir} ${srcdir}/autoheader.m4 ;; \
+	*traditional*) ;; \
+	*) echo Error: Dinotrace requires GNU m4 1.1 or later; exit 1 ;; \
+	esac
+	for p in $(ASCRIPTS); do \
+	  $(INSTALL_PROGRAM) $$p $(bindir)/`echo $$p|sed '$(transform)'`; \
+	done
+	for i in $(M4FILES) acconfig.h; do \
+	$(INSTALL_DATA) $(srcdir)/$$i $(acdatadir)/$$i; \
+	done
+	-if test -f autoscan; then \
+	$(INSTALL_PROGRAM) autoscan $(bindir)/`echo autoscan|sed '$(transform)'`; \
+	for i in acfunctions acheaders acidentifiers acprograms \
+	  acmakevars; do \
+	$(INSTALL_DATA) $(srcdir)/$$i $(acdatadir)/$$i; \
+	done; \
+	else :; fi
+
+# Don't cd, to avoid breaking install-sh references.
+install-info: info installdirs
+	if test -f dinotrace.info; then \
+	  for i in *.info*; do \
+	    $(INSTALL_DATA) $$i $(infodir)/$$i; \
+	  done; \
+	else \
+	  for i in $(srcdir)/*.info*; do \
+	    $(INSTALL_DATA) $$i $(infodir)/`echo $$i | sed 's|^$(srcdir)/||'`; \
+	  done; \
+	fi
+
+uninstall:
+	for p in $(SCRIPTS); do \
+	  rm -f $(bindir)/`echo $$p|sed '$(transform)'`; \
+	done
+	rm -fr $(acdatadir)
+	cd $(infodir) && rm -f dinotrace.info*
+	if test -f standards.info || test -f $(srcdir)/standards.info; \
+	then cd $(infodir) && rm -f standards.info*; fi
+
+# autoheader might not change config.h.in, so touch a stamp file.
+${srcdir}/config.h.in: stamp-h.in
+${srcdir}/stamp-h.in: configure.in Makefile.in ${srcdir}/Makefile.in ${srcdir}/config.h.in
+	cd ${srcdir} && autoheader
+	echo timestamp > ${srcdir}/stamp-h.in
+config.h: stamp-h
+stamp-h: config.h.in config.status
+	./config.status
+Makefile: Makefile.in config.status
+	./config.status
+src/Makefile: src/Makefile.in config.status
+	./config.status
+config.status: configure
+	./config.status --recheck
+configure: configure.in
+	autoconf
+
+maintainer-clean::
+	@echo "This command is intended for maintainers to use;"
+	@echo "rebuilding the deleted files requires makeinfo."
+	rm -f TAGS *.info* INSTALL
+
+clean mostlyclean distclean maintainer-clean::
+	for dir in $(SUBDIRS); do \
+	  echo making $@ in $$dir ; \
+	  (cd $$dir && $(MAKE) $@) ; \
+	done
+
+clean mostlyclean distclean maintainer-clean::
+	rm -f $(SCRIPTS) *.tmp 
+	rm -f *.aux *.cp *.cps *.dvi *.fn *.fns *.ky *.kys *.log
+	rm -f *.pg *.pgs *.toc *.tp *.tps *.vr *.vrs
+	rm -f *.ev *.evs *.ov *.ovs *.cv *.cvs *.ma *.mas
+
+distclean maintainer-clean::
+	rm -f Makefile config.status config.cache config.log dinotrace
+
+
+TAGFILES=${srcdir}/src/*.c ${srcdir}/src/*.h ${srcdir}/src/[a-z]*.in \
+	${srcdir}/[a-z]*.in ${srcdir}/*.texi
+
+TAGS:	$(TAGFILES)
+	etags $(TAGFILES)
+
+# Don't depend on DISTFILES because there's no rule for "standards.info*".
+dist: $(DISTDEP)
+	distname=`sed -e '/define(AC_ACVERSION,/!d' \
+	-e 's/[^0-9.]*\([0-9.]*\).*/dinotrace-\1/' -e q acgeneral.m4`; \
+	rm -fr $$distname; \
+	mkdir $$distname $$distname/testsuite $$distname/testsuite/config \
+	$$distname/testsuite/lib $$distname/testsuite/dinotrace.g \
+	$$distname/testsuite/dinotrace.s; \
+	for file in $(DISTFILES); do \
+	  ln $$file $$distname/$$file \
+	  || { echo copying $$file instead; cp -p $$file $$distname/$$file;}; \
+	done; \
+	chmod -R a+rX $$distname; \
+	tar -chz -f $$distname.tar.gz $$distname; \
+	rm -fr $$distname

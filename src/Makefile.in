@@ -1,0 +1,132 @@
+# $Id$
+#*****************************************************************************
+# src/Makefile.pl --- Makefile pre-configure version, for dinotrace source
+# 
+# This file is part of Dinotrace.  
+# 
+# Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+# 
+# Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+# 
+#*****************************************************************************
+# 
+# This file is covered by the GNU public licence.
+# 
+# Dinotrace is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+# 
+# Dinotrace is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Dinotrace; see the file COPYING.  If not, write to
+# the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+# Boston, MA 02111-1307, USA.
+# 
+#****************************************************************************/
+
+#### Start of system configuration section. ####
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+HOST = @HOST@
+PERL = @PERL@
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+CC = @CC@
+LINK = @CC@
+
+CFLAGS = @CFLAGS@ @X_CFLAGS@ -I.
+CPPFLAGS = @CPPFLAGS@
+DEFS = @DEFS@ -DHOST=$(HOST)
+LDFLAGS = @LDFLAGS@
+LIBS = @X_PRE_LIBS@ @LIBS@ @X_LIBS@ @X_EXTRA_LIBS@ -lXm -lXt -lX11 -lm
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+#### End of system configuration section. ####
+
+#### Rules
+
+.c.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+#### Top level
+
+all: dinotrace
+
+clean mostlyclean distclean maintainer-clean::
+	rm -f *.o compile_date.h dinodoc.h
+
+distclean maintainer-clean::
+	rm -f Makefile config.h
+
+#### Modules
+
+SRCS = dt_binary.c dt_config.c dt_cursor.c dt_customize.c dt_dispmgr.c dt_draw.c \
+	dt_file.c dt_grid.c dt_icon.c dt_printscreen.c dt_signal.c dt_util.c \
+	dt_window.c dt_value.c dt_verilog.c dt_socket.c dinotrace.c
+
+OBJS = dt_binary.o dt_config.o dt_cursor.o dt_customize.o dt_dispmgr.o dt_draw.o \
+	dt_file.o dt_grid.o dt_icon.o dt_printscreen.o dt_signal.o dt_util.o \
+	dt_window.o dt_value.o dt_verilog.o dt_socket.o dinotrace.o
+
+COMMON_HDRS = dinotrace.h functions.h
+ALL_HDRS = $(COMMON_HDRS) bintradef.h compile_date.h dt_post.h dinodoc.h
+
+#### Top executable
+
+../dinotrace: $(OBJS) Makefile
+	$(LINK) $(LINKFLAGS) -o ../dinotrace $(LINKOPT) $(OBJS) $(LIBS)
+
+#### Derrived files
+
+dinodoc.h: ../dinotrace.txt dinodoc.pl
+	$(PERL) dinodoc.pl <../dinotrace.txt >dinodoc.h
+
+compile_date.h: compile_date.pl dinotrace.h functions.h dinotrace.c
+	$(PERL) compile_date.pl
+
+#### Object links
+
+dinotrace.o: dinotrace.c $(COMMON_HDRS) compile_date.h
+
+dt_binary.o: dt_binary.c $(COMMON_HDRS) bintradef.h
+
+dt_config.o: dt_config.c $(COMMON_HDRS)
+
+dt_cursor.o: dt_cursor.c $(COMMON_HDRS)
+
+dt_customize.o: dt_customize.c $(COMMON_HDRS)
+
+dt_dispmgr.o: dt_dispmgr.c $(COMMON_HDRS)
+
+dt_draw.o: dt_draw.c $(COMMON_HDRS)
+
+dt_file.o: dt_file.c $(COMMON_HDRS) dinodoc.h
+
+dt_grid.o: dt_grid.c $(COMMON_HDRS)
+
+dt_icon.o: dt_icon.c $(COMMON_HDRS)
+
+dt_printscreen.o: dt_printscreen.c $(COMMON_HDRS) dt_post.h
+
+dt_signal.o:	dt_signal.c $(COMMON_HDRS)
+
+dt_socket.o:	dt_socket.c $(COMMON_HDRS)
+
+dt_util.o:	dt_util.c $(COMMON_HDRS)
+
+dt_window.o:	dt_window.c $(COMMON_HDRS)
+
+dt_value.o: 	dt_value.c $(COMMON_HDRS)
+
+dt_verilog.o:	dt_verilog.c $(COMMON_HDRS)
+

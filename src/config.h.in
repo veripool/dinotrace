@@ -1,0 +1,91 @@
+/* $Id$ */
+/******************************************************************************
+ * config.h.in --- configure source; system configuration
+ *
+ * This file is part of Dinotrace.  
+ *
+ * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@ultranet.com>
+ *
+ * Code available from: http://www.ultranet.com/~wsnyder/dinotrace
+ *
+ ******************************************************************************
+ *
+ * This file is covered by the GNU public licence.
+ *
+ * Dinotrace is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public Licens as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * Dinotrace is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Dinotrace; see the file COPYING.  If not, write to
+ * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ *****************************************************************************/
+
+/* Note: VMS doesn't use configure, so force values as appropriate */
+
+/* When this version will expire */
+/*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
+#define	EXPIRATION 0
+
+#ifndef HOST
+# ifdef VMS
+#  ifdef __alpha
+#   define HOST "alpha-dec-vms"
+#  else
+#   define HOST "vax-dec-vms"
+#  endif
+# else
+#  define HOST "Unknown"
+# endif
+#endif
+
+/* Have inlining?  If supported, configure will define it */
+#ifndef inline
+#define	INLINE
+#else
+#define	INLINE inline
+#endif
+
+/* Set define if we have function: strdup (string) */
+#define HAVE_STRDUP 0
+
+/* Set define if we have function: gethostname */
+#define HAVE_GETHOSTNAME 0
+
+/* Set define if we have header: <fcntl.h> */
+#define HAVE_FCNTL_H 0
+
+/* Set define if we have header: <unistd.h> */
+#define HAVE_UNISTD_H 0
+
+/* Set define if `time.h' does not define `struct tm' */
+#define TM_IN_SYS_TIME 0
+
+/* Set define if we have sockets */
+#define HAVE_SOCKETS HAVE_GETHOSTNAME
+#ifdef VMS
+#undef HAVE_SOCKETS
+#define HAVE_SOCKETS 0
+#endif
+
+/* Set define if documentation is inlinable (need perl) */
+#define HAVE_DINODOC_H 1
+#ifdef VMS
+#undef HAVE_DINODOC_H
+#define HAVE_DINODOC_H 0
+#endif
+
+/* Set define if we have compile date information */
+#define HAVE_COMPILE_DATE_H 1
+#ifdef VMS
+#undef HAVE_COMPILE_DATE_H
+#define HAVE_COMPILE_DATE_H 0
+#endif
