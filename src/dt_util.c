@@ -546,7 +546,7 @@ void    prompt_ok_cb (w, trace, cb)
 	global->res = RES_SCALE / (float)restime;
 	    
 	/* change the resolution string on display */
-	new_res (trace, TRUE);
+	new_res (trace);
 	break;
 	
       default:

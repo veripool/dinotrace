@@ -870,7 +870,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     /* get font information */
     trace->text_font = XQueryFont (global->display,XGContextFromGC (trace->gc));
     
-    new_res (trace, FALSE);
+    new_res (trace);
 
     set_cursor (trace, DC_NORMAL);
 

@@ -302,9 +302,8 @@ void win_chg_res_cb (w,trace,cb)
     }
 
 
-void new_res (trace, redisplay)
+void new_res (trace)
     TRACE	*trace;
-    int		redisplay;	/* TRUE to refresh the screen after change */
 {
     char	string[30], timestrg[20];
 
@@ -321,9 +320,7 @@ void new_res (trace, redisplay)
 	XtSetValues (trace->command.reschg_but,arglist,1);
 	}
 
-    if (redisplay) {
-	draw_all_needed (trace);
-	}
+    draw_all_needed ();
     }
 
 void win_inc_res_cb (w,trace,cb)
@@ -336,7 +333,7 @@ void win_inc_res_cb (w,trace,cb)
     /* increase the resolution by 10% */
     global->res = global->res*1.1;
     global->res_default = FALSE;	/* Has changed */
-    new_res (trace, TRUE);
+    new_res (trace);
     }
 
 void win_dec_res_cb (w,trace,cb)
@@ -349,7 +346,7 @@ void win_dec_res_cb (w,trace,cb)
     /* decrease the resolution by 10% */
     global->res = global->res*0.9;
     global->res_default = FALSE;	/* Has changed */
-    new_res (trace, TRUE);
+    new_res (trace);
     }
 
 void win_full_res_cb (w,trace,cb)
@@ -368,7 +365,7 @@ void win_full_res_cb (w,trace,cb)
 	global->res = ( (float)(trace->width - global->xstart)) /
 	    ((float)(trace->end_time - trace->start_time));
 	global->res_default = FALSE;	/* Has changed */
-	new_res (trace, FALSE);
+	new_res (trace);
 	new_time (trace);
 	}
     }
@@ -426,7 +423,7 @@ void res_zoom_click_ev (w, trace, ev)
 	
 	global->time = global->click_time;
 
-	new_res (trace, FALSE);
+	new_res (trace);
 	new_time (trace);
 	}
 
