@@ -27,6 +27,7 @@
  *				 window, fixed vscroll 'Value' parameter
  *     WPS	 8-Jan-92	Added new_time gadget controls
  */
+static char rcsid[] = "$Id$";
 
 
 #include <stdio.h>
