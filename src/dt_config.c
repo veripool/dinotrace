@@ -12,7 +12,7 @@
  *
  * Some of the code in this file was originally developed for Digital
  * Semiconductor, a division of Digital Equipment Corporation.  They
- * gratefuly have agreed to share it, and thus the bas version has been
+ * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
  * 
@@ -1009,7 +1009,7 @@ static void	config_process_line_internal (
 	else if (!strcmp(cmd, "SIGNAL_WAVEFORM")) {
 	    line += config_read_pattern (trace, line, pattern);
 	    if (pattern[0]) {
-		Waveform_t waveform;
+		Waveform_t waveform = WAVEFORM_DIGITAL;
 		Boolean_t doit = TRUE;
 		char strg[MAXSIGLEN];
 		line += config_read_string (trace,line, strg);
