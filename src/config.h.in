@@ -31,6 +31,8 @@
 
 /* Note: VMS doesn't use configure, so force values as appropriate */
 
+#define DTVERSION	"Dinotrace V9.0a"
+
 /* When this version will expire */
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
 #define	EXPIRATION 0
@@ -63,14 +65,21 @@
 /* Set define if we have header: <fcntl.h> */
 #define HAVE_FCNTL_H 0
 
+/* Set define if we have header: <math.h> */
+#define HAVE_MATH_H 1
+
 /* Set define if we have header: <unistd.h> */
 #define HAVE_UNISTD_H 0
 
 /* Set define if `time.h' does not define `struct tm' */
 #define TM_IN_SYS_TIME 0
 
+/* Set define if words are stored with the most significant byte first */
+/* (like Motorola and SPARC, but not Intel and VAX, CPUs) */
+#define WORDS_BIGENDIAN 0
+
 /* Set define if we have sockets */
-#define HAVE_SOCKETS HAVE_GETHOSTNAME
+#define HAVE_SOCKETS 1
 #ifdef VMS
 #undef HAVE_SOCKETS
 #define HAVE_SOCKETS 0
@@ -88,4 +97,14 @@
 #ifdef VMS
 #undef HAVE_COMPILE_DATE_H
 #define HAVE_COMPILE_DATE_H 0
+#endif
+
+/* Typedefs that system includes should define, but may not */
+#if defined(__sun__) && !defined(__svr4__)
+typedef	unsigned int	uint_t;
+typedef	unsigned long	ulong_t;
+extern int	printf(), fprintf(), scanf(), sscanf(), fputs();
+extern int	fclose(), pclose(), fflush();
+extern void	rewind();
+extern char	toupper(char);
 #endif

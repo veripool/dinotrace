@@ -55,8 +55,46 @@
  *
  *****************************************************************************/
 
-#define DTVERSION	"Dinotrace V9.0a"
+/**********************************************************************/
+/* Standard headers required for everybody */
 
+#include "config.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <memory.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#if HAVE_MATH_H
+# include <math.h>
+#endif
+#if HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+#if HAVE_FCNTL_H
+# include <fcntl.h>
+#endif
+#if TM_IN_SYS_TIME
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+
+#ifdef VMS
+# include <file.h>
+# include <strdef.h>
+# include <unixio.h>
+# include <descrip.h>
+#endif
+
+#include <X11/Xlib.h>
+#include <X11/StringDefs.h>
+#include <Xm/Xm.h>
+
+/***********************************************************************/
 /* Turn off alignment for any structures that will be read/written onto Disk! */
 /*
 #ifndef __osf__
@@ -118,11 +156,6 @@
 #define STATE_UN6 6		/* not used */
 #define STATE_UN7 7		/* not used */
 
-/* dino_message_ack types */
-#define	dino_error_ack(tr,msg)		dino_message_ack (tr, 0, msg)
-#define	dino_warning_ack(tr,msg)	dino_message_ack (tr, 1, msg)
-#define	dino_information_ack(tr,msg)	dino_message_ack (tr, 2, msg)
-
 #define PDASH_HEIGHT	2	/* Heigth of primary dash, <= SIG_SPACE, in pixels */
 #define SDASH_HEIGHT	2	/* Heigth of primary dash, <= SIG_SPACE, in pixels */
 #define SIG_RF		2	/* Rise fall number of pixels */
@@ -132,10 +165,28 @@
 #define PS_START_Y	600	/* Postscript y starting position */
 #define XMARGIN	 	5	/* Space on left margin before signals */
 
+#define IO_GRIDRES	1
+#define IO_RES		3
+
+#define XSTART_MIN	50		/* Min Start X pos of signals on display (read_DECSIM) */
+#define XSTART_MARGIN	10		/* Additional added fudge factor for xstart */
+
+#define DIALOG_WIDTH	75
+#define DIALOG_HEIGHT	50
+
+/**********************************************************************/
+/* Basic Types */
+
+typedef	int 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
+
+/**********************************************************************/
+/* Enums */
+
 /* Half/Quarter/Full page enums */
 #define QPAGE 4
 #define HPAGE 2
 #define FPAGE 1
+typedef uint_t PageInc;
 
 /* Bus representation enums */
 #define IBUS 1
@@ -143,6 +194,7 @@
 #define OBUS 3
 #define HBUS 4
 #define DBUS 5
+typedef uint_t BusRep;
 
 /* Time representation enums */
 #define TIMEREP_PS 1.0
@@ -159,17 +211,6 @@ typedef enum {
     PRINTSIZE_EPSLAND
 } PrintSize;
 
-#define IO_GRIDRES	1
-#define IO_RES		3
-
-#define XSTART_MIN	50		/* Min Start X pos of signals on display (read_DECSIM) */
-#define XSTART_MARGIN	10		/* Additional added fudge factor for xstart */
-
-#define DIALOG_WIDTH	75
-#define DIALOG_HEIGHT	50
-
-typedef	int 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
-
 /* Colors */
 #define MAX_SRCH	9		/* Maximum number of search values, or cursor/signal colors */
 #define MAXCOLORS	10		/* Maximum number of colors, all types, including bars */
@@ -179,7 +220,7 @@ typedef	int	ColorNum;
 typedef	int	VSearchNum;
 
 extern Boolean	DTDEBUG;		/* Debugging mode */
-extern int	DTPRINT;		/* Information printing mode */
+extern uint_t	DTPRINT;		/* Information printing mode */
 extern int	DebugTemp;		/* Temp value for trying things */
 
 #define DTPRINT_ENTRY	 (DTPRINT & 0x00000001)	/* Print routine entries */
@@ -201,7 +242,7 @@ extern int	DebugTemp;		/* Temp value for trying things */
 #define	FF_DECSIM_BIN	4
 #define	FF_DECSIM_ASCII	5
 #define	FF_NUMFORMATS	6		/* Number of formats */
-extern int		file_format;	/* Type of trace to support */
+extern uint_t		file_format;	/* Type of trace to support */
 extern struct st_filetypes {
     Boolean		selection;	/* True if user can select this format */
     char	       	*name;		/* Name of this file type */
@@ -216,6 +257,13 @@ extern XGCValues	xgcv;
 
 extern Arg		arglist[20];
 
+/* Define some types that are needed before defined */
+typedef struct st_trace Trace;
+typedef struct st_signal Signal;
+
+/**********************************************************************/
+/* Widget structures */
+
 typedef struct {
     Widget	menu;
     Widget	pdmenu[11];
@@ -223,12 +271,12 @@ typedef struct {
     Widget	pdentry[22];
     Widget	pdentrybutton[72];
     Widget	pdsubbutton[4+(MAX_SRCH+2)*5];
-    int		sig_highlight_pds;
-    int		cur_highlight_pds;
-    int		cur_add_pds;
-    int		val_highlight_pds;
-    int		pdm, pde, pds;		/* Temp for loading structure */
-} MENU_WDGTS;
+    uint_t	sig_highlight_pds;
+    uint_t	cur_highlight_pds;
+    uint_t	cur_add_pds;
+    uint_t	val_highlight_pds;
+    uint_t	pdm, pde, pds;		/* Temp for loading structure */
+} MenuWidgets;
 
 typedef struct {
     Widget command;
@@ -243,7 +291,7 @@ typedef struct {
     Widget refresh_but;
     /* Slider */
     Widget namescroll;
-} COMMAND_WDGTS;
+} CommandWidgets;
 
 typedef struct {
     Widget customize;
@@ -262,10 +310,10 @@ typedef struct {
     Widget b1;
     Widget b2;
     Widget b3;
-} CUSTOM_WDGTS;
+} CustomWidgets;
 
 typedef struct {
-    struct st_trace	*trace;		/* Link back, as callbacks won't know without it */
+    Trace *trace;		/* Link back, as callbacks won't know without it */
     enum { BEGIN=0, END=1} type;
     DTime  dastime;
     /* Begin stuff */
@@ -274,7 +322,7 @@ typedef struct {
     Widget time_pulldownbutton[4];
     Widget time_option;
     Widget time_text;
-} RANGE_WDGTS;
+} RangeWidgets;
 
 typedef struct {
     Widget customize;
@@ -291,11 +339,11 @@ typedef struct {
     Widget notelabel;
     Widget pagelabel;
     Widget all_signals;
-    RANGE_WDGTS begin_range;
-    RANGE_WDGTS end_range;
+    RangeWidgets begin_range;
+    RangeWidgets end_range;
     Widget print;
     Widget cancel;
-} PRINT_WDGTS;
+} PrintWidgets;
 
 typedef struct {
     Widget dialog;
@@ -307,7 +355,7 @@ typedef struct {
     Widget ok;
     Widget apply;
     Widget cancel;
-} ANNOTATE_WDGTS;
+} AnnotateWidgets;
 
 typedef struct {
     Widget add;
@@ -319,7 +367,7 @@ typedef struct {
     Widget ok;
     Widget apply;
     Widget cancel;
-} SIGNAL_WDGTS;
+} SignalWidgets;
 
 typedef struct {
     Widget search;
@@ -333,14 +381,14 @@ typedef struct {
     Widget ok;
     Widget apply;
     Widget cancel;
-} VALUE_WDGTS;
+} ValueWidgets;
 
 typedef struct {
     Widget dialog;
     Widget work_area;
     Widget format_menu, format_option, format_item[FF_NUMFORMATS];
     Widget save_ordering;
-} FILE_WDGTS;
+} FileWidgets;
 
 typedef struct {
     Widget dialog;
@@ -350,12 +398,12 @@ typedef struct {
     Widget config_label;
     Widget config_enable[MAXCFGFILES];
     Widget config_filename[MAXCFGFILES];
-} CUSREAD_WDGTS;
+} CusReadWidgets;
 
 typedef struct {
     Widget popup;
     Widget label;
-} EXAMINE_WDGTS;
+} ExamineWidgets;
 
 typedef struct {
     Widget popup;
@@ -366,7 +414,7 @@ typedef struct {
     Widget pulldown;
     Widget pulldownbutton[MAX_SRCH+1];
     Widget options;
-} GOTOS_WDGTS;
+} GotoWidgets;
 
 typedef struct {
     Widget label1;
@@ -387,61 +435,84 @@ typedef struct {
     Widget pulldown;
     Widget pulldownbutton[MAX_SRCH+1];
     Widget options;
-} GRID_WDGTS;
+} GridWidgets;
 
 typedef struct {
     Widget popup;
     Widget ok;
     Widget apply;
     Widget cancel;
-    GRID_WDGTS  grid[MAXGRIDS];
-} GRIDS_WDGTS;
+    GridWidgets  grid[MAXGRIDS];
+} GridsWidgets;
 
-typedef struct st_geometry {
+typedef struct {
+    Widget select;
+    Widget label1, label2, label3;
+    Widget label4, label5;
+    Widget enable[MAX_SRCH];
+    Widget cursor[MAX_SRCH];
+    Widget add_sigs, add_pat, add_all;
+    Widget delete_sigs, delete_pat, delete_all, delete_const;
+    Widget ok;
+    Widget apply;	/* ?? */
+    Widget cancel;
+
+    XmString *del_strings;
+    XmString *add_strings;
+    Signal   **del_signals;
+    Signal   **add_signals;
+    uint_t    del_size;
+    uint_t    add_size;
+} SelectWidgets;
+
+/**********************************************************************/
+/* Structures */
+
+typedef struct {
     Position		x, y, height, width;	
     Boolean		xp, yp, heightp, widthp;	/* Above element is a percentage */
-} GEOMETRY;
+} Geometry;
 
-/* 5.0: Structure for each signal-state assignment */
+/* Structure for each signal-state assignment */
 typedef struct st_signalstate {
     struct st_signalstate *next;	/* Next structure in a linked list */
-    int	 numstates;			/* Number of states in the structure */
+    uint_t	 numstates;		/* Number of states in the structure */
     char signame[MAXSIGLEN];		/* Signal name to translate, Nil = wildcard */
     char statename[MAXSTATENAMES][MAXVALUELEN];	/* Name for each state, nil=keep */
-} SIGNALSTATE;
+} SignalState;
 
 /* Signal LW: A structure for each transition of each signal, */
 /* 32/64/96 state signals have an additional 1, 2, or 3 LWs after this */
 typedef union un_signal_lw {
     struct {
-	unsigned int state:3;
-	unsigned int time:29;
+	uint_t state:3;
+	uint_t time:29;
     } sttime;
-    unsigned int number;
-} SIGNAL_LW;
-#define EOT	0x1FFFFFFF	/* SIGNAL_LW End of time indicator if in .time */
+    uint_t number;
+} SignalLW;
+#define EOT	0x1FFFFFFF	/* SignalLW End of time indicator if in .time */
 
 /* Value: A signal_lw and 3 data elements */
-/* A cptr points to at least a SIGNAL_LW and at most a VALUE */
-/* since from 0 to 2 of the unsigned ints are dropped in the cptr array */
-typedef struct st_value {
-    SIGNAL_LW		siglw;
-    unsigned int	number[4];	/* [0]=bits 31-0, [1]=bits 63-32, [2]=bits 95-64, [3]=bits 127-96 */
-} VALUE;
+/* A cptr points to at least a SignalLW and at most a Value */
+/* since from 0 to 2 of the uint_ts are dropped in the cptr array */
+typedef struct {
+    SignalLW	siglw;
+    uint_t	number[4];	/* [0]=bits 31-0, [1]=bits 63-32, [2]=bits 95-64, [3]=bits 127-96 */
+} Value;
 
 /* Value searching structure */
-typedef struct st_valsearch {
-    ColorNum		color;		/* Color number (index into trace->xcolornum) 0=OFF*/
-    ColorNum		cursor;		/* Enable cursors, color or 0=OFF */
-    unsigned int	value[4];	/* Value to search for, (128 bit LW format) */
-    char		signal[MAXSIGLEN];	/* Signal to search for */
-} VALSEARCH;
+typedef struct {
+    ColorNum	color;		/* Color number (index into trace->xcolornum) 0=OFF*/
+    ColorNum	cursor;		/* Enable cursors, color or 0=OFF */
+    uint_t	value[4];	/* Value to search for, (128 bit LW format) */
+    char	signal[MAXSIGLEN];	/* Signal to search for */
+} ValSearch;
 
 /* Signal searching structure */
-typedef struct st_sigsearch {
-    ColorNum		color;		/* Color number (index into trace->xcolornum) 0=OFF*/
-    char 		string[MAXSIGLEN];	/* Signal to search for */
-} SIGSEARCH;
+typedef struct {
+    ColorNum	color;		/* Color number (index into trace->xcolornum) 0=OFF*/
+    char 	string[MAXSIGLEN];	/* Signal to search for */
+} SigSearch;
 
 /* Cursor information structure (one per cursor) */
 typedef enum {
@@ -458,29 +529,29 @@ typedef struct st_cursor {
     DTime		time;		/* Time cursor is placed at */
     ColorNum		color;		/* Color number (index into trace->xcolornum) */
     CursorType		type;		/* Type of cursor */
-} CURSOR;
+} DCursor; /* Not 'Cursor', as that's defined in X11.h */
 
-typedef struct st_grid {
-    int			period;		/* Grid period (time between ticks) */
-    int			alignment;	/* Grid alignment (time grid starts at) */
+typedef struct {
+    DTime		period;		/* Grid period (time between ticks) */
+    DTime		alignment;	/* Grid alignment (time grid starts at) */
     enum { PA_USER=0, PA_AUTO=1, PA_EDGE=2 } period_auto;	/* Status of automatic grid resolution */
     enum { AA_USER=0, AA_ASS=1, AA_DEASS=2 } align_auto; /* Status of automatic grid alignment */
     Boolean		visible;	/* True if grid is visible */
     Boolean		wide_line;	/* True to draw a double-width line */
     char 		signal[MAXSIGLEN];	/* Signal name of the clock */
     ColorNum		color;		/* Color to print in, 0 = black */
-} GRID;
+} Grid;
 
 /* Signal information structure (one per each signal in a trace window) */
-typedef struct st_signal {
+struct st_signal {
     struct st_signal	*forward;	/* Forward link to next signal */
     struct st_signal	*backward;	/* Backward link to previous signal */
 
-    SIGNAL_LW		*bptr;		/* begin of time data ptr */
-    SIGNAL_LW		*cptr;		/* current time data ptr */
+    SignalLW		*bptr;		/* begin of time data ptr */
+    SignalLW		*cptr;		/* current time data ptr */
 
     struct st_signal	*copyof;	/* Link to signal this is copy of (or NULL) */
-    struct st_trace	*trace;		/* Trace signal belongs to (originally) */
+    Trace		*trace;		/* Trace signal belongs to (originally) */
     struct st_signal	*verilog_next;	/* Next verilog signal with same coding */
 
     char		*signame;	/* Signal name */
@@ -495,73 +566,53 @@ typedef struct st_signal {
     Boolean		deleted_preserve; /* Preserve the deletion of this signal (not deleted because constant) */
     Boolean		preserve_done;	/* Preservation process has moved this signal to new link structure */
 
-    int			type;		/* Type of signal, STATE_B32, _B64, etc */
-    SIGNALSTATE		*decode;	/* Pointer to decode information, NULL if none */
+    uint_t		type;		/* Type of signal, STATE_B32, _B64, etc */
+    SignalState		*decode;	/* Pointer to decode information, NULL if none */
     char *		(*decode_fptr)(); /* Pointer to function that decodes statenames, NULL if none */
-    int			lws;		/* Number of LWs in a SIGNAL_LW record */
-    long		blocks;		/* Number of time data blocks allocated, in # of ints */
+    uint_t		lws;		/* Number of LWs in a SignalLW record */
+    ulong_t		blocks;		/* Number of time data blocks allocated, in # of ints */
     int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20), -1=none */
     int			lsb_index;	/* Bit subscript of last index in a signal (<20:10> == 10), -1=none */
     int			bit_index;	/* Bit subscript of this bit, ignoring <>'s, tempest only */
     int			bits;		/* Number of bits in a bus, 0=single */
-    int			file_pos;	/* Position of the bits in the file line */
-    int			file_end_pos;	/* Ending position of the bits in the file line */
+    uint_t		file_pos;	/* Position of the bits in the file line */
+    uint_t		file_end_pos;	/* Ending position of the bits in the file line */
 
     union {
 	struct {
-	    int		pin_input:1;	/* (Tempest) Pin is an input */
-	    int		pin_output:1;	/* (Tempest) Pin is an output */
-	    int		pin_psudo:1;	/* (Tempest) Pin is an psudo-pin */
-	    int		pin_timestamp:1; /* (Tempest) Pin is a time-stamp */
-	    int		four_state:1;	/* (Tempest, Binary) Signal is four state (U, Z) */
-	    int		perm_vector:1;	/* (Verilog) Signal is a permanent vector, don't vectorize */
-	    int		vector_msb:1;	/* (Tempest) Signal starts a defined vector, may only be new MSB */
+	    uint_t	pin_input:1;	/* (Tempest) Pin is an input */
+	    uint_t	pin_output:1;	/* (Tempest) Pin is an output */
+	    uint_t	pin_psudo:1;	/* (Tempest) Pin is an psudo-pin */
+	    uint_t	pin_timestamp:1; /* (Tempest) Pin is a time-stamp */
+	    uint_t	four_state:1;	/* (Tempest, Binary) Signal is four state (U, Z) */
+	    uint_t	perm_vector:1;	/* (Verilog) Signal is a permanent vector, don't vectorize */
+	    uint_t	vector_msb:1;	/* (Tempest) Signal starts a defined vector, may only be new MSB */
 	} flag;
-	int		flags;
+	uint_t		flags;
     }		file_type;	/* File specific type of trace, two/fourstate, etc */
 
-    unsigned int	value_mask[4];	/* Value Mask with 1s in bits that are to be set */
-    unsigned int	pos_mask;	/* Mask to translate file positions */
-    VALUE		file_value;	/* current state/time LW information for reading in */
-} SIGNAL;
+    uint_t		value_mask[4];	/* Value Mask with 1s in bits that are to be set */
+    uint_t		pos_mask;	/* Mask to translate file positions */
+    Value		file_value;	/* current state/time LW information for reading in */
+}; /*Signal;  typedef'd above */
 
 /* Signal list structure */
 typedef struct st_signal_list {
     struct st_signal_list	*forward;	/* Forward link to next signal */
-    struct st_trace		*trace;		/* Trace signal belongs to (originally) */
-    struct st_signal		*signal;	/* Selected signal */
-} SIGNAL_LIST;
-
-typedef struct {
-    Widget select;
-    Widget label1, label2, label3;
-    Widget label4, label5;
-    Widget enable[MAX_SRCH];
-    Widget cursor[MAX_SRCH];
-    Widget add_sigs, add_pat, add_all;
-    Widget delete_sigs, delete_pat, delete_all, delete_const;
-    Widget ok;
-    Widget apply;	/* ?? */
-    Widget cancel;
-
-    XmString *del_strings;
-    XmString *add_strings;
-    SIGNAL   **del_signals;
-    SIGNAL   **add_signals;
-    int	    del_size;
-    int	    add_size;
-} SELECT_WDGTS;
+    Trace		*trace;		/* Trace signal belongs to (originally) */
+    Signal		*signal;	/* Selected signal */
+} SignalList;
 
 /* Trace information structure (one per window) */
-typedef struct st_trace {
+struct st_trace {
     struct st_trace	*next_trace;	/* Pointer to the next trace display */
 
-    SIGNAL		*firstsig;	/* Linked list of all nondeleted signals */
-    SIGNAL		*dispsig;	/* Pointer within sigque to first signal on screen */
+    Signal		*firstsig;	/* Linked list of all nondeleted signals */
+    Signal		*dispsig;	/* Pointer within sigque to first signal on screen */
 
-    int			numsig;		/* Total number of signals, excluding deleted */
-    int			numsigvis;	/* Maximum number of signals visible on the screen */
-    int			numsigstart;	/* signal to start displaying */
+    uint_t		numsig;		/* Total number of signals, excluding deleted */
+    uint_t		numsigvis;	/* Maximum number of signals visible on the screen */
+    uint_t		numsigstart;	/* signal to start displaying */
 
     Window		wind;		/* X window */
     Pixel		xcolornums[MAXCOLORS];	/* X color numbers (pixels) for normal/highlight */
@@ -569,20 +620,20 @@ typedef struct st_trace {
     GC                  gc;
     GC                  hscroll_gc;
 
-    MENU_WDGTS		menu;
+    MenuWidgets		menu;
     Widget		menu_close;	/* Pointer to menu_close widget */
-    COMMAND_WDGTS	command;
-    CUSTOM_WDGTS	custom;
-    PRINT_WDGTS		prntscr;
-    ANNOTATE_WDGTS	annotate;
-    SIGNAL_WDGTS	signal;
-    EXAMINE_WDGTS	examine;
-    GOTOS_WDGTS		gotos;
-    VALUE_WDGTS		value;
-    GRIDS_WDGTS		gridscus;
-    SELECT_WDGTS	select;
-    FILE_WDGTS		fileselect;
-    CUSREAD_WDGTS	cusread;
+    CommandWidgets	command;
+    CustomWidgets	custom;
+    PrintWidgets	prntscr;
+    AnnotateWidgets	annotate;
+    SignalWidgets	signal;
+    ExamineWidgets	examine;
+    GotoWidgets		gotos;
+    ValueWidgets	value;
+    GridsWidgets	gridscus;
+    SelectWidgets	select;
+    FileWidgets		fileselect;
+    CusReadWidgets	cusread;
     Widget		shell;
     Widget		main;
     Widget		work;
@@ -591,7 +642,7 @@ typedef struct st_trace {
     Widget		customize;	/* Customization widget */
     Widget		toplevel;	/* Top level shell */
     Widget		prompt_popup;	/* Data popup widget */
-    int			prompt_type;	/* Type of data popup widget */
+    uint_t		prompt_type;	/* Type of data popup widget */
     Widget		message;	/* Message (error/warn/etc) widget */
     Widget		help_doc;	/* Help documentation */
     Widget		help_doc_text;	/* Help documentation */
@@ -599,60 +650,60 @@ typedef struct st_trace {
     char		filename[MAXFNAMELEN];	/* Current file */
     char		printname[MAXFNAMELEN];	/* Print filename */
     struct stat		filestat;	/* Information on the current file */
-    int			fileformat;	/* Type of trace file (see FF_*) */
+    uint_t		fileformat;	/* Type of trace file (see FF_*) */
     Boolean		loaded;		/* True if the filename is loaded in */
     char		vector_seperator;	/* Bus seperator character, usually "<" */
     char		vector_endseperator;	/* Bus ending seperator character, usually ">" */
 
-    int			redraw_needed;	/* Need to refresh the screen when get a chance, TRD_* bit fielded */
+    uint_t		redraw_needed;	/* Need to refresh the screen when get a chance, TRD_* bit fielded */
 #define				TRD_REDRAW	0x1
 #define				TRD_EXPOSE	0x2
 
-    Position		width;		/* Screen width */
-    Position		sighgt;		/* Height of signals (customize) */
+    Dimension		width;		/* Screen width */
+    Dimension		sighgt;		/* Height of signals (customize) */
 
     Position		ygridtime;	/* Start Y pos of grid times (get_geom) */
     Position		ystart;		/* Start Y pos of signals (get_geom) */
     Position		yend;		/* End Y pos of signals (get_geom) */
     Position		ycursortimerel;	/* Start Y pos of cursor relative times (get_geom) */
     Position		ycursortimeabs;	/* Start Y pos of cursor absolute times (get_geom) */
-    Position		height;		/* Screen height */
+    Dimension		height;		/* Screen height */
 
-    int			sigrf;		/* Signal rise/fall time spec */
-    int			busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS/DBUS */
+    uint_t		sigrf;		/* Signal rise/fall time spec */
+    BusRep		busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS/DBUS */
     TimeRep		timerep;	/* Time representation = TIMEREP_NS/TIMEREP_CYC */
 
-    GRID		grid[MAXGRIDS];	/* Grid information */
+    Grid		grid[MAXGRIDS];	/* Grid information */
     Boolean		cursor_vis;	/* True if cursors are visible */
 
     DTime		start_time;	/* Time of beginning of trace */
     DTime		end_time;	/* Time of ending of trace */
-} TRACE;
+}; /*Trace;  typedef'd above */
 
 /* Global information */
 typedef struct {
-    TRACE		*trace_head;	/* Pointer to first trace, set deleted_trace->next too  */
-    TRACE		*preserved_trace;	/* Pointer to old trace when reading in new one */
-    TRACE		*deleted_trace_head;	/* Pointer to trace with deleted signals, which then links to teace_head */
+    Trace		*trace_head;	/* Pointer to first trace, set deleted_trace->next too  */
+    Trace		*preserved_trace;	/* Pointer to old trace when reading in new one */
+    Trace		*deleted_trace_head;	/* Pointer to trace with deleted signals, which then links to teace_head */
 
-    SIGNAL		*selected_sig;	/* Selected signal to move or add */
-    TRACE		*selected_trace; /* Selected signal's trace */
-    SIGNAL_LIST		*select_head;	/* Pointer to selected signal list head */
+    Signal		*selected_sig;	/* Selected signal to move or add */
+    Trace		*selected_trace; /* Selected signal's trace */
+    SignalList		*select_head;	/* Pointer to selected signal list head */
 
-    CURSOR		*cursor_head;	/* Pointer to first cursor */
+    DCursor		*cursor_head;	/* Pointer to first cursor */
 
-    VALSEARCH		val_srch[MAX_SRCH];	/* Value search information */
+    ValSearch		val_srch[MAX_SRCH];	/* Value search information */
 
-    SIGSEARCH		sig_srch[MAX_SRCH];	/* Signal search information */
+    SigSearch		sig_srch[MAX_SRCH];	/* Signal search information */
 
-    SIGNALSTATE		*signalstate_head;	/* Head of signal state information */
+    SignalState		*signalstate_head;	/* Head of signal state information */
 
     XtAppContext	appcontext;	/* X App context */
     Display		*display;	/* X display pointer */
     Cursor		xcursors[13];	/* X cursors */
     Pixmap		dpm,bdpm;	/* X pixmaps for the icons */
 
-    int			argc;		/* Program argc for X stuff */
+    uint_t		argc;		/* Program argc for X stuff */
     char		**argv;		/* Program argv for X stuff */
 
     char		directory[MAXFNAMELEN];	/* Current directory name */
@@ -669,9 +720,9 @@ typedef struct {
     XFontStruct		*time_font;		/* Time Text font */
     XFontStruct		*value_font;		/* Value Text font */
 
-    GEOMETRY		start_geometry;	/* Geometry to open first trace with */
-    GEOMETRY		open_geometry;	/* Geometry to open later traces with */
-    GEOMETRY		shrink_geometry; /* Geometry to shrink trace->open traces with */
+    Geometry		start_geometry;	/* Geometry to open first trace with */
+    Geometry		open_geometry;	/* Geometry to open later traces with */
+    Geometry		shrink_geometry; /* Geometry to shrink trace->open traces with */
 
     Boolean		anno_poppedup;	/* Annotation has been poped up on some window */
     Boolean		anno_ena_signal[MAX_SRCH+1];   /* Annotation signal enables */
@@ -680,11 +731,11 @@ typedef struct {
     char		anno_filename[MAXFNAMELEN]; /* Annotation file name */
     char		anno_socket[MAXFNAMELEN];	/* Annotation socket number */
 
-    int			pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
+    PageInc		pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
     Boolean		click_to_edge;	/* True if clicking to edges is enabled */
     TimeRep		time_precision;	/* Time precision = TIMEREP_NS/TIMEREP_CYC */
     char		time_format[12]; /* Time format = printf format or *NULL */
-    int			tempest_time_mult;	/* Time multiplier for tempest */
+    uint_t		tempest_time_mult;	/* Time multiplier for tempest */
     Boolean		save_enables;	/* True to save enable wires */
     Boolean		save_ordering;	/* True to save signal ordering */
 
@@ -695,30 +746,30 @@ typedef struct {
     DTime		print_end_time;	/* Ending time for printing */
 
     Boolean		redraw_manually;/* True if in manual refreshing mode */
-    int			redraw_needed;	/* Some trace needs to refresh the screen when get a chance, GRD_* bit fielded */
-#define				GRD_TRACE	0x1
-#define				GRD_ALL		0x2
-#define				GRD_MANUAL	0x4
-    int			updates_needed;	/* Things that are out of date and need to be called before redraw */
-#define				GUD_SIG_START	0x100	/* Call sig_update_start */
-#define				GUD_SIG_SEARCH	0x200	/* Call sig_update_search */
-#define				GUD_VAL_SEARCH	0x400	/* Call val_update_search */
-#define				GUD_VAL_STATES	0x800	/* Call val_update_states */
+    uint_t		redraw_needed;	/* Some trace needs to refresh the screen when get a chance, GRD_* bit fielded */
+#define				GRD_TRACE	0x1U
+#define				GRD_ALL		0x2U
+#define				GRD_MANUAL	0x4U
+    uint_t		updates_needed;	/* Things that are out of date and need to be called before redraw */
+#define				GUD_SIG_START	0x100U	/* Call sig_update_start */
+#define				GUD_SIG_SEARCH	0x200U	/* Call sig_update_search */
+#define				GUD_VAL_SEARCH	0x400U	/* Call val_update_search */
+#define				GUD_VAL_STATES	0x800U	/* Call val_update_states */
 
     DTime		time;		/* Time of trace at left edge of screen */
     float		res;		/* Resolution of graph width (gadgets) */
     Boolean		res_default;	/* True if resolution has never changed from initial value */
     Position		xstart;		/* Start X pos of signals on display */
-    int			namepos;	/* Position of first visible character based on xstart */
-    int			namepos_hier;	/* Maximum hiearchy width in chars */
-    int			namepos_base;	/* Maximum basename width in chars */
-    int			namepos_visible;/* Visible size of names in chars */
+    uint_t		namepos;	/* Position of first visible character based on xstart */
+    uint_t		namepos_hier;	/* Maximum hiearchy width in chars */
+    uint_t		namepos_base;	/* Maximum basename width in chars */
+    uint_t		namepos_visible;/* Visible size of names in chars */
     DTime		click_time;	/* time clicked on for res_zoom_click */
-    GRID		*click_grid;	/* grid being set by grid_align */
+    Grid		*click_grid;	/* grid being set by grid_align */
 
     Boolean		config_enable[MAXCFGFILES];/* Read in this config file */
     char		config_filename[MAXCFGFILES][MAXFNAMELEN];	/* Config files */
-} GLOBAL;
+} Global;
 
-extern GLOBAL *global;
+extern Global *global;
 

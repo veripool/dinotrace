@@ -1,4 +1,4 @@
-static char rcsid[] = "$Id$";
+#ident "$Id$"
 /******************************************************************************
  * dinotrace.c --- main routine and documentation
  *
@@ -55,35 +55,28 @@ static char rcsid[] = "$Id$";
  *
  *****************************************************************************/
 
-#include <config.h>
+#include "dinotrace.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <ctype.h>
-
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
 #include <X11/Xutil.h>
 
-#include "dinotrace.h"
 #include "functions.h"
+
 #if HAVE_COMPILE_DATE_H
 #include "compile_date.h"
 #else
 #define COMPILE_DATE_STRG "Unknown"
 #endif
 
+/**********************************************************************/
+
 Boolean		DTDEBUG=FALSE;		/* Debugging mode */
-int		DTPRINT=0;		/* Information printing mode */
+uint_t		DTPRINT=0;		/* Information printing mode */
 int		DebugTemp=0;		/* Temp value for trying things */
-int		file_format=FF_VERILOG;	/* Type of trace to support */
+uint_t		file_format=FF_VERILOG;	/* Type of trace to support */
 char		message[1000];		/* generic string for messages */
 XGCValues	xgcv;
 Arg		arglist[20];
-GLOBAL		*global;
+Global		*global;
 /* filetypes must be in the same order that the FF_* defines are */
 struct st_filetypes filetypes[FF_NUMFORMATS] = {
     { 0, "Auto",		"?",	"*.*"		},
@@ -95,13 +88,13 @@ struct st_filetypes filetypes[FF_NUMFORMATS] = {
 };
 
 int    main (
-    unsigned int	argc,
-    char		**argv)
+    uint_t	argc,
+    char	**argv)
 {
-    int		i;
+    uint_t	i;
     Boolean	sync = FALSE;
     Boolean	opened_a_file = FALSE;
-    TRACE	*trace;
+    Trace	*trace;
     
     /* Create global structure */
     init_globals ();
@@ -177,10 +170,10 @@ int    main (
     
     /* quick structure portability check */
 #ifndef lint	/* constant in conditional context */
-    if ((sizeof (SIGNAL_LW) != sizeof (unsigned int))
-	|| (sizeof (VALUE) != 5*sizeof (unsigned int))) {
+    if ((sizeof (SignalLW) != sizeof (uint_t))
+	|| (sizeof (Value) != 5*sizeof (uint_t))) {
 	printf ("%%E, Internal structure portability problem %d!=%d!=%d/4.\n",
-		sizeof (SIGNAL_LW), sizeof (unsigned int), sizeof (VALUE));
+		(int)sizeof (SignalLW), (int)sizeof (uint_t), (int)sizeof (Value));
     }
 
     /* FAILS on MIPS Ultrix, so don't rely on this:
@@ -211,7 +204,7 @@ int    main (
 #if EXPIRATION
     if ((COMPILE_DATE + (EXPIRATION)) < time (NULL)) {
 	XSync (global->display,0);
-	dino_information_ack (trace, "This version of DinoTrace has expired.\n\
+	dino_information_ack (trace, "This version of Dinotrace has expired.\n\
 Please install a newer version.\n\
 See the Help menu for more information.");
     }
@@ -251,7 +244,7 @@ See the Help menu for more information.");
 }
 
 char	*help_message ()
-    {
+{
     static char msg[2000];
 
     sprintf (msg,
@@ -259,17 +252,16 @@ char	*help_message ()
 Compiled %s for %s\n\
 \n\
 Written by Wilson Snyder\n\
-snyder@segsrv.hlo.dec.com or SEGSRV::SNYDER\n\
-Versions before 4.3 by Allen Gallotta.\n\
+<wsnyder@world.std.com> or <wsnyder@ultranet.com>\n\
 \n\
 Copyright 1993,1994,1995,1996 by Digital Equipment Corporation.\n\
-All Rights Reserved.  For Internal Use Only.\n\
+Copyright 1997,1998 by Wilson Snyder\n\
+This software is covered by the GNU Public License\n\
 \n\
-Please see %sDINOTRACE.TXT for documentation.\n\
+Please see %sdinotrace.txt for documentation.\n\
 \n\
 A complete Dinotrace kit is available on:\n\
-     CADSYS::CORE$KITS:DINOTRACE*.*\n\
- or     CAD::CORE$KITS:DINOTRACE*.*\n\
+http://www.ultranet.com/~wsnyder/dinotrace\n\
 \n\
 For configuration information, Dinotrace reads in order:\n\
      %sdinotrace.dino\n\
