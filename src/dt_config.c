@@ -205,7 +205,6 @@ int	config_read_string (
 	}
 	line++; outlen++;
     }
-    *out++ = '\0';
 
     if (quote) { 
 	if (*line == '"') {
@@ -214,6 +213,58 @@ int	config_read_string (
 	    config_error_ack (trace, "Double quotes aren't terminated\n");
 	}
     }
+    *out++ = '\0';
+    return (outlen);
+}
+
+int	config_read_value (
+    Trace *trace,
+    char *line,
+    char *out)
+{
+    int outlen=0;
+    Boolean_t quote = FALSE;
+
+    while (*line && isspace(*line)) {
+	line++; outlen++;
+    }
+
+    if (*line=='"') {
+	*out++ = *line;
+	line++; outlen++;
+	quote = TRUE;
+    }
+
+    while (*line && (quote ? *line!='"' : !isspace(*line))) {
+	if (*line == '\\') {
+	    line++;
+	    outlen++;
+	    switch (*line) {
+	    case '\0':
+		line--;
+		break;
+	    case 'n':
+		*out++ = '\n';
+		break;
+	    default:
+		*out++ = *line;
+	    }
+	}
+	else {
+	    *out++ = *line;
+	}
+	line++; outlen++;
+    }
+
+    if (quote) { 
+	if (*line == '"') {
+	    *out++ = *line;
+	    line++; outlen++;
+	} else {
+	    config_error_ack (trace, "Double quotes aren't terminated\n");
+	}
+    }
+    *out++ = '\0';
     return (outlen);
 }
 
@@ -1005,7 +1056,7 @@ void	config_process_line_internal (
 	    ValSearch_t *vs_ptr;
 	    Boolean_t show_value=FALSE, add_cursor=FALSE;
 	    VSearchNum search_pos;
-	    line += config_read_string (trace, line, strg);
+	    line += config_read_value (trace, line, strg);
 	    line += config_read_color (trace, line, &search_pos, TRUE);
 	    search_pos--;
 	    if (search_pos >= 0) {
