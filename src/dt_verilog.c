@@ -270,10 +270,9 @@ void sig_new_file (
     if (DTPRINT_BUSSES) printf ("sig_new_file    (%s, %d, (%d)%d-%d )\n", signame, file_pos, bits,msb,lsb);
 
     /* Preprocess signal name */
-    if ((pos = strchr(signame, ' ')) != 0)		/* Drop leading spaces */
-	signame = pos;
-    if ((pos = strrchr(signame, ' ')) != 0)		/* Drop trailing spaces */
-	*pos = '\0';
+    while (isspace(*signame)) signame++;		/* Drop leading spaces */
+    pos=signame+strlen(signame);
+    while (isspace(*pos)) *pos-- = '\0';		/* Drop trailing spaces */
 
     /* Use the separator character to split signals into vector and base */
     /* IE "signal_1" becomes "signal" with index=1 if the separator is _ */
