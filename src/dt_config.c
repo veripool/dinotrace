@@ -89,6 +89,10 @@ static char rcsid[] = "$Id$";
 # include <math.h> /* removed for Ultrix support... */
 #endif
 
+#ifdef __osf__
+# include <sys/fcntl.h>
+#endif
+
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
 
@@ -1062,6 +1066,8 @@ void config_read_file (trace, filename, report_notfound, report_errors)
 {
     FILE	*readfp;
     char line[1000];
+    struct stat		newstat;	/* New status on the reread file*/
+    int	read_fd;
     
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Reading config file %s\n", filename);
 
@@ -1072,15 +1078,33 @@ void config_read_file (trace, filename, report_notfound, report_errors)
     
     config_report_errors = report_errors;
     
+#ifndef VMS
+    /* Check if regular file (not directory) */
+    read_fd = open (filename, O_RDONLY, 0);
+    if (read_fd>0) {
+	fstat (read_fd, &newstat);
+	if (! S_ISREG(newstat.st_mode)) {
+	    /* Not regular file */
+	    read_fd = -1;
+	}
+    }
+    close (read_fd);
+
+#endif
+
     /* Open File For Reading */
     if (!(readfp=fopen(filename,"r"))) {
+	read_fd = -1;
+    }
+
+    if (read_fd < 0) {
 	if (report_notfound) {
 	    if (DTPRINT) printf("%%E, Can't Open File %s\n", filename);
 	    sprintf(message,"Can't open file %s",filename);
 	    dino_error_ack(trace, message);
-	    }
-	return;
 	}
+	return;
+    }
     
     config_line_num=0;
     config_file = filename;
