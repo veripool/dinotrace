@@ -353,7 +353,7 @@ void sig_new_file (
 		&& ( ((bus_sig_ptr->lsb_index >= msb)
 		      && ((bus_sig_ptr->lsb_index - 1) == msb)))
 		/*	& are placed next to each other in the source */
-		/*	& not a tempest trace (because the bit ordering is backwards, <31:0> would look line 0:31 */
+		/*	& not a tempest trace (because the bit ordering is backwards, <31:0> would look line 0:31) */
 		&& ((trace->dfile.fileformat != FF_TEMPEST)
 		    || trace->dfile.fileformat == FF_VERILOG || trace->dfile.fileformat == FF_VERILOG_VPD
 		    || (((bus_sig_ptr->file_pos) == (file_pos + bits))
@@ -453,8 +453,8 @@ static void	verilog_process_var (
     char	*cmd;
     int		bits;
     int		msb = 0, lsb = 0;
-    char	signame[10000];
-    char	basename[10000];
+    char	signame[10000] = "";
+    char	basename[10000] = "";
     char 	str[2];
     int		t;
     char	code[10];

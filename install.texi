@@ -36,7 +36,7 @@ Download the latest package from that site, and decompress.
 @item
 Dinotrace requires the Motif Widget set.  If your system doesn't include
 Motif, a public domain version, LessTif, is available at
-@uref{ftp://ftp.lesstif.org}.  Version 0.89.0 or newer is required for
+@uref{ftp://ftp.lesstif.org}.  Version 0.93.36 was known to work for
 this release.
 
 @item
@@ -46,7 +46,7 @@ Perl is available from @uref{http://www.perl.org}
 
 @item
 This kit includes a optional interface for GNU Emacs.  For this package,
-get at least GNU Emacs 19.35, and preferably GNU Emacs 20.3 from
+get at least GNU Emacs 19.35, and preferably GNU Emacs 21.1 from
 @uref{ftp://prep.ai.mit.edu}.  You will also want the most recent verilog-mode
 from @uref{http://www.surefirev.com}.
 @end enumerate

@@ -69,6 +69,7 @@
 #include <Xm/Label.h>
 #include <Xm/LabelP.h>
 #include <Xm/MenuShellP.h>
+#include <Xm/GrabShell.h>
 
 #include "functions.h"
 
