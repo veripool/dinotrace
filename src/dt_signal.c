@@ -411,6 +411,46 @@ void	sig_update_search ()
     }
 }
 
+#if 0 /* Unused */
+Boolean_t sig_is_same (
+    const Signal	*siga_ptr,
+    const Signal	*sigb_ptr)
+{
+    Value_t	*captr;
+    Value_t	*cbptr;
+
+    printf ("Check %s %s\n", siga_ptr->signame, sigb_ptr->signame);
+    /* Is there a transition? */
+    for (captr = siga_ptr->bptr,
+	 cbptr = sigb_ptr->bptr;
+	 CPTR_TIME(captr) != EOT
+	     && CPTR_TIME(cbptr) != EOT;
+	 captr = CPTR_NEXT(captr),
+	 cbptr = CPTR_NEXT(cbptr)) {
+	if (CPTR_TIME(cbptr) != CPTR_TIME(captr)
+	    || !val_equal (captr, cbptr)) {
+	    return (FALSE);
+	}
+    }
+
+    if (CPTR_TIME(cbptr) != CPTR_TIME(captr)) return (FALSE);
+    return (TRUE);
+}
+
+void sig_count (
+    const Trace *trace)
+{
+    Signal	*sig_ptr;
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	Value_t	*cptr;
+	int cnt = 0;
+	for (cptr = sig_ptr->bptr ; CPTR_TIME(cptr) != EOT; cptr = CPTR_NEXT(cptr)) {
+	    cnt ++;
+	}
+    }
+}
+#endif
+
 Boolean_t sig_is_constant (
     const Trace	*trace,
     const Signal	*sig_ptr,
