@@ -1556,7 +1556,7 @@ file is being read, the screen will not be refreshed until the entire file
 is completely read, unless a @config{refresh} command is used.
 
 @node draw_prefix, annotate, refresh, Configuration Commands
-@subsection 
+@subsection draw_prefix
 @findex draw_prefix
 @cindex Signal, Prefix, Drawing
 @cindex Prefix, Drawing
