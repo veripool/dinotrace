@@ -726,8 +726,6 @@ void fil_make_busses (
 	    /* Combine signals with same base name, if */
 	    /*  are a vector */
 	    if (sig_ptr->msb_index >= 0
-		/* Signal name */
-		&& !strcmp (sig_ptr->signame, bus_sig_ptr->signame)
 		/* Signal name following bus separator */
 		&& (sig_ptr->signame_buspos==NULL || !strcmp (sig_ptr->signame_buspos, bus_sig_ptr->signame_buspos))
 		/*  & the result would have < 128 bits */
@@ -748,7 +746,10 @@ void fil_make_busses (
 		    || ((bus_sig_ptr->file_pos + bus_sig_ptr->bits) == sig_ptr->file_pos))
 		&& ! (sig_ptr->file_type.flag.vector_msb)
 		/*	& not (verilog trace which had a signal already as a vector) */
-		&& ! (sig_ptr->file_type.flag.perm_vector || bus_sig_ptr->file_type.flag.perm_vector)) {
+		&& ! (sig_ptr->file_type.flag.perm_vector || bus_sig_ptr->file_type.flag.perm_vector)
+		/* Signal name match (last, as is slowest) */
+		&& !strcmp (sig_ptr->signame, bus_sig_ptr->signame)
+		) {
 
 		/* Can be bussed with previous signal */
 		bus_sig_ptr->bits += sig_ptr->bits;
