@@ -956,6 +956,9 @@ static void	verilog_read_data (
 	    /* Things to ignore, uncommon */
 	case '\n':
 	case '$':	/* Command, $end, $dump, etc (ignore) */
+	    if (0==strncmp (line, "$comment", 8)) {
+		verilog_read_till_end();
+	    }
 	    break;
 
 	case 'D':	/* 'Done' from vpd2vcd */
