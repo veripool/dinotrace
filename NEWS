@@ -13,6 +13,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****	Fixed several bugs when save_duplicates is enabled.
 
+****	Updated Windows install.  [Greg Loxtercamp]
+
 
 * Changes in Dinotrace 9.1g  01/24/2002
 
