@@ -28,6 +28,7 @@
  *     WPS	15-Jan-93	Added binary trace support
  *
  */
+static char rcsid[] = "$Id$";
 
 
 #include <stdio.h>
@@ -393,17 +394,7 @@ void	fil_string_to_value (sig_ptr, value_strg, value_ptr)
     value_ptr->siglw.sttime.state = state;
     }
 
-#pragma inline (cptr_to_value)
-void	cptr_to_value (cptr, value_ptr)
-    SIGNAL_LW	*cptr;
-    VALUE	*value_ptr;
-{
-    value_ptr->siglw.number = cptr[0].number;
-    value_ptr->number[0] = cptr[1].number;
-    value_ptr->number[1] = cptr[2].number;
-    value_ptr->number[2] = cptr[3].number;
-    }
-
+#if !defined (fil_add_cptr)
 #pragma inline (fil_add_cptr)
 void	fil_add_cptr (sig_ptr, value_ptr, check)
     SIGNAL	*sig_ptr;
@@ -425,8 +416,7 @@ void	fil_add_cptr (sig_ptr, value_ptr, check)
     diff = sig_ptr->cptr - sig_ptr->bptr;
     if (diff > BLK_SIZE / 4 * sig_ptr->blocks - 4) {
 	sig_ptr->blocks++;
-	sig_ptr->bptr = (SIGNAL_LW *)XtRealloc ((char*)sig_ptr->bptr,
-						sig_ptr->blocks*BLK_SIZE);
+	sig_ptr->bptr = (SIGNAL_LW *)XtRealloc ((char*)sig_ptr->bptr, sig_ptr->blocks*BLK_SIZE);
 	sig_ptr->cptr = sig_ptr->bptr+diff;
 	}
        
@@ -445,7 +435,7 @@ void	fil_add_cptr (sig_ptr, value_ptr, check)
 	(sig_ptr->cptr) += sig_ptr->lws;
 	}
     }
-
+#endif
 
 void read_make_busses (trace, not_tempest)
     /* Take the list of signals and make it into a list of busses */
@@ -461,7 +451,7 @@ void read_make_busses (trace, not_tempest)
     char	sepchar;
 
     if (DTPRINT_ENTRY) printf ("In read_make_busses\n");
-    if (DTPRINT_FILE) print_sig_names (NULL, trace);
+    if (DTPRINT_BUSSES) print_sig_names (NULL, trace);
 
     /* Convert the signal names to the internal format */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -540,7 +530,7 @@ void read_make_busses (trace, not_tempest)
     bus_sig_ptr = NULL;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	/*
-	if (DTPRINT_FILE && bus_sig_ptr) printf ("  '%s'%d/%d/%d\t'%s'%d/%d/%d\n",
+	if (DTPRINT_BUSSES && bus_sig_ptr) printf ("  '%s'%d/%d/%d\t'%s'%d/%d/%d\n",
 					    bus_sig_ptr->signame, bus_sig_ptr->msb_index,
 					    bus_sig_ptr->bits, bus_sig_ptr->file_pos, 
 					    sig_ptr->signame, sig_ptr->msb_index, 
@@ -653,7 +643,7 @@ void read_make_busses (trace, not_tempest)
 	sig_ptr->blocks = 1;
 	}
 
-    if (DTPRINT_FILE) print_sig_names (NULL, trace);
+    if (DTPRINT_BUSSES) print_sig_names (NULL, trace);
     }
 
 
