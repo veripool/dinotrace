@@ -133,19 +133,14 @@ FAQ: faq.texi
 	$(MAKEINFO) -I$(srcdir) $(srcdir)/faq.texi --output=$@ \
 	--no-headers --no-validate
 
-dinotrace.html: dinotrace.texi
-	sed -e "s/@dmenu/@code/g" -e "s/@widget/@emph/g" -e "s/@resource/@code/g" \
-	    -e "s/@config/@code/g" -e "s/@switch/@code/g" -e "s/@prog/@strong/g" \
-	<dinotrace.texi >dinotrace.tmp
-	texi2html -monolithic dinotrace.tmp
-	rm dinotrace.tmp ; mv dinotrace.tmp.html dinotrace.html
-
-faq.html: faq.texi
-	sed -e "s/@dmenu/@code/g" -e "s/@widget/@emph/g" -e "s/@resource/@code/g" \
-	    -e "s/@config/@code/g" -e "s/@switch/@code/g" -e "s/@prog/@strong/g" \
-	<faq.texi >faq.tmp
-	texi2html -monolithic faq.tmp 
-	rm faq.tmp ; mv faq.tmp.html faq.html
+%.html: %.texi
+	perl -pe 's/\@(dmenu|resource|switch|config)/\@code/g; \
+		  s/\@widget/\@emph/g;	  s/\@prog/\@strong/g; \
+		  $$_="" if (/^\@macro/ .. /^\@end macro/); \
+		  ' $*.texi >$*.tmp
+	texi2html -monolithic $*.tmp
+	mv $*.tmp.html $*.html
+	rm $*.tmp
 
 dvi: dinotrace.dvi
 
