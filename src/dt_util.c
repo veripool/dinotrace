@@ -225,6 +225,7 @@ void    remove_all_events (trace)
 
 	/* remove all possible events due to nvalue options */ 
 	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,val_examine_ev,trace_ptr);
+	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,val_highlight_ev,trace_ptr);
 	}
 
     global->selected_sig = NULL;
