@@ -218,6 +218,13 @@ typedef enum {
     TRACESEL_ALLDEL=2
 } TraceSel_t;
 
+/* Waveform */
+typedef enum {
+    WAVEFORM_DIGITAL=0,
+    WAVEFORM_ANALOG=1,
+    WAVEFORM_ANALOG_SIGNED=2
+} Waveform_t;
+
 /* Time representation enums */
 #define TIMEREP_FS 0.001
 #define TIMEREP_PS 1.0
@@ -678,7 +685,7 @@ struct st_signal {
     Boolean_t		deleted;	/* Signal is deleted */
     Boolean_t		deleted_preserve; /* Preserve the deletion of this signal (not deleted because constant) */
     Boolean_t		preserve_done;	/* Preservation process has moved this signal to new link structure */
-    Boolean_t		analog;		/* Display as analog waveform */
+    Waveform_t		waveform;	/* Display as analog waveform */
 
     uint_t		type;		/* Type of signal, STATE_B32, _B64, etc */
     ulong_t		blocks;		/* Number of time data blocks allocated, in # of ints */
@@ -799,7 +806,7 @@ typedef struct {
     Signal_t		*selected_sig;		/* Selected signal to move or add */
     Trace_t		*selected_trace; 	/* Selected signal's trace */
     Radix_t		*selected_radix;	/* Selected radix to change to */
-    Boolean_t		selected_waveform;	/* Selected analog/digital to change to */
+    Waveform_t		selected_waveform;	/* Selected analog/digital to change to */
     CursorType_t	selected_curtype;	/* Selected cursor type */
     SignalList_t	*select_head;	/* Pointer to selected signal list head */
 

@@ -296,7 +296,7 @@ extern void	sig_update_search (void);
 extern void	sig_free (Trace_t *trace, Signal_t *sig_ptr, Boolean_t select, Boolean_t recurse);
 extern void	sig_highlight_selected (int color);
 extern void	sig_radix_selected (Radix_t *radix_ptr);
-extern void	sig_waveform_selected (Boolean_t analog);
+extern void	sig_waveform_selected (Waveform_t waveform);
 extern void	sig_modify_enables (Trace_t *);
 extern void	sig_move_selected (Trace_t *new_trace, const char *after_pattern);
 extern void	sig_rename_selected (const char *new_name);

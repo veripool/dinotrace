@@ -595,7 +595,7 @@ void    sig_radix_selected (
 }
 
 void    sig_waveform_selected (
-    Boolean_t	analog)
+    Waveform_t	waveform)
 {
     Signal_t	*sig_ptr;
     SignalList_t	*siglst_ptr;
@@ -604,7 +604,7 @@ void    sig_waveform_selected (
     
     for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
 	sig_ptr = siglst_ptr->signal;
-	sig_ptr->analog = analog;
+	sig_ptr->waveform = waveform;
     }
 
     draw_all_needed ();
@@ -1359,7 +1359,7 @@ void    sig_waveform_ev (
     if (!sig_ptr) return;
     
     /* Change the radix */
-    sig_ptr->analog = global->selected_waveform;
+    sig_ptr->waveform = global->selected_waveform;
 
     draw_all_needed ();
 }

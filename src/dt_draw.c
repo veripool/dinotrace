@@ -112,6 +112,45 @@ static void draw_string_fit (
     }
 }
     
+inline double draw_analog_value (
+    const Signal_t *sig_ptr,
+    const Value_t  *cptr)
+{
+    double ythis_pct = 0.0;
+    switch (cptr->siglw.stbits.state) {
+    case STATE_0:	ythis_pct = 0.0; break;
+    case STATE_1:	ythis_pct = 1.0; break;
+    case STATE_B32:	ythis_pct = (double)cptr->number[0] / (double)sig_ptr->value_mask[0]; break;
+    case STATE_B128: {
+	if (sig_ptr->bits > 96) {
+	    ythis_pct =
+		(((double)cptr->number[3]   / (double)sig_ptr->value_mask[3])
+		 + ((double)cptr->number[2] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2])
+		 + ((double)cptr->number[1] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1])
+		 + ((double)cptr->number[0] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
+	} else if (sig_ptr->bits > 64) {
+	    ythis_pct =
+		(((double)cptr->number[2]   / (double)sig_ptr->value_mask[2])
+		 + ((double)cptr->number[1] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1])
+		 + ((double)cptr->number[0] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
+	} else if (sig_ptr->bits > 32) {
+	    ythis_pct =
+		(((double)cptr->number[1]   / (double)sig_ptr->value_mask[1])
+		 + ((double)cptr->number[0] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
+	} else {
+	    ythis_pct =
+		((((double)cptr->number[0] / (double)sig_ptr->value_mask[0])));
+	}
+	break;
+    }
+    }
+    if (sig_ptr->waveform == WAVEFORM_ANALOG_SIGNED) {
+	if (ythis_pct < 0.50) ythis_pct = ythis_pct + 0.50;
+	else ythis_pct = 0.50 - (ythis_pct - 0.50);
+    }
+    return (ythis_pct);
+}
+
 static void draw_grid_line (
     Trace_t	*trace,
     Boolean_t	*textoccupied,
@@ -530,40 +569,12 @@ static void draw_signal (
 			  pts, 7, Convex, CoordModeOrigin);
 	    /* Don't need to draw lines, since we filled region */
 	} else {
-	    if (sig_ptr->analog) {
+	    if (sig_ptr->waveform != WAVEFORM_DIGITAL) {
 		/* ANALOG drawing */
 		if (dr_mask & (DR_LOW | DR_HIGH | DR_HIGHHIGH)) {
 		    /* Note ylow > yhigh, as bigger coords are at bottom of screen */
-		    double ythis_pct = 0.0;
+		    double ythis_pct = draw_analog_value (sig_ptr, cptr);
 		    int ythis;
-		    switch (cptr->siglw.stbits.state) {
-		    case STATE_0:	ythis_pct = 0.0; break;
-		    case STATE_1:	ythis_pct = 1.0; break;
-		    case STATE_B32:	ythis_pct = (double)cptr->number[0] / (double)sig_ptr->value_mask[0]; break;
-		    case STATE_B128: {
-			if (sig_ptr->bits > 96) {
-			ythis_pct =
-			    (((double)cptr->number[3]   / (double)sig_ptr->value_mask[3])
-			     + ((double)cptr->number[2] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2])
-			     + ((double)cptr->number[1] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1])
-			     + ((double)cptr->number[0] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
-			} else if (sig_ptr->bits > 64) {
-			ythis_pct =
-			    (((double)cptr->number[2]   / (double)sig_ptr->value_mask[2])
-			     + ((double)cptr->number[1] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1])
-			     + ((double)cptr->number[0] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
-			} else if (sig_ptr->bits > 32) {
-			ythis_pct =
-			    (((double)cptr->number[1]   / (double)sig_ptr->value_mask[1])
-			     + ((double)cptr->number[0] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
-			} else {
-			    ythis_pct =
-				((((double)cptr->number[0] / (double)sig_ptr->value_mask[0])));
-			}
-			break;
-		    }
-		    default:		printf ("bad case -- mask bad? %x\n", dr_mask); break;
-		    }
 		    ythis = (ylow-yhigh)*(1.0-ythis_pct) + yhigh;
 		    if (xsigrfleft)
 			ADD_SEG (xleft-xsigrfleft, ylast_analog, xleft+xsigrfleft, ythis);
@@ -599,7 +610,7 @@ static void draw_signal (
 	
 	/* Plot value */
 	if (sig_ptr->bits>1
-	    && !sig_ptr->analog
+	    && (sig_ptr->waveform == WAVEFORM_DIGITAL)
 	    && cptr->siglw.stbits.state != STATE_U
 	    && cptr->siglw.stbits.state != STATE_Z
 	    ) {

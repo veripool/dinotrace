@@ -865,6 +865,7 @@ Trace_t *create_trace (
     trace->menu.sig_waveform_pds = trace->menu.pds+1;
     dm_menu_subentry (trace, 		"Digital", 'D', NULL, NULL,	sig_waveform_cb);
     dm_menu_subentry (trace, 		"Analog", 'A', NULL, NULL,	sig_waveform_cb);
+    dm_menu_subentry (trace, 		"Analog Signed", 'S', NULL, NULL,	sig_waveform_cb);
     dm_menu_entry (trace, 	"Search...",	'S', "<Key>F:", "f/C-f", sig_search_cb);
     dm_menu_entry (trace, 	"Select...",	'e',	NULL, NULL,	sig_select_cb);
     dm_menu_entry (trace, 	"Clear Highlight",'i',	NULL, NULL,	sig_highlight_clear_cb);
