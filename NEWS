@@ -7,6 +7,13 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.0c  9/30/98
+
+** Enhancements:
+
+****	Configures and builds on Windows NT.
+
+
 * Changes in Dinotrace 9.0b  8/3/98
 
 ** Enhancements:
