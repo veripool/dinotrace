@@ -307,8 +307,9 @@ void sig_new_file (
 	*sep++ = '\0';
 	/* Hunt for the end of the vector */
 	while (*sep && *sep!=trace->dfile.vectorend_separator) sep++;
+	while (*sep && *sep==trace->dfile.vectorend_separator) sep++;
 	/* Remember if there is stuff after the vector */
-	if (*sep && *(sep+1)) signame_buspos = sep+1;
+	if (*sep) signame_buspos = sep;
     }
     else {
 	if (bits>1) {
@@ -437,10 +438,9 @@ void sig_new_file (
 	    new_sig_ptr->signame = (char *)XtMalloc(10+strlen (signame));	/* allow extra space in case becomes vector */
 	    strcpy (new_sig_ptr->signame, signame);
 	    new_sig_ptr->signame_buspos = (signame_buspos
-					   ? ((signame_buspos - signame) + new_sig_ptr->signame)
-					   : NULL); /* Adj pointer to right base */
-	    
-	    if (DTPRINT_BUSSES) printf ("       donefile (%s, %d, (%d)%d-%d )\n", signame, 
+					   ? strdup(signame_buspos) : NULL);
+	    if (DTPRINT_BUSSES) printf ("       donefile (%s %s, %d, (%d)%d-%d )\n",
+					new_sig_ptr->signame, DeNull(new_sig_ptr->signame_buspos),
 					new_sig_ptr->file_pos, new_sig_ptr->bits, new_sig_ptr->msb_index, new_sig_ptr->lsb_index);
 	}
     }

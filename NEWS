@@ -10,6 +10,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 * Changes in Dinotrace 9.1d  5/24/2001
 
 ***	Fixed missing 0's in display of >64 bit numbers. [Amitvikram Rajkhowa]
+
+***	Fixed stripping of characters after bus prefix.  [Steve Hoover]
 
 * Changes in Dinotrace 9.1c  2/13/2001
 

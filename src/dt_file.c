@@ -12,7 +12,7 @@
  *
  * Some of the code in this file was originally developed for Digital
  * Semiconductor, a division of Digital Equipment Corporation.  They
- * gratefuly have agreed to share it, and thus the bas version has been
+ * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
  * 
@@ -608,7 +608,7 @@ void fil_make_busses (
 {
     Signal_t	*sig_ptr;	/* ptr to current signal (lower bit number) */
     int		pos;
-    char	postbusstuff[MAXSIGLEN];
+    char	postbusstuff[MAXSIGLEN] = "";
 
     if (DTPRINT_ENTRY) printf ("In fil_make_busses\n");
     if (DTPRINT_BUSSES) sig_print_names (trace);

@@ -1,14 +1,14 @@
 \input texinfo.tex @c -*-texinfo-*-
 @c %**start of header
-@stfilename faq.info
+@setfilename faq.info
 @settitle Frequently asked questions about Dinotrace
 @setchapternewpage off
 @c $Id$
 @finalout
 @c %**end of header
 
-@set UPDATED Feburary 2001
-@set VERSION 9.1b
+@set UPDATED May 2001
+@set VERSION 9.1d
 
 @c DESCRIPTION: TexInfo: DOCUMENT source run through texinfo to produce FAQ file
 @c Use 'make FAQ' to produce the output file
@@ -114,10 +114,9 @@ X11R6, and a X11 server, like Exceed or Excursion.
 @c --------------------
 @section How do I get a printed copy of the Dinotrace manual?
 
-A PDF file is available at
-@uref{http://www.veripool.com/dinotrace/dinotrace.pdf}.
-Your web browser should be able to print this, if not you can probably
-print the HTML version in the same directory.
+A html file is available at
+@uref{http://www.veripool.com/dinotrace/dinotrace.html}.
+Your web browser should be able to print this.
 
 The more ambitious can build the manual themselves.  The texinfo source
 is included with Dinotrace.  Typing @samp{make dinotrace.dvi} will
