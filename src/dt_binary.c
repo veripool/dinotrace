@@ -574,14 +574,15 @@ void decsim_read_binary (trace, read_fd)
 
 
 void tempest_read (trace, read_fd)
-    TRACE	*trace;
-    int		read_fd;
+TRACE	*trace;
+int		read_fd;
 {
     int		status;
     int		numBytes,numRows,numBitsRow,numBitsRowPad;
     int		sigChars,sigFlags,sigOffset,sigWidth;
     char		chardata[1024];
     unsigned int	*data;
+    unsigned int	*data_xor;
     int		first_data;
     int		i,j;
     int		pad_len;
@@ -589,17 +590,19 @@ void tempest_read (trace, read_fd)
     SIGNAL	*sig_ptr,*last_sig_ptr=NULL;
     VALUE	value;
     int 	index;
+    Boolean	verilator_xor_format;
 
     /*
      ** Read the file identification block
      */
     status = read (read_fd, chardata, 4);
     chardata[4]='\0';
-    if (!status || strncmp (chardata,"BT",2) ) {
+    verilator_xor_format = !strncmp (chardata,"BX",2);
+    if (!status || (!strncmp (chardata,"BT",2) && !strncmp (chardata,"BX",2) )) {
 	sprintf (message, "Bad File Format (=%s)\n", chardata);
 	dino_error_ack(trace, message);
 	return;
-	}
+    }
     status = read (read_fd, &numBytes, 4);
     status = read (read_fd, &trace->numsig, 4);
     status = read (read_fd, &numRows, 4);
@@ -607,9 +610,10 @@ void tempest_read (trace, read_fd)
     status = read (read_fd, &numBitsRowPad, 4);
 
     if (DTPRINT_FILE) {
+	if (verilator_xor_format) printf ("This is Verilator Compressed XOR format.\n");
 	printf ("File Sig=%s Bytes=%d Signals=%d Rows=%d Bits/Row=%d Bits/Row(pad)=%d\n",
-	       chardata,numBytes,trace->numsig,numRows,numBitsRow,numBitsRowPad);
-	}
+		chardata,numBytes,trace->numsig,numRows,numBitsRow,numBitsRowPad);
+    }
 
     /*
      ** Read the signal description data - a signal description block is
@@ -617,7 +621,8 @@ void tempest_read (trace, read_fd)
      ** for the trace data, current trace location, etc.
      */
     trace->firstsig=NULL;
-    for (i=0;i<trace->numsig;i++) {
+    for (i=0;i<trace->numsig;i++)
+    {
 	status = read (read_fd, &sigFlags, 4);
 	status = read (read_fd, &sigOffset, 4);
 	status = read (read_fd, &sigWidth, 4);
@@ -693,7 +698,8 @@ void tempest_read (trace, read_fd)
     read_make_busses (trace, FALSE);
 
     /* Make storage space, with some overhead */
-    data = (unsigned int *)XtMalloc (128 + numBitsRowPad/8);
+    data     = (unsigned int *)XtCalloc (32 + numBitsRowPad/32, sizeof(unsigned int));
+    data_xor = (unsigned int *)XtCalloc (32 + numBitsRowPad/32, sizeof(unsigned int));
 
     /* Read the signal trace data
      * Pass 0-(numRows-1) reads the data, pass numRows processes last line */
@@ -704,8 +710,21 @@ void tempest_read (trace, read_fd)
 
     while (1) {
 	/* Read a row of data */
-	status = read (read_fd, data, numBitsRowPad/8);
-	if (status < numBitsRowPad/8) break;	/* End of data */
+	if (verilator_xor_format) {
+	    status = read (read_fd, data_xor, numBitsRowPad/8);
+	    if (status < numBitsRowPad/8) break;	/* End of data */
+
+	    /* Un-exor the data */
+	    for (j = 0; j <= (numBitsRowPad/(sizeof(unsigned int)*8)); j++) {
+		data[j] ^= data_xor[j];
+	    }
+	}
+	else {
+	    /* Regular format */
+	    status = read (read_fd, data, numBitsRowPad/8);
+	    if (status < numBitsRowPad/8) break;	/* End of data */
+	}
+
 	/*
 	if (DTPRINT_FILE) {
 	    printf ("read: time=%d  status %d data=%08x %08x\n", data[0], 
