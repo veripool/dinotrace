@@ -34,7 +34,7 @@
 /**********************************************************************/
 /**** Version and host name */
 
-#define DTVERSION	"Dinotrace 9.0a"
+#define DTVERSION	"Dinotrace 9.0b"
 
 /* When this version will expire */
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
@@ -116,10 +116,13 @@
 /* Information on when we were configured */
 #define CONFIG_DATE_STRG "Unknown"
 
+/* Typedefs that should be typedefed, else configure will pick em up */
+#undef uint_t
+#undef ulong_t
+#undef size_t
+
 /* Typedefs that system includes should define, but may not */
 #if defined(__sun__) && !defined(__svr4__)
-typedef	unsigned int	uint_t;
-typedef	unsigned long	ulong_t;
 extern int	printf(), fprintf(), scanf(), sscanf(), fputs();
 extern int	fclose(), pclose(), fflush();
 extern void	rewind();
