@@ -759,8 +759,8 @@ void	draw_update_sigstart ()
 	}
 	    
 	/* Don't waste more then 1/3 the screen area on signame */
-	xstart_sig = MIN (m_sig_width * (widest_hier+widest_base), (smallest_width/3)) + XSTART_MARGIN;
-	xstart_base = m_sig_width * widest_base + XSTART_MARGIN;
+	xstart_sig = XMARGIN + MIN (m_sig_width * (widest_hier+widest_base), (smallest_width/3)) + XSTART_MARGIN;
+	xstart_base = XMARGIN + m_sig_width * widest_base + XSTART_MARGIN;
 	global->xstart = MAX (xstart_sig, xstart_base);
 
 	/* Remember position of text */

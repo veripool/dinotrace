@@ -66,7 +66,9 @@
 #include <Xm/Text.h>
 #include <Xm/Scale.h>
 #include <Xm/Label.h>
+#include <Xm/Form.h>
 #include <Xm/BulletinB.h>
+#include <Xm/Separator.h>
 
 #include "functions.h"
 
@@ -82,7 +84,7 @@ void cus_dialog_cb (
     
     if (DTPRINT_ENTRY) printf ("In customize - trace=%p\n",trace);
     
-    if (!trace->custom.customize) {
+    if (!trace->custom.dialog) {
 	if (trace->filename[0] == '\0')
 	    sprintf (title,"Customize Window");
 	else
@@ -90,108 +92,98 @@ void cus_dialog_cb (
 	
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple (title) );
-	/* XtSetArg (arglist[2], XmNwidth, 600);
-	   XtSetArg (arglist[3], XmNheight, 400); */
-	trace->custom.customize = XmCreateBulletinBoardDialog (trace->work,"customize",arglist,2);
+	trace->custom.dialog = XmCreateBulletinBoardDialog (trace->work,"customize",arglist,2);
 	
+	XtSetArg (arglist[0], XmNverticalSpacing, 7);
+	trace->custom.form = XmCreateForm (trace->custom.dialog, "form", arglist, 1);
+	DManageChild (trace->custom.form, trace, MC_NOKEYS);
+
 	/* Create label for page increment */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Page Inc/Dec"));
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNy, 5);
-	trace->custom.page_label = XmCreateLabel (trace->custom.customize,"page_label",arglist,3);
-	XtManageChild (trace->custom.page_label);
+	trace->custom.page_label = XmCreateLabel (trace->custom.form,"page_label",arglist,3);
+	DManageChild (trace->custom.page_label, trace, MC_NOKEYS);
 	
 	/* Create radio box for page increment */
 	XtSetArg (arglist[0], XmNx, 10);
 	XtSetArg (arglist[1], XmNy, 35);
 	XtSetArg (arglist[2], XmNspacing, 2);
-	trace->custom.rpage = XmCreateRadioBox (trace->custom.customize,"rpage",arglist,3);
+	trace->custom.rpage = XmCreateRadioBox (trace->custom.form,"rpage",arglist,3);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("1/4 Page"));
 	trace->custom.tpage1 = XmCreateToggleButton (trace->custom.rpage,"rpage",arglist,1);
-	XtManageChild (trace->custom.tpage1);
+	DManageChild (trace->custom.tpage1, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("1/2 Page"));
 	trace->custom.tpage2 = XmCreateToggleButton (trace->custom.rpage,"tpage2",arglist,1);
-	XtManageChild (trace->custom.tpage2);
+	DManageChild (trace->custom.tpage2, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" 1  Page"));
 	trace->custom.tpage3 = XmCreateToggleButton (trace->custom.rpage,"tpage3",arglist,1);
-	XtManageChild (trace->custom.tpage3);
+	DManageChild (trace->custom.tpage3, trace, MC_NOKEYS);
 	
 	/* Create label for bus value */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Bus Repres."));
 	XtSetArg (arglist[1], XmNx, 160);
 	XtSetArg (arglist[2], XmNy, 5);
-	trace->custom.bus_label = XmCreateLabel (trace->custom.customize,"buslabel",arglist,3);
-	XtManageChild (trace->custom.bus_label);
+	trace->custom.bus_label = XmCreateLabel (trace->custom.form,"buslabel",arglist,3);
+	DManageChild (trace->custom.bus_label, trace, MC_NOKEYS);
 	
 	/* Create radio box for bus representation */
 	XtSetArg (arglist[0], XmNx, 160);
 	XtSetArg (arglist[1], XmNy, 35);
 	XtSetArg (arglist[2], XmNspacing, 2);
-	trace->custom.rbus = XmCreateRadioBox (trace->custom.customize,"rbus",arglist,3);
-	
-	/*
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Individual"));
-	XtSetArg (arglist[1], XmNsensitive, FALSE);
-	trace->custom.tbus1 = XmCreateToggleButton (trace->custom.rbus,"tbus1",arglist,2);
-	XtManageChild (trace->custom.tbus1);
-	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Binary"));
-	XtSetArg (arglist[1], XmNsensitive, FALSE);
-	trace->custom.tbus2 = XmCreateToggleButton (trace->custom.rbus,"tbus2",arglist,2);
-	XtManageChild (trace->custom.tbus2);
-	*/
+	trace->custom.rbus = XmCreateRadioBox (trace->custom.form,"rbus",arglist,3);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Octal"));
 	trace->custom.tbus3 = XmCreateToggleButton (trace->custom.rbus,"tbus3",arglist,1);
-	XtManageChild (trace->custom.tbus3);
+	DManageChild (trace->custom.tbus3, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Hexadecimal"));
 	trace->custom.tbus4 = XmCreateToggleButton (trace->custom.rbus,"tbus4",arglist,1);
-	XtManageChild (trace->custom.tbus4);
+	DManageChild (trace->custom.tbus4, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Decimal"));
 	trace->custom.tbus5 = XmCreateToggleButton (trace->custom.rbus,"tbus5",arglist,1);
-	XtManageChild (trace->custom.tbus5);
+	DManageChild (trace->custom.tbus5, trace, MC_NOKEYS);
 	
 	/* Create label for time value */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Time Repres."));
 	XtSetArg (arglist[1], XmNx, 300);
 	XtSetArg (arglist[2], XmNy, 5);
-	trace->custom.time_label = XmCreateLabel (trace->custom.customize,"timelabel",arglist,3);
-	XtManageChild (trace->custom.time_label);
+	trace->custom.time_label = XmCreateLabel (trace->custom.form,"timelabel",arglist,3);
+	DManageChild (trace->custom.time_label, trace, MC_NOKEYS);
 	
 	/* Create radio box for time representation */
 	XtSetArg (arglist[0], XmNx, 300);
 	XtSetArg (arglist[1], XmNy, 35);
 	XtSetArg (arglist[2], XmNspacing, 2);
-	trace->custom.rtime = XmCreateRadioBox (trace->custom.customize,"rtime",arglist,3);
-	XtManageChild (trace->custom.rtime);
+	trace->custom.rtime = XmCreateRadioBox (trace->custom.form,"rtime",arglist,3);
+	DManageChild (trace->custom.rtime, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Picoseconds"));
 	trace->custom.ttimeps = XmCreateToggleButton (trace->custom.rtime,"ttimeps",arglist,1);
-	XtManageChild (trace->custom.ttimeps);
+	DManageChild (trace->custom.ttimeps, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Nanoseconds"));
 	trace->custom.ttimens = XmCreateToggleButton (trace->custom.rtime,"ttimens",arglist,1);
-	XtManageChild (trace->custom.ttimens);
+	DManageChild (trace->custom.ttimens, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Microseconds"));
 	trace->custom.ttimeus = XmCreateToggleButton (trace->custom.rtime,"ttimeus",arglist,1);
-	XtManageChild (trace->custom.ttimeus);
+	DManageChild (trace->custom.ttimeus, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Grid Cycles"));
 	trace->custom.ttimecyc = XmCreateToggleButton (trace->custom.rtime,"ttimecyc",arglist,1);
-	XtManageChild (trace->custom.ttimecyc);
+	DManageChild (trace->custom.ttimecyc, trace, MC_NOKEYS);
 	
 	/* Create signal height slider */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Signal Height"));
 	XtSetArg (arglist[1], XmNx, 180);
 	XtSetArg (arglist[2], XmNy, 170);
-	trace->custom.sighgt_label = XmCreateLabel (trace->custom.customize,"sighgtlabel",arglist,3);
-	XtManageChild (trace->custom.sighgt_label);
+	trace->custom.sighgt_label = XmCreateLabel (trace->custom.form,"sighgtlabel",arglist,3);
+	DManageChild (trace->custom.sighgt_label, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNshowValue, 1);
 	XtSetArg (arglist[1], XmNx, 180);
@@ -201,69 +193,83 @@ void cus_dialog_cb (
 	XtSetArg (arglist[5], XmNmaximum, 50);
 	XtSetArg (arglist[6], XmNorientation, XmHORIZONTAL);
 	XtSetArg (arglist[7], XmNprocessingDirection, XmMAX_ON_RIGHT);
-	trace->custom.s1 = XmCreateScale (trace->custom.customize,"sighgt",arglist,8);
-	XtManageChild (trace->custom.s1);
+	trace->custom.s1 = XmCreateScale (trace->custom.form,"sighgt",arglist,8);
+	DManageChild (trace->custom.s1, trace, MC_NOKEYS);
 	
 	/* Create click_to_edge button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Click To Edges"));
 	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 150);
-	XtSetArg (arglist[3], XmNshadowThickness, 1);
-	trace->custom.click_to_edge = XmCreateToggleButton (trace->custom.customize,
+	XtSetArg (arglist[2], XmNshadowThickness, 1);
+	XtSetArg (arglist[3], XmNy, 170);
+	trace->custom.click_to_edge = XmCreateToggleButton (trace->custom.form,
 							"click_to_edge",arglist,4);
-	XtManageChild (trace->custom.click_to_edge);
-	
-	/* Create refresh button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Manual Refreshing"));
-	XtSetArg (arglist[1], XmNx, 180);
-	XtSetArg (arglist[2], XmNy, 255);
-	XtSetArg (arglist[3], XmNshadowThickness, 1);
-	trace->custom.refreshing = XmCreateToggleButton (trace->custom.customize,"refreshing",arglist,4);
-	XtManageChild (trace->custom.refreshing);
+	DManageChild (trace->custom.click_to_edge, trace, MC_NOKEYS);
 	
 	/* Create RF button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Rise/Fall Time"));
 	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 185);
-	XtSetArg (arglist[3], XmNshadowThickness, 1);
-	trace->custom.rfwid = XmCreateToggleButton (trace->custom.customize,"rfwid",arglist,4);
-	XtManageChild (trace->custom.rfwid);
+	XtSetArg (arglist[2], XmNshadowThickness, 1);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNtopWidget, trace->custom.click_to_edge );
+	trace->custom.rfwid = XmCreateToggleButton (trace->custom.form,"rfwid",arglist,5);
+	DManageChild (trace->custom.rfwid, trace, MC_NOKEYS);
 	
 	/* Create cursor state on/off button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cursors On/Off"));
 	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 220);
-	XtSetArg (arglist[3], XmNshadowThickness, 1);
-	trace->custom.cursor_state = XmCreateToggleButton (trace->custom.customize,
-							   "cursor_state",arglist,4);
-	XtManageChild (trace->custom.cursor_state);
+	XtSetArg (arglist[2], XmNshadowThickness, 1);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNtopWidget, trace->custom.rfwid );
+	trace->custom.cursor_state = XmCreateToggleButton (trace->custom.form,
+							   "cursor_state",arglist,5);
+	DManageChild (trace->custom.cursor_state, trace, MC_NOKEYS);
+	
+	/* Create refresh button */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Manual Refreshing"));
+	XtSetArg (arglist[1], XmNx, 10);
+	XtSetArg (arglist[2], XmNshadowThickness, 1);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNtopWidget, trace->custom.cursor_state );
+	trace->custom.refreshing = XmCreateToggleButton (trace->custom.form,"refreshing",arglist,5);
+	DManageChild (trace->custom.refreshing, trace, MC_NOKEYS);
+	
+	/* Create Separator */
+	XtSetArg (arglist[0], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[1], XmNtopWidget, trace->custom.refreshing );
+	XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[3], XmNrightAttachment, XmATTACH_FORM );
+	trace->custom.sep = XmCreateSeparator (trace->custom.form, "sep",arglist,4);
+	DManageChild (trace->custom.sep, trace, MC_NOKEYS);
 	
 	/* Create OK button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
 	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 300);
-	trace->custom.b1 = XmCreatePushButton (trace->custom.customize,"ok",arglist,3);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->custom.sep );
+	trace->custom.b1 = XmCreatePushButton (trace->custom.form,"ok",arglist,4);
 	DAddCallback (trace->custom.b1, XmNactivateCallback, cus_ok_cb, trace);
-	XtManageChild (trace->custom.b1);
+	DManageChild (trace->custom.b1, trace, MC_NOKEYS);
 	
 	/* create apply button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Apply") );
 	XtSetArg (arglist[1], XmNx, 70);
-	XtSetArg (arglist[2], XmNy, 300);
-	trace->custom.b2 = XmCreatePushButton (trace->custom.customize,"apply",arglist,3);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->custom.sep );
+	trace->custom.b2 = XmCreatePushButton (trace->custom.form,"apply",arglist,4);
 	DAddCallback (trace->custom.b2, XmNactivateCallback, cus_apply_cb, trace);
-	XtManageChild (trace->custom.b2);
+	DManageChild (trace->custom.b2, trace, MC_NOKEYS);
 	
 	/* create cancel button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
 	XtSetArg (arglist[1], XmNx, 140);
-	XtSetArg (arglist[2], XmNy, 300);
-	trace->custom.b3 = XmCreatePushButton (trace->custom.customize,"cancel",arglist,3);
-	DAddCallback (trace->custom.b3, XmNactivateCallback, unmanage_cb, trace->custom.customize);
-	XtManageChild (trace->custom.b3);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->custom.sep );
+	trace->custom.b3 = XmCreatePushButton (trace->custom.form,"cancel",arglist,4);
+	DAddCallback (trace->custom.b3, XmNactivateCallback, unmanage_cb, trace->custom.dialog);
+	DManageChild (trace->custom.b3, trace, MC_NOKEYS);
 	
-	XtManageChild (trace->custom.rpage);
-	XtManageChild (trace->custom.rbus);
+	DManageChild (trace->custom.rpage, trace, MC_NOKEYS);
+	DManageChild (trace->custom.rbus, trace, MC_NOKEYS);
     }
 
     /* Update with current custom values */
@@ -306,7 +312,7 @@ void cus_dialog_cb (
     XtSetValues (trace->custom.refreshing,arglist,1);
     
     /* Do it */
-    XtManageChild (trace->custom.customize);
+    DManageChild (trace->custom.dialog, trace, MC_NOKEYS);
 }
 
 
@@ -378,7 +384,7 @@ void	cus_ok_cb (
     else global->pageinc = FPAGE;
     
     /* hide the customize window */
-    XtUnmanageChild (trace->custom.customize);
+    XtUnmanageChild (trace->custom.dialog);
     
     /* res units may have changed, fix it & redraw the display */
     new_res (trace, global->res);
@@ -395,7 +401,7 @@ void	cus_apply_cb (
     cus_ok_cb (w,trace,cb);
     
     /* manage the customize window */
-    XtManageChild (trace->custom.customize);
+    DManageChild (trace->custom.dialog, trace, MC_NOKEYS);
 }
 
 /****************************** File reading ******************************/
@@ -428,7 +434,7 @@ void cus_read_cb (
 	XtSetArg (arglist[2], XmNleftOffset, 25);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_FORM );
 	trace->cusread.config_label = XmCreateLabel (trace->cusread.work_area,"label",arglist,5);
-	XtManageChild (trace->cusread.config_label);
+	DManageChild (trace->cusread.config_label, trace, MC_NOKEYS);
 	
 	for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
 	    /* enable button */
@@ -455,11 +461,11 @@ void cus_read_cb (
 	    XtSetArg (arglist[0], XmNtopWidget, trace->cusread.config_filename[cfg_num]);
 	    XtSetValues (trace->cusread.config_enable[cfg_num],arglist,1);
 
-	    XtManageChild (trace->cusread.config_enable[cfg_num]);
-	    XtManageChild (trace->cusread.config_filename[cfg_num]);
+	    DManageChild (trace->cusread.config_enable[cfg_num], trace, MC_NOKEYS);
+	    DManageChild (trace->cusread.config_filename[cfg_num], trace, MC_NOKEYS);
 	}
 
-	XtManageChild (trace->cusread.work_area);
+	DManageChild (trace->cusread.work_area, trace, MC_NOKEYS);
 	
 	XSync (global->display,0);
 
@@ -475,7 +481,7 @@ void cus_read_cb (
 	XmTextSetString (trace->cusread.config_filename[cfg_num], global->config_filename[cfg_num]);
     }
 
-    XtManageChild (trace->cusread.dialog);
+    DManageChild (trace->cusread.dialog, trace, MC_NOKEYS);
 
     XSync (global->display,0);
 }

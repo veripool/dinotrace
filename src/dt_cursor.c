@@ -205,10 +205,9 @@ DTime cur_time_last (
 /****************************** MENU OPTIONS ******************************/
 
 void    cur_add_cb (
-    Widget		w,
-    Trace		*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget		w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cur_add_cb - trace=%p\n",trace);
     
     /* remove any previous events */
@@ -223,10 +222,9 @@ void    cur_add_cb (
 }
 
 void    cur_mov_cb (
-    Widget		w,
-    Trace		*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget		w)
 {
+    Trace *trace = widget_to_trace(w);
     
     if (DTPRINT_ENTRY) printf ("In cur_mov_cb - trace=%p\n",trace);
     
@@ -239,10 +237,9 @@ void    cur_mov_cb (
 }
 
 void    cur_del_cb (
-    Widget		w,
-    Trace		*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget		w)
 {
+    Trace *trace = widget_to_trace(w);
     
     if (DTPRINT_ENTRY) printf ("In cur_del_cb - trace=%p\n",trace);
     
@@ -255,10 +252,9 @@ void    cur_del_cb (
 }
 
 void    cur_clr_cb (
-    Widget		w,
-    Trace		*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget		w)
 {
+    Trace *trace = widget_to_trace(w);
     DCursor	*csr_ptr;
     
     if (DTPRINT_ENTRY) printf ("In cur_clr_cb.\n");
@@ -277,10 +273,9 @@ void    cur_clr_cb (
 }
 
 void    cur_highlight_cb (
-    Widget		w,
-    Trace		*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget		w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cur_highlight_cb - trace=%p\n",trace);
     
     /* remove any previous events */

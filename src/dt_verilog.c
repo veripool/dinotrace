@@ -264,7 +264,7 @@ void	verilog_womp_128s (
     int		len;
     int		chop;
 
-    /*print_sig_names (NULL, trace);*/
+    /*sig_print_names (NULL, trace);*/
     for (sig_ptr = trace->firstsig; sig_ptr; /* increment below */ ) {
 
 	if (sig_ptr->bits > 128) {
@@ -307,7 +307,7 @@ void	verilog_womp_128s (
 	}
     }
 
-    /*print_sig_names (NULL, trace);*/
+    /*sig_print_names (NULL, trace);*/
 }
 
 
@@ -341,7 +341,7 @@ void	verilog_process_definitions (
     uint_t	pos;
     char	*tp;
     
-    /* if (DTPRINT_FILE) print_sig_names (NULL, trace); */
+    /* if (DTPRINT_FILE) sig_print_names (trace); */
     
     /* Find the highest pos used */
     max_pos = 0;

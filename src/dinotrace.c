@@ -224,7 +224,7 @@ See the Help menu for more information.");
 	    }
 	    XSync (global->display,0);
 	    strcpy (trace->filename, argv[i]);
-	    fil_read_cb (trace);
+	    fil_read (trace);
 	}
     }
 

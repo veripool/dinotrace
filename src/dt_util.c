@@ -227,11 +227,10 @@ void    unmanage_cb (
     XtUnmanageChild (tag);
 }
 
-void    cancel_all_events (
-    Widget	w,
-    Trace	*trace,
-    XmAnyCallbackStruct	*cb)
+void    cancel_all_events_cb (
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cancel_all_events - trace=%p\n",trace);
     
     /* remove all events */
@@ -373,15 +372,16 @@ int option_to_number (
     return (tempi);
 }
 
+/* Find the trace for this widget; widget must be created with DManageChild */
 Trace	*widget_to_trace (
     Widget	w)
 {
     Trace	*trace;		/* Display information */
     
-    for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	if (trace->work == w) break;
-    }
-    if (!trace && DTDEBUG) printf ("widget_to_trace failed lookup.\n");
+    XtSetArg (arglist[0], XmNuserData, &trace);
+    XtGetValues (w, arglist, 1);
+
+    if (!trace) printf ("widget_to_trace failed lookup.\n");
     return (trace);
 }
 
@@ -477,7 +477,7 @@ void get_geometry (
     XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
     XtSetArg (arglist[1], XmNleftOffset, global->xstart - XSTART_MARGIN);
     XtSetValues (trace->hscroll,arglist,2);
-    XtManageChild (trace->hscroll);
+    XtManageChild (trace->hscroll);	/* Don't need DManage... already set up */
 
     update_scrollbar (trace->hscroll, global->time,
 		      trace->grid[0].period,
@@ -524,7 +524,7 @@ void get_data_popup (
     
     /* manage the popup window */
     trace->prompt_type = type;
-    XtManageChild (trace->prompt_popup);
+    DManageChild (trace->prompt_popup, trace, MC_NOKEYS);
 }
 
 void    prompt_ok_cb (
@@ -606,7 +606,7 @@ void dino_message_ack (
     XtSetValues (trace->message,msg_arglist,2);
     
     /* manage the widget */
-    XtManageChild (trace->message);
+    DManageChild (trace->message, trace, MC_NOKEYS);
 }
 
 SignalLW *cptr_at_time (
@@ -671,34 +671,6 @@ void    cptr_to_string (
     }
 }
 
-void    print_sig_names (
-    Widget	w,
-    Trace	*trace)
-{
-    Signal	*sig_ptr, *back_sig_ptr;
-
-    if (DTPRINT_ENTRY) printf ("In print_sig_names\n");
-
-    printf ("  Number of signals = %d\n", trace->numsig);
-
-    /* loop thru each signal */
-    back_sig_ptr = NULL;
-    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	printf (" Sig '%s'  ty=%d inc=%d index=%d-%d tempbit %d btyp=%d bpos=%d bits=%d\n",
-		sig_ptr->signame, sig_ptr->type, sig_ptr->lws,
-		sig_ptr->msb_index ,sig_ptr->lsb_index, sig_ptr->bit_index,
-		sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->bits
-		);
-	if (sig_ptr->backward != back_sig_ptr) {
-	    printf (" %%E, Backward link is to '%p' not '%p'\n", sig_ptr->backward, back_sig_ptr);
-	}
-	back_sig_ptr = sig_ptr;
-    }
-    
-    /* Don't do a integrity check here, as sometimes all links aren't ready! */
-    /* print_signal_states (trace); */
-}
-
 void    print_cptr (
     SignalLW	*cptr)
 {
@@ -710,10 +682,10 @@ void    print_cptr (
     printf ("%s at time %d\n",strg,cptr->sttime.time);
 }
 
-void    print_screen_traces (
-    Widget	w,
-    Trace	*trace)
+void    debug_print_screen_traces_cb (
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     uint_t	i,num;
     Signal	*sig_ptr;
     
@@ -817,10 +789,9 @@ void    debug_signal_integrity (
 }
 
 void    debug_integrity_check_cb (
-    Widget	w,
-    Trace	*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
 {
+    Trace *trace;
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	debug_signal_integrity (trace, trace->firstsig, trace->filename, 
 				(trace==global->deleted_trace_head));
@@ -829,9 +800,7 @@ void    debug_integrity_check_cb (
 
 
 void    debug_increase_debugtemp_cb (
-    Widget	w,
-    Trace	*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
 {
     DebugTemp++;
     printf ("New DebugTemp = %d\n", DebugTemp);
@@ -839,9 +808,7 @@ void    debug_increase_debugtemp_cb (
 }
 
 void    debug_decrease_debugtemp_cb (
-    Widget		w,
-    Trace	       	*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget		w)
 {
     DebugTemp--;
     printf ("New DebugTemp = %d\n", DebugTemp);

@@ -369,9 +369,8 @@ void	free_signal_states (void)
     global->signalstate_head = NULL;
 }
 
-void	print_signal_states (
-    Widget	w,
-    Trace	*trace)
+void	debug_print_signal_states_cb (
+    Widget	w)
 {
     SignalState *sstate_ptr;
     int i;
@@ -1362,10 +1361,9 @@ void config_write_file (
 }
 
 void config_write_cb (
-    Widget		w,
-    Trace		*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget		w)
 {
+    Trace *trace = widget_to_trace(w);
     char newfilename[MAXFNAMELEN];
     char *pchar;
 
@@ -1394,7 +1392,7 @@ void config_trace_defaults (
     trace->vector_seperator = '[';
     trace->vector_endseperator = ']';
 
-    grid_reset_cb (NULL, trace, NULL);
+    grid_reset_cb (trace->main);
 }
 
 

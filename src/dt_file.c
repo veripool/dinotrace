@@ -160,11 +160,11 @@ void trace_reread_cb (
 	}
 
 	/* read the file */
-	fil_read_cb (trace);
+	fil_read (trace);
     }
 }
 
-void fil_read_cb (
+void fil_read (
     Trace	*trace)
 {
     int		read_fd;
@@ -174,7 +174,7 @@ void fil_read_cb (
     pipecmd[0]='\0';	/* MIPS: no automatic aggregate initialization */
     read_fp = NULL;	/* MIPS: no automatic aggregate initialization */
 
-    if (DTPRINT_ENTRY) printf ("In fil_read_cb trace=%p filename=%s\n",trace,trace->filename);
+    if (DTPRINT_ENTRY) printf ("In fil_read trace=%p filename=%s\n",trace,trace->filename);
     
     /* Update directory name */
     strcpy (global->directory, trace->filename);
@@ -312,10 +312,10 @@ void fil_read_cb (
      ** Clear the window and draw the screen with the new file
      */
     set_cursor (trace, DC_NORMAL);
-    if (global->res_default) win_full_res_cb (NULL, trace, NULL);
+    if (global->res_default) win_full_res (trace);
     new_time (trace);		/* Realignes start and displays */
     vscroll_new (trace,0);	/* Realign time */
-    if (DTPRINT_ENTRY) printf ("fil_read_cb done!\n");
+    if (DTPRINT_ENTRY) printf ("fil_read done!\n");
 }
 
 void  fil_select_set_pattern (
@@ -367,7 +367,7 @@ void  get_file_name (
 		XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (filetypes[i].name) );
 		trace->fileselect.format_item[i] =
 		    XmCreatePushButtonGadget (trace->fileselect.format_menu,"pdbutton",arglist,1);
-		XtManageChild (trace->fileselect.format_item[i]);
+		DManageChild (trace->fileselect.format_item[i], trace, MC_NOKEYS);
 		DAddCallback (trace->fileselect.format_item[i], XmNactivateCallback, fil_format_option_cb, trace);
 	    }
 	}
@@ -375,7 +375,7 @@ void  get_file_name (
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Format"));
 	XtSetArg (arglist[1], XmNsubMenuId, trace->fileselect.format_menu);
 	trace->fileselect.format_option = XmCreateOptionMenu (trace->fileselect.work_area,"format",arglist,2);
-	XtManageChild (trace->fileselect.format_option);
+	DManageChild (trace->fileselect.format_option, trace, MC_NOKEYS);
 
 	/* Create save_ordering button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Preserve Signal Ordering"));
@@ -383,14 +383,14 @@ void  get_file_name (
 	XtSetArg (arglist[2], XmNy, 100);
 	XtSetArg (arglist[3], XmNshadowThickness, 1);
 	trace->fileselect.save_ordering = XmCreateToggleButton (trace->fileselect.work_area,"save_ordering",arglist,4);
-	XtManageChild (trace->fileselect.save_ordering);
+	DManageChild (trace->fileselect.save_ordering, trace, MC_NOKEYS);
 	
-	XtManageChild (trace->fileselect.work_area);
+	DManageChild (trace->fileselect.work_area, trace, MC_NOKEYS);
 	
 	XSync (global->display,0);
     }
     
-    XtManageChild (trace->fileselect.dialog);
+    DManageChild (trace->fileselect.dialog, trace, MC_NOKEYS);
 
     /* Ordering */
     XtSetArg (arglist[0], XmNset, global->save_ordering ? 1:0);
@@ -455,7 +455,7 @@ void fil_ok_cb (
     DFree (tmp);
     
     if (DTPRINT_FILE) printf ("In fil_ok_cb Filename=%s\n",trace->filename);
-    fil_read_cb (trace);
+    fil_read (trace);
 }
 
 
@@ -533,11 +533,11 @@ void help_doc_cb (
 	XtSetArg (arglist[6], XmNscrollHorizontal, FALSE);
 	trace->help_doc_text = XmCreateScrolledText (trace->help_doc,"textn",arglist,7);
 
-	XtManageChild (trace->help_doc_text);
+	DManageChild (trace->help_doc_text, trace, MC_NOKEYS);
     }
 
     /* manage the widget */
-    XtManageChild (trace->help_doc);
+    DManageChild (trace->help_doc, trace, MC_NOKEYS);
 }
 
 #pragma inline (fil_string_add_cptr)
@@ -699,7 +699,7 @@ void read_make_busses (
     char	postbusstuff[MAXSIGLEN];
 
     if (DTPRINT_ENTRY) printf ("In read_make_busses\n");
-    if (DTPRINT_BUSSES) print_sig_names (NULL, trace);
+    if (DTPRINT_BUSSES) sig_print_names (trace);
 
     /* Convert the signal names to the internal format */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -917,7 +917,7 @@ void read_make_busses (
 	sig_ptr->cptr = sig_ptr->bptr;
     }
 
-    if (DTPRINT_BUSSES) print_sig_names (NULL, trace);
+    if (DTPRINT_BUSSES) sig_print_names (trace);
 }
 
 

@@ -163,11 +163,11 @@
 #define DELU2		10	/* 2x DELU */
 
 #define PS_START_Y	600	/* Postscript y starting position */
-#define XMARGIN	 	5	/* Space on left margin before signals */
 
 #define IO_GRIDRES	1
 #define IO_RES		3
 
+#define XMARGIN	 	5	/* Space on left margin before signals */
 #define XSTART_MIN	50		/* Min Start X pos of signals on display (read_DECSIM) */
 #define XSTART_MARGIN	10		/* Additional added fudge factor for xstart */
 
@@ -181,6 +181,12 @@ typedef	int 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
 
 /**********************************************************************/
 /* Enums */
+
+/* DManageChild keysim or not */
+typedef enum {
+    MC_NOKEYS=FALSE,
+    MC_GLOBALKEYS=TRUE
+} MCKeys_t;
 
 /* Half/Quarter/Full page enums */
 #define QPAGE 4
@@ -268,6 +274,7 @@ typedef struct {
     Widget	menu;
     Widget	pdmenu[11];
     Widget	pdmenubutton[11];
+    Widget	pdsep[10];
     Widget	pdentry[22];
     Widget	pdentrybutton[72];
     Widget	pdsubbutton[4+(MAX_SRCH+2)*5];
@@ -275,11 +282,11 @@ typedef struct {
     uint_t	cur_highlight_pds;
     uint_t	cur_add_pds;
     uint_t	val_highlight_pds;
-    uint_t	pdm, pde, pds;		/* Temp for loading structure */
+    uint_t	pdm, pdmsep, pde, pds;		/* Temp for loading structure */
 } MenuWidgets;
 
 typedef struct {
-    Widget command;
+    Widget form;
     Widget begin_but;
     Widget goto_but;
     Widget resdec_but;
@@ -294,7 +301,8 @@ typedef struct {
 } CommandWidgets;
 
 typedef struct {
-    Widget customize;
+    Widget dialog;
+    Widget form;
     Widget page_label;
     Widget rpage, tpage1, tpage2, tpage3;
     Widget bus_label;
@@ -307,6 +315,7 @@ typedef struct {
     Widget cursor_state;
     Widget click_to_edge;
     Widget refreshing;
+    Widget sep;
     Widget b1;
     Widget b2;
     Widget b3;
@@ -325,7 +334,7 @@ typedef struct {
 } RangeWidgets;
 
 typedef struct {
-    Widget customize;
+    Widget dialog;
     Widget form;
     Widget size_menu;
     Widget size_option;
@@ -341,7 +350,9 @@ typedef struct {
     Widget all_signals;
     RangeWidgets begin_range;
     RangeWidgets end_range;
+    Widget sep;
     Widget print;
+    Widget defaults;
     Widget cancel;
 } PrintWidgets;
 
@@ -352,18 +363,21 @@ typedef struct {
     Widget cursors_dotted[MAX_SRCH+1];
     Widget signals[MAX_SRCH+1];
     Widget text;
+    Widget sep;
     Widget ok;
     Widget apply;
     Widget cancel;
 } AnnotateWidgets;
 
 typedef struct {
-    Widget add;
     Widget search;
+    Widget form;
+    Widget add;
     Widget label1, label2, label3;
     Widget label4, label5;
     Widget enable[MAX_SRCH];
     Widget text[MAX_SRCH];
+    Widget sep;
     Widget ok;
     Widget apply;
     Widget cancel;
@@ -371,13 +385,14 @@ typedef struct {
 
 typedef struct {
     Widget search;
+    Widget form;
     Widget label1, label2, label3;
     Widget label4, label5, label6;
-    Widget form;
     Widget enable[MAX_SRCH];
     Widget cursor[MAX_SRCH];
     Widget text[MAX_SRCH];
     Widget signal[MAX_SRCH];
+    Widget sep;
     Widget ok;
     Widget apply;
     Widget cancel;
@@ -392,9 +407,9 @@ typedef struct {
 
 typedef struct {
     Widget dialog;
+    Widget form;
     Widget work_area;
     Widget save_ordering;
-    Widget form;
     Widget config_label;
     Widget config_enable[MAXCFGFILES];
     Widget config_filename[MAXCFGFILES];
@@ -406,14 +421,16 @@ typedef struct {
 } ExamineWidgets;
 
 typedef struct {
-    Widget popup;
+    Widget dialog;
+    Widget form;
     Widget text;
-    Widget ok;
     Widget label1,label2;
-    Widget cancel;
     Widget pulldown;
     Widget pulldownbutton[MAX_SRCH+1];
     Widget options;
+    Widget sep;
+    Widget ok;
+    Widget cancel;
 } GotoWidgets;
 
 typedef struct {
@@ -438,11 +455,13 @@ typedef struct {
 } GridWidgets;
 
 typedef struct {
-    Widget popup;
+    Widget dialog;
+    Widget form;
+    GridWidgets  grid[MAXGRIDS];
+    Widget sep;
     Widget ok;
     Widget apply;
     Widget cancel;
-    GridWidgets  grid[MAXGRIDS];
 } GridsWidgets;
 
 typedef struct {
@@ -451,8 +470,9 @@ typedef struct {
     Widget label4, label5;
     Widget enable[MAX_SRCH];
     Widget cursor[MAX_SRCH];
-    Widget add_sigs, add_pat, add_all;
+    Widget add_sigs, add_sigs_form, add_pat, add_all;
     Widget delete_sigs, delete_pat, delete_all, delete_const;
+    Widget sep;
     Widget ok;
     Widget apply;	/* ?? */
     Widget cancel;

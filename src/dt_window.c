@@ -65,6 +65,8 @@
 #include <Xm/PushBG.h>
 #include <Xm/ToggleB.h>
 #include <Xm/Text.h>
+#include <Xm/Form.h>
+#include <Xm/Separator.h>
 
 #include "functions.h"
 
@@ -100,10 +102,9 @@ void win_refresh_cb (
 }
 
 void hscroll_unitinc_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In hscroll_unitinc - trace=%p  old_time=%d",trace,global->time);
     global->time += trace->grid[0].period;
     if (DTPRINT_ENTRY) printf (" new time=%d\n",global->time);
@@ -112,20 +113,18 @@ void hscroll_unitinc_cb (
 }
 
 void hscroll_unitdec_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In hscroll_unitdec - trace=%p  old_time=%d",trace,global->time);
     global->time -= trace->grid[0].period;
     new_time (trace);
 }
 
 void hscroll_pageinc_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In hscroll_pageinc - trace=%p  old_time=%d",trace,global->time);
 
     switch ( global->pageinc ) {
@@ -146,10 +145,9 @@ void hscroll_pageinc_cb (
 }
 
 void hscroll_pagedec_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In hscroll_pagedec - trace=%p  old_time=%d pageinc=%d",trace,global->time,global->pageinc);
 
     switch ( global->pageinc ) {
@@ -170,10 +168,9 @@ void hscroll_pagedec_cb (
 }
 
 void hscroll_drag_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     int inc;
 
     XtSetArg (arglist[0], XmNvalue, &inc);
@@ -185,28 +182,27 @@ void hscroll_drag_cb (
 }
 
 void win_begin_cb (
-    Widget	w,
-    Trace	*trace)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_begin_cb trace=%p\n",trace);
     global->time = trace->start_time;
     new_time (trace);
 }
 
 void win_end_cb (
-    Widget	w,
-    Trace	*trace)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_end_cb trace=%p\n",trace);
     global->time = trace->end_time - TIME_WIDTH (trace);
     new_time (trace);
 }
 
 void win_namescroll_change_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     int inc;
 
     if (DTPRINT_ENTRY) printf ("In win_namescroll_change trace=%p\n",trace);
@@ -257,42 +253,37 @@ void vscroll_new (
 }
 
 void vscroll_unitinc_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     vscroll_new (trace, 1);
 }
 
 void vscroll_unitdec_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     vscroll_new (trace, -1);
 }
 
 void vscroll_pageinc_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     vscroll_new (trace, trace->numsigvis);
 }
 
 void vscroll_pagedec_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     vscroll_new (trace, -(trace->numsigvis));
 }
 
 void vscroll_drag_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     int		inc;
 
     if (DTPRINT_ENTRY) printf ("In vscroll_drag trace=%p\n",trace);
@@ -308,27 +299,10 @@ void vscroll_drag_cb (
     vscroll_new (trace, inc);
 }
 
-void vscroll_bot_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
-{
-    if (DTPRINT_ENTRY) printf ("In vscroll_bot trace=%p\n",trace);
-}
-
-void vscroll_top_cb (
-    Widget	w,
-    Trace	*trace,
-    XmScrollBarCallbackStruct *cb)
-{
-    if (DTPRINT_ENTRY) printf ("In vscroll_top trace=%p\n",trace);
-}
-
 void win_chg_res_cb (
-    Widget	w,
-    Trace	*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_chg_res_cb - trace=%p\n",trace);
     get_data_popup (trace,"Resolution",IO_RES);
 }
@@ -362,10 +336,9 @@ void new_res (
 }
 
 void win_inc_res_cb (
-    Widget	w,
-    Trace	*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_inc_res_cb - trace=%p\n",trace);
 
     /* increase the resolution by 10% */
@@ -373,10 +346,9 @@ void win_inc_res_cb (
 }
 
 void win_dec_res_cb (
-    Widget	w,
-    Trace	*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_dec_res_cb - trace=%p\n",trace);
 
     /* decrease the resolution by 10% */
@@ -384,9 +356,14 @@ void win_dec_res_cb (
 }
 
 void win_full_res_cb (
-    Widget	w,
-    Trace	*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
+{
+    Trace *trace = widget_to_trace(w);
+    win_full_res (trace);
+}
+
+void win_full_res (
+    Trace *trace)
 {
     if (DTPRINT_ENTRY) printf ("In win_full_res_cb - trace=%p\n",trace);
 
@@ -408,10 +385,9 @@ void win_full_res_cb (
 }
 
 void win_zoom_res_cb (
-    Widget	w,
-    Trace	*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_zoom_res_cb - trace=%p\n",trace);
 
     /* process all subsequent button presses as res_zoom clicks */
@@ -469,53 +445,61 @@ void res_zoom_click_ev (
 /****************************** GOTO ******************************/
 
 void    win_goto_cb (
-    Widget	w,
-    Trace	*trace,
-    XmSelectionBoxCallbackStruct *cb)
+    Widget	w)
 {
     int		i;
+    Trace *trace = widget_to_trace(w);
     
     if (DTPRINT_ENTRY) printf ("In win_goto_cb - trace=%p\n",trace);
     
-    if (!trace->gotos.popup) {
+    if (!trace->gotos.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Goto Time") );
-	/* XtSetArg (arglist[2], XmNwidth, 500);
-	   XtSetArg (arglist[3], XmNheight, 400); */
-	trace->gotos.popup = XmCreateBulletinBoardDialog (trace->work,"goto",arglist,2);
-	DAddCallback (trace->gotos.popup, XmNmapCallback, win_goto_option_cb, trace);
+	trace->gotos.dialog = XmCreateFormDialog (trace->work,"goto",arglist,2);
+	DAddCallback (trace->gotos.dialog, XmNmapCallback, win_goto_option_cb, trace);
 	
+	XtSetArg (arglist[0], XmNverticalSpacing, 10);
+	XtSetArg (arglist[0], XmNhorizontalSpacing, 10);
+	trace->gotos.form = XmCreateForm (trace->gotos.dialog, "form", arglist, 2);
+	DManageChild (trace->gotos.form, trace, MC_NOKEYS);
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Time"));
-	XtSetArg (arglist[1], XmNx, 5);
-	XtSetArg (arglist[2], XmNy, 15);
-	trace->gotos.label1 = XmCreateLabel (trace->gotos.popup,"label1",arglist,3);
-	XtManageChild (trace->gotos.label1);
-	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("ns"));
-	XtSetArg (arglist[1], XmNx, 170);
-	XtSetArg (arglist[2], XmNy, 15);
-	trace->gotos.label2 = XmCreateLabel (trace->gotos.popup,"label2",arglist,3);
-	XtManageChild (trace->gotos.label2);
+	XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNtopOffset, 5);
+	XtSetArg (arglist[3], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[4], XmNleftOffset, 5);
+	trace->gotos.label1 = XmCreateLabel (trace->gotos.form,"label1",arglist,5);
+	DManageChild (trace->gotos.label1, trace, MC_NOKEYS);
 	
 	/* create the goto text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 12);
-	XtSetArg (arglist[2], XmNx, 50);
-	XtSetArg (arglist[3], XmNy, 10);
-	XtSetArg (arglist[4], XmNresizeHeight, FALSE);
-	XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
-	trace->gotos.text = XmCreateText (trace->gotos.popup,"textn",arglist,6);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[3], XmNtopOffset, 5);
+	XtSetArg (arglist[4], XmNleftAttachment, XmATTACH_WIDGET );	
+	XtSetArg (arglist[5], XmNleftWidget, trace->gotos.label1 );
+	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
+	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
+	trace->gotos.text = XmCreateText (trace->gotos.form,"textn",arglist,8);
 	DAddCallback (trace->gotos.text, XmNactivateCallback, win_goto_ok_cb, trace);
-	XtManageChild (trace->gotos.text);
+	DManageChild (trace->gotos.text, trace, MC_NOKEYS);
 	    
+ 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("ns"));
+	XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNtopOffset, 5);
+	XtSetArg (arglist[3], XmNleftAttachment, XmATTACH_WIDGET );	
+	XtSetArg (arglist[4], XmNleftWidget, trace->gotos.text );
+ 	trace->gotos.label2 = XmCreateLabel (trace->gotos.form,"label2",arglist,5);
+	DManageChild (trace->gotos.label2, trace, MC_NOKEYS);
+
 	/* Make option menu */
-	trace->gotos.pulldown = XmCreatePulldownMenu (trace->gotos.popup,"pulldown",arglist,0);
+	trace->gotos.pulldown = XmCreatePulldownMenu (trace->gotos.form,"pulldown",arglist,0);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("None") );
 	trace->gotos.pulldownbutton[0] =
 	    XmCreatePushButtonGadget (trace->gotos.pulldown,"pdbutton0",arglist,1);
 	DAddCallback (trace->gotos.pulldownbutton[0], XmNactivateCallback, win_goto_option_cb, trace);
-	XtManageChild (trace->gotos.pulldownbutton[0]);
+	DManageChild (trace->gotos.pulldownbutton[0], trace, MC_NOKEYS);
 
 	for (i=0; i<MAX_SRCH; i++) {
 	    XtSetArg (arglist[0], XmNbackground, trace->xcolornums[i] );
@@ -524,31 +508,47 @@ void    win_goto_cb (
 	    trace->gotos.pulldownbutton[i+1] =
 		XmCreatePushButton (trace->gotos.pulldown,"",arglist,3);
 	    DAddCallback (trace->gotos.pulldownbutton[i+1], XmNactivateCallback, win_goto_option_cb, trace);
-	    XtManageChild (trace->gotos.pulldownbutton[i+1]);
+	    DManageChild (trace->gotos.pulldownbutton[i+1], trace, MC_NOKEYS);
 	}
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Place Cursor:"));
-	XtSetArg (arglist[1], XmNx, 5);
-	XtSetArg (arglist[2], XmNy, 50);
-	XtSetArg (arglist[3], XmNsubMenuId, trace->gotos.pulldown);
-	trace->gotos.options = XmCreateOptionMenu (trace->gotos.popup,"options",arglist,4);
-	XtManageChild (trace->gotos.options);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNleftOffset, 5);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );	
+	XtSetArg (arglist[4], XmNtopWidget, trace->gotos.text );
+	XtSetArg (arglist[5], XmNsubMenuId, trace->gotos.pulldown);
+	trace->gotos.options = XmCreateOptionMenu (trace->gotos.form,"options",arglist,6);
+	DManageChild (trace->gotos.options, trace, MC_NOKEYS);
+	
+
+	/* Create Separator */
+	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->gotos.options );
+	XtSetArg (arglist[4], XmNtopOffset, 10);
+	trace->gotos.sep = XmCreateSeparator (trace->gotos.form, "sep",arglist,5);
+	DManageChild (trace->gotos.sep, trace, MC_NOKEYS);
 	
 	/* Create OK button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
 	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 100);
-	trace->gotos.ok = XmCreatePushButton (trace->gotos.popup,"ok",arglist,3);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->gotos.sep );
+	XtSetArg (arglist[4], XmNtopOffset, 10);
+	trace->gotos.ok = XmCreatePushButton (trace->gotos.form,"ok",arglist,5);
 	DAddCallback (trace->gotos.ok, XmNactivateCallback, win_goto_ok_cb, trace);
-	XtManageChild (trace->gotos.ok);
+	DManageChild (trace->gotos.ok, trace, MC_NOKEYS);
 	
 	/* create cancel button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
 	XtSetArg (arglist[1], XmNx, 140);
-	XtSetArg (arglist[2], XmNy, 100);
-	trace->gotos.cancel = XmCreatePushButton (trace->gotos.popup,"cancel",arglist,3);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->gotos.sep );
+	XtSetArg (arglist[4], XmNtopOffset, 10);
+	trace->gotos.cancel = XmCreatePushButton (trace->gotos.form,"cancel",arglist,5);
 	DAddCallback (trace->gotos.cancel, XmNactivateCallback, win_goto_cancel_cb, trace);
-	XtManageChild (trace->gotos.cancel);
+	DManageChild (trace->gotos.cancel, trace, MC_NOKEYS);
     }
     
     /* right units */
@@ -561,11 +561,11 @@ void    win_goto_cb (
     XmTextSetString (trace->gotos.text, "");
 
     /* Must redraw color box on any exposures */
-    XtAddEventHandler (trace->gotos.popup, ExposureMask, TRUE, 
+    XtAddEventHandler (trace->gotos.dialog, ExposureMask, TRUE, 
 		       (XtEventHandler)win_goto_option_cb, trace);
 
-    /* manage the popup on the screen */
-    XtManageChild (trace->gotos.popup);
+    /* manage the dialog on the screen */
+    DManageChild (trace->gotos.dialog, trace, MC_NOKEYS);
     XSync (global->display,0);
 
     /* Update button - must be after manage*/
@@ -633,9 +633,9 @@ void    win_goto_ok_cb (
     time = string_to_time (trace, strg);
 
     /* unmanage the popup window */
-    XtRemoveEventHandler (trace->gotos.popup, ExposureMask, TRUE,
+    XtRemoveEventHandler (trace->gotos.dialog, ExposureMask, TRUE,
 			  (XtEventHandler)win_goto_option_cb, trace);
-    XtUnmanageChild (trace->gotos.popup);
+    XtUnmanageChild (trace->gotos.dialog);
 
     if (time > 0) {
 	/* Center it on the screen */
@@ -668,15 +668,13 @@ void    win_goto_cancel_cb (
     if (DTPRINT_ENTRY) printf ("In win_goto_cancel_cb - trace=%p\n",trace);
     
     /* unmanage the popup on the screen */
-    XtRemoveEventHandler (trace->gotos.popup, ExposureMask, TRUE,
+    XtRemoveEventHandler (trace->gotos.dialog, ExposureMask, TRUE,
 			  (XtEventHandler)win_goto_option_cb, trace);
-    XtUnmanageChild (trace->gotos.popup);
+    XtUnmanageChild (trace->gotos.dialog);
 }
 
 void    debug_toggle_print_cb (
-    Widget	w,
-    Trace	*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget	w)
 {
     if (DTPRINT) DTPRINT = 0;
     else DTPRINT = -1;

@@ -66,6 +66,8 @@
 #include <Xm/ToggleB.h>
 #include <Xm/SelectioB.h>
 #include <Xm/Text.h>
+#include <Xm/Form.h>
+#include <Xm/Separator.h>
 #include <Xm/BulletinB.h>
 
 #include "functions.h"
@@ -73,6 +75,7 @@
 /**********************************************************************/
 
 extern void	grid_customize_ok_cb(), grid_customize_apply_cb(), grid_customize_reset_cb(), grid_customize_sensitives_cb(), grid_customize_option_cb();
+extern void	grid_customize_align_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
 
 
 /****************************** AUTO GRIDS ******************************/
@@ -107,9 +110,8 @@ void	grid_calc_auto (
 	return;	
     }
 
-    cptr = sig_ptr->cptr;
     /* Skip to end */
-    while ( cptr->sttime.time != EOT) cptr += sig_ptr->lws;
+    cptr = cptr_at_time (sig_ptr, EOT);
     /* Ignore last - determined by EOT, not period */
     if ( cptr != sig_ptr->cptr) cptr -= sig_ptr->lws;
 
@@ -260,14 +262,14 @@ void    grid_align_choose (
 }
 
 
-void grid_align_cb (
+void grid_customize_align_cb (
     Widget		w,
     Trace		*trace,
     XmAnyCallbackStruct	*cb)
 {
     int			grid_num;
 
-    if (DTPRINT_ENTRY) printf ("In grid_align_cb - trace=%p\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_customize_align_cb - trace=%p\n",trace);
 
     /*   Determine which grid was selected based on which array */
     for (grid_num = 0; grid_num < (MAXGRIDS-1); grid_num++) {	/* -1 as MAXGRID will be the "default if none match*/
@@ -288,15 +290,14 @@ void grid_align_cb (
     draw_needed (trace);
 
     /* Show new menu */
-    grid_customize_cb (w,trace,cb);
+    grid_customize_cb (trace->main);
 }
 
 
 void grid_reset_cb (
-    Widget		w,
-    Trace		*trace,
-    XmAnyCallbackStruct	*cb)
+    Widget		w)
 {
+    Trace *trace = widget_to_trace(w);
     int		grid_num;
     Grid	*grid_ptr;
 
@@ -382,7 +383,7 @@ void    grid_customize_widget_update_cb (
 	XtSetArg (arglist[0], XmNmenuHistory, trace->gridscus.grid[grid_num].pulldownbutton[grid_ptr->color]);
 	XtSetValues (trace->gridscus.grid[grid_num].options, arglist, 1);
 	/* Must redraw color box on any exposures */
-	XtAddEventHandler (trace->gridscus.popup, ExposureMask, TRUE, grid_customize_option_cb, trace);
+	XtAddEventHandler (trace->gridscus.dialog, ExposureMask, TRUE, grid_customize_option_cb, trace);
 
 	/* period Mode */
 	opt=(int)grid_ptr->period_auto;	/* Weedy, enums are defined to be equiv to descriptions */
@@ -400,10 +401,9 @@ void    grid_customize_widget_update_cb (
 }
 
 void    grid_customize_cb (
-    Widget	w,
-    Trace	*trace,
-    XmAnyCallbackStruct *cb)
+    Widget	w)
 {
+    Trace *trace = widget_to_trace(w);
     int		grid_num;
     int		y=10, xb=0, ymax=0;
     char	strg[30];
@@ -411,19 +411,23 @@ void    grid_customize_cb (
     
     if (DTPRINT_ENTRY) printf ("In grid_customize_cb - trace=%p\n",trace);
     
-    if (!trace->gridscus.popup) {
+    if (!trace->gridscus.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Grid Customization") );
-	trace->gridscus.popup = XmCreateBulletinBoardDialog (trace->work,"search",arglist,2);
+	trace->gridscus.dialog = XmCreateBulletinBoardDialog (trace->work,"search",arglist,2);
 	
+	XtSetArg (arglist[0], XmNverticalSpacing, 7);
+	trace->gridscus.form = XmCreateForm (trace->gridscus.dialog, "form", arglist, 1);
+	DManageChild (trace->gridscus.form, trace, MC_NOKEYS);
+
 	for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 	    /* Create label for this grid */
 	    sprintf (strg, "Grid #%d", grid_num);
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (strg));
 	    XtSetArg (arglist[1], XmNx, xb+10);
 	    XtSetArg (arglist[2], XmNy, y);
-	    trace->gridscus.grid[grid_num].label1 = XmCreateLabel (trace->gridscus.popup,"label",arglist,3);
-	    XtManageChild (trace->gridscus.grid[grid_num].label1);
+	    trace->gridscus.grid[grid_num].label1 = XmCreateLabel (trace->gridscus.form,"label",arglist,3);
+	    DManageChild (trace->gridscus.grid[grid_num].label1, trace, MC_NOKEYS);
 	
 	    /* signal name */
 	    y += 20;
@@ -433,8 +437,8 @@ void    grid_customize_cb (
 	    XtSetArg (arglist[3], XmNy, y);
 	    XtSetArg (arglist[4], XmNresizeHeight, FALSE);
 	    XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
-	    trace->gridscus.grid[grid_num].signal = XmCreateText (trace->gridscus.popup,"textn",arglist,6);
-	    XtManageChild (trace->gridscus.grid[grid_num].signal);
+	    trace->gridscus.grid[grid_num].signal = XmCreateText (trace->gridscus.form,"textn",arglist,6);
+	    DManageChild (trace->gridscus.grid[grid_num].signal, trace, MC_NOKEYS);
 	    
 	    /* visible button */
 	    y += 40;
@@ -442,19 +446,19 @@ void    grid_customize_cb (
 	    XtSetArg (arglist[1], XmNy, y);
 	    XtSetArg (arglist[2], XmNlabelString, XmStringCreateSimple ("Visible"));
 	    XtSetArg (arglist[3], XmNshadowThickness, 1);
-	    trace->gridscus.grid[grid_num].visible = XmCreateToggleButton (trace->gridscus.popup,"visn",arglist,4);
-	    XtManageChild (trace->gridscus.grid[grid_num].visible);
+	    trace->gridscus.grid[grid_num].visible = XmCreateToggleButton (trace->gridscus.form,"visn",arglist,4);
+	    DManageChild (trace->gridscus.grid[grid_num].visible, trace, MC_NOKEYS);
 	    
 	    /* double button */
 	    XtSetArg (arglist[0], XmNx, xb+100);
 	    XtSetArg (arglist[1], XmNy, y);
 	    XtSetArg (arglist[2], XmNlabelString, XmStringCreateSimple ("Wide Line"));
 	    XtSetArg (arglist[3], XmNshadowThickness, 1);
-	    trace->gridscus.grid[grid_num].wide_line = XmCreateToggleButton (trace->gridscus.popup,"wideln",arglist,4);
-	    XtManageChild (trace->gridscus.grid[grid_num].wide_line);
+	    trace->gridscus.grid[grid_num].wide_line = XmCreateToggleButton (trace->gridscus.form,"wideln",arglist,4);
+	    DManageChild (trace->gridscus.grid[grid_num].wide_line, trace, MC_NOKEYS);
 	    
 	    /*Color options */
-	    trace->gridscus.grid[grid_num].pulldown = XmCreatePulldownMenu (trace->gridscus.popup,"pulldown",arglist,0);
+	    trace->gridscus.grid[grid_num].pulldown = XmCreatePulldownMenu (trace->gridscus.form,"pulldown",arglist,0);
 
 	    for (i=0; i<=MAX_SRCH; i++) {
 		XtSetArg (arglist[0], XmNbackground, trace->xcolornums[i] );
@@ -464,43 +468,43 @@ void    grid_customize_cb (
 		trace->gridscus.grid[grid_num].pulldownbutton[i] =
 		    XmCreatePushButton (trace->gridscus.grid[grid_num].pulldown,"",arglist,4);
 		DAddCallback (trace->gridscus.grid[grid_num].pulldownbutton[i], XmNactivateCallback, grid_customize_option_cb, trace);
-		XtManageChild (trace->gridscus.grid[grid_num].pulldownbutton[i]);
+		DManageChild (trace->gridscus.grid[grid_num].pulldownbutton[i], trace, MC_NOKEYS);
 	    }
 	    XtSetArg (arglist[0], XmNsubMenuId, trace->gridscus.grid[grid_num].pulldown);
 	    XtSetArg (arglist[1], XmNx, xb+200);
 	    XtSetArg (arglist[2], XmNy, y-4);
-	    trace->gridscus.grid[grid_num].options = XmCreateOptionMenu (trace->gridscus.popup,"options",arglist,3);
-	    XtManageChild (trace->gridscus.grid[grid_num].options);
+	    trace->gridscus.grid[grid_num].options = XmCreateOptionMenu (trace->gridscus.form,"options",arglist,3);
+	    DManageChild (trace->gridscus.grid[grid_num].options, trace, MC_NOKEYS);
 	
 	    /* auto button */
 	    y += 40;
-	    trace->gridscus.grid[grid_num].autoperiod_pulldown = XmCreatePulldownMenu (trace->gridscus.popup,"autoperiod_pulldown",arglist,0);
+	    trace->gridscus.grid[grid_num].autoperiod_pulldown = XmCreatePulldownMenu (trace->gridscus.form,"autoperiod_pulldown",arglist,0);
 
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Manual Periodic") );
 	    trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoperiod_pulldown,"pdbutton0",arglist,1);
 	    DAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
-	    XtManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0]);
+	    DManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0], trace, MC_NOKEYS);
 
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Auto Periodic") );
 	    trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoperiod_pulldown,"pdbutton0",arglist,1);
 	    DAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
-	    XtManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1]);
+	    DManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1], trace, MC_NOKEYS);
 
 	    /*
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Auto Edges Only") );
 	    trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[2] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoperiod_pulldown,"pdbutton0",arglist,1);
 	    DAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[2], XmNactivateCallback, grid_customize_sensitives_cb, trace);
-	    XtManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[2]);
+	    DManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[2], trace, MC_NOKEYS);
 	    */
 
 	    XtSetArg (arglist[0], XmNsubMenuId, trace->gridscus.grid[grid_num].autoperiod_pulldown);
 	    XtSetArg (arglist[1], XmNx, xb+15);
 	    XtSetArg (arglist[2], XmNy, y-3);
-	    trace->gridscus.grid[grid_num].autoperiod_options = XmCreateOptionMenu (trace->gridscus.popup,"options",arglist,3);
-	    XtManageChild (trace->gridscus.grid[grid_num].autoperiod_options);
+	    trace->gridscus.grid[grid_num].autoperiod_options = XmCreateOptionMenu (trace->gridscus.form,"options",arglist,3);
+	    DManageChild (trace->gridscus.grid[grid_num].autoperiod_options, trace, MC_NOKEYS);
 
 	    /* Period */
 	    XtSetArg (arglist[0], XmNrows, 1);
@@ -509,91 +513,99 @@ void    grid_customize_cb (
 	    XtSetArg (arglist[3], XmNy, y);
 	    XtSetArg (arglist[4], XmNresizeHeight, FALSE);
 	    XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
-	    trace->gridscus.grid[grid_num].period = XmCreateText (trace->gridscus.popup,"textn",arglist,6);
-	    XtManageChild (trace->gridscus.grid[grid_num].period);
+	    trace->gridscus.grid[grid_num].period = XmCreateText (trace->gridscus.form,"textn",arglist,6);
+	    DManageChild (trace->gridscus.grid[grid_num].period, trace, MC_NOKEYS);
 
 	    /* auto button */
 	    y += 40;
-	    trace->gridscus.grid[grid_num].autoalign_pulldown = XmCreatePulldownMenu (trace->gridscus.popup,"autoalign_pulldown",arglist,0);
+	    trace->gridscus.grid[grid_num].autoalign_pulldown = XmCreatePulldownMenu (trace->gridscus.form,"autoalign_pulldown",arglist,0);
 
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Manual Edge") );
 	    trace->gridscus.grid[grid_num].autoalign_pulldownbutton[0] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoalign_pulldown,"pdbutton0",arglist,1);
 	    DAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[0], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
-	    XtManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[0]);
+	    DManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[0], trace, MC_NOKEYS);
 
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Assertion Edge") );
 	    trace->gridscus.grid[grid_num].autoalign_pulldownbutton[1] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoalign_pulldown,"pdbutton0",arglist,1);
 	    DAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[1], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
-	    XtManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[1]);
+	    DManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[1], trace, MC_NOKEYS);
 
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Deassertion Edge") );
 	    trace->gridscus.grid[grid_num].autoalign_pulldownbutton[2] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoalign_pulldown,"pdbutton0",arglist,1);
 	    DAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[2], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
-	    XtManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[2]);
+	    DManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[2], trace, MC_NOKEYS);
 
 	    XtSetArg (arglist[0], XmNsubMenuId, trace->gridscus.grid[grid_num].autoalign_pulldown);
 	    XtSetArg (arglist[1], XmNx, xb+15);
 	    XtSetArg (arglist[2], XmNy, y-3);
-	    trace->gridscus.grid[grid_num].autoalign_options = XmCreateOptionMenu (trace->gridscus.popup,"options",arglist,3);
-	    XtManageChild (trace->gridscus.grid[grid_num].autoalign_options);
+	    trace->gridscus.grid[grid_num].autoalign_options = XmCreateOptionMenu (trace->gridscus.form,"options",arglist,3);
+	    DManageChild (trace->gridscus.grid[grid_num].autoalign_options, trace, MC_NOKEYS);
 
 	    /* Edge */
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Set Alignment") );
 	    XtSetArg (arglist[1], XmNx, xb+195);
 	    XtSetArg (arglist[2], XmNy, y);
-	    trace->gridscus.grid[grid_num].align = XmCreatePushButton (trace->gridscus.popup,"align",arglist,3);
-	    DAddCallback (trace->gridscus.grid[grid_num].align, XmNactivateCallback, (XtCallbackProc)grid_align_cb, trace);
-	    XtManageChild (trace->gridscus.grid[grid_num].align);
+	    trace->gridscus.grid[grid_num].align = XmCreatePushButton (trace->gridscus.form,"align",arglist,3);
+	    DAddCallback (trace->gridscus.grid[grid_num].align, XmNactivateCallback, (XtCallbackProc)grid_customize_align_cb, trace);
+	    DManageChild (trace->gridscus.grid[grid_num].align, trace, MC_NOKEYS);
 
 	    y += 60;
 	    ymax = MAX (y, ymax);
 	    if (y > 400) { xb += 350; y = 10; }
 	}
 
-	y=ymax;	/* Make sure buttons are below everything */
-	y+= 15;
-
+	/* Create Separator */
+	XtSetArg (arglist[0], XmNy, ymax );
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNrightAttachment, XmATTACH_FORM );
+	trace->gridscus.sep = XmCreateSeparator (trace->gridscus.form, "sep",arglist,3);
+	DManageChild (trace->gridscus.sep, trace, MC_NOKEYS);
+	
 	/* Create OK button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
 	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, y);
-	trace->gridscus.ok = XmCreatePushButton (trace->gridscus.popup,"ok",arglist,3);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->gridscus.sep );
+	trace->gridscus.ok = XmCreatePushButton (trace->gridscus.form,"ok",arglist,4);
 	DAddCallback (trace->gridscus.ok, XmNactivateCallback, grid_customize_ok_cb, trace);
-	XtManageChild (trace->gridscus.ok);
+	DManageChild (trace->gridscus.ok, trace, MC_NOKEYS);
 	
 	/* create apply button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Apply") );
 	XtSetArg (arglist[1], XmNx, 70);
-	XtSetArg (arglist[2], XmNy, y);
-	trace->gridscus.apply = XmCreatePushButton (trace->gridscus.popup,"apply",arglist,3);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->gridscus.sep );
+	trace->gridscus.apply = XmCreatePushButton (trace->gridscus.form,"apply",arglist,4);
 	DAddCallback (trace->gridscus.apply, XmNactivateCallback, grid_customize_apply_cb, trace);
-	XtManageChild (trace->gridscus.apply);
+	DManageChild (trace->gridscus.apply, trace, MC_NOKEYS);
 	
 	/* create reset button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Reset") );
 	XtSetArg (arglist[1], XmNx, 140);
-	XtSetArg (arglist[2], XmNy, y);
-	trace->gridscus.apply = XmCreatePushButton (trace->gridscus.popup,"reset",arglist,3);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->gridscus.sep );
+	trace->gridscus.apply = XmCreatePushButton (trace->gridscus.form,"reset",arglist,4);
 	DAddCallback (trace->gridscus.apply, XmNactivateCallback, grid_customize_reset_cb, trace);
-	XtManageChild (trace->gridscus.apply);
+	DManageChild (trace->gridscus.apply, trace, MC_NOKEYS);
 	
 	/* create cancel button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
 	XtSetArg (arglist[1], XmNx, 200);
-	XtSetArg (arglist[2], XmNy, y);
-	trace->gridscus.cancel = XmCreatePushButton (trace->gridscus.popup,"cancel",arglist,3);
-	DAddCallback (trace->gridscus.cancel, XmNactivateCallback, unmanage_cb, trace->gridscus.popup);
-	XtManageChild (trace->gridscus.cancel);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->gridscus.sep );
+	trace->gridscus.cancel = XmCreatePushButton (trace->gridscus.form,"cancel",arglist,4);
+	DAddCallback (trace->gridscus.cancel, XmNactivateCallback, unmanage_cb, trace->gridscus.dialog);
+	DManageChild (trace->gridscus.cancel, trace, MC_NOKEYS);
     }
     
     /* Copy settings to local area to allow cancel to work */
     grid_customize_widget_update_cb (NULL, trace, NULL);
 
-    /* manage the popup on the screen */
-    XtManageChild (trace->gridscus.popup);
+    /* manage the dialog on the screen */
+    DManageChild (trace->gridscus.dialog, trace, MC_NOKEYS);
 }
 
 void    grid_customize_option_cb (
@@ -657,7 +669,7 @@ void    grid_customize_ok_cb (
 	grid_ptr->align_auto = option_to_number(trace->gridscus.grid[grid_num].autoalign_options, trace->gridscus.grid[grid_num].autoalign_pulldownbutton, 2);
     }
     
-    XtUnmanageChild (trace->gridscus.popup);
+    XtUnmanageChild (trace->gridscus.dialog);
 
     grid_calc_autos (trace);
 }
@@ -670,7 +682,7 @@ void    grid_customize_apply_cb (
     if (DTPRINT_ENTRY) printf ("In grid_customize_apply_cb - trace=%p\n",trace);
 
     grid_customize_ok_cb (w,trace,cb);
-    grid_customize_cb (w,trace,cb);
+    grid_customize_cb (trace->main);
 }
 
 void    grid_customize_reset_cb (
@@ -680,8 +692,8 @@ void    grid_customize_reset_cb (
 {
     if (DTPRINT_ENTRY) printf ("In grid_customize_resize_cb - trace=%p\n",trace);
 
-    XtUnmanageChild (trace->gridscus.popup);
-    grid_reset_cb (w, trace, cb);
-    grid_customize_cb (w,trace,cb);
+    XtUnmanageChild (trace->gridscus.dialog);
+    grid_reset_cb (trace->main);
+    grid_customize_cb (trace->main);
 }
 
