@@ -14,6 +14,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed a postscript bug which would truncate the timestamps. [Rainer
 	Mueller]
 
+****	Latest LessTIF Fixed a bug which would omit cursor colors in scrollbar.
+
 ** Enhancements:
 
 **	Signal Clear Highlight allows for unhighlighting all signals.
