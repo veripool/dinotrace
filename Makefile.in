@@ -232,4 +232,6 @@ dist: $(DISTDEP) maintainer-copy
 	chmod -R a+r $$distname; \
 	tar chf $$distname.tar $$distname; \
 	gzip --force --best $$distname.tar; \
-	rm -fr $$distname
+	rm -fr $$distname; \
+	uuencode $$distname.tar.gz $$distname.tar.gz > $$distname.tar.gz.uu; \
+
