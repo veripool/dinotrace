@@ -292,6 +292,7 @@ typedef struct {
     Widget search;
     Widget label1, label2, label3;
     Widget label4, label5, label6;
+    Widget form;
     Widget enable[MAX_SRCH];
     Widget cursor[MAX_SRCH];
     Widget text[MAX_SRCH];
