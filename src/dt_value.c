@@ -82,6 +82,7 @@ static uint_t val_bit (
     int bit)
     /* Return bit value, understanding 4-state, may be 0/1/U/Z */
 {
+    int bitpos = bit & 0x1f;
     if (bit<0) return(0);
     switch (value_ptr->siglw.stbits.state) {
     case STATE_0:
@@ -91,27 +92,27 @@ static uint_t val_bit (
     case STATE_Z:
 	return (3);
     case STATE_B32:
-	if (bit<32) return ((value_ptr->number[0] >> bit) & 1);
+	if (bit<32)  return (    (value_ptr->number[0] >>bitpos) & 1);
 	return (0);
     case STATE_F32:
-	if (bit<32) return (((value_ptr->number[0] >>bit) & 1)
-			    | (((value_ptr->number[1] >>bit) & 1)<<1));
+	if (bit<32)  return ((   (value_ptr->number[0] >>bitpos) & 1)
+			     | (((value_ptr->number[1] >>bitpos) & 1)<<1));
 	return (0);
     case STATE_B128:
-	if (bit<32) return ((value_ptr->number[0] >> bit) & 1);
-	if (bit<64) return ((value_ptr->number[1] >> bit) & 1);
-	if (bit<96) return ((value_ptr->number[2] >> bit) & 1);
-	if (bit<128) return ((value_ptr->number[3] >> bit) & 1);
+	if (bit<32)  return (    (value_ptr->number[0] >>bitpos) & 1);
+	if (bit<64)  return (    (value_ptr->number[1] >>bitpos) & 1);
+	if (bit<96)  return (    (value_ptr->number[2] >>bitpos) & 1);
+	if (bit<128) return (    (value_ptr->number[3] >>bitpos) & 1);
 	return (0);
     case STATE_F128:
-	if (bit<32) return (((value_ptr->number[0] >> bit) & 1)
-			    | (((value_ptr->number[4] >>bit) & 1)<<1));
-	if (bit<64) return (((value_ptr->number[1] >> bit) & 1)
-			    | (((value_ptr->number[5] >>bit) & 1)<<1));
-	if (bit<96) return (((value_ptr->number[2] >> bit) & 1)
-			    | (((value_ptr->number[6] >>bit) & 1)<<1));
-	if (bit<128) return (((value_ptr->number[3] >> bit) & 1)
-			     | (((value_ptr->number[7] >>bit) & 1)<<1));
+	if (bit<32)  return ((   (value_ptr->number[0] >>bitpos) & 1)
+			     | (((value_ptr->number[4] >>bitpos) & 1)<<1));
+	if (bit<64)  return ((   (value_ptr->number[1] >>bitpos) & 1)
+			     | (((value_ptr->number[5] >>bitpos) & 1)<<1));
+	if (bit<96)  return ((   (value_ptr->number[2] >>bitpos) & 1)
+			     | (((value_ptr->number[6] >>bitpos) & 1)<<1));
+	if (bit<128) return ((   (value_ptr->number[3] >>bitpos) & 1)
+			     | (((value_ptr->number[7] >>bitpos) & 1)<<1));
 	return (0);
     default:
 	return (2);/*X*/

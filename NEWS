@@ -14,6 +14,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 ****	Fixed bug with Tempest signals over 128 bits. [Ta-Chung Chang]
 	This bug was introduced in 9.0i.
 
+****	Fixed portability bug with Value Examine showing 0s. [Ta-Chung Chang]
+
 
 * Changes in Dinotrace 9.0i  5/1/2000
 
