@@ -4,6 +4,7 @@ vector_seperator "["
 
 # Align grid to clock signal
 # Aligning to the first signal is the default.  We'll just change the color
+grid_signal	0	*
 grid_color	0	4
 
 # Any signal with ASCII in the name should be displayed as ascii
@@ -19,7 +20,7 @@ signal_states state* = {
 signal_highlight onebit 4
 
 # Make four be bright too
-value_highlight 'h4 5
+value_highlight 'h4 5 -CURSOR -VALUE
 
 # Add a couple of cursors
 cursor_add 433 7 -USER "Demonstration cursor added in ascii.dino"
