@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V7.0a"
+#define DTVERSION	"Dinotrace V7.0b"
 /*#define EXPIRATION	(60*60*24*30)	/ * In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
@@ -190,6 +190,7 @@ extern int	DebugTemp;		/* Temp value for trying things */
 #define DTPRINT_DRAW	(DTPRINT & 0x00000400)	/* Print dispmgr information */
 #define DTPRINT_PRINT	(DTPRINT & 0x00000800)	/* Print postscript printing information */
 #define DTPRINT_SEARCH	(DTPRINT & 0x00001000)	/* Print searching value/signal information */
+#define DTPRINT_BUSSES	(DTPRINT & 0x00002000)	/* Print make busses information */
 
 /* File formats.  See also hardcoded case statement in dinotrace.c */
 #define	FF_AUTO		0		/* Automatic selection */
@@ -581,6 +582,7 @@ typedef struct {
     GEOMETRY		start_geometry;	/* Geometry to open first trace with */
     GEOMETRY		open_geometry;	/* Geometry to open later traces with */
     GEOMETRY		shrink_geometry; /* Geometry to shrink trace->open traces with */
+    Boolean		suppress_config;/* Don't read in any group, user, or directory config files */
 
     Boolean		anno_poppedup;	/* Annotation has been poped up on some window */
     Boolean		anno_ena_signal[MAX_SRCH+1];   /* Annotation signal enables */
