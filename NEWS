@@ -10,6 +10,9 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 * Changes in Dinotrace 9.*****
 
 ****	Fix slow file reading with >128 bit __en signals. [Ta-Chung Chang]
+
+****	Fix signed analog display.  [Uwe Bonnes]
+
 
 * Changes in Dinotrace 9.1m 04/21/2004
 

@@ -146,7 +146,7 @@ double draw_analog_value (
     }
     if (sig_ptr->waveform == WAVEFORM_ANALOG_SIGNED) {
 	if (ythis_pct < 0.50) ythis_pct = ythis_pct + 0.50;
-	else ythis_pct = 0.50 - (ythis_pct - 0.50);
+	else ythis_pct = ythis_pct - 0.50;
     }
     return (ythis_pct);
 }
