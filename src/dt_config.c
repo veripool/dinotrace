@@ -958,8 +958,11 @@ void	config_process_line_internal (trace, line, eof)
 	    }
 	else if (!strcmp(cmd, "REFRESH")) {
 	    draw_all_needed ();
+	    draw_manual_needed ();
 	    /* Main loop won't refresh because widget's weren't activated on socket calls */
-	    draw_perform();
+	    if (config_reading_socket) {
+		draw_perform();
+	        }
 	    }
 	else if (!strcmp(cmd, "ANNOTATE")) {
 	    val_annotate_do_cb (NULL,trace,NULL);

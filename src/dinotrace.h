@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V8.0d"
+#define DTVERSION	"Dinotrace V8.0e"
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
@@ -601,7 +601,10 @@ typedef struct st_trace {
     char		vector_seperator;	/* Bus seperator character, usually "<" */
     char		vector_endseperator;	/* Bus ending seperator character, usually ">" */
 
-    int			redraw_needed;	/* Need to refresh the screen when get a chance, 0=NO, 1=YES, 2=Expose Only */
+    int			redraw_needed;	/* Need to refresh the screen when get a chance, TRD_* bit fielded */
+#define				TRD_REDRAW	0x1
+#define				TRD_EXPOSE	0x2
+
     Position		width;		/* Screen width */
     Position		height;		/* Screen height */
     Position		ystart;		/* Start Y pos of signals on display (dispmgr) */
@@ -683,8 +686,11 @@ typedef struct {
     DTime		print_begin_time;  /* Starting time for printing */
     DTime		print_end_time;	/* Ending time for printing */
 
-    int			redraw_needed;	/* Some trace needs to refresh the screen when get a chance, 0=NO, 1=YES, 2=Do All */
     Boolean		redraw_manually;/* True if in manual refreshing mode */
+    int			redraw_needed;	/* Some trace needs to refresh the screen when get a chance, GRD_* bit fielded */
+#define				GRD_TRACE	0x1
+#define				GRD_ALL		0x2
+#define				GRD_MANUAL	0x4
 
     DTime		time;		/* Time of trace at left edge of screen */
     float		res;		/* Resolution of graph width (gadgets) */

@@ -23,9 +23,10 @@
 /* Defined functions.... Really inlines, but old VMS compiler chokes */
 
 /* Schedule a redraw for trace or everybody */
-#define draw_expose_needed(_trace_)	{ (_trace_)->redraw_needed |= 2; global->redraw_needed |= 1; }
-#define draw_needed(_trace_)	{ (_trace_)->redraw_needed |= 1; global->redraw_needed |= 1; }
-#define draw_all_needed() { global->redraw_needed |= 2; }
+#define draw_expose_needed(_trace_)	{ global->redraw_needed |= GRD_TRACE; (_trace_)->redraw_needed |= TRD_EXPOSE; }
+#define draw_needed(_trace_)		{ global->redraw_needed |= GRD_TRACE; (_trace_)->redraw_needed |= TRD_REDRAW; }
+#define draw_all_needed() 		{ global->redraw_needed |= GRD_ALL; }
+#define draw_manual_needed() 		{ global->redraw_needed |= GRD_MANUAL; }
 
 #define	cptr_to_value(cptr,value_ptr) \
 {\

@@ -697,17 +697,17 @@ void draw_perform ()
     /* do not unroll this loop, as it will make the refresh across windows */
     /* appear out of sync */
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	if ((global->redraw_needed & 2) || (trace->redraw_needed & 1)) {
+	if ((global->redraw_needed & GRD_ALL) || (trace->redraw_needed & TRD_REDRAW)) {
 	    get_geometry (trace);
 	    }
 	}
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	if ((global->redraw_needed & 2) || (trace->redraw_needed & 1)) {
+	if ((global->redraw_needed & GRD_ALL) || (trace->redraw_needed & TRD_REDRAW)) {
 	    XClearWindow (global->display,trace->wind);
 	    }
 	}
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	if ((global->redraw_needed & 2) || trace->redraw_needed) {
+	if ((global->redraw_needed & GRD_ALL) || trace->redraw_needed) {
 	    draw_trace (trace);
 	    trace->redraw_needed = FALSE;
 	    }
