@@ -284,7 +284,6 @@ After downloading, click on the executable and install.
 @item
 Cygwin now comes with XFree86 and LessTif as options, you'll want to select both.  Also select
 the XFree86-prog (headers) package.
-@end example
 @end enumerate
 
 @item
@@ -312,7 +311,7 @@ Reboot or restart the shells to pick up the new environment variables.
 @item
 Make and install dinotrace.
 @example
-cd {where_you_put_dinotrace}
+cd @samp{where_you_put_dinotrace}
 ./configure
 make
 make install

@@ -12,7 +12,7 @@
  *
  * Some of the code in this file was originally developed for Digital
  * Semiconductor, a division of Digital Equipment Corporation.  They
- * gratefuly have agreed to share it, and thus the bas version has been
+ * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
  * 
@@ -685,6 +685,7 @@ struct st_signal {
     Boolean_t		deleted;	/* Signal is deleted */
     Boolean_t		deleted_preserve; /* Preserve the deletion of this signal (not deleted because constant) */
     Boolean_t		preserve_done;	/* Preservation process has moved this signal to new link structure */
+    Boolean_t		preserve_match;	/* Preservation matched */
     Waveform_t		waveform;	/* Display as analog waveform */
 
     uint_t		type;		/* Type of signal, STATE_B32, _B64, etc */

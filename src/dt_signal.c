@@ -2087,7 +2087,8 @@ void sig_cross_restore (
 	    if (DTPRINT_PRESERVE && old_sig_ptr) printf ("Preserve: %s\n", old_sig_ptr->signame);
 		
 	    if (old_sig_ptr->trace != global->preserved_trace) {	/* NOT sig from old trace */
-		/* Copy or moved from other, cheat by just relinking into new structure */
+		/* Copy or moved from a third independant trace file into this view,
+		   cheat by just relinking into new structure */
 		if (DTPRINT_PRESERVE) printf ("Preserve: Please cp/mv-to-new %s\n", old_sig_ptr->signame);
 		new_sig_ptr = old_sig_ptr;
 		new_sig_ptr->preserve_done = TRUE;
