@@ -178,7 +178,7 @@ void socket_create ()
     if ((sock_server = socket (AF_INET, SOCK_STREAM, 0)) < 0) {
         fprintf (stderr,"Dinotrace: could not get socket.\n");
 	perror ("socket");
-	exit (1);
+	exit (1L);
 	}
 
     /* Grab port number of this machine */
@@ -195,14 +195,14 @@ void socket_create ()
     if (bind (sock_server, (struct sockaddr *) &sa_server, sizeof(sa_server)) == -1) {
         fprintf (stderr, "Dinotrace: could not bind to port.\n");
         perror ("bind");
-        exit (1);
+        exit (1L);
 	}
 
     /* Grab port name */
     clen = sizeof (sa_server);
     if (getsockname (sock_server, &sa_server, &clen)) {
         perror ("getsockname");
-        exit (1);
+        exit (1L);
 	}
 
     if (DTPRINT_SOCKET) printf ("Listening fd %d on %s %d (%s %d).\n", sock_server,
@@ -217,7 +217,7 @@ void socket_create ()
     /* Tell the OS to que requests to us */
     if (listen (sock_server, SOMAXCONN)) {
         perror ("listen");
-        exit (1);
+        exit (1L);
 	}
 
     /* Don't block on this socket */

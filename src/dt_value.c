@@ -134,7 +134,7 @@ void	val_update_search ()
     SIGNAL_LW	*cptr;
     int		found, cursorize;
     register int i;
-    CURSOR	*csr_ptr,*new_csr_ptr;
+    CURSOR	*csr_ptr;
 
     if (DTPRINT_ENTRY) printf ("In val_update_search\n");
 
@@ -266,7 +266,7 @@ void    val_examine_popup (trace, x, y, ev)
     int			x,y;
     XButtonPressedEvent	*ev;
 {
-    int		time;
+    DTime	time;
     SIGNAL	*sig_ptr;
     SIGNAL_LW	*cptr;
     char	strg[2000];
@@ -726,7 +726,7 @@ void    val_highlight_ev (w,trace,ev)
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    int		time;
+    DTime	time;
     SIGNAL	*sig_ptr;
     SIGNAL_LW	*cptr;
     VSearchNum	search_pos;

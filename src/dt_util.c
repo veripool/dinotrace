@@ -836,8 +836,6 @@ void    debug_integrity_check_cb (w,trace,cb)
     TRACE	       	*trace;
     XmAnyCallbackStruct	*cb;
 {
-    SIGNAL	*sig_ptr;
-
     debug_signal_integrity (NULL, global->delsig, "Deleted Signals", TRUE);
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {

@@ -530,7 +530,6 @@ XFontStruct *grab_font (trace, font_name)
     TRACE	*trace;
     char	*font_name;		/* Name of the font */
 {
-    XFontStruct *xfs;
     int	num;
     char **list;
 
@@ -549,7 +548,6 @@ XFontStruct *grab_font (trace, font_name)
 TRACE *create_trace (xs,ys,xp,yp)
     int		xs,ys,xp,yp;
 {
-    char	string[20];
     /*    int		x1,x2;
 	  unsigned int junk; */
     int		i;
@@ -558,7 +556,6 @@ TRACE *create_trace (xs,ys,xp,yp)
     char	**argv_copy;
     XColor	xcolor,xcolor2;
     Colormap	cmap;
-    Font 	font;
     
     /*** alloc space for trace to display state block ***/
     trace = malloc_trace ();

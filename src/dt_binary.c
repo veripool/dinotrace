@@ -54,8 +54,8 @@ static char rcsid[] = "$Id$";
 /* Extract 1 bit or 2 bits from bit position POS in the buffer */
 /* Type casting to long is important to prevent bit 7 & 8 from seperating */
 /* Note that pos is used twice, no ++'s! */
-#define EXTRACT_2STATE(buf,pos)	(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 1)
-#define EXTRACT_4STATE(buf,pos)	(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 3)
+#define EXTRACT_2STATE(buf,pos)	((int)(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 1))
+#define EXTRACT_4STATE(buf,pos)	((int)(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 3))
 
 #ifdef NEVER
 int	EXTRACT_2STATE (buf,pos)

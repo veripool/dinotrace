@@ -777,11 +777,6 @@ void	update_signal_states (trace)
     TRACE	*trace;
 {
     SIGNAL	*sig_ptr;
-    SIGNAL	*twoclock_sig_ptr=NULL;
-    SIGNAL_LW	*cptr;
-    int		rise1=0, rise2=0, rise3=0;
-    int		fall1=0, fall2=0, fall3=0;
-    int		twohigh1=0, twohigh2=0, twohigh3=0;
 
     if (DTPRINT_ENTRY) printf ("In update_signal_states\n");
 
@@ -954,23 +949,23 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
     FILE	*decsim_z_readfp;	/* Only pre-set if FF_DECSIM_Z */
 {
     FILE	*readfp;
-    int		first_data;
+    Boolean	first_data;
     char	*line_in;
     SIGNAL	*sig_ptr;
-    int		time_stamp;
+    long	time_stamp;
     VALUE	value;
     char	*pchar;
     DTime	time_divisor;
     int		ch;
 
     char	*header_start, *header_ptr;
-    int		header_length, header_lines=0;
+    long	header_length, header_lines=0;
     Boolean	got_start=FALSE, hit_start=FALSE, in_comment=FALSE;
-    int		base_chars_left=0;
+    long	base_chars_left=0;
 
     char	*t;
     Boolean	chango_format=FALSE;
-    int		sig_start_pos, sig_end_pos;
+    long	sig_start_pos, sig_end_pos;
     char	*data_begin_ptr;
 
     time_divisor = time_units_to_multiplier (global->time_precision);

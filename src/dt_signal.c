@@ -443,7 +443,7 @@ void    sig_move_selected (new_trace, after_pattern)
     char		*after_pattern;
 {
     TRACE	  	*old_trace;
-    SIGNAL		*sig_ptr, *next_sig_ptr, *after_sig_ptr;
+    SIGNAL		*sig_ptr, *after_sig_ptr;
     SIGNAL_LIST		*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_move_selected aft='%s'\n", after_pattern);
@@ -467,8 +467,7 @@ void    sig_copy_selected (new_trace, after_pattern)
     char		*after_pattern;
 {
     TRACE	  	*old_trace;
-    SIGNAL		*sig_ptr, *next_sig_ptr, *after_sig_ptr;
-    SIGNAL		*new_sig_ptr;
+    SIGNAL		*sig_ptr, *after_sig_ptr;
     SIGNAL_LIST		*siglst_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_copy_pattern - aft='%s'\n", after_pattern);
@@ -1882,7 +1881,7 @@ void strcpy_overlap (d, s)
 void sig_modify_enables (trace)
     TRACE	*trace;
 {
-    SIGNAL	*sig_ptr, *en_sig_ptr, *base_sig_ptr, *new_sig_ptr;
+    SIGNAL	*sig_ptr, *en_sig_ptr, *base_sig_ptr;
     char	*tp, *nonenablename;
     Boolean	did_one=FALSE;
     
