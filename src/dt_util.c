@@ -365,7 +365,7 @@ void get_geometry ( trace )
 		      (int)TIME_WIDTH(trace) );
 
     update_scrollbar (trace->vscroll, trace->numsigstart, 1,
-		      0, trace->numsig, trace->numsigvis); 
+		      0, trace->numsig, MIN (trace->numsigvis, trace->numsig - trace->numsigstart)); 
     
     if (DTPRINT_ENTRY) printf ("In get_geometry: x=%d y=%d width=%d height=%d\n",
 			x,y,width,height);
