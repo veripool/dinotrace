@@ -221,6 +221,20 @@ void	verilog_process_var (trace, line)
     }
 
 
+/*
+For a large trace, here's a table of frequency of signals of each number of bits.
+
+55147 1		 150  8 	 125  16	  28  24	 175  32	   1  44 
+ 272  2		   3  9 	  72  17	   3  25	  17  34	   2  54 
+ 272  3		  57  10	   2  18	   1  26	   2  35	   1  62 
+ 316  4		  21  11	   3  19			   9  36	  75  64 
+  32  5		  85  12	 		  10  28			  36  72 
+  74  6		  42  13	   3  21	   1  29			   1  111
+  38  7		  84  14	 135  22	  13  30			 121  128
+		   4  15	 		   5  31			   1  145
+										  12  256
+*/
+
 void	verilog_womp_128s (trace)
     /* Take signals of 128+ signals and split into several signals */
     TRACE	*trace;
@@ -410,7 +424,7 @@ void	verilog_enter_busses (trace, first_data, time)
 
 	    /* Enter the cptr */
 	    sig_ptr->file_value.siglw.sttime.time = time;
-	    fil_add_cptr (sig_ptr, &(sig_ptr->file_value), !first_data);
+	    fil_add_cptr (sig_ptr, &(sig_ptr->file_value), first_data);
 
 	    /* Zero the state and keep the value for next time */
 	    sig_ptr->file_value.siglw.number = 0;
@@ -451,26 +465,7 @@ void	verilog_read_data (trace, readfp)
 	    }
 
 	switch (*line++) {
-	  case '\n':
-	  case '$':	/* Command, $end, $dump, etc (ignore) */
-	  case 'r':	/* Real number */
-	    break;
-	  case '#':	/* Time stamp */
-	    verilog_enter_busses (trace, first_data, time);
-	    time = (atol (line) * time_scale) / time_divisor;
-	    if (DTPRINT_FILE) {
-		printf (" %d * ( %d / %d )\n", atol(line), time_scale, time_divisor);
-		printf ("Time %d start %d first %d got %d\n", time, trace->start_time, first_data, got_data);
-		}
-	    if (first_data) {
-		if (got_time) {
-		    if (got_data) first_data = FALSE;
-		    got_data = FALSE;
-		    }
-		got_time = TRUE;
-		}
-	    break;
-
+	    /* Single bits are most common */
 	  case '0':
 	    state = STATE_0;
 	    goto common;
@@ -486,9 +481,6 @@ void	verilog_read_data (trace, readfp)
 
 	  common:
 	    got_data = TRUE;
-	    if (first_data)
-		trace->start_time = time;
-	    else trace->end_time = time;
 
 	    verilog_read_parameter (line, code);
 	    sig_ptr = trace->firstsig;
@@ -498,10 +490,9 @@ void	verilog_read_data (trace, readfp)
 		/* printf ("\tsignal '%s'=%d %s  state %d\n", code, pos, sig_ptr->signame, state); */
 		if (sig_ptr->bits == 0) {
 		    /* Not a vector.  This is easy */
-		    value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
 		    value.siglw.sttime.state = state;
 		    value.siglw.sttime.time = time;
-		    fil_add_cptr (sig_ptr, &value, !first_data);
+		    fil_add_cptr (sig_ptr, &value, first_data);
 		    }
 		else {	/* Unary signal made into a vector */
 		    /* Mark this for update at next time stamp */
@@ -617,7 +608,7 @@ void	verilog_read_data (trace, readfp)
 			len = (sig_ptr->bits+1) - strlen (value_strg);
 			if (len > 0) {
 			    /* This is rare, so not fast */
-			    /* 1's extend as 0's */
+			    /* 1's extend as 0's, x as x */
 			    register char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
 			    char *line_copy;
 			    
@@ -631,15 +622,13 @@ void	verilog_read_data (trace, readfp)
 			    *line++ = '\0';
 			    
 			    strcat (line, line_copy);	/* tack on the original value */
-			    /*if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", value_strg, extend_line);*/
+			    if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", value_strg, line);
 			    XtFree (line_copy);
 			    }
 	
 			/* Store the file information */
 			/* if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %s  value %s\n", code, pos, sig_ptr->signame, value_strg); */
-			fil_string_to_value (sig_ptr, value_strg, &value);
-			value.siglw.sttime.time = time;
-			fil_add_cptr (sig_ptr, &value, !first_data);
+			fil_string_add_cptr (sig_ptr, value_strg, time, first_data);
 
 			/* Push string past this signal's bits */
 			value_strg += sig_ptr->bits+1;
@@ -648,6 +637,33 @@ void	verilog_read_data (trace, readfp)
 		}
 	    else printf ("%%E, Unknown <identifier_code> '%s' on line %d of %s\n",
 			 code, verilog_line_num, current_file);
+	    break;
+
+	    /* Times are next most common */
+	  case '#':	/* Time stamp */
+	    verilog_enter_busses (trace, first_data, time);
+	    time = (atol (line) * time_scale) / time_divisor;	/* 1% of time in this division! */
+	    if (DTPRINT_FILE) {
+		printf (" %d * ( %d / %d )\n", atol(line), time_scale, time_divisor);
+		printf ("Time %d start %d first %d got %d\n", time, trace->start_time, first_data, got_data);
+		}
+	    if (first_data) {
+		if (got_time) {
+		    if (got_data) first_data = FALSE;
+		    got_data = FALSE;
+		    }
+		got_time = TRUE;
+		trace->start_time = time;
+		}
+	    else {
+		trace->end_time = time;
+	        }
+	    break;
+
+	    /* Things to ignore, uncommon */
+	  case '\n':
+	  case '$':	/* Command, $end, $dump, etc (ignore) */
+	  case 'r':	/* Real number */
 	    break;
 
 	  default:
