@@ -1403,6 +1403,7 @@ is ignored in all but state names.  The commands are:
 * time_rep::                    
 * time_precision::              
 * time_format::                 
+* time_divisor::                
 * time_multiplier::             
 * file_format::                 
 * cursor::                      
@@ -1670,7 +1671,7 @@ always assumed to be in nanoseconds.  The Tempest format will be assumed
 to be in the same units as the @config{time_precision}, and will not be
 scaled.
 
-@node time_format, time_multiplier, time_precision, Configuration Commands
+@node time_format, time_divisor, time_precision, Configuration Commands
 @subsection time_format
 @cindex Format, Time
 @findex time_format
@@ -1690,7 +1691,20 @@ set the preferred format for time stamps.  For example, setting
 display as "nn.ppp ns" where n is the nanoseconds, and p is the
 picoseconds.
 
-@node time_multiplier, file_format, time_format, Configuration Commands
+@node time_divisor, time_multiplier, time_format, Configuration Commands
+@subsection time_divisor
+@findex time_divisor
+@cindex Divisor, Time
+@config{time_divisor}	@var{number}
+
+When reading Ascii traces, all times are divided by this number.
+Generally the time_precision is what is wanted instead, as
+time_precision doesn't change the internal times but instead the
+display. Time_divisor changes the value that is read in from the file,
+and is most useful for Ascii traces which do not specify any time
+units in the file itself.
+
+@node time_multiplier, file_format, time_divisor, Configuration Commands
 @subsection time_multiplier
 @findex time_multiplier
 @cindex Multiplier, Time
