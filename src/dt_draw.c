@@ -268,6 +268,7 @@ void draw (trace)
     /* int temp_color=0; */
     /* char temp_strg[20]; */
     int end_time;
+    int question_width;			/* Width of '?' character */
     
     if (DTPRINT_ENTRY) printf ("In draw - filename=%s\n",trace->filename);
     
@@ -276,6 +277,8 @@ void draw (trace)
     /* check for all signals being deleted */
     if (trace->dispsig == NULL) return;
     
+    question_width = XTextWidth (trace->text_font,"?",1);
+
     /* calculate the font y location */
     yfntloc = trace->text_font->max_bounds.ascent + trace->text_font->max_bounds.descent;
     yfntloc = (trace->sighgt - yfntloc - SIG_SPACE)/2;
@@ -428,7 +431,7 @@ void draw (trace)
 		
 		/* Below evaluation left to right important to prevent error */
 		if ( (sig_ptr->decode != NULL) &&
-		    (value<MAXSTATENAMES) &&
+		    (value < sig_ptr->decode->numstates) &&
 		    (sig_ptr->decode->statename[value][0] != '\0')) {
 		    strcpy (strg, sig_ptr->decode->statename[value]);
 		    len = XTextWidth (trace->text_font,strg,strlen (strg));
@@ -513,20 +516,27 @@ void draw (trace)
 	      state_plot:
 
 		/* calculate positional parameters */
+
 		len = XTextWidth (trace->text_font,strg,strlen (strg));
 		
+		if (xloc-Pts[cnt].x-2 < len) {
+		    /* Value won't fit, try question mark */
+		    len = question_width;
+		    strg[0] = '?';  strg[1] = '\0';
+		    }
+
 		/* write the bus value if it fits */
-		if ( xloc-Pts[cnt].x >= len + 2 ) {
+		if ( xloc-Pts[cnt].x-2 >= len ) {
 		    mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
 		    if (srch_this_color) {
 			/* Grab the color we want */
 			XSetForeground (global->display, trace->gc, trace->xcolornums[srch_this_color]);
-			XDrawString (XtDisplay (trace->toplevel), XtWindow ( trace->work),
+			XDrawString (global->display, XtWindow ( trace->work),
 				    trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
 			XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
 			}
 		    else {
-			XDrawString (XtDisplay (trace->toplevel), XtWindow ( trace->work),
+			XDrawString (global->display, XtWindow ( trace->work),
 				    trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
 			}
 		    }
