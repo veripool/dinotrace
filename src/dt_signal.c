@@ -336,11 +336,12 @@ void	sig_wildmat_select (
 
     sig_wildmat_clear();
 
+    /*printf ("Pattern: %s\n", pattern);*/
     if (trace_list) trace = global->deleted_trace_head;
     for (; trace; trace = (trace_list ? trace->next_trace : NULL)) {
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    if (wildmat (sig_ptr->signame, pattern)) {
-		/* printf ("Selected: %s\n", sig_ptr->signame); */
+		/*printf ("  Selected: %s\n", sig_ptr->signame);*/
 		sig_wildmat_add (trace, sig_ptr);
 	    }
 	}
@@ -1871,17 +1872,24 @@ void sig_cross_preserve (
     trace->numsigstart = 0;
 }
 
-static void sig_hash_assign (
+static void sig_hash_name (
     /* Assign signal names a hash value for faster lookup */
-    Trace_t	*trace
+    Trace_t	*trace,
+    uint_t	hashsize,
+    Signal_t	**hash
     )
 {
     Signal_t *sig_ptr;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	uint_t hash = 0;
+	uint_t hashval = 0;
 	char *tp = sig_ptr->signame;
-	while (*tp) hash = (hash*33) + *tp++;
-	sig_ptr->signame_hash = hash;
+	while (*tp) hashval = (hashval*33) + *tp++;
+	hashval = hashval % hashsize;
+	sig_ptr->signame_hash = hashval;
+	if (hash) {
+	    sig_ptr->verilog_next = hash[hashval];  /* Overloaded for hash chain */
+	    hash[hashval] = sig_ptr;
+	}
     }
 }
 
@@ -1892,56 +1900,42 @@ static void sig_cross_sigmatch (
     Trace_t	*old_trace)
 {
     Signal_t	*new_sig_ptr;		/* New signal now searching on */
-    Signal_t	*start_sig_ptr;		/* Signal search began with */
-    char	*old_signame;		/* Searching for this signame */
-    uint_t	old_hash;		/* Searching for this hash */
-    Signal_t	*old_sig_ptr = old_trace->firstsig;
+    Signal_t	*old_sig_ptr;
+    Signal_t    **hash;
+    uint_t	hashsize;
+
+    if (!old_trace->firstsig || !new_trace->firstsig) return;	/* Empty */
+    if (old_trace == new_trace) return;
 
     /* Speed up name comparison by hashing names */
-    sig_hash_assign (new_trace);
-    sig_hash_assign (old_trace);
+    hashsize = new_trace->numsig*2;
+    hash = (Signal_t**)XtCalloc(hashsize, (unsigned) sizeof(Signal_t *));
 
-    /* Beginning */
-    new_sig_ptr = start_sig_ptr = new_trace->firstsig;
-    if (!new_sig_ptr || !old_sig_ptr) return;	/* Empty */
+    sig_hash_name (new_trace, hashsize, hash);
+    sig_hash_name (old_trace, hashsize, NULL);
 
-    /* First search */
-    old_signame = old_sig_ptr->signame;
-    old_hash = old_sig_ptr->signame_hash;
-
-    while (1) {
-	/*printf ("Compare %s == %s\n", old_sig_ptr->signame, new_sig_ptr->signame);*/
-	if (new_sig_ptr->signame_hash == old_hash	/* Redundant, but speeds strcmp */
-	    && !strcmp (new_sig_ptr->signame, old_signame)) {
-	    /* Match */
-	    old_sig_ptr->new_trace_sig = new_sig_ptr;
-	    /* Save color, etc */
-	    new_sig_ptr->color = old_sig_ptr->color;
-	    new_sig_ptr->search = old_sig_ptr->search;
-	    /*printf ("Matched %s == %s\n", old_sig_ptr->signame, new_sig_ptr->signame);*/
-	    
-	    /* Start search for next signal */
-nextsig:    
-	    do {
-		old_sig_ptr = old_sig_ptr->forward;
-	    } while (old_sig_ptr && old_sig_ptr->trace != global->preserved_trace);
-
-	    if (!old_sig_ptr) return;
-	    old_signame = old_sig_ptr->signame;
-	    old_hash = old_sig_ptr->signame_hash;
-	    start_sig_ptr = new_sig_ptr;
-	}
-
-	/* Search in circular link */
-	/* This is much faster because usually the signal ordering will be the same old & new */
-	new_sig_ptr = new_sig_ptr->forward ? new_sig_ptr->forward : new_trace->firstsig;
-	if (new_sig_ptr == start_sig_ptr) {
-	    /* No match, went around list once */
-	    /*printf ("MisMatched %s\n", old_sig_ptr->signame);*/
-	    old_sig_ptr->new_trace_sig = NULL;
-	    goto nextsig;
+    /* Look at each old signal */
+    for (old_sig_ptr = old_trace->firstsig; old_sig_ptr; old_sig_ptr = old_sig_ptr->forward) {
+	/* See if have new signal in hash bucket */
+	for (new_sig_ptr = hash[old_sig_ptr->signame_hash];
+	     new_sig_ptr; new_sig_ptr = new_sig_ptr->verilog_next) {
+	    char *os = old_sig_ptr->signame;
+	    char *ns = new_sig_ptr->signame;
+	    /*printf ("Compare %p %s == %p %s\n",
+	      old_sig_ptr, old_sig_ptr->signame, new_sig_ptr, new_sig_ptr->signame);*/
+	    /* Do our own strcmp; much faster */
+	    while (*os && *os++ == *ns++);
+	    if (*os == '\0' && *ns == '\0') {
+		/* Match */
+		old_sig_ptr->new_trace_sig = new_sig_ptr;
+		/* Save color, etc */
+		new_sig_ptr->color = old_sig_ptr->color;
+		new_sig_ptr->search = old_sig_ptr->search;
+		/*printf ("Matched %s == %s\n", old_sig_ptr->signame, new_sig_ptr->signame);*/
+	    }
 	}
     }
+    DFree(hash);
 }
 
 void sig_cross_restore (
@@ -2101,7 +2095,7 @@ void sig_cross_restore (
 
 	/* Restore scrolling position */
 	trace->dispsig = (new_dispsig) ? new_dispsig : trace->firstsig;
-	/* vscroll_new called later in file_cb */
+	vscroll_new (trace,0);
 
 	if (DTPRINT_PRESERVE) printf ("Preserve: Done\n");
     }

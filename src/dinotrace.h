@@ -637,7 +637,6 @@ struct st_signal {
     Value_t		*bptr;		/* begin of time data ptr */
     Value_t		*cptr;		/* current time data ptr */
 
-    uint_t		signame_hash;	/* Hash of name (for dt_signal only) */
     struct st_signal	*copyof;	/* Link to signal this is copy of (or NULL) */
     DFile_t		*dfile;		/* File signal belongs to (originally) */
     Trace_t		*trace;		/* Trace signal belongs to (originally) */
@@ -646,6 +645,7 @@ struct st_signal {
     char		*signame;	/* Signal name */
     XmString		xsigname;	/* Signal name as XmString */
     char		*signame_buspos;/* Signal name portion where bus bits begin (INSIDE signame) */
+    uint_t		signame_hash;	/* Hash of name (for dt_signal only) */
     char		*note;		/* Information for user, or NULL */
     char		*key;		/* Sort key for sorting functions (temporary use only) */
 
