@@ -139,7 +139,7 @@ void	val_update_search ()
 			    && ( global->val_srch[i].value[2] == 0) ) {
 			    found |= ( global->val_srch[i].color != 0) ;
 			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
-			    break;
+			    /* don't break, because if same value on two lines, one with cursor and one without will fail */
 			    }
 			}
 		    break;
@@ -151,7 +151,6 @@ void	val_update_search ()
 			    && ( global->val_srch[i].value[2] == 0) ) {
 			    found |= ( global->val_srch[i].color != 0) ;
 			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
-			    break;
 			    }
 			}
 		    break;
@@ -163,7 +162,6 @@ void	val_update_search ()
 			    && ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) ) ) {
 			    found |= ( global->val_srch[i].color != 0) ;
 			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
-			    break;
 			    }
 			}
 		    break;

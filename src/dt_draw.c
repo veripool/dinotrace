@@ -447,7 +447,8 @@ void draw (trace)
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->val_srch[i].value[0]==value ) ) {
+			if ( global->val_srch[i].value[0]==value
+			    && global->val_srch[i].color ) {
 			    srch_this_color = global->val_srch[i].color;
 			    break;
 			    }
@@ -470,7 +471,8 @@ void draw (trace)
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
 			if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
-			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) ) ) {
+			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
+			    && global->val_srch[i].color ) {
 			    srch_this_color = global->val_srch[i].color;
 			    break;
 			    }
@@ -496,7 +498,8 @@ void draw (trace)
 		    for (i=0; i<MAX_SRCH; i++) {
 			if ( ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
 			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
-			    && ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) ) ) {
+			    && ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
+			    && global->val_srch[i].color ) {
 			    srch_this_color = global->val_srch[i].color;
 			    break;
 			    }
