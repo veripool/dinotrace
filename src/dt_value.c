@@ -157,10 +157,11 @@ void	val_update_search ()
     TRACE	*trace;
     SIGNAL	*sig_ptr;
     SIGNAL_LW	*cptr;
-    int		found, cursorize;
+    int		cursorize;
     register int i;
     CURSOR	*csr_ptr;
     Boolean	any_enabled;
+    Boolean	matches[MAX_SRCH];	/* Cache the wildmat for each bit, so searching is faster */
 
     if (DTPRINT_ENTRY) printf ("In val_update_search\n");
 
@@ -185,10 +186,13 @@ void	val_update_search ()
 		continue;
 		}
 	    
-	    found=0;
-
 	    if (any_enabled) {
 		cursorize=0;
+		for (i=0; i<MAX_SRCH; i++) {
+		    matches[i] = 0;
+		    sig_ptr->srch_ena[i] = FALSE;
+		}
+
 		cptr = (SIGNAL_LW *)(sig_ptr->bptr);
 		for (; (cptr->sttime.time != EOT); cptr += sig_ptr->lws) {
 		    switch (cptr->sttime.state) {
@@ -197,8 +201,10 @@ void	val_update_search ()
 			    if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
 				&& ( global->val_srch[i].value[1] == 0) 
 				&& ( global->val_srch[i].value[2] == 0)
-				&& ( global->val_srch[i].value[3] == 0) ) {
-				found |= ( global->val_srch[i].color != 0) ;
+				&& ( global->val_srch[i].value[3] == 0)
+				&& ( matches[i] || wildmat (sig_ptr->signame, global->val_srch[i].signal))  ) {
+				matches[i] = TRUE;
+				if ( global->val_srch[i].color != 0)  sig_ptr->srch_ena[i] = TRUE;
 				if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
 				/* don't break, because if same value on two lines, one with cursor and one without will fail */
 			    }
@@ -210,8 +216,10 @@ void	val_update_search ()
 			    if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
 				&& ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
 				&& ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
-				&& ( global->val_srch[i].value[3]== *((unsigned int *)cptr+4) ) ) {
-				found |= ( global->val_srch[i].color != 0) ;
+				&& ( global->val_srch[i].value[3]== *((unsigned int *)cptr+4) )
+				&& ( matches[i] || wildmat (sig_ptr->signame, global->val_srch[i].signal))  ) {
+				matches[i] = TRUE;
+				if ( global->val_srch[i].color != 0)  sig_ptr->srch_ena[i] = TRUE;
 				if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
 			    }
 			}
@@ -234,10 +242,6 @@ void	val_update_search ()
 		    
 		} /* for cptr */
 	    } /* if enabled */
-	    
-	    sig_ptr->srch_ena = found;
-	    if (found && DTPRINT_FILE) printf ("Signal %s matches search string.\n", sig_ptr->signame);
-	    
 	    } /* for sig */
 	} /* for trace */
 
@@ -605,6 +609,9 @@ void    val_search_widget_update (trace)
 	/* Update with current search values */
 	value_to_string (trace, strg, global->val_srch[search_pos].value, ' ');
 	XmTextSetString (trace->value.text[search_pos], strg);
+
+	/* Update with current signal values */
+	XmTextSetString (trace->value.signal[search_pos], global->val_srch[search_pos].signal);
 	}
     }
 
@@ -658,6 +665,12 @@ void    val_search_cb (w,trace,cb)
 	trace->value.label3 = XmCreateLabel (trace->value.search,"label3",arglist,3);
 	XtManageChild (trace->value.label3);
 	
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Signal Wildcard"));
+	XtSetArg (arglist[1], XmNx, 500);
+	XtSetArg (arglist[2], XmNy, y);
+	trace->value.label6 = XmCreateLabel (trace->value.search,"label6",arglist,3);
+	XtManageChild (trace->value.label6);
+	
 	y += 25;
 
 	for (i=0; i<MAX_SRCH; i++) {
@@ -687,6 +700,17 @@ void    val_search_cb (w,trace,cb)
 	    trace->value.text[i] = XmCreateText (trace->value.search,"textn",arglist,6);
 	    XtAddCallback (trace->value.text[i], XmNactivateCallback, val_search_ok_cb, trace);
 	    XtManageChild (trace->value.text[i]);
+	    
+	    /* create the signal text widget */
+	    XtSetArg (arglist[0], XmNrows, 1);
+	    XtSetArg (arglist[1], XmNcolumns, 30);
+	    XtSetArg (arglist[2], XmNx, 480);
+	    XtSetArg (arglist[3], XmNy, y);
+	    XtSetArg (arglist[4], XmNresizeHeight, FALSE);
+	    XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
+	    trace->value.signal[i] = XmCreateText (trace->value.search,"texts",arglist,6);
+	    XtAddCallback (trace->value.signal[i], XmNactivateCallback, val_search_ok_cb, trace);
+	    XtManageChild (trace->value.signal[i]);
 	    
 	    y += 40;
 	    }
@@ -746,6 +770,10 @@ void    val_search_ok_cb (w,trace,cb)
 	strg = XmTextGetString (trace->value.text[i]);
 	string_to_value (trace, strg, global->val_srch[i].value);
 
+	/* Update with current search values */
+	strg = XmTextGetString (trace->value.signal[i]);
+	strcpy (global->val_srch[i].signal, strg);
+
 	if (DTPRINT_SEARCH) {
 	    char strg2[MAXVALUELEN];
 	    value_to_string (trace, strg2, global->val_srch[i].value, '_');
@@ -793,6 +821,7 @@ void    val_highlight_ev (w,trace,ev)
     if (global->highlight_color > 0) {
 	search_pos = global->highlight_color - 1;
 	cptr_to_search_value (cptr, global->val_srch[search_pos].value);
+	strcpy (global->val_srch[search_pos].signal, sig_ptr->signame);
 	if (!global->val_srch[search_pos].color
 	    && !global->val_srch[search_pos].cursor ) {
 	    /* presume user really wants color if neither is on */

@@ -165,7 +165,7 @@ extern void
     config_read_defaults (),
     config_read_file (), upcase_string(),
     config_trace_defaults (TRACE *),
-    config_global_defaults (TRACE *),
+    config_global_defaults (void),
     config_parse_geometry (char *, GEOMETRY *);
 extern SIGNALSTATE *find_signal_state (TRACE *, char *);
 extern int	wildmat ();
@@ -193,6 +193,7 @@ extern void sig_modify_enables (TRACE *);
 extern void sig_delete_selected (/*Boolean*/);
 extern void sig_move_selected (/*Boolean*/);
 extern void sig_copy_selected (/*Boolean*/);
+extern void sig_rename_selected (char *);
 extern void sig_wildmat_select (TRACE *, char *);
 extern void sig_goto_pattern (TRACE *, char *);
 extern void sig_cross_preserve (TRACE *);

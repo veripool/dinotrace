@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V8.2b"
+#define DTVERSION	"Dinotrace V8.3a"
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
@@ -291,10 +291,11 @@ typedef struct {
 typedef struct {
     Widget search;
     Widget label1, label2, label3;
-    Widget label4, label5;
+    Widget label4, label5, label6;
     Widget enable[MAX_SRCH];
     Widget cursor[MAX_SRCH];
     Widget text[MAX_SRCH];
+    Widget signal[MAX_SRCH];
     Widget ok;
     Widget apply;
     Widget cancel;
@@ -399,6 +400,7 @@ typedef struct st_valsearch {
     ColorNum		color;		/* Color number (index into trace->xcolornum) 0=OFF*/
     ColorNum		cursor;		/* Enable cursors, color or 0=OFF */
     unsigned int	value[4];	/* Value to search for, (128 bit LW format) */
+    char		signal[MAXSIGLEN];	/* Signal to search for */
     } VALSEARCH;
 
 /* Signal searching structure */
@@ -454,7 +456,7 @@ typedef struct st_signal {
     ColorNum		color;		/* Signal line's Color number (index into trace->xcolornum) */
     ColorNum		search;		/* Number of search color is for, 0 = manual */
 
-    Boolean		srch_ena;	/* Searching is enabled */
+    Boolean		srch_ena[MAX_SRCH];	/* Searching is enabled */
     Boolean		deleted;	/* Signal is deleted */
     Boolean		deleted_preserve; /* Preserve the deletion of this signal (not deleted because constant) */
     Boolean		preserve_done;	/* Preservation process has moved this signal to new link structure */

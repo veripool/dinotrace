@@ -62,9 +62,10 @@
 !	signal_add	<signal_pattern>	[<after_signal_first_matches>]
 !	signal_copy	<signal_pattern>	[<after_signal_first_matches>]
 !	signal_move	<signal_pattern>	[<after_signal_first_matches>]
-!	signal_highlight <color> <signal_name>
+!	signal_rename	<signal_pattern> <new_signal_name>
+!	signal_highlight <color> <signal_pattern>
 !	cursor_add	<color> <time>	[-USER]
-!	value_highlight <color>	<value>	[-CURSOR] [-VALUE]
+!	value_highlight <color>	<value>	[<signal_pattern>] [-CURSOR] [-VALUE]
 ! Display changes:
 !	time_goto	<time>
 !	signal_goto	<signal_pattern>	(if not on screen, first match)
@@ -349,8 +350,7 @@ void	add_signal_state (trace, info)
 	}
     }
 
-void	free_signal_states (trace)
-    TRACE	*trace;
+void	free_signal_states (void)
 {
     SIGNALSTATE *sstate_ptr, *last_ptr;
 
@@ -902,6 +902,18 @@ void	config_process_line_internal (trace, line, eof)
 		sig_move_selected (trace, pattern2);
 		}
 	    }
+	else if (!strcmp(cmd, "SIGNAL_RENAME")) {
+	    char pattern2[MAXSIGLEN];
+	    line += config_read_signal (line, pattern);
+	    line += config_read_signal (line, pattern2);
+	    if (!pattern[0] || !pattern2[0]) {
+		config_error_ack (trace, "Signal_Rename signal names must not be null\n");
+		}
+	    else {
+		sig_wildmat_select (NULL, pattern);
+		sig_rename_selected (pattern2);
+		}
+	    }
 	else if (!strcmp(cmd, "SIGNAL_COPY")) {
 	    char pattern2[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
@@ -935,7 +947,7 @@ void	config_process_line_internal (trace, line, eof)
 		}
 	    }
 	else if (!strcmp(cmd, "VALUE_HIGHLIGHT")) {
-	    char strg[MAXSIGLEN],flag[MAXSIGLEN];
+	    char strg[MAXSIGLEN],flag[MAXSIGLEN],signal[MAXSIGLEN]="*";
 	    Boolean show_value=FALSE, add_cursor=FALSE;
 	    VSearchNum search_pos;
 	    line += config_read_color (trace, line, &search_pos);
@@ -946,12 +958,14 @@ void	config_process_line_internal (trace, line, eof)
 		    line += config_read_signal (line, flag);
 		    upcase_string (flag);
 		    if (!strcmp(flag, "-CURSOR")) add_cursor=TRUE;
-		    if (!strcmp(flag, "-VALUE")) show_value=TRUE;
-		    } while (flag[0]=='-');
+		    else if (!strcmp(flag, "-VALUE")) show_value=TRUE;
+		    else if (flag[0]) strcpy (signal, flag);
+		    } while (flag[0]);
 		/* Add it */
 		global->val_srch[search_pos].color = (show_value) ? search_pos+1 : 0;
 		global->val_srch[search_pos].cursor = (add_cursor) ? search_pos+1 : 0;
 		string_to_value (trace, strg, global->val_srch[search_pos].value);
+		strcpy (global->val_srch[search_pos].signal, signal);
 		draw_needupd_val_search ();
 		}
 	    }
@@ -1345,10 +1359,9 @@ void config_trace_defaults(trace)
     }
 
 
-void config_global_defaults(trace)
-    TRACE	*trace;
+void config_global_defaults(void)
 {
-    free_signal_states (trace);
+    free_signal_states ();
     draw_needupd_val_states ();
     draw_needupd_sig_start ();
     

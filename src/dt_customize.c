@@ -308,7 +308,7 @@ void	cus_restore_cb (w,trace,cb)
     
     /* do the default thing */
     config_trace_defaults (trace);
-    config_global_defaults (trace);
+    config_global_defaults ();
     
     /* redraw the display */
     draw_all_needed ();

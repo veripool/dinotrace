@@ -431,6 +431,27 @@ void    sig_move_selected (new_trace, after_pattern)
     }
 
 
+void    sig_rename_selected (new_name)
+    /* also used for adding deleted signals */
+    char		*new_name;
+{
+    SIGNAL		*sig_ptr;
+    SIGNAL_LIST		*siglst_ptr;
+    
+    if (DTPRINT_ENTRY) printf ("In sig_rename_selected new='%s'\n", new_name);
+
+    siglst_ptr = global->select_head;
+    if (siglst_ptr) {
+	sig_ptr = siglst_ptr->signal;
+	strcpy (sig_ptr->signame, new_name);
+	sig_ptr->xsigname = XmStringCreateSimple (sig_ptr->signame);
+    }
+
+    draw_needupd_sig_start ();
+    draw_all_needed ();
+}
+
+
 void    sig_copy_selected (new_trace, after_pattern)
     TRACE	  	*new_trace;
     char		*after_pattern;

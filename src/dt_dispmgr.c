@@ -342,6 +342,7 @@ void init_globals ()
 
 	/* Value */
 	memset ((char *)&global->val_srch[i], 0, sizeof (VALSEARCH));
+	strcpy (global->val_srch[i].signal, "*");
 
 	/* Signal */
 	memset ((char *)&global->sig_srch[i], 0, sizeof (SIGSEARCH));
@@ -435,6 +436,8 @@ void create_globals (argc, argv, sync)
     global->xcursors[10] = XCreateFontCursor (global->display, XC_spraycan);
     global->xcursors[11] = XCreateFontCursor (global->display, XC_question_arrow);
     global->xcursors[12] = XCreateFontCursor (global->display, XC_cross);
+
+    config_global_defaults ();
     }
 
 TRACE *malloc_trace ()

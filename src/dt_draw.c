@@ -545,15 +545,13 @@ void draw_trace (trace)
 		    }
 		
 		srch_this_color = 0;
-		if (sig_ptr->srch_ena) {
-		    for (i=0; i<MAX_SRCH; i++) {
-			if ( global->val_srch[i].value[0]==value
-			    && global->val_srch[i].color ) {
-			    srch_this_color = global->val_srch[i].color;
-			    break;
-			    }
-			}
+		for (i=0; i<MAX_SRCH; i++) {
+		    if (sig_ptr->srch_ena[i]
+			&& global->val_srch[i].value[0]==value) {
+			srch_this_color = global->val_srch[i].color;
+			break;
 		    }
+		}
 
 		goto state_plot;
 
@@ -563,18 +561,16 @@ void draw_trace (trace)
 		value_to_string (trace, strg, cptr+1, ' ');
 		
 		srch_this_color = 0;
-		if (sig_ptr->srch_ena) {
-		    for (i=0; i<MAX_SRCH; i++) {
-			if (   ( global->val_srch[i].value[3]== *((unsigned int *)cptr+4) )
-			    && ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
-			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
-			    && ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
-			    && global->val_srch[i].color ) {
-			    srch_this_color = global->val_srch[i].color;
-			    break;
-			    }
-			}
+		for (i=0; i<MAX_SRCH; i++) {
+		    if (sig_ptr->srch_ena[i]
+			&& ( global->val_srch[i].value[3]== *((unsigned int *)cptr+4) )
+			&& ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
+			&& ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
+			&& ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) ) ) {
+			srch_this_color = global->val_srch[i].color;
+			break;
 		    }
+		}
 
 		goto state_plot;
 		
