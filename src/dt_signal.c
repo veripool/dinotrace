@@ -350,6 +350,57 @@ void    sig_delete_constant_pattern (trace, pattern)
     }
 
 
+void    sig_goto_pattern (trace, pattern)
+    TRACE	  	*trace;
+    char		*pattern;
+{
+    SIGNAL		*sig_ptr;
+    int			numprt;
+    int			inc;
+    Boolean		on_screen, found;
+    
+    if (DTPRINT_ENTRY) printf ("In sig_goto_pattern - trace=%d pat='%s'\n",trace, pattern);
+    
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	/* Is this signal already on the screen? */
+	on_screen = FALSE;
+	for (sig_ptr = trace->dispsig, numprt = 0; sig_ptr && numprt<trace->numsigvis;
+	     sig_ptr = sig_ptr->forward, numprt++) {
+	    if (wildmat (sig_ptr->signame, pattern)) {
+		on_screen = TRUE;
+		break;
+		}
+	    }
+
+	if (!on_screen) {
+	    /* Align starting signal to search position */
+	    found = FALSE;
+	    for (sig_ptr = trace->firstsig, numprt = 0; sig_ptr;
+		 sig_ptr = sig_ptr->forward, numprt++) {
+		if (wildmat (sig_ptr->signame, pattern)) {
+		    trace->dispsig = sig_ptr;
+		    trace->numsigstart = numprt;
+		    found = TRUE;
+		    break;
+		    }
+		}
+
+	    if (found) {
+		/* Rescroll found signal to the center of the screen */
+		inc = (-trace->numsigvis) / 2;
+		while ( (inc < 0) && trace->dispsig && trace->dispsig->backward ) {
+		    trace->numsigstart--;
+		    trace->dispsig = trace->dispsig->backward;
+		    inc++;
+		    }
+		}
+	    }
+	}
+
+    /* not done, since used in config only: redraw_all (trace); */
+    }
+
+
 /****************************** MENU OPTIONS ******************************/
 
 void    sig_add_cb (w,trace,cb)
@@ -501,19 +552,13 @@ void    sig_highlight_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    int i;
-
     if (DTPRINT_ENTRY) printf ("In sig_highlight_cb - trace=%d\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
      
-    global->highlight_color = 0;
-    for (i=1; i<=MAX_SRCH; i++) {
-	if (w == trace->menu.pdsubbutton[i + trace->menu.sig_highlight_pds]) {
-	    global->highlight_color = i;
-	    }
-	}
+    /* Grab color number from the menu button pointer */
+    global->highlight_color = submenu_to_color (trace, w, trace->menu.sig_highlight_pds);
 
     /* process all subsequent button presses as signal deletions */ 
     set_cursor (trace, DC_SIG_HIGHLIGHT);
@@ -674,6 +719,7 @@ void    sig_add_ev (w,trace,ev)
     SIGNAL		*sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_add_ev - trace=%d\n",trace);
+    if (ev->type != ButtonPress || ev->button!=1) return;
     
     /* return if there is no file */
     if (!trace->loaded || global->selected_sig==NULL)
@@ -730,6 +776,7 @@ void    sig_move_ev (w,trace,ev)
     SIGNAL		*sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_move_ev - trace=%d\n",trace);
+    if (ev->type != ButtonPress || ev->button!=1) return;
     
     /* return if there is no file */
     if ( !trace->loaded )
@@ -781,6 +828,7 @@ void    sig_copy_ev (w,trace,ev)
     SIGNAL		*sig_ptr, *new_sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_copy_ev - trace=%d\n",trace);
+    if (ev->type != ButtonPress || ev->button!=1) return;
     
     /* make sure button has been clicked in in valid location of screen */
     sig_ptr = posy_to_signal (trace, ev->y);
@@ -823,6 +871,7 @@ void    sig_delete_ev (w,trace,ev)
     SIGNAL		*sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_delete_ev - trace=%d\n",trace);
+    if (ev->type != ButtonPress || ev->button!=1) return;
     
     /* return if there is no file */
     if ( !trace->loaded )
@@ -862,6 +911,7 @@ void    sig_highlight_ev (w,trace,ev)
     SIGNAL		*sig_ptr;
     
     if (DTPRINT_ENTRY) printf ("In sig_highlight_ev - trace=%d\n",trace);
+    if (ev->type != ButtonPress || ev->button!=1) return;
     
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr) return;
