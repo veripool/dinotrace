@@ -50,8 +50,8 @@
 #include <math.h> /* removed for Ultrix support... */
 #endif VMS
 
-#include <X11/DECwDwtApplProg.h>
 #include <X11/Xlib.h>
+#include <X11/Xm.h>
 
 #include "dinotrace.h"
 
@@ -206,10 +206,7 @@ int	config_read_on_off (line, out)
     else if (!strcmp (cmd, "OFF") || !strcmp (cmd, "0"))
 	*out = 0;
     else {
-	if (DTPRINT) printf ("%%E, Looking for ON/OFF, found '%s' on config line %d\n", cmd, line_num);
-	sprintf (message, "Looking for ON/OFF, found '%s'\non line %d of %s\n",
-		 cmd, line_num, current_file);
-	dino_message_ack(ptr,message);
+	*out = -1;
 	}
 
     return (outlen);
@@ -253,13 +250,13 @@ int wildmat(s, p)
 *	SUPPORT FUNCTIONS
 **********************************************************************/
 
-SIGNALSTATE	*find_signal_state (ptr, name)
-    DISPLAY_SB	*ptr;
+SIGNALSTATE	*find_signal_state (trace, name)
+    TRACE	*trace;
     char *name;
 {
     register SIGNALSTATE *sig;
 
-    for (sig=ptr->signalstate_head; sig; sig=sig->next) {
+    for (sig=trace->signalstate_head; sig; sig=sig->next) {
 	/* printf ("'%s'\t'%s'\n", name, sig->signame); */
 	if (wildmat(name, sig->signame))
 	    return (sig);
@@ -267,39 +264,39 @@ SIGNALSTATE	*find_signal_state (ptr, name)
     return (NULL);
     }
 
-void	add_signal_state (ptr, info)
-    DISPLAY_SB	*ptr;
+void	add_signal_state (trace, info)
+    TRACE	*trace;
     SIGNALSTATE *info;
 {
     SIGNALSTATE *new;
 
     new = (SIGNALSTATE *)(malloc (sizeof(SIGNALSTATE)));
     memcpy ((void *)new, (void *)info, sizeof(SIGNALSTATE));
-    new->next = ptr->signalstate_head;
-    ptr->signalstate_head = new;
+    new->next = trace->signalstate_head;
+    trace->signalstate_head = new;
     }
 
-void	free_signal_states (ptr)
-    DISPLAY_SB	*ptr;
+void	free_signal_states (trace)
+    TRACE	*trace;
 {
     SIGNALSTATE *sig_ptr, *last_ptr;
 
-    sig_ptr = ptr->signalstate_head;
+    sig_ptr = trace->signalstate_head;
     while (sig_ptr) {
 	last_ptr = sig_ptr->next;
 	free (sig_ptr);
 	sig_ptr = last_ptr;
 	}
-    ptr->signalstate_head = NULL;
+    trace->signalstate_head = NULL;
     }
 
-void	print_signal_states (ptr)
-    DISPLAY_SB	*ptr;
+void	print_signal_states (trace)
+    TRACE	*trace;
 {
     SIGNALSTATE *sig_ptr;
     int i;
 
-    sig_ptr = ptr->signalstate_head;
+    sig_ptr = trace->signalstate_head;
     while (sig_ptr) {
 	printf("Signal %s:\n",sig_ptr->signame);
 	for (i=0; i<MAXSTATENAMES; i++)
@@ -314,8 +311,8 @@ void	print_signal_states (ptr)
 *	config_process_states
 **********************************************************************/
 
-void	config_process_states (ptr, oldline, readfp)
-    DISPLAY_SB	*ptr;
+void	config_process_states (trace, oldline, readfp)
+    TRACE	*trace;
     char *oldline;
     FILE *readfp;
 {
@@ -332,12 +329,12 @@ void	config_process_states (ptr, oldline, readfp)
     line = newline;
     line += config_read_signal (line, newsigst.signame);
 
-    if (DTPRINT) printf ("config_process_states  signal=%s\n", newsigst.signame);
+    /* if (DTPRINT) printf ("config_process_states  signal=%s\n", newsigst.signame); */
 
     while (*line!='}') {
 	if (!*line) {
 	    if (feof(readfp)) {
-		dino_message_ack(ptr,"Unexpected EOF during SIGNAL_STATES command in config file");
+		dino_error_ack(trace,"Unexpected EOF during SIGNAL_STATES command in config file");
 		return;
 		}
 	    config_get_line (newline, 1000, readfp);
@@ -354,7 +351,7 @@ void	config_process_states (ptr, oldline, readfp)
 	    if (statenum < 0 || statenum >= MAXSTATENAMES) {
 		sprintf (message, "Over maximum of %d SIGNAL_STATES for signal",
 			 MAXSTATENAMES, newsigst.signame);
-		dino_message_ack(ptr,message);
+		dino_error_ack(trace,message);
 		/* No return, as will just ignore remaining errors */
 		}
 	    else {
@@ -366,7 +363,7 @@ void	config_process_states (ptr, oldline, readfp)
 	    }
 	}
 
-    add_signal_state (ptr, &newsigst);
+    add_signal_state (trace, &newsigst);
 
     /*
     printf ("Signal '%s' Assigned States:\n",newsigst.signame);
@@ -380,8 +377,8 @@ void	config_process_states (ptr, oldline, readfp)
 *	config_process_line
 **********************************************************************/
 
-void	config_process_line (ptr, line, readfp)
-    DISPLAY_SB	*ptr;
+void	config_process_line (trace, line, readfp)
+    TRACE	*trace;
     char *line;
     FILE *readfp;
 {
@@ -406,96 +403,124 @@ void	config_process_line (ptr, line, readfp)
 	value=DTDEBUG;
 	line += config_read_on_off (line, &value);
 	if (DTDEBUG) printf ("Config: DTDEBUG=%d\n",value);
-	DTDEBUG=value;
+	if (value >= 0) {
+	    DTDEBUG=value;
+	    }
+	else {
+	    sprintf (message, "Debug must be set ON or OFF\non line %d of %s\n",
+		     line_num, current_file);
+	    dino_error_ack(trace,message);
+	    }
 	}
     else if (!strcmp(cmd, "PRINT")) {
 	value=DTPRINT;
 	line += config_read_on_off (line, &value);
 	if (DTPRINT) printf ("Config: DTPRINT=%d\n",value);
-	DTPRINT=value;
+	if (value >= 0) {
+	    DTPRINT=value;
+	    }
+	else {
+	    sprintf (message, "Print must be set ON or OFF\non line %d of %s\n",
+		     line_num, current_file);
+	    dino_error_ack(trace,message);
+	    }
 	}
     else if (!strcmp(cmd, "CURSOR")) {
-	value = ptr->cursor_vis;
+	value = trace->cursor_vis;
 	line += config_read_on_off (line, &value);
 	if (DTPRINT) printf ("Config: cursor_vis=%d\n",value);
-	ptr->cursor_vis = value;
+	if (value >= 0) {
+	    trace->cursor_vis = value;
+	    }
+	else {
+	    sprintf (message, "Cursor must be set ON or OFF\non line %d of %s\n",
+		     line_num, current_file);
+	    dino_error_ack(trace,message);
+	    }
 	}
     else if (!strcmp(cmd, "GRID")) {
-	value = ptr->grid_vis;
+	value = trace->grid_vis;
 	line += config_read_on_off (line, &value);
 	if (DTPRINT) printf ("Config: grid_vis=%d\n",value);
-	ptr->grid_vis = value;
+	if (value >= 0) {
+	    trace->grid_vis = value;
+	    }
+	else {
+	    sprintf (message, "Grid must be set ON or OFF\non line %d of %s\n",
+		     line_num, current_file);
+	    dino_error_ack(trace,message);
+	    }
 	}
     else if (!strcmp(cmd, "SIGNAL_HEIGHT")) {
-	value = ptr->sighgt;
+	value = trace->sighgt;
 	line += config_read_int (line, &value);
 	if (value >= 15 && value <= 50)
-	    ptr->sighgt = value;
+	    trace->sighgt = value;
 	else {
 	    if (DTPRINT) printf ("%%E, Signal_height must be 15-50 on config line %d\n", line_num);
 	    sprintf (message, "Signal_height must be 15-50\non line %d of %s\n",
 		     line_num, current_file);
-	    dino_message_ack(ptr,message);
+	    dino_error_ack(trace,message);
 	    }
 	}
     else if (!strcmp(cmd, "GRID_RESOLUTION")) {
-	value = ptr->grid_res;
+	value = trace->grid_res;
 	line += config_read_int (line, &value);
 	if (value >= 1) {
-	    ptr->grid_res = value;
-	    ptr->grid_res_auto = value;
+	    trace->grid_res = value;
+	    trace->grid_res_auto = value;
 	    }
 	else {
-	    ptr->grid_res_auto = GRID_AUTO_ASS;
+	    trace->grid_res_auto = GRID_AUTO_ASS;
 	    }
 	}
     else if (!strcmp(cmd, "GRID_ALIGN")) {
-	value = ptr->grid_align;
+	value = trace->grid_align;
 	line += config_read_int (line, &value);
 	if (value >= 1) {
-	    ptr->grid_align = value;
-	    ptr->grid_align_auto = value;
+	    trace->grid_align = value;
+	    trace->grid_align_auto = value;
 	    }
 	else {
 	    if (toupper(line[0])=='A')
-		ptr->grid_align_auto = GRID_AUTO_ASS;
+		trace->grid_align_auto = GRID_AUTO_ASS;
 	    else if (toupper(line[0])=='D')
-		ptr->grid_align_auto = GRID_AUTO_DEASS;
+		trace->grid_align_auto = GRID_AUTO_DEASS;
 	    else {
 		if (DTPRINT) printf ("%%E, Grid_align must be >0, ASSERTION, or DEASSERTION on config line %d\n", line_num);
 		sprintf (message, "Grid_align must be >0, ASSERTION, or DEASSERTION\non line %d of %s\n",
 			 line_num, current_file);
-		dino_message_ack(ptr,message);
+		dino_error_ack(trace,message);
 		}
 	    }
-	if (DTPRINT) printf ("grid_align_auto = %d\n", ptr->grid_align_auto);
+	if (DTPRINT) printf ("grid_align_auto = %d\n", trace->grid_align_auto);
 	}
     else if (!strcmp(cmd, "RISE_FALL_TIME")) {
-	value = ptr->sigrf;
+	value = trace->sigrf;
 	line += config_read_int (line, &value);
 	/* Valid values not known... */
-	ptr->sigrf = value;
+	trace->sigrf = value;
 	}
     else if (!strcmp(cmd, "PAGE_INC")) {
-	value = ptr->pageinc;
+	value = trace->pageinc;
 	line += config_read_int (line, &value);
 	if (value == 1 || value == 2 || value == 4)
-	    ptr->pageinc = value;
+	    trace->pageinc = value;
 	else {
 	    if (DTPRINT) printf ("%%E, Page_Inc must be 1, 2, or 4 on config line %d\n", line_num);
 	    sprintf (message, "Page_Inc must be 1, 2, or 4\non line %d of %s\n",
 		     line_num, current_file);
-	    dino_message_ack(ptr,message);
+	    dino_error_ack(trace,message);
 	    }
 	}
     else if (!strcmp(cmd, "SIGNAL_STATES")) {
-	config_process_states (ptr, line, readfp);
+	config_process_states (trace, line, readfp);
 	}
     else {
 	if (DTPRINT) printf ("%%E, Unknown command '%s' on config line %d\n", cmd, line_num);
 	sprintf (message, "Unknown command '%s'\non line %d of %s\n",
 		 cmd, line_num, current_file);
-	dino_message_ack(ptr,message);
+	dino_error_ack(trace,message);
 	}
     }
 
@@ -503,8 +528,8 @@ void	config_process_line (ptr, line, readfp)
 *	config_read_file
 **********************************************************************/
 
-void config_read_file(ptr, filename, report_error)
-    DISPLAY_SB	*ptr;
+void config_read_file(trace, filename, report_error)
+    TRACE	*trace;
     char *filename;	/* Specific filename of CONFIG file */
     int report_error;
 {
@@ -523,7 +548,7 @@ void config_read_file(ptr, filename, report_error)
 	if (report_error) {
 	    if (DTPRINT) printf("%%E, Can't Open File %s\n", filename);
 	    sprintf(message,"Can't open file %s",filename);
-	    dino_message_ack(ptr, message);
+	    dino_error_ack(trace, message);
 	    }
 	return;
 	}
@@ -534,7 +559,7 @@ void config_read_file(ptr, filename, report_error)
 	/* Read line & kill EOL at end */
 	config_get_line (line, 1000, readfp);
 	/* 	printf ("line='%s'\n",line);	*/
-	config_process_line (ptr, line, readfp);
+	config_process_line (trace, line, readfp);
 	}
 
     fclose (readfp);
@@ -545,53 +570,54 @@ void config_read_file(ptr, filename, report_error)
 *	config_read_defaults
 **********************************************************************/
 
-void config_read_defaults(ptr)
-    DISPLAY_SB	*ptr;
+void config_read_defaults(trace)
+    TRACE	*trace;
 {
     char newfilename[200];
     char *pchar;
 
-    config_read_file (ptr, "DINO$DISK:DINOTRACE.DINO", 0);
-    config_read_file (ptr, "SYS$LOGIN:DINOTRACE.DINO", 0);
+    config_read_file (trace, "DINO$DISK:DINOTRACE.DINO", 0);
+    config_read_file (trace, "SYS$LOGIN:DINOTRACE.DINO", 0);
 
     /* Same directory as trace, dinotrace.dino */
-    if (ptr->filename != '\0') {
-	strcpy (newfilename, ptr->filename);
+    if (trace->filename != '\0') {
+	strcpy (newfilename, trace->filename);
 	file_directory (newfilename);
 	strcat (newfilename, "DINOTRACE.DINO");
-	config_read_file (ptr, newfilename, 0);
+	config_read_file (trace, newfilename, 0);
 	}
     
     /* Same directory as trace, same file, but .dino extension */
-    if (ptr->filename != '\0') {
-	strcpy (newfilename, ptr->filename);
+    if (trace->filename != '\0') {
+	strcpy (newfilename, trace->filename);
 	if ((pchar=strrchr(newfilename,'.')) != NULL )
 	    *pchar = '\0';
 	strcat (newfilename, ".DINO");
-	config_read_file (ptr, newfilename, 0);
+	config_read_file (trace, newfilename, 0);
 	}
 
     /* Apply the statenames */
-    update_signal_states (ptr);
+    update_signal_states (trace);
     }
 
 /**********************************************************************
 *	config_restore_defaults
 **********************************************************************/
 
-void config_restore_defaults(ptr)
-    DISPLAY_SB	*ptr;
+void config_restore_defaults(trace)
+    TRACE	*trace;
 {
-    if ( ptr->signalstate_head != NULL)
-	free_signal_states (ptr);
+    if ( trace->signalstate_head != NULL)
+	free_signal_states (trace);
     
-    ptr->sighgt = 20;	/* was 25 */
-    ptr->cursor_vis = TRUE;
-    ptr->grid_vis = TRUE;
-    ptr->grid_res = 100;
-    ptr->grid_align = 0;
-    ptr->numpag = 1;
-    ptr->sigrf = SIG_RF;
+    trace->sighgt = 20;	/* was 25 */
+    trace->cursor_vis = TRUE;
+    trace->grid_vis = TRUE;
+    trace->grid_res = 100;
+    trace->grid_align = 0;
+    trace->numpag = 1;
+    trace->sigrf = SIG_RF;
+    trace->pageinc = FPAGE;
 
-    update_signal_states (ptr);
+    update_signal_states (trace);
     }

@@ -27,20 +27,26 @@
  */
 
 
-#include <X11/DECwDwtApplProg.h>
-#include <X11/DwtAppl.h>
 #include <X11/Xlib.h>
+#include <X11/CursorFont.h>
+#include <X11/Xm.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
 #include "dino.bit"
 #include "bigdino.bit"
-#include "arrow.bit"
+
+
+void set_cursor (trace, cursor_num)
+    TRACE		*trace;		/* Display information */
+    int		cursor_num;		/* Entry in xcursors to display */
+{
+    XDefineCursor (trace->display, trace->wind, trace->xcursors[cursor_num]);
+    }
 
 
 
-void
-create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
+void create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
     int		argc;
     char		**argv;
     int		xs,ys,xp,yp,res;
@@ -49,669 +55,342 @@ create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
     char	title[24],data[10],string[20];
     int		fore,back,pd=0,pde=0,i;
     XImage	ximage;
-
-    /* initialize to NULL string */
-    string[0] = '\0';
-
-    /*** alloc space for ptr to display state block ***/
-    ptr = (DISPLAY_SB *)malloc( sizeof(DISPLAY_SB) );
-    curptr = ptr;
-
+    TRACE	*trace;
+    
+    /*** alloc space for trace to display state block ***/
+    trace = (TRACE *)malloc( sizeof(TRACE) );
+    curptr = trace;
+    
     /*** create toplevel widget ***/
-    toplevel = XtInitialize(DTVERSION, "", NULL, 0, &argc, argv);
-    change_title (ptr);
-
+    toplevel = XtInitialize(DTVERSION, "dinotrace", NULL, 0, &argc, argv);
+    change_title (trace);
+    
     /*
      * Editor's Note: Thanks go to Sally C. Barry, former employee of DEC,
      * for her painstaking effort in the creation of the infamous 'Dino'
      * bitmap icons.
      */
-
+    
     /*** create small dino pixmap from data ***/
     dpm = make_icon(XtDisplay(toplevel),DefaultRootWindow(XtDisplay(toplevel)),
-	dino_icon_bits,dino_icon_width,dino_icon_height);    
-
+		    dino_icon_bits,dino_icon_width,dino_icon_height);    
+    
     /*** create big dino pixmap from data ***/
     bdpm = make_icon(XtDisplay(toplevel),DefaultRootWindow(XtDisplay(toplevel)),
-	bigdino_icon_bits,bigdino_icon_width,bigdino_icon_height);    
-
+		     bigdino_icon_bits,bigdino_icon_width,bigdino_icon_height);    
+    
     /*** add pixmap and position toplevel widget ***/
     XtSetArg(arglist[0], XtNallowShellResize, TRUE);
     XtSetArg(arglist[1], XtNiconPixmap, bdpm);
     XtSetArg(arglist[2], "iconifyPixmap", dpm);
-    XtSetArg(arglist[3], DwtNx, xp);
-    XtSetArg(arglist[4], DwtNy, yp);
+    XtSetArg(arglist[3], XmNx, xp);
+    XtSetArg(arglist[4], XmNy, yp);
     XtSetValues(toplevel, arglist, 5);
-
+    
     /****************************************
-    * create the main window
-    ****************************************/
-    XtSetArg(arglist[0], DwtNheight, ys);
-    XtSetArg(arglist[1], DwtNwidth, xs);
-    XtSetArg(arglist[2], DwtNx, 20);
-    XtSetArg(arglist[3], DwtNy, 350);
-    XtSetArg(arglist[4], DwtNacceptFocus, TRUE);
-    win_foc_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[5], DwtNfocusCallback, win_foc_cb);
-    ptr->main = DwtMainWindowCreate(toplevel,"", arglist, 6);
-
+     * create the main window
+     ****************************************/
+    XtSetArg(arglist[0], XmNheight, ys);
+    XtSetArg(arglist[1], XmNwidth, xs);
+    XtSetArg(arglist[2], XmNx, 20);
+    XtSetArg(arglist[3], XmNy, 350);
+    /*CCCCCC XtSetArg(arglist[4], XmNacceptFocus, TRUE); */
+    trace->main = XmCreateMainWindow(toplevel,"main", arglist, 4);
+#ifdef NOTDONE
+    XtAddCallback(trace->main, XmNfocusCallback, cb_window_focus, trace);
+#endif
+    
     /****************************************
-    * create the menu bar
-    ****************************************/
-    XtSetArg(arglist[0], DwtNorientation, DwtOrientationHorizontal );
-    ptr->menu.menu = DwtMenuBarCreate(ptr->main,"", arglist, 1);
+     * create the menu bar
+     ****************************************/
+    trace->menu.menu = XmCreateMenuBar(trace->main,"menu", NULL, 0);
+    XtManageChild(trace->menu.menu);
+    
+    /*** create a pulldownmenu widget ***/
+#define	dt_menu_title(title) \
+    pde++; \
+	trace->menu.pulldownmenu[pde] = XmCreatePulldownMenu(trace->menu.menu,"",NULL,0); \
+	    XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(title) ); \
+		XtSetArg(arglist[1], XmNsubMenuId, trace->menu.pulldownmenu[pde] ); \
+		    trace->menu.pulldownentry[pde] = XmCreateCascadeButton \
+			(trace->menu.menu, "", arglist, 2); \
+			    XtManageChild(trace->menu.pulldownentry[pde])
+    
+    /*** create a pulldownmenu widget ***/
+#define	dt_menu_entry(title,callback) \
+    XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(title) ); \
+	trace->menu.pulldown[pd] = XmCreatePushButtonGadget \
+	    (trace->menu.pulldownmenu[pde], "", arglist, 1); \
+		XtAddCallback(trace->menu.pulldown[pd], XmNactivateCallback, callback, trace); \
+		    XtManageChild(trace->menu.pulldown[pd]); \
+			pd++
 
-	/*** create 'File' pulldownmenu widget ***/
-	ptr->menu.pulldownmenu[pde] = DwtMenuPulldownCreate(ptr->menu.menu,"",NULL,0);
+    /*** begin with -1 pde, since new menu will increment ***/
+    pde = -1;
 
-	/*** create 'File' pulldownentry widget ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Display") );
-	XtSetArg(arglist[1], DwtNsubMenuId, ptr->menu.pulldownmenu[pde] );
-	ptr->menu.pulldownentry[pde] = DwtPullDownMenuEntryCreate(
-                        ptr->menu.menu, "", arglist, 2);
-
-	/*** create 'File' pulldown widget 'Read' ***/        
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Read") );
-	rd_tr_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, rd_tr_cb);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 2);
-
-	/*** create 'File' pulldown widget 'ReRead' ***/ 
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("ReRead") );
-	rerd_tr_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, rerd_tr_cb);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 2);
-
-	/*** create 'File' pulldown widget 'Clear' ***/        
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Clear") );
-	clr_tr_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, clr_tr_cb);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 2);
-
-	/*** create 'File' pulldown widget 'Exit' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Exit") );
-	del_tr_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, del_tr_cb);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 2);
-
-	/*** increment pulldownentry count ***/
-	pde++;
-
-	/*** create 'Customize' pulldownmenu widget ***/
-	ptr->menu.pulldownmenu[pde] = DwtMenuPulldownCreate(ptr->menu.menu,"",NULL,0);
-
-	/*** create 'Customize' pulldownentry widget ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Customize") );
-	XtSetArg(arglist[1], DwtNsubMenuId, ptr->menu.pulldownmenu[pde] );
-	ptr->menu.pulldownentry[pde] = DwtPullDownMenuEntryCreate( 
-                        ptr->menu.menu, "", arglist, 2);
-
-	/*** create 'Customize' pulldown widget 'Change' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Change") );
-	custom_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, custom_cb);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 2);
-
-	/*** create 'Customize' pulldown widget 'Read' ***/
+    dt_menu_title ("Display");
+    dt_menu_entry	("Read", cb_read_trace);
+    dt_menu_entry	("ReRead", cb_reread_trace);
+    dt_menu_entry	("Clear", clear_display);
+    dt_menu_entry	("Exit", delete_display);
+    dt_menu_title ("Customize");
+    dt_menu_entry	("Change", cus_dialog_cb);
+    dt_menu_entry	("ReRead", cus_reread_cb);
+    dt_menu_entry	("Restore", cus_restore_cb);
+    dt_menu_title ("Cursor");
+    dt_menu_entry	("Add", cur_add_cb);
+    dt_menu_entry	("Move", cur_mov_cb);
+    dt_menu_entry	("Delete", cur_del_cb);
+    dt_menu_entry	("Clear", cur_clr_cb);
+    dt_menu_entry	("Cancel", cancel_all_events);
+    dt_menu_title ("Grid");
+    dt_menu_entry	("Res", grid_res_cb);
+    dt_menu_entry	("Align", grid_align_cb);
+    dt_menu_entry	("Reset", grid_reset_cb);
+    dt_menu_entry	("Cancel", cancel_all_events);
+    dt_menu_title ("Signal");
+    dt_menu_entry	("Add", sig_add_cb);
+    dt_menu_entry	("Move", sig_mov_cb);
+    dt_menu_entry	("Delete", sig_del_cb);
+    dt_menu_entry	("Highlight", sig_highlight_cb);
+    dt_menu_entry	("Reset", sig_reset_cb);
+    dt_menu_entry	("Cancel", cancel_all_events);
     /*
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Read") );
-	custom_cb[2].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, custom_cb+2);
-	XtSetArg(arglist[2], DwtNsensitive, FALSE);
-        ptr->menu.pulldown[pd++] =
-	    DwtPushButtonCreate (ptr->menu.pulldownmenu[pde], "", arglist, 3);
-	    */
-
-	/*** create 'Customize' pulldown widget 'ReRead' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("ReRead") );
-	custom_cb[26].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, custom_cb+26);
-        ptr->menu.pulldown[pd++] =
-	    DwtPushButtonCreate (ptr->menu.pulldownmenu[pde], "", arglist, 2);
-
-        /*** create 'Customize' pulldown widget 'Save' ***/
-    /*
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Save") );
-	custom_cb[4].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, custom_cb+4);
-	XtSetArg(arglist[2], DwtNsensitive, FALSE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate(
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-			*/
-
-	/*** create 'Customize' pulldown widget 'Restore' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Restore") );
-	custom_cb[24].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, custom_cb+24);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate(
-                        ptr->menu.pulldownmenu[pde], "", arglist, 2);
-
-	/*** increment pulldownentry count ***/
-	pde++;
-
-	/*** create 'Cursor' pulldownmenu widget ***/
-	ptr->menu.pulldownmenu[pde] = DwtMenuPulldownCreate(ptr->menu.menu,
-		"",NULL,0);
-                                                                  
-	/*** create 'Cursor' pulldownentry widget ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Cursor") );
-	XtSetArg(arglist[1], DwtNsubMenuId, ptr->menu.pulldownmenu[pde] );
-	ptr->menu.pulldownentry[pde] = DwtPullDownMenuEntryCreate(
-                        ptr->menu.menu, "", arglist, 2);
-
-	/*** create 'Cursor' pulldown widget 'Add' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Add") );
-	cursor_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, cursor_cb);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Cursor' pulldown widget 'Add' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Move") );
-	cursor_cb[2].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, cursor_cb+2);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Cursor' pulldown widget 'Delete' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Delete") );
-	cursor_cb[4].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, cursor_cb+4);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Cursor' pulldown widget 'Clear' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Clear") );
-	cursor_cb[6].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, cursor_cb+6);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Cursor' pulldown widget 'Cancel' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Cancel") );
-	cursor_cb[8].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, cursor_cb+8);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** increment pulldownentry count ***/
-	pde++;
-
-	/*** create 'Grid' pulldownmenu widget ***/
-	ptr->menu.pulldownmenu[pde] = DwtMenuPulldownCreate(ptr->menu.menu,"",NULL,0);
-
-	/*** create 'Grid' pulldownentry widget ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Grid") );
-	XtSetArg(arglist[1], DwtNsubMenuId, ptr->menu.pulldownmenu[pde] );
-	ptr->menu.pulldownentry[pde] = DwtPullDownMenuEntryCreate(
-                        ptr->menu.menu, "", arglist, 2);
-
-	/*** create 'Grid' pulldown widget 'Res' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Res") );
-	grid_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, grid_cb);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Grid' pulldown widget 'Align' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Align") );
-	grid_cb[2].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, grid_cb+2);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Grid' pulldown widget 'Reset' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Reset") );
-	grid_cb[4].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, grid_cb+4);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Grid' pulldown widget 'Cancel' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Cancel") );
-	grid_cb[6].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, grid_cb+6);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** increment pulldownentry count ***/
-	pde++;
-
-	/*** create 'Signal' pulldownmenu widget ***/
-	ptr->menu.pulldownmenu[pde] = DwtMenuPulldownCreate(ptr->menu.menu,"",NULL,0);
-
-	/*** create 'Signal' pulldownentry widget ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Signal") );
-	XtSetArg(arglist[1], DwtNsubMenuId, ptr->menu.pulldownmenu[pde] );
-	ptr->menu.pulldownentry[pde] = DwtPullDownMenuEntryCreate(
-                        ptr->menu.menu, "", arglist, 2);
-
-	/*** create 'Signal' pulldown widget 'Add' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Add") );
-	signal_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, signal_cb);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Signal' pulldown widget 'Move' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Move") );
-	signal_cb[2].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, signal_cb+2);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-	                    ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Signal' pulldown widget 'Delete' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Delete") );
-	signal_cb[4].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, signal_cb+4);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Signal' pulldown widget 'Reset' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Reset") );
-	signal_cb[6].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, signal_cb+6);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Signal' pulldown widget 'Cancel' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Cancel") );
-	signal_cb[8].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, signal_cb+8);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** increment pulldownentry count ***/
-	pde++;
-
-	/*** create 'Note' pulldownmenu widget ***/
-	ptr->menu.pulldownmenu[pde] = DwtMenuPulldownCreate(ptr->menu.menu,"",NULL,0);
-
-	/*** create 'Note' pulldownentry widget ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Note") );
-	XtSetArg(arglist[1], DwtNsubMenuId, ptr->menu.pulldownmenu[pde] );
-	ptr->menu.pulldownentry[pde] = DwtPullDownMenuEntryCreate(
-                        ptr->menu.menu, "", arglist, 2);
-
-	/*** create 'Note' pulldown widget 'Add' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Add") );
-	note_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, note_cb);
-	XtSetArg(arglist[2], DwtNsensitive, FALSE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Note' pulldown widget 'Move' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Move") );
-	note_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, note_cb);
-	XtSetArg(arglist[2], DwtNsensitive, FALSE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Note' pulldown widget 'Delete' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Delete") );
-	note_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, note_cb);
-	XtSetArg(arglist[2], DwtNsensitive, FALSE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Note' pulldown widget 'Clear' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Clear") );
-	note_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, note_cb);
-	XtSetArg(arglist[2], DwtNsensitive, FALSE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Note' pulldown widget 'Cancel' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Cancel") );
-	note_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, note_cb);
-	XtSetArg(arglist[2], DwtNsensitive, FALSE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** increment pulldownentry count ***/
-	pde++;
-
-	/*** create 'Printscreen' pulldownmenu widget ***/
-	ptr->menu.pulldownmenu[pde] = DwtMenuPulldownCreate(ptr->menu.menu,"",NULL,0);
-
-	/*** create 'Printscreen' pulldownentry widget ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Printscreen") );
-	XtSetArg(arglist[1], DwtNsubMenuId, ptr->menu.pulldownmenu[pde] );
-	ptr->menu.pulldownentry[pde] = DwtPullDownMenuEntryCreate(
-                        ptr->menu.menu, "", arglist, 2);
-
-	/*** create 'Printscreen' pulldown widget 'Print' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Print") );
-	dino_cb[0].proc = ps_dialog;
-	dino_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, dino_cb);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Printscreen' pulldown widget 'Reset' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Reset") );
-	dino_cb[0].proc = ps_reset;
-	dino_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, dino_cb);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** increment pulldownentry count ***/
-	pde++;
-
+    dt_menu_title ("Note");
+    dt_menu_entry	("Add", );
+    dt_menu_entry	("Move", );
+    dt_menu_entry	("Delete", );
+    dt_menu_entry	("Clear", );
+    dt_menu_entry	("Cancel", );
+    */
+    dt_menu_title ("Printscreen");
+    dt_menu_entry	("Print", ps_dialog);
+    dt_menu_entry	("Reset", ps_reset);
+    
     if (DTDEBUG) {
-	/*** create 'Debug' pulldownmenu widget ***/
-	ptr->menu.pulldownmenu[pde] = DwtMenuPulldownCreate(ptr->menu.menu,
-		"",NULL,0);
-
-	/*** create 'Debug' pulldownentry widget ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Debug") );
-	XtSetArg(arglist[1], DwtNsubMenuId, ptr->menu.pulldownmenu[pde] );
-	ptr->menu.pulldownentry[pde] = DwtPullDownMenuEntryCreate(
-                        ptr->menu.menu, "", arglist, 2);
-
-	/*** create 'Debug' pulldown widget 'Print Signal Names' ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Print Signal Names") );
-	print_sig_names_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, print_sig_names_cb);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Debug' pulldown widget 'Print Signal Info' ***/
-	XtSetArg(arglist[0], DwtNlabel,
-		DwtLatin1String("Print Signal Info (Entire Trace)") );
-	print_all_traces_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, print_all_traces_cb);
-	XtSetArg(arglist[2], DwtNsensitive, FALSE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** create 'Debug' pulldown widget 'Print Signal Info' ***/
-	XtSetArg(arglist[0], DwtNlabel,
-		DwtLatin1String("Print Signal Info (Screen Only)") );
-	print_screen_traces_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[1], DwtNactivateCallback, print_screen_traces_cb);
-	XtSetArg(arglist[2], DwtNsensitive, TRUE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
-
-	/*** increment pulldownentry count ***/
-	pde++;
+	dt_menu_title ("Debug");
+	dt_menu_entry	("Print Signal Names", print_sig_names);
+	dt_menu_entry	("Print Signal Info (Screen Only)", print_screen_traces);
 	}
-
-    /*** manage all menubar pulldown widgets ***/
-    for (i=0;i<pd;i++)
-	XtManageChild(ptr->menu.pulldown[i]);
-
-    /*** manage all menubar pulldownentry widgets ***/
-    for (i=0;i<pde;i++)
-	XtManageChild(ptr->menu.pulldownentry[i]);
-
-    /*** manage  menubar ***/
-    XtManageChild(ptr->menu.menu);
-
+    
     /****************************************
-    * create the horizontal scroll bar
-    ****************************************/
-    XtSetArg(arglist[0], DwtNorientation, DwtOrientationHorizontal );
-    hsc_inc_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[1], DwtNunitIncCallback, hsc_inc_cb);
-    hsc_dec_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[2], DwtNunitDecCallback, hsc_dec_cb);
-    hsc_drg_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[3], DwtNdragCallback, hsc_drg_cb);
-    hsc_bot_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[4], DwtNtoBottomCallback, hsc_bot_cb);
-    hsc_top_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[5], DwtNtoTopCallback, hsc_top_cb);
-    hsc_pginc_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[6], DwtNpageIncCallback, hsc_pginc_cb);
-    hsc_pgdec_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[7], DwtNpageDecCallback, hsc_pgdec_cb);
-    ptr->hscroll = DwtScrollBarCreate( ptr->main, "", arglist, 8);
-    XtManageChild(ptr->hscroll);
+     * create the command widget
+     ****************************************/
+    trace->command.command = XmCreateForm(trace->main, "form", arglist, 0);
+    XtManageChild(trace->command.command);
+    
+    /*** create begin button in command region ***/
+    XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Begin") );
+    XtSetArg(arglist[1], XmNleftAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[2], XmNleftOffset, 7);
+    XtSetArg(arglist[3], XmNbottomAttachment, XmATTACH_FORM );
+    trace->command.begin_but = XmCreatePushButton(trace->command.command, "begin", arglist, 4);
+    XtAddCallback(trace->command.begin_but, XmNactivateCallback, cb_begin, trace);
+    XtManageChild(trace->command.begin_but);
+    
+    /*** create end button in command region ***/
+    XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("End") );
+    XtSetArg(arglist[1], XmNrightAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[2], XmNrightOffset, 15);
+    XtSetArg(arglist[3], XmNbottomAttachment, XmATTACH_FORM );
+    trace->command.end_but = XmCreatePushButton(trace->command.command, "end", arglist, 4);
+    XtAddCallback(trace->command.end_but, XmNactivateCallback, cb_end, trace);
+    XtManageChild(trace->command.end_but);
+    
+    /*** create resolution button in command region ***/
+    XtSetArg(arglist[0], XmNleftAttachment, XmATTACH_POSITION );
+    XtSetArg(arglist[1], XmNleftPosition, 45);
+    XtSetArg(arglist[2], XmNbottomAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[3], XmNlabelString, XmStringCreateSimple("Res") );
+    trace->command.reschg_but = XmCreatePushButton(trace->command.command, "res", arglist, 4);
+    XtAddCallback(trace->command.reschg_but, XmNactivateCallback, cb_chg_res, trace);
+    XtManageChild(trace->command.reschg_but);
+    
+    /* create the vertical scroll bar */
+    XtSetArg(arglist[0], XmNorientation, XmVERTICAL );
+    XtSetArg(arglist[1], XmNrightAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[2], XmNtopAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[3], XmNbottomAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[4], XmNbottomOffset, 40);
+    XtSetArg(arglist[5], XmNwidth, 18);
+    trace->vscroll = XmCreateScrollBar( trace->command.command, "vscroll", arglist, 6);
+    XtAddCallback(trace->vscroll, XmNincrementCallback, vscroll_unitinc, trace);
+    XtAddCallback(trace->vscroll, XmNdecrementCallback, vscroll_unitdec, trace);
+    XtAddCallback(trace->vscroll, XmNdragCallback, vscroll_drag, trace);
+    XtAddCallback(trace->vscroll, XmNtoBottomCallback, vscroll_bot, trace);
+    XtAddCallback(trace->vscroll, XmNtoTopCallback, vscroll_top, trace);
+    XtAddCallback(trace->vscroll, XmNpageIncrementCallback, vscroll_pageinc, trace);
+    XtAddCallback(trace->vscroll, XmNpageDecrementCallback, vscroll_pagedec, trace);
+    XtManageChild(trace->vscroll);
 
+    /* create the horizontal scroll bar */
+    XtSetArg(arglist[0], XmNorientation, XmHORIZONTAL );
+    XtSetArg(arglist[1], XmNbottomAttachment, XmATTACH_WIDGET );
+    XtSetArg(arglist[2], XmNbottomWidget, trace->command.end_but);
+    XtSetArg(arglist[3], XmNleftAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[4], XmNrightAttachment, XmATTACH_WIDGET );
+    XtSetArg(arglist[5], XmNrightWidget, trace->vscroll);
+    XtSetArg(arglist[6], XmNheight, 18);
+    trace->hscroll = XmCreateScrollBar( trace->command.command, "hscroll", arglist, 7);
+    XtAddCallback(trace->hscroll, XmNincrementCallback, hscroll_unitinc, trace);
+    XtAddCallback(trace->hscroll, XmNdecrementCallback, hscroll_unitdec, trace);
+    XtAddCallback(trace->hscroll, XmNdragCallback, hscroll_drag, trace);
+    XtAddCallback(trace->hscroll, XmNtoBottomCallback, hscroll_bot, trace);
+    XtAddCallback(trace->hscroll, XmNtoTopCallback, hscroll_top, trace);
+    XtAddCallback(trace->hscroll, XmNpageIncrementCallback, hscroll_pageinc, trace);
+    XtAddCallback(trace->hscroll, XmNpageDecrementCallback, hscroll_pagedec, trace);
+    XtManageChild(trace->hscroll);
+    
+    /*** create full button in command region ***/
+    XtSetArg(arglist[0], XmNrightAttachment, XmATTACH_WIDGET );
+    XtSetArg(arglist[1], XmNrightWidget, trace->command.reschg_but);
+    XtSetArg(arglist[2], XmNrightOffset, 2);
+    XtSetArg(arglist[3], XmNlabelString, XmStringCreateSimple("Full") );
+    XtSetArg(arglist[4], XmNbottomAttachment, XmATTACH_FORM );
+    trace->command.resfull_but = XmCreatePushButton(trace->command.command, "full", arglist, 5);
+    XtAddCallback(trace->command.resfull_but, XmNactivateCallback, cb_full_res, trace);
+    XtManageChild(trace->command.resfull_but);
+    
+    /*** create zoom button in command region ***/
+    XtSetArg(arglist[0], XmNleftAttachment, XmATTACH_WIDGET );
+    XtSetArg(arglist[1], XmNleftWidget, trace->command.reschg_but);
+    XtSetArg(arglist[2], XmNleftOffset, 2);
+    XtSetArg(arglist[3], XmNlabelString, XmStringCreateSimple("Zoom") );
+    XtSetArg(arglist[4], XmNbottomAttachment, XmATTACH_FORM );
+    trace->command.reszoom_but = XmCreatePushButton(trace->command.command, "zoom", arglist, 5);
+    XtAddCallback(trace->command.reszoom_but, XmNactivateCallback, cb_zoom_res, trace);
+    XtManageChild(trace->command.reszoom_but);
+
+    /*** create resolution decrease button in command region ***/
+    XtSetArg(arglist[0], XmNrightAttachment, XmATTACH_WIDGET );
+    XtSetArg(arglist[1], XmNrightWidget, trace->command.resfull_but);
+    XtSetArg(arglist[2], XmNrightOffset, 2);
+    XtSetArg(arglist[3], XmNheight, 33);
+    XtSetArg(arglist[4], XmNbottomAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[5], XmNarrowDirection, XmARROW_LEFT );
+    trace->command.resdec_but = XmCreateArrowButton(trace->command.command, "decres", arglist, 6);
+    XtAddCallback(trace->command.resdec_but, XmNactivateCallback, cb_dec_res, trace);
+    XtManageChild(trace->command.resdec_but);
+    
+    /*** create resolution increase button in command region ***/
+    XtSetArg(arglist[0], XmNleftAttachment, XmATTACH_WIDGET );
+    XtSetArg(arglist[1], XmNleftWidget, trace->command.reszoom_but);
+    XtSetArg(arglist[2], XmNleftOffset, 2);
+    XtSetArg(arglist[3], XmNheight, 33);
+    XtSetArg(arglist[4], XmNbottomAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[5], XmNarrowDirection, XmARROW_RIGHT );
+    trace->command.resinc_but = XmCreateArrowButton(trace->command.command, "incres", arglist, 6);
+    XtAddCallback(trace->command.resinc_but, XmNactivateCallback, cb_inc_res, trace);
+    XtManageChild(trace->command.resinc_but);
+    
     /****************************************
-    * create the vertical scroll bar
-    ****************************************/
-    XtSetArg(arglist[0], DwtNorientation, DwtOrientationVertical );
-    vsc_inc_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[1], DwtNunitIncCallback, vsc_inc_cb);
-    vsc_dec_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[2], DwtNunitDecCallback, vsc_dec_cb);
-    vsc_drg_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[3], DwtNdragCallback, vsc_drg_cb);
-    vsc_bot_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[4], DwtNtoBottomCallback, vsc_bot_cb);
-    vsc_top_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[5], DwtNtoTopCallback, vsc_top_cb);
-    vsc_pginc_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[6], DwtNpageIncCallback, vsc_pginc_cb);
-    vsc_pgdec_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[7], DwtNpageDecCallback, vsc_pgdec_cb);
-    ptr->vscroll = DwtScrollBarCreate( ptr->main, "", arglist, 8);
-    XtManageChild(ptr->vscroll);
+     * create the work area window
+     ****************************************/
 
-    /****************************************
-    * create the command widget
-    ****************************************/
-    XtSetArg(arglist[0], DwtNlines, 3 );
-    ptr->command.command = DwtAttachedDBCreate(ptr->main, "", arglist, 1);
-    XtManageChild(ptr->command.command);
+    XtSetArg(arglist[0], XmNtopAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[1], XmNleftAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[2], XmNrightAttachment, XmATTACH_WIDGET );
+    XtSetArg(arglist[3], XmNrightWidget, trace->vscroll); 
+    XtSetArg(arglist[4], XmNbottomAttachment, XmATTACH_WIDGET );
+    XtSetArg(arglist[5], XmNbottomWidget, trace->hscroll);
+    trace->work = XmCreateDrawingArea(trace->command.command,"work", arglist, 6);
 
-	/*** create begin button in command region ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Begin") );
-	XtSetArg(arglist[1], DwtNadbLeftAttachment, DwtAttachAdb);
-	XtSetArg(arglist[2], DwtNadbLeftOffset, 7);
-	begin_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[3], DwtNactivateCallback, begin_cb );
-	ptr->command.begin_but = DwtPushButtonCreate(ptr->command.command, "",
-	    arglist, 4);
-	XtManageChild(ptr->command.begin_but);
-
-	/*** create end button in command region ***/
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("End") );
-	XtSetArg(arglist[1], DwtNadbRightAttachment, DwtAttachAdb);
-	XtSetArg(arglist[2], DwtNadbRightOffset, 7);
-	end_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[3], DwtNactivateCallback, end_cb);
-	ptr->command.end_but = DwtPushButtonCreate(ptr->command.command, "",
-	    arglist, 4);
-	XtManageChild(ptr->command.end_but);
-
-	/*** create resolution button in command region ***/
-	XtSetArg(arglist[0], DwtNadbLeftAttachment, DwtAttachPosition);
-	XtSetArg(arglist[1], DwtNadbLeftPosition, 45);
-	chg_res_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[2], DwtNactivateCallback, chg_res_cb );
-	ptr->command.reschg_but = DwtPushButtonCreate(ptr->command.command, "",
-	    arglist, 3);
-	XtManageChild(ptr->command.reschg_but);
-
-	/*** create full button in command region ***/
- 	XtSetArg(arglist[0], DwtNadbRightAttachment, DwtAttachWidget);
-	XtSetArg(arglist[1], DwtNadbRightWidget, ptr->command.reschg_but);
-	XtSetArg(arglist[2], DwtNadbRightOffset, 2);
-	full_res_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[3], DwtNactivateCallback, full_res_cb );
-	XtSetArg(arglist[4], DwtNlabel, DwtLatin1String("Full") );
-	ptr->command.resfull_but = DwtPushButtonCreate(ptr->command.command, "",
-	    arglist, 5);
-	XtManageChild(ptr->command.resfull_but);
-
-	/*** create zoom button in command region ***/
-	XtSetArg(arglist[0], DwtNadbLeftAttachment, DwtAttachWidget);
-	XtSetArg(arglist[1], DwtNadbLeftWidget, ptr->command.reschg_but);
-	XtSetArg(arglist[2], DwtNadbLeftOffset, 2);
-	zoom_res_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[3], DwtNactivateCallback, zoom_res_cb );
-	XtSetArg(arglist[4], DwtNlabel, DwtLatin1String("Zoom") );
-	ptr->command.reszoom_but = DwtPushButtonCreate(ptr->command.command, "",
-	    arglist, 5);
-	XtManageChild(ptr->command.reszoom_but);
-
-	/*** create resolution decrease button in command region ***/
- 	XtSetArg(arglist[0], DwtNadbRightAttachment, DwtAttachWidget);
-	XtSetArg(arglist[1], DwtNadbRightWidget, ptr->command.resfull_but);
-	XtSetArg(arglist[2], DwtNadbRightOffset, 2);
-	dec_res_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[3], DwtNactivateCallback, dec_res_cb );
-	XtSetArg(arglist[4], DwtNwidth, 35);
-	ptr->command.resdec_but = DwtPushButtonCreate(ptr->command.command, "",
-	    arglist, 5);
-	XtManageChild(ptr->command.resdec_but);
-
-	/*** create resolution increase button in command region ***/
-	XtSetArg(arglist[0], DwtNadbLeftAttachment, DwtAttachWidget);
-	XtSetArg(arglist[1], DwtNadbLeftWidget, ptr->command.reszoom_but);
-	XtSetArg(arglist[2], DwtNadbLeftOffset, 2);
-	inc_res_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[3], DwtNactivateCallback, inc_res_cb );
-	XtSetArg(arglist[4], DwtNwidth, 35);
-	ptr->command.resinc_but = DwtPushButtonCreate(ptr->command.command, "",
-	    arglist, 5);
-	XtManageChild(ptr->command.resinc_but);
-
-    /****************************************
-    * create the work area window
-    ****************************************/
-    XtSetArg(arglist[0], DwtNheight, 500);
-    XtSetArg(arglist[1], DwtNwidth, 500);
-    XtSetArg(arglist[2], DwtNx, 500);
-    win_exp_cb[0].tag = (int)ptr;
-    XtSetArg(arglist[3], DwtNexposeCallback, win_exp_cb);
-    ptr->work = DwtWindowCreate(ptr->main,"", arglist, 4);
-    XtManageChild(ptr->work);
-
-    DwtMainSetAreas(ptr->main,
-                    ptr->menu.menu,
-                    ptr->work,
-                    ptr->command.command,
-                    ptr->hscroll,
-                    ptr->vscroll);
-
-    XtManageChild(ptr->main);
+    XtAddCallback(trace->work, XmNexposeCallback, cb_window_expose, trace);
+    XtManageChild(trace->work);
+    
+#ifdef NOTDONE    
+    DwtMainSetAreas(trace->main,
+                    trace->menu.menu,
+                    trace->work,
+                    trace->command.command,
+                    trace->hscroll,
+                    trace->vscroll);
+#endif
+    
+    XtManageChild(trace->main);
     XtRealizeWidget(toplevel);
-
+    
     /* Initialize Various Parameters */
-    ptr->sig.forward = NULL;
-    ptr->sig.backward = NULL;
-    ptr->del.forward = NULL;
-    ptr->del.backward = NULL;
-    ptr->disp = XtDisplay(toplevel);
-    ptr->wind = XtWindow(ptr->work);
-    ptr->custom.customize = NULL;
-    ptr->signal.customize = NULL;
-    ptr->prntscr.customize = NULL;
-    ptr->fileselect = NULL;
-    ptr->filename[0] = '\0';
-    ptr->loaded = 0;
-    ptr->numsig = 0;
-    ptr->numsigvis = 0;
-    ptr->numsigdel = 0;
-    ptr->sigstart = 0;
-    ptr->time = 0;
-    ptr->pageinc = FPAGE;
-    ptr->busrep = HBUS;
-    ptr->xstart = 200;
-    ptr->ystart = 40;
-    ptr->separator = 0;
+    trace->firstsig = NULL;
+    trace->dispsig = NULL;
+    trace->delsig = NULL;
+    trace->display = XtDisplay(toplevel);
+    trace->wind = XtWindow(trace->work);
+    trace->custom.customize = NULL;
+    trace->signal.customize = NULL;
+    trace->prntscr.customize = NULL;
+    trace->prompt_popup = NULL;
+    trace->fileselect = NULL;
+    trace->filename[0] = '\0';
+    trace->loaded = 0;
+    trace->numsig = 0;
+    trace->numsigvis = 0;
+    trace->numsigdel = 0;
+    trace->numsigstart = 0;
+    trace->time = 0;
+    trace->busrep = HBUS;
+    trace->xstart = 200;
+    trace->ystart = 40;
+    
+    trace->signalstate_head = NULL;
+    config_restore_defaults (trace);
+    
+    XGetGeometry( XtDisplay(toplevel), XtWindow(trace->work), &x1, &x1,
+		 &x1, &x2, &x1, &x1, &x1);
 
-    ptr->signalstate_head = NULL;
-    config_restore_defaults (ptr);
-
-    XGetGeometry( XtDisplay(toplevel), XtWindow(ptr->work), &x1, &x1,
-	&x1, &x2, &x1, &x1, &x1);
-    ptr->res = ((float)(x2-ptr->xstart))/(float)res;
-    sprintf(data,"%d",res);
-    strcat(string,"Res=");
-    strcat(string,data);
-    strcat(string," ns");
-    XtSetArg(arglist[0],DwtNlabel,DwtLatin1String(string));
-    XtSetValues(ptr->command.reschg_but,arglist,1);
-
+    trace->res = ((float)(x2-trace->xstart))/(float)res;
+    sprintf(string,"Res=%d ns",res);
+    XtSetArg(arglist[0],XmNlabelString,XmStringCreateSimple(string));
+    XtSetValues(trace->command.reschg_but,arglist,1);
+    
+#ifdef NOTDONE
+    /* What does this do? */
     xgcv.line_width = 0;
-    arglist[0].name = DwtNforeground;
+    arglist[0].name = XmNforeground;
     arglist[0].value = (int)&fore;
-    arglist[1].name = DwtNbackground;
+    arglist[1].name = XmNbackground;
     arglist[1].value = (int)&back;
-    XtGetValues(ptr->work,arglist,2);
-
+    XtGetValues(trace->work,arglist,2);
+    
     xgcv.foreground = fore;
     xgcv.background = back;
+    
+    XtSetArg(arglist[0],XmNbackground,back);
+    XtSetValues(trace->work,arglist,1);
+#endif    
 
-    XtSetArg(arglist[0],DwtNbackground,back);
-    XtSetValues(ptr->work,arglist,1);
-
-    ptr->gc = XCreateGC(ptr->disp,ptr->wind,
-	GCLineWidth|GCForeground|GCBackground,&xgcv);
-
-    get_geometry(ptr);
-
+    trace->gc = XCreateGC(trace->display,trace->wind,
+			  GCLineWidth|GCForeground|GCBackground,&xgcv);
+    
+    /* Define cursors */
+    trace->xcursors[0] = XCreateFontCursor (trace->display, XC_top_left_arrow);
+    trace->xcursors[1] = XCreateFontCursor (trace->display, XC_watch);
+    trace->xcursors[2] = XCreateFontCursor (trace->display, XC_sb_left_arrow);
+    trace->xcursors[3] = XCreateFontCursor (trace->display, XC_sb_right_arrow);
+    trace->xcursors[4] = XCreateFontCursor (trace->display, XC_hand1);
+    trace->xcursors[5] = XCreateFontCursor (trace->display, XC_center_ptr);
+    trace->xcursors[6] = XCreateFontCursor (trace->display, XC_sb_h_double_arrow);
+    trace->xcursors[7] = XCreateFontCursor (trace->display, XC_X_cursor);
+    trace->xcursors[8] = XCreateFontCursor (trace->display, XC_left_side);
+    trace->xcursors[9] = XCreateFontCursor (trace->display, XC_right_side);
+    trace->xcursors[10] = XCreateFontCursor (trace->display, XC_spraycan);
+    set_cursor (trace, DC_NORMAL);
+    
     /* get font information */
-    ptr->text_font = XQueryFont(ptr->disp,XGContextFromGC(ptr->gc));
+    trace->text_font = XQueryFont(trace->display,XGContextFromGC(trace->gc));
+    
+    /* get color information */
+    arglist[0].name = XmNforeground;
+    arglist[0].value = (int)&(trace->xcolornums[0]);
+    XtGetValues(trace->main,arglist,1);
+    trace->xcolornums[1] = XWhitePixel (trace->display, 0);
 
-
-    /* create the arrow fonts */
-    left_arrow = XCreatePixmap(ptr->disp,ptr->wind,arrow_width,arrow_height,
-                        (unsigned int) DefaultDepth(ptr->disp, 0));
-
-    right_arrow = XCreatePixmap(ptr->disp,ptr->wind,arrow_width,arrow_height,
-                        (unsigned int) DefaultDepth(ptr->disp, 0));
-
-    ximage.height = arrow_height;
-    ximage.width = arrow_width;
-    ximage.xoffset = 0;
-    ximage.format = XYBitmap;
-    ximage.data = (char *)arrow_left_bits;
-    ximage.byte_order = MSBFirst;
-    ximage.bitmap_unit = 16; 
-    ximage.bitmap_bit_order = MSBFirst;
-    ximage.bitmap_pad = 16;
-    ximage.bytes_per_line = (arrow_width+15)/16 * 2;
-    ximage.depth = 1;
-    XPutImage(ptr->disp,left_arrow,ptr->gc,&ximage,0,0,0,0,arrow_width,arrow_height);
-
-    ximage.data = (char *)arrow_right_bits;
-    XPutImage(ptr->disp,right_arrow,ptr->gc,&ximage,0,0,0,0,arrow_width,arrow_height);
-
-    XtSetArg(arglist[0], DwtNbackgroundPixmap, left_arrow);
-    XtSetValues(ptr->command.resdec_but,arglist,1);
-
-    XtSetArg(arglist[0], DwtNbackgroundPixmap, right_arrow);
-    XtSetValues(ptr->command.resinc_but,arglist,1);
-
+    get_geometry(trace);
+    
     /* Load up the file on the command line, if any */
     if (start_filename != NULL) {
-	XSync(ptr->disp,0);
-	strcpy (ptr->filename, start_filename);
-	cb_fil_read (ptr);
+	XSync(trace->display,0);
+	strcpy (trace->filename, start_filename);
+	cb_fil_read (trace);
 	}
     }

@@ -38,127 +38,129 @@
 #include <math.h> /* removed for Ultrix support... */
 #endif VMS
 
-#include <X11/DECwDwtApplProg.h>
 #include <X11/Xlib.h>
+#include <X11/Xm.h>
 
 #include "dinotrace.h"
 
-void free_data(ptr)
-    DISPLAY_SB		*ptr;
+int	separator=0;		/* File temporary, true if | in trace file */
+
+void free_data(trace)
+    TRACE		*trace;
 {
     int		i;
     SIGNAL_SB	*sig_ptr,*tmp_sig_ptr;
 
-    if (DTPRINT) printf("In free_data - ptr=%d\n",ptr);
+    if (DTPRINT) printf("In free_data - trace=%d\n",trace);
 
     /* Initialize cursor array to zero */
-    ptr->numcursors = 0;
+    trace->numcursors = 0;
     for (i=0; i<MAX_CURSORS; i++)
-	ptr->cursors[i] = 0;
+	trace->cursors[i] = 0;
 
     /* free bus array */
-    XtFree(ptr->bus);
-    ptr->bus = NULL;
+    XtFree(trace->bus);
+    trace->bus = NULL;
 
     /* free signal array */
-    XtFree(ptr->signame);
-    ptr->signame = NULL;
+    XtFree(trace->signame);
+    trace->signame = NULL;
 
     /* loop and free signal data and each signal structure */
-    sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
-    for (i=0;i<ptr->numsig-ptr->numsigdel;i++) {
+    sig_ptr = trace->firstsig;
+    while (sig_ptr) {
 	/* free the signal data */
 	XtFree(sig_ptr->bptr);
 	
 	tmp_sig_ptr = sig_ptr;
-	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
+	sig_ptr = sig_ptr->forward;
 	
 	/* free the signal structure */
 	XtFree(tmp_sig_ptr);
 	}
-    ptr->sig.forward = NULL;
-    ptr->sig.backward = NULL;
-    ptr->loaded = 0;
-    ptr->numsig = 0;
-    ptr->numsigdel = 0;
+    trace->firstsig = NULL;
+    trace->dispsig = NULL;
+    trace->loaded = 0;
+    trace->numsig = 0;
+    trace->numsigdel = 0;
     }
 
-void clear_display(w,ptr)
+void clear_display(w,trace)
     Widget		w;
-    DISPLAY_SB		*ptr;
+    TRACE		*trace;
 {
     char	title[100];
 
-    if (DTPRINT) printf("In clear_display - ptr=%d\n",ptr);
+    if (DTPRINT) printf("In clear_display - trace=%d\n",trace);
 
     /* clear the screen */
-    XClearWindow(ptr->disp, ptr->wind);
+    XClearWindow(trace->display, trace->wind);
 
     /* free memory associated with the data */
-    free_data(ptr);
+    free_data(trace);
 
-    /* change the name on title bar back to the ptr */
-    change_title (ptr);
+    /* change the name on title bar back to the trace */
+    change_title (trace);
     }
 
-void delete_display(w,ptr)
+void delete_display(w,trace)
     Widget		w;
-    DISPLAY_SB		*ptr;
+    TRACE		*trace;
 {
-    if (DTPRINT) printf("In delete_display - ptr=%d\n",ptr);
+    if (DTPRINT) printf("In delete_display - trace=%d\n",trace);
 
     /* remove the display */
-    XtUnmanageChild(ptr->main);
+    XtUnmanageChild(trace->main);
 
     /* free memory associated with the data */
-    free_data(ptr);
+    free_data(trace);
 
     /* destroy all the widgets created for the screen */
-    XtDestroyWidget(ptr->main);
+    XtDestroyWidget(trace->main);
 
     /* free the display structure */
-    XtFree(ptr);
+    XtFree(trace);
 
     /* all done */
     exit(1);
     }
 
-void cb_read_trace(w,ptr)
+void cb_read_trace(w,trace)
     Widget		w;
-    DISPLAY_SB		*ptr;
+    TRACE		*trace;
 {
     char	*filename;
 
-    if (DTPRINT) printf("In cb_read_trace - ptr=%d\n",ptr);
+    if (DTPRINT) printf("In cb_read_trace - trace=%d\n",trace);
 
     /* get the filename */
-    get_file_name(ptr);
+    get_file_name(trace);
     }
 
-void cb_reread_trace(w,ptr)
+void cb_reread_trace(w,trace)
     Widget		w;
-    DISPLAY_SB		*ptr;
+    TRACE		*trace;
 {
     char *semi;
 
-    if (!ptr->loaded)
-	cb_read_trace(w,ptr);
+    if (!trace->loaded)
+	cb_read_trace(w,trace);
     else {
 	/* Drop ;xxx */
-	if (semi = strchr(ptr->filename,';'))
+	if (semi = strchr(trace->filename,';'))
 	    *semi = '\0';
 	
-	if (DTPRINT) printf("In cb_reread_trace - rereading file=%s\n",ptr->filename);
+	if (DTPRINT) printf("In cb_reread_trace - rereading file=%s\n",trace->filename);
 	
 	/* read the file */
-	cb_fil_read(ptr);
+	cb_fil_read(trace);
 	}
     }
 
-void quit(w,ptr,cb)
+void quit(w,trace,cb)
     Widget		w;
-    DISPLAY_SB		*ptr;
-    DwtAnyCallbackStruct	*cb;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
 {
     if (DTPRINT) printf("Quitting\n");
 
@@ -169,8 +171,8 @@ void quit(w,ptr,cb)
     exit(1);
     }
 
-void read_DECSIM_ascii(ptr)
-    DISPLAY_SB	*ptr;
+void read_DECSIM_ascii(trace)
+    TRACE	*trace;
 {
     FILE		*f_ptr;
     short int		len,*pshort;
@@ -178,17 +180,19 @@ void read_DECSIM_ascii(ptr)
     int			i,j,k,val,state,INIT,DONE,ZBUS;
     SIGNAL_SB		*sig_ptr,*last_sig_ptr;
 
+    separator = 0;
+
     /* initialize the string to 8 spaces */
     for (i=0;i<8;i++)
 	sp8[i] = ' ';
 
     /*** Open File For Reading ***/
-    if (DTPRINT) printf("Opening File %s\n", ptr->filename);
-    f_ptr = fopen(ptr->filename,"r");
+    if (DTPRINT) printf("Opening File %s\n", trace->filename);
+    f_ptr = fopen(trace->filename,"r");
     if ( f_ptr == NULL ) {
-	if (DTPRINT) printf("Can't Find File %s\n", ptr->filename);
-	sprintf(message,"Can't open file %s",ptr->filename);
-	dino_message_ack(ptr, message);
+	if (DTPRINT) printf("Can't Find File %s\n", trace->filename);
+	sprintf(message,"Can't open file %s",trace->filename);
+	dino_error_ack(trace, message);
 	return;
 	}
 
@@ -199,25 +203,25 @@ void read_DECSIM_ascii(ptr)
 	fgets(inline,MAX_SIG+10,f_ptr);
 
     /* INLINE contains 1st signal line - use for signal number */
-    ptr->numsig = strlen(&inline[9]) - 1;
+    trace->numsig = strlen(&inline[9]) - 1;
 
     /* Allocate memory for signames - assume array[numsig][MAXSIGLEN] */
-    if ( !(ptr->signame = (SIGNALNAMES *)malloc(ptr->numsig * MAXSIGLEN)) ) {
+    if ( !(trace->signame = (SIGNALNAMES *)malloc(trace->numsig * MAXSIGLEN)) ) {
 	if (DTPRINT) printf("Can't allocate memory for signal names.\n");
-	dino_message_ack(ptr,"Can't allocate memory for signal names.");
+	dino_error_ack(trace,"Can't allocate memory for signal names.");
 	return;
 	}
 
     /* allocate memory for bus array - one short per signal */
-    if ( !(ptr->bus = (short *)malloc(ptr->numsig * sizeof(short))) ) {
+    if ( !(trace->bus = (short *)malloc(trace->numsig * sizeof(short))) ) {
 	if (DTPRINT) printf("Can't allocate memory for bus.\n");
-	dino_message_ack(ptr,"Can't allocate memory for bus.");
+	dino_error_ack(trace,"Can't allocate memory for bus.");
 	return;
 	}
 
     /* initialize bus array to zero */
-    pshort = ptr->bus;
-    for (i=0; i<ptr->numsig; i++)
+    pshort = trace->bus;
+    for (i=0; i<trace->numsig; i++)
 	*(pshort+i) = 0;
 
     /* Read Signal Names Into Structure */
@@ -225,40 +229,40 @@ void read_DECSIM_ascii(ptr)
     k=0;
     while ( inline[0] == '!' ) {
 	/*** i=char read - j=char written - k=#lines read ***/
-	for (i=0,j=0; j<ptr->numsig; i++,j++) {
-	    if (ptr->separator)
+	for (i=0,j=0; j<trace->numsig; i++,j++) {
+	    if (separator)
 		i++;
-	    (*(ptr->signame)).array[j][k] = inline[9+i];
+	    (*(trace->signame)).array[j][k] = inline[9+i];
 	    }
 	if (++k >= MAXSIGLEN) {
-	    dino_message_info(ptr,"Signal Lengths > MAXSIGLEN");
+	    dino_error_ack(trace,"Signal Lengths > MAXSIGLEN");
 	    k--;
 	    }
 	fgets(inline,MAX_SIG+10,f_ptr);
 	}
 
     /* Add EOS delimiter to each signal name */
-    for ( i=0; i < ptr->numsig; i++) {
-	(*(ptr->signame)).array[i][k] = '\0';
+    for ( i=0; i < trace->numsig; i++) {
+	(*(trace->signame)).array[i][k] = '\0';
 	}
 
     /* Calculate the bus array */
     if (TRUE) {
-	pshort = ptr->bus;
+	pshort = trace->bus;
 	j = 0;
-	for (i=0; i<ptr->numsig-1; i++) {
+	for (i=0; i<trace->numsig-1; i++) {
 	    /*** t1 points to 1st char in signame[i] ***/
-	    if ( !(t1 = strrchr((*(ptr->signame)).array[i],' ')) )
-		t1 = (*(ptr->signame)).array[i];
+	    if ( !(t1 = strrchr((*(trace->signame)).array[i],' ')) )
+		t1 = (*(trace->signame)).array[i];
 	    else
 		t1++;
 	    /*** t2 points to 1st char in signame[i+1] ***/
-	    if ( !(t2 = strrchr((*(ptr->signame)).array[i+1],' ')) )
-		t2 = (*(ptr->signame)).array[i+1];
+	    if ( !(t2 = strrchr((*(trace->signame)).array[i+1],' ')) )
+		t2 = (*(trace->signame)).array[i+1];
 	    else
 		t2++;
 	    /*** t3 points to '<' in signame[i] ***/
-	    t3 = strchr((*(ptr->signame)).array[i],'<');
+	    t3 = strchr((*(trace->signame)).array[i],'<');
 	    if ( t3 && strncmp(t1,t2,t3-t1+1) == 0 
 		&& (abs(atoi(t3+1) - atoi(t3-t1+t2+1)) == 1)) /* added by WPS */
 		(*(pshort+j))++;
@@ -268,40 +272,43 @@ void read_DECSIM_ascii(ptr)
 	}
 
     /* adjust numsig accounting for any busses present */
-    pshort = ptr->bus;
-    for (i=0; i<ptr->numsig; i++)
-	ptr->numsig -= *(pshort+i);
+    pshort = trace->bus;
+    for (i=0; i<trace->numsig; i++)
+	trace->numsig -= *(pshort+i);
 
     /* adjust numsig if a separator is present in the trace file */
-    if (ptr->separator)
-	ptr->numsig -= (int)(ptr->numsig+1)/2;
+    if (separator)
+	trace->numsig -= (int)(trace->numsig+1)/2;
 
     /* Get first line of trace data */
     if ( !fgets(inline,MAX_SIG+10,f_ptr) ) {
-	dino_message_ack(ptr,"No data in trace file");
+	dino_error_ack(trace,"No data in trace file");
 	return;
 	}
 
     /* Allocate 1 block of memory to each signal initially */
-    ptr->sig.backward = NULL;
-    last_sig_ptr = (SIGNAL_SB *)ptr;
-    for (i=0; i < ptr->numsig; i++) {
+    for (i=0; i < trace->numsig; i++) {
 	/* allocate the memory */
 	if ( !(sig_ptr = (SIGNAL_SB *)malloc(sizeof(SIGNAL_SB))) ) {
-	    dino_message_ack(ptr,"Can't allocate memory for SIGNAL_SB.");
+	    dino_error_ack(trace,"Can't allocate memory for SIGNAL_SB.");
 	    return;
 	    }
 	
 	/* initialize all the pointers */
-	last_sig_ptr->forward = (int *)sig_ptr;
 	sig_ptr->forward = NULL;
-	sig_ptr->backward = (int *)last_sig_ptr;
-	if (i==0) ptr->startsig = (int *)sig_ptr;
-	sig_ptr->signame = (*(ptr->signame)).array[i];
-	sig_ptr->gc = 0;
+	if (trace->firstsig==NULL) {
+	    trace->firstsig = sig_ptr;
+	    sig_ptr->backward = NULL;
+	    }
+	else {
+	    last_sig_ptr->forward = sig_ptr;
+	    sig_ptr->backward = last_sig_ptr;
+	    }
+
+	sig_ptr->signame = (*(trace->signame)).array[i];
 	if ( !(sig_ptr->bptr = (int *)malloc(BLK_SIZE)) ) {
 	    if (DTPRINT) printf("Can't allocate memory for signal data.\n");
-	    dino_message_ack(ptr,"Can't allocate memory for signal data.");
+	    dino_error_ack(trace,"Can't allocate memory for signal data.");
 	    return;
 	    }
 	sig_ptr->cptr = sig_ptr->bptr;
@@ -310,51 +317,49 @@ void read_DECSIM_ascii(ptr)
 	}
 
     /* make SIGNAL_SB signame point to correct signal name */
-    pshort = ptr->bus;
-    sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
-    for (i=0,j=0; i < ptr->numsig; i++) {
-	sig_ptr->signame = (*(ptr->signame)).array[j];
+    pshort = trace->bus;
+    sig_ptr = trace->firstsig;
+    for (i=0,j=0; i < trace->numsig; i++) {
+	sig_ptr->signame = (*(trace->signame)).array[j];
 	if (*pshort == 0) {
 	    sig_ptr->inc = 1;
 	    sig_ptr->type = 0;
-	    sig_ptr->ind_s = 0;
 	    sig_ptr->ind_e = 0;
 	    }
 	else {
 	    /*** t1 points to '>' in signame[j] ***/
-	    t1 = strchr((*(ptr->signame)).array[j],'>');
+	    t1 = strchr((*(trace->signame)).array[j],'>');
 	    *t1 = '\0';
 	    strcat(t1,":");
 	    /*** t2 points to '<' in signame[j] ***/
-	    t2 = strchr((*(ptr->signame)).array[j+(*pshort)],'<');
+	    t2 = strchr((*(trace->signame)).array[j+(*pshort)],'<');
 	    strcat(t1,t2+1);
 	    /*	    sig_ptr->signame += (strlen(t2)-1); */
 	    sig_ptr->inc = (*pshort < 32) ? 2 : (*pshort < 64) ? 3 : 4;
 	    sig_ptr->type = (*pshort < 32) ? STATE_B32 :
 		(*pshort < 64) ? STATE_B64 : STATE_B96;
 	    for (t1=sig_ptr->signame; *t1==' '; t1++);
-	    sig_ptr->ind_s = 0;
 	    sig_ptr->ind_e = 0;
 	    j += *pshort;
 	    } 
 	j++;
 	pshort++;
-	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
+	sig_ptr = sig_ptr->forward;
 	}
 
     /* Load initial data into structure unconditionally */
     check_input(inline);
-    cvd2d(ptr, inline, ptr->bus, NOCHECK );
-    ptr->start_time = atoi(inline);
-    ptr->time = atoi(inline);
+    cvd2d(trace, inline, trace->bus, NOCHECK );
+    trace->start_time = atoi(inline);
+    trace->time = atoi(inline);
 
     /* Drop leading spaces */
-    for (sig_ptr = (SIGNAL_SB *)ptr->sig.forward; sig_ptr; sig_ptr = sig_ptr->forward) {
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	for (t1=sig_ptr->signame; *t1==' '; t1++);
 	strcpy (sig_ptr->signame, t1);	/* side effects */
 	}
 
-    if (DTPRINT) read_trace_dump (ptr);
+    if (DTPRINT) read_trace_dump (trace);
 
     /* Loop to read trace data and reformat */
     DONE = FALSE;
@@ -362,16 +367,16 @@ void read_DECSIM_ascii(ptr)
 	/* If next line is EOF then this is the last line */
 	if ( fgets(inline,MAX_SIG+10,f_ptr) == NULL ) {
 	    DONE = TRUE;
-	    cvd2d(ptr, tmp, ptr->bus, NOCHECKEND );
+	    cvd2d(trace, tmp, trace->bus, NOCHECKEND );
 	    }
 	else {
 	    /* if not a comment or a NULL line then read into data base */
 	    if ( inline[0] != '!' && inline[0] != '\n' ) {
 		check_input(inline);
 		strcpy(tmp, inline);
-		cvd2d(ptr, inline, ptr->bus, CHECK );
-		ptr->end_time = atoi(inline);
-		/* if (DTPRINT) printf("end_time=%d\n",ptr->end_time); */
+		cvd2d(trace, inline, trace->bus, CHECK );
+		trace->end_time = atoi(inline);
+		/* if (DTPRINT) printf("end_time=%d\n",trace->end_time); */
 		}
 	    else {
 		if (DTPRINT) printf("Null line or comment: %s\n",inline);
@@ -379,14 +384,16 @@ void read_DECSIM_ascii(ptr)
 	    }
 	}
 
-    read_trace_end (ptr);
+    read_trace_end (trace);
 
     fclose(f_ptr);
     }
 
 
-read_trace_end (ptr)
-    DISPLAY_SB	*ptr;
+/* Perform stuff at end of trace - common across all reading routines */
+
+read_trace_end (trace)
+    TRACE	*trace;
 {
     int		sigcnt;
     SIGNAL_SB	*sig_ptr;
@@ -394,37 +401,37 @@ read_trace_end (ptr)
     if (DTPRINT) printf ("In read_trace_end\n");
 
     /* loop thru each signal */
-    sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
-
-    for (sigcnt=0; sigcnt < ptr->numsig; sigcnt++) {
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	/* Mark end of time */
 	(*(SIGNAL_LW *)(sig_ptr->cptr)).time = EOT;
 
 	/* re-initialize the cptr's to the bptr's */
 	sig_ptr->cptr = sig_ptr->bptr;
 
-	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
+	/* Create xstring of the name (to avoid calling again and again) */
+	sig_ptr->xsigname = XmStringCreateSimple (sig_ptr->signame);
+	sig_ptr->color = 0;
 	}
 
     /* Misc */
-    ptr->startsig = ptr->sig.forward;
+    trace->dispsig = trace->firstsig;
 
     /* Mark as loaded */
-    ptr->loaded = TRUE;
+    trace->loaded = TRUE;
     }
 
 
-read_trace_dump (ptr)
-    DISPLAY_SB	*ptr;
+read_trace_dump (trace)
+    TRACE	*trace;
 {
     SIGNAL_SB	*sig_ptr;
 
     if (DTPRINT) printf ("In read_trace_dump\n");
 
-    printf ("  Number of signals = %d\n", ptr->numsig);
+    printf ("  Number of signals = %d\n", trace->numsig);
 
     /* loop thru each signal */
-    for (sig_ptr = (SIGNAL_SB *)ptr->sig.forward; sig_ptr; sig_ptr = sig_ptr->forward) {
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	printf (" Sig '%s'  ty=%d inc=%d btyp=%d bpos=%d bits=%d\n",
 		sig_ptr->signame, sig_ptr->type, sig_ptr->inc,
 		sig_ptr->binary_type, sig_ptr->binary_pos, sig_ptr->bits
@@ -433,8 +440,8 @@ read_trace_dump (ptr)
     }
 
 
-cvd2d(ptr, line, bus, flag )
-    DISPLAY_SB	*ptr;
+cvd2d(trace, line, bus, flag )
+    TRACE	*trace;
     char		line[MAX_SIG];
     short		*bus;
     int		flag;
@@ -454,7 +461,7 @@ cvd2d(ptr, line, bus, flag )
 	zarr[i] = 'Z';
 
     /* point to the first signal in the display */
-    sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
+    sig_ptr = trace->firstsig;
 
     /* compute the time for this line */
     time = atoi(line);
@@ -462,10 +469,10 @@ cvd2d(ptr, line, bus, flag )
     /* if (DTPRINT) printf("time=%d\n",time); */
 
     /* adjust pointer into trace if separator is present in trace file */
-    if (ptr->separator) j++;
+    if (separator) j++;
 
     /* loop thru each signal */
-    for (i=0; i<ptr->numsig; i++) {
+    for (i=0; i<trace->numsig; i++) {
 	/* Check if signal or bus data structure is out of memory */
 	diff = sig_ptr->cptr-sig_ptr->bptr;
 	if (diff > BLK_SIZE/4*sig_ptr->blocks-4) {
@@ -514,7 +521,7 @@ cvd2d(ptr, line, bus, flag )
 		    }
 		}
 	    j += *(bus+i)+1;
-	    if (ptr->separator) j++;
+	    if (separator) j++;
 	    
 	    /* now see if data has changed since previous entry */
 	    /* add if states !=, or if both are a bus and values != */
@@ -599,7 +606,7 @@ cvd2d(ptr, line, bus, flag )
 		if (DTDEBUG) printf("Unknown State: %c\n",line[9+j]);
 		}
 	    j++;
-	    if (ptr->separator) j++;
+	    if (separator) j++;
 	    
 	    if ( flag != CHECK || 
 		(*(SIGNAL_LW *)((sig_ptr->cptr)-1)).state != state )
@@ -610,7 +617,7 @@ cvd2d(ptr, line, bus, flag )
 		}
 	    }
 	
-	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
+	sig_ptr = sig_ptr->forward;
 	} /* end for */
     }
 
@@ -627,8 +634,8 @@ check_input(string)
     }
 
 
-void read_HLO_TEMPEST(ptr)
-    DISPLAY_SB	*ptr;
+void read_HLO_TEMPEST(trace)
+    TRACE	*trace;
 {
     int		f_ptr,status;
     int		numBytes,numRows,numBitsRow,numBitsRowPad;
@@ -648,12 +655,12 @@ void read_HLO_TEMPEST(ptr)
     /*
      ** Open the binary file file for reading
      */
-    if (DTPRINT) printf("Opening File %s\n", ptr->filename);
-    f_ptr = open(ptr->filename,O_RDONLY,0);
+    if (DTPRINT) printf("Opening File %s\n", trace->filename);
+    f_ptr = open(trace->filename,O_RDONLY,0);
     if ( f_ptr == -1 ) {
-	if (DTPRINT) printf("Can't Open File %s\n", ptr->filename);
-	sprintf(message,"Can't open file %s",ptr->filename);
-	dino_message_ack(ptr, message);
+	if (DTPRINT) printf("Can't Open File %s\n", trace->filename);
+	sprintf(message,"Can't open file %s",trace->filename);
+	dino_error_ack(trace, message);
 	return;
 	}
 
@@ -663,11 +670,11 @@ void read_HLO_TEMPEST(ptr)
     status = read(f_ptr, chardata, 4);
     if ( !status ) {
 	if (DTPRINT) printf("Bad File Format\n");
-	dino_message_ack(ptr,"Bad File Format");
+	dino_error_ack(trace,"Bad File Format");
 	return;
 	}
     status = read(f_ptr, &numBytes, 4);
-    status = read(f_ptr, &ptr->numsig, 4);
+    status = read(f_ptr, &trace->numsig, 4);
     status = read(f_ptr, &numRows, 4);
     status = read(f_ptr, &numBitsRow, 4);
     status = read(f_ptr, &numBitsRowPad, 4);
@@ -675,15 +682,15 @@ void read_HLO_TEMPEST(ptr)
     if (env != NULL) {
 	chardata[4]='\0';
 	printf("File Sig=%s Bytes=%d Signals=%d Rows=%d Bits/Row=%d Bits/Row(pad)=%d\n",
-	       chardata,numBytes,ptr->numsig,numRows,numBitsRow,numBitsRowPad);
+	       chardata,numBytes,trace->numsig,numRows,numBitsRow,numBitsRowPad);
 	}
 
     /*
      ** Allocate memory for signames - assume array[numsig][MAXSIGLEN]
      */
-    if ( !(ptr->signame = (SIGNALNAMES *)malloc(ptr->numsig * MAXSIGLEN)) ) {
+    if ( !(trace->signame = (SIGNALNAMES *)malloc(trace->numsig * MAXSIGLEN)) ) {
 	printf("Can't allocate memory for signal names.\n");
-	dino_message_ack(ptr,"Can't allocate memory for signal names.");
+	dino_error_ack(trace,"Can't allocate memory for signal names.");
 	return;
 	}
 
@@ -692,9 +699,7 @@ void read_HLO_TEMPEST(ptr)
      ** created for each signal describing the signal and containing ptrs
      ** for the trace data, current trace location, etc.
      */
-    ptr->sig.backward = NULL;
-    last_sig_ptr = (SIGNAL_SB *)ptr;
-    for(i=0;i<ptr->numsig;i++) {
+    for(i=0;i<trace->numsig;i++) {
 	status = read(f_ptr, &sigFlags, 4);
 	status = read(f_ptr, &sigOffset, 4);
 	status = read(f_ptr, &sigWidth, 4);
@@ -712,7 +717,7 @@ void read_HLO_TEMPEST(ptr)
 	 ** Allocate memory for a signal description block
 	 */
 	if ( !(sig_ptr = (SIGNAL_SB *)malloc(sizeof(SIGNAL_SB))) ) {
-	    dino_message_ack(ptr,"Can't allocate memory for SIGNAL_SB.");
+	    dino_error_ack(trace,"Can't allocate memory for SIGNAL_SB.");
 	    return;
 	    }
 
@@ -720,14 +725,17 @@ void read_HLO_TEMPEST(ptr)
 	 ** Initialize all pointers and other stuff in the signal
 	 ** description block
 	 */
-	last_sig_ptr->forward = (int *)sig_ptr;
-	sig_ptr->backward = (int *)last_sig_ptr;
 	sig_ptr->forward = NULL;
-	if (i==0) ptr->startsig = (int *)sig_ptr;
-	sig_ptr->gc = 0;
+	if (trace->firstsig==NULL) {
+	    trace->firstsig = sig_ptr;
+	    sig_ptr->backward = NULL;
+	    }
+	else {
+	    last_sig_ptr->forward = sig_ptr;
+	    sig_ptr->backward = last_sig_ptr;
+	    }
 	sig_ptr->inc = 1;
 	sig_ptr->type = 0;
-	sig_ptr->ind_s = 0;
 	sig_ptr->ind_e = sigWidth;
 	
 	/*
@@ -735,9 +743,9 @@ void read_HLO_TEMPEST(ptr)
 	 ** EOS delimiter and initialize the pointer to it
 	 */
 	for (j=0;j<sigChars;j++)
-	    (*(ptr->signame)).array[i][j] = chardata[j];
-	(*(ptr->signame)).array[i][sigChars] = '\0';
-	sig_ptr->signame = (*(ptr->signame)).array[i];
+	    (*(trace->signame)).array[i][j] = chardata[j];
+	(*(trace->signame)).array[i][sigChars] = '\0';
+	sig_ptr->signame = (*(trace->signame)).array[i];
 	
 	/*
 	 ** Allocate first memory block for signal data and initialize
@@ -745,7 +753,7 @@ void read_HLO_TEMPEST(ptr)
 	 */
 	if ( !(sig_ptr->bptr = (int *)malloc(BLK_SIZE)) ) {
 	    printf("Can't allocate memory for signal data.\n");
-	    dino_message_ack(ptr,"Can't allocate memory for signal data.");
+	    dino_error_ack(trace,"Can't allocate memory for signal data.");
 	    return;
 	    }
 	sig_ptr->cptr = sig_ptr->bptr;
@@ -784,9 +792,9 @@ void read_HLO_TEMPEST(ptr)
 	 ** time, else eventually the end time will be saved.
 	 */
 	if (i==0)
-	    ptr->time = ptr->start_time = time;
+	    trace->time = trace->start_time = time;
 	else
-	    ptr->end_time = time;
+	    trace->end_time = time;
 	
 	if (env != NULL) {
 	    printf("time=%d\n",time);
@@ -798,7 +806,7 @@ void read_HLO_TEMPEST(ptr)
 	 ** used to walk bit by bit through the row and the value for each
 	 ** signal is accumulated
 	 */
-	sig_ptr = ptr->startsig;
+	sig_ptr = trace->firstsig;
 	while (sig_ptr != NULL) {
 	    /*
 	     ** Check if signal or bus data structure is out of memory and
@@ -950,26 +958,20 @@ void read_HLO_TEMPEST(ptr)
     /*
      ** Now add EOT to each signal and reset the cptr
      */
-    sig_ptr = ptr->startsig;
-    while (sig_ptr != NULL) {
-	(*(SIGNAL_LW *)(sig_ptr->cptr)).time = EOT;
-	sig_ptr->cptr = sig_ptr->bptr;
-	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
-	}
+    read_trace_end (trace);
 
     /*
      ** Close the file
      */
     close(f_ptr);
-    ptr->loaded = TRUE;
     }
 
 /**********************************************************************
  *	update_signal_states
  **********************************************************************/
 
-void	update_signal_states (ptr)
-    DISPLAY_SB	*ptr;
+void	update_signal_states (trace)
+    TRACE	*trace;
 {
     SIGNAL_SB *sig_ptr;
     SIGNAL_LW	*cptr;
@@ -980,19 +982,17 @@ void	update_signal_states (ptr)
     if (DTPRINT) printf("In update_signal_states\n");
 
     /* don't do anything if no file is loaded */
-    if (!ptr->loaded) return;
+    if (!trace->loaded) return;
 
-    sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
-    while (sig_ptr) {
-	if (NULL != (sig_ptr->decode = find_signal_state (ptr, sig_ptr->signame))) {
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	if (NULL != (sig_ptr->decode = find_signal_state (trace, sig_ptr->signame))) {
 	    if (DTPRINT) printf("Signal %s is patterned\n",sig_ptr->signame);
 	    }
 	/* else if (DTPRINT) printf("Signal %s  no pattern\n",sig_ptr->signame); */
-	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
 	}
 
     /* Determine period, rise point and fall point of first signal */
-    cptr = (SIGNAL_LW *)((SIGNAL_SB *)ptr->sig.forward)->cptr;
+    cptr = (SIGNAL_LW *)((SIGNAL_SB *)trace->firstsig)->cptr;
     /* Skip first one, as is not representative of period */
     if ( cptr->time != 0x1FFFFFFF) cptr++;
     while( cptr->time != 0x1FFFFFFF) {
@@ -1008,28 +1008,28 @@ void	update_signal_states (ptr)
 	}
 
     /* Set defaults based on changes */
-    if (ptr->grid_res_auto==GRID_AUTO_ASS) {
-	if (rise1 < rise2)	ptr->grid_res = rise2 - rise1;
-	else if (fall1 < fall2) ptr->grid_res = fall2 - fall1;
+    if (trace->grid_res_auto==GRID_AUTO_ASS) {
+	if (rise1 < rise2)	trace->grid_res = rise2 - rise1;
+	else if (fall1 < fall2) trace->grid_res = fall2 - fall1;
 	}
-    if (ptr->grid_align_auto==GRID_AUTO_ASS && rise1)
-	ptr->grid_align = rise1 % ptr->grid_res;
-    if (ptr->grid_align_auto==GRID_AUTO_DEASS && fall1)
-	ptr->grid_align = fall1 % ptr->grid_res;
-    if (DTPRINT) printf ("align=%d %d %d\n", ptr->grid_align_auto
+    if (trace->grid_align_auto==GRID_AUTO_ASS && rise1)
+	trace->grid_align = rise1 % trace->grid_res;
+    if (trace->grid_align_auto==GRID_AUTO_DEASS && fall1)
+	trace->grid_align = fall1 % trace->grid_res;
+    if (DTPRINT) printf ("align=%d %d %d\n", trace->grid_align_auto
 			 ,GRID_AUTO_DEASS, fall1);
     if (DTPRINT) printf ("rise1=%d, fall1=%d, rise2=%d, fall2=%d, res=%d, align=%d\n",
-			 rise1, fall1, rise2, fall2, ptr->grid_res, ptr->grid_align);
+			 rise1, fall1, rise2, fall2, trace->grid_res, trace->grid_align);
 
     /* Calculate xstart from longest signal name */
     xstarttemp=XSTART_MIN;
-    for (sig_ptr = (SIGNAL_SB *)ptr->sig.forward; sig_ptr; sig_ptr = sig_ptr->forward) {
+    for (sig_ptr = (SIGNAL_SB *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	for (t1=sig_ptr->signame; *t1==' '; t1++);
 	if (strncmp (t1, "%NET.",5)==0) t1+=5;
 	/* if (DTPRINT) printf("Signal = '%s'  xstart=%d\n",t1,xstarttemp); */
-	if (xstarttemp < XTextWidth(ptr->text_font,t1,strlen(t1)))
-	    xstarttemp = XTextWidth(ptr->text_font,t1,strlen(t1));
+	if (xstarttemp < XTextWidth(trace->text_font,t1,strlen(t1)))
+	    xstarttemp = XTextWidth(trace->text_font,t1,strlen(t1));
 	}
-    ptr->xstart = xstarttemp + XSTART_MARGIN;
+    trace->xstart = xstarttemp + XSTART_MARGIN;
     }
 

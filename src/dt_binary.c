@@ -6,8 +6,8 @@
 #include <math.h> /* removed for Ultrix support... */
 #endif VMS
 
-#include <X11/DECwDwtApplProg.h>
 #include <X11/Xlib.h>
+#include <X11/Xm.h>
 
 #include "dinotrace.h"
 #include "bintradef.h"
@@ -28,8 +28,8 @@
 #define EXTRACT_2STATE(buf,pos)	(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 1)
 #define EXTRACT_4STATE(buf,pos)	(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 3)
 
-void read_DECSIM(ptr)
-    DISPLAY_SB	*ptr;
+void read_DECSIM(trace)
+    TRACE	*trace;
 {
     int		in_fd;
     static struct bintrarec *buf;
@@ -45,16 +45,15 @@ void read_DECSIM(ptr)
 
     int	pass=0;
     
-    in_fd = open (ptr->filename, O_RDONLY, 0);
+    in_fd = open (trace->filename, O_RDONLY, 0);
     if (in_fd<1) {
-	read_DECSIM_ascii (ptr);
+	read_DECSIM_ascii (trace);
 	return;
 	}
 
     /* Signal description data */
     last_sig_ptr = NULL;
-    ptr->startsig=NULL;
-    ptr->sig.forward = NULL;
+    trace->firstsig = NULL;
 
     /* preload 2 entry buffer */
     buf_stat=1;
@@ -101,9 +100,9 @@ void read_DECSIM(ptr)
 
 		/**** TYPE: End Of Signal Section ****/
 	      case tra$k_nss:
-		/* if (DTPRINT) read_trace_dump(ptr); */
-		read_binary_make_busses(ptr);
-		if (DTPRINT) read_trace_dump(ptr);
+		/* if (DTPRINT) read_trace_dump(trace); */
+		read_binary_make_busses(trace);
+		if (DTPRINT) read_trace_dump(trace);
 		break;
 
 		/**** TYPE: Unknown ****/
@@ -128,7 +127,7 @@ void read_DECSIM(ptr)
 		/* initialize all the pointers that aren't NULL */
 		if (last_sig_ptr) last_sig_ptr->forward = (int *)sig_ptr;
 		sig_ptr->backward = (int *)last_sig_ptr;
-		if (ptr->sig.forward==NULL) ptr->sig.forward = (int *)sig_ptr;
+		if (trace->firstsig==NULL) trace->firstsig = (int *)sig_ptr;
 		break;
 
 		/**** TYPE: Node signal name data ****/
@@ -140,7 +139,7 @@ void read_DECSIM(ptr)
 		for (t1=buf->TRA$T_NODNAMSTR; *t1==' ' && len>0; t1++)
 		    len--;
 
-		sig_ptr->signame = (char *)XtMalloc(6+len);	/* allow extra space incase becomes vector */
+		sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space incase becomes vector */
 		strncpy(sig_ptr->signame, t1, len);
 		sig_ptr->signame[len] = '\0';
 		
@@ -153,17 +152,17 @@ void read_DECSIM(ptr)
 
 		/* save start/ end time */
 		if (first_data) {
-		    ptr->time = ptr->start_time = time;
+		    trace->time = trace->start_time = time;
 		    }
-		ptr->end_time = time;
+		trace->end_time = time;
 
 		/* if (DTPRINT && eof_next) printf ("Detected EOF.\n"); */
 	    
 		/* if (pass++ < 20) */
-		    read_binary_time (ptr, buf, time, (first_data || eof_next)?NOCHECK:CHECK);
+		    read_binary_time (trace, buf, time, (first_data || eof_next)?NOCHECK:CHECK);
 		/*
 		if (pass==21)
-		    read_binary_time (ptr, buf, time, NOCHECK);
+		    read_binary_time (trace, buf, time, NOCHECK);
 		    */
 
 		first_data = FALSE;
@@ -183,27 +182,27 @@ void read_DECSIM(ptr)
 	  default:
 	    if (DTPRINT) printf( "Unknown record class %d, assuming ASCII\n", buf->tra$b_class);
 	    close (in_fd);
-	    read_DECSIM_ascii (ptr);
+	    read_DECSIM_ascii (trace);
 	    return;
 	    }
 	}
 
-    read_trace_end (ptr);
+    read_trace_end (trace);
 
     close(in_fd);
     }
 
 
 /* Take the list of signals and make it into a list of busses */
-read_binary_make_busses (ptr)
-    DISPLAY_SB	*ptr;
+read_binary_make_busses (trace)
+    TRACE	*trace;
 {
     SIGNAL_SB		*sig_ptr,*bus_sig_ptr;	/* ptr to signal which is being bussed */
     char *bbeg, *bcol, *bnew, *sbeg;
 
     /* Vectorize signals */
     bus_sig_ptr = NULL;
-    for (sig_ptr = (SIGNAL_SB *)ptr->sig.forward; sig_ptr; sig_ptr = sig_ptr->forward) {
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	if (bus_sig_ptr) {	/* Start on 2nd signal */
 	    bbeg = strchr(bus_sig_ptr->signame,'<');
 	    bcol = strchr(bus_sig_ptr->signame,':');
@@ -239,11 +238,10 @@ read_binary_make_busses (ptr)
 	}
     
     /* Calculate numsig, last_sig_ptr, and allocate cptrs */
-    ptr->numsig = 0;
-    for (sig_ptr = (SIGNAL_SB *)ptr->sig.forward; sig_ptr; sig_ptr = sig_ptr->forward) {
+    trace->numsig = 0;
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	/* Calc numsig, last_sig_ptr */
-	(ptr->numsig) ++;
-	ptr->sig.backward = sig_ptr;
+	(trace->numsig) ++;
 
 	/* Create the bussed name & type */
 	if (sig_ptr->bits < 1) {
@@ -432,8 +430,8 @@ int	read_2state_to_value (sig_ptr, buf, value)
 
 
 
-read_binary_time (ptr, buf, time, flag )
-    DISPLAY_SB	*ptr;
+read_binary_time (trace, buf, time, flag )
+    TRACE	*trace;
     char	*buf;
     int		time;
     int		flag;
@@ -443,7 +441,7 @@ read_binary_time (ptr, buf, time, flag )
     char	tmp[100];
     char	*line,*zarr;
     register	char *cp;
-    short	*bus = ptr->bus;
+    short	*bus = trace->bus;
     SIGNAL_LW	tmp_sig;
 */
     unsigned int value[3];
@@ -456,7 +454,7 @@ read_binary_time (ptr, buf, time, flag )
     */
 
     /* loop thru each signal */
-    for (sig_ptr = (SIGNAL_SB *)ptr->sig.forward; sig_ptr; sig_ptr = sig_ptr->forward) {
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 
 	/* Check if signal or bus data structure is out of memory */
 	diff = sig_ptr->cptr - sig_ptr->bptr;

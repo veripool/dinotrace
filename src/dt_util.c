@@ -31,601 +31,484 @@
 
 #include <stdio.h>
 
-#include <X11/DECwDwtApplProg.h>
 #include <X11/Xlib.h>
+#include <Xm/Xm.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
 
+extern void cb_prompt_ok(), cb_prompt_cancel(),
+    cb_fil_ok(), cb_fil_can();
+
 
-void
-cancel_all_events(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtAnyCallbackStruct	*cb;
+/* get normal string from XmString */
+char *extract_first_xms_segment(cs)
+    XmString cs;
 {
-    if (DTPRINT) printf("In cancel_all_events - ptr=%d\n",ptr);
+    XmStringContext context;
+    XmStringCharSet charset;
+    XmStringDirection direction;
+    Boolean separator;
+    char *primitive_string;
+    XmStringInitContext(&context,cs);
+    XmStringGetNextSegment(context,&primitive_string,
+			   &charset,&direction,&separator);
+    XmStringFreeContext(context);
+    return(primitive_string);
+    }
 
+
+void    cancel_all_events(w,trace,cb)
+    Widget			w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    if (DTPRINT) printf("In cancel_all_events - trace=%d\n",trace);
+    
     /* remove all events */
-    remove_all_events(ptr);
-
+    remove_all_events(trace);
+    
     /* unmanage any widgets left around */
-    if ( ptr->signal.customize != NULL )
-	XtUnmanageChild(ptr->signal.customize);
+    if ( trace->signal.customize != NULL )
+	XtUnmanageChild(trace->signal.customize);
+    }
 
-    return;
-}
-
-void
-remove_all_events(ptr)
-DISPLAY_SB		*ptr;
+void    update_scrollbar(w,value,inc,min,max,size)
+    Widget			w;
+    int value, inc, min, max, size;
 {
-    if (DTPRINT) printf("In remove_all_events - ptr=%d\n",ptr);
+    if (DTPRINT) printf("In update_scrollbar - %d %d %d %d %d\n",
+			value, inc, min, max, size);
 
+    if (min==max) {
+	XtSetArg(arglist[0], XmNsensitive, FALSE);
+	min=0; max=1; inc=1; size=1; value=0;
+	}
+    else {
+	XtSetArg(arglist[0], XmNsensitive, TRUE);
+	}
+
+    XtSetArg(arglist[1], XmNvalue, value);
+    XtSetArg(arglist[2], XmNincrement, inc);
+    XtSetArg(arglist[3], XmNsliderSize, size);
+    XtSetArg(arglist[4], XmNminimum, min);
+    XtSetArg(arglist[5], XmNmaximum, max);
+    XtSetValues(w, arglist, 6);
+    }
+
+
+void    remove_all_events(trace)
+    TRACE		*trace;
+{
+    if (DTPRINT) printf("In remove_all_events - trace=%d\n",trace);
+    
     /* remove all possible events due to res options */ 
-    XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,res_zoom_click_ev,ptr);
-
+    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,res_zoom_click_ev,trace);
+    
     /* remove all possible events due to cursor options */ 
-    XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,add_cursor,ptr);
-    XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,move_cursor,ptr);
-    XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,delete_cursor,ptr);
-
+    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,add_cursor,trace);
+    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,move_cursor,trace);
+    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,delete_cursor,trace);
+    
     /* remove all possible events due to grid options */ 
-    XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,align_grid,ptr);
-
+    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,align_grid,trace);
+    
     /* remove all possible events due to signal options */ 
-    XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,add_signal,ptr);
-    XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,move_signal,ptr);
-    XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,delete_signal,ptr);
+    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,add_signal,trace);
+    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,move_signal,trace);
+    XtRemoveEventHandler(trace->work,ButtonPressMask,TRUE,delete_signal,trace);
 
-    return;
-}
+    /* Set the cursor back to normal */
+    set_cursor (trace, DC_NORMAL);
+    }
 
-new_time(ptr)
-    DISPLAY_SB *ptr;
+new_time(trace)
+    TRACE *trace;
 {
     int		i,inc;
     short		*pshort;
     SIGNAL_SB	*sig_ptr;
-
-    if ( ptr->time > ptr->end_time - (int)((ptr->width-XMARGIN-ptr->xstart)/ptr->res) ) {
+    
+    if ( trace->time > trace->end_time - (int)((trace->width-XMARGIN-trace->xstart)/trace->res) ) {
         if (DTPRINT) printf("At end of trace...\n");
-        ptr->time = ptr->end_time - (int)((ptr->width-XMARGIN-ptr->xstart)/ptr->res);
+        trace->time = trace->end_time - (int)((trace->width-XMARGIN-trace->xstart)/trace->res);
 	}
-
-    if ( ptr->time < ptr->start_time ) {
+    
+    if ( trace->time < trace->start_time ) {
         if (DTPRINT) printf("At beginning of trace...\n");
-        ptr->time = ptr->start_time;
+        trace->time = trace->start_time;
 	}
-
-    pshort = ptr->bus;
-    sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
-
-    for (i=0; i<ptr->numsig-ptr->numsigdel; i++) {
+    
+    pshort = trace->bus;
+    
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	/*
-	if (DTPRINT)
-	    printf("next time=%d\n",(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time);
-	    */
-
-        if ( ptr->time >= (*(SIGNAL_LW *)(sig_ptr->cptr)).time ) {
-            while (ptr->time>(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time) {
+	  if (DTPRINT)
+	  printf("next time=%d\n",(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time);
+	  */
+	
+        if ( trace->time >= (*(SIGNAL_LW *)(sig_ptr->cptr)).time ) {
+            while (trace->time>(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time) {
 		(sig_ptr->cptr)+=sig_ptr->inc;
 		}
 	    }
 	else {
-            while (ptr->time < (*(SIGNAL_LW *)(sig_ptr->cptr)).time) {
+            while (trace->time < (*(SIGNAL_LW *)(sig_ptr->cptr)).time) {
                 (sig_ptr->cptr)-=sig_ptr->inc;
 		}
 	    }
-
-	/* increment to next signal */
-	
-	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
 	}
-
-    /* Update scroll-bar */
-    XtSetArg(arglist[0],DwtNvalue,ptr->time);
-    XtSetValues(ptr->hscroll,arglist,1);
-
+    
     /* Update window */
-    XClearWindow(ptr->disp, ptr->wind);
-    get_geometry(ptr);
-    draw(ptr);
-    drawsig(ptr);
+    XClearWindow(trace->display, trace->wind);
+    get_geometry(trace);
+    draw(trace);
     }
 
 /* Get window size, calculate what fits on the screen and update scroll bars */
 
-get_geometry( ptr )
-    DISPLAY_SB	*ptr;
+get_geometry( trace )
+    TRACE	*trace;
 {
     int		temp,x,y,width,height,dret,max_y;
-
-    XGetGeometry( XtDisplay(toplevel), XtWindow(ptr->work), &dret,
-         &x, &y, &width, &height, &dret, &dret);
-
-    ptr->width = width;
-    ptr->height = height;
-
+    
+    XGetGeometry( XtDisplay(toplevel), XtWindow(trace->work), &dret,
+		 &x, &y, &width, &height, &dret, &dret);
+    
+    trace->width = width;
+    trace->height = height;
+    
     /* calulate the number of signals possibly visible on the screen */
     /* same calculation in get_geometry */
-    max_y = (int)((ptr->height-ptr->ystart)/ptr->sighgt);
-    ptr->numsigvis = MIN(ptr->numsig - ptr->numsigdel - ptr->sigstart,max_y);
-
+    max_y = (int)((trace->height-trace->ystart)/trace->sighgt);
+    trace->numsigvis = MIN(trace->numsig - trace->numsigdel - trace->numsigstart,max_y);
+    
     /* if there are cursors showing, subtract one to make room for cursor */
-    if ( ptr->numcursors > 0 &&
-	 ptr->cursor_vis &&
-	 ptr->numsigvis > 1 &&
-	 ptr->numsigvis >= max_y ) {
-	ptr->numsigvis--;
+    if ( trace->numcursors > 0 &&
+	trace->cursor_vis &&
+	trace->numsigvis > 1 &&
+	trace->numsigvis >= max_y ) {
+	trace->numsigvis--;
 	}
+    
+    update_scrollbar (trace->hscroll, trace->time,
+		      (int)((trace->width-trace->xstart)/trace->res/trace->pageinc),
+		      trace->start_time, trace->end_time, 
+		      (int)((trace->width-trace->xstart)/trace->res) );
 
-    XtSetArg(arglist[0], DwtNminValue, ptr->start_time);
-    XtSetArg(arglist[1], DwtNmaxValue, ptr->end_time);
-    XtSetArg(arglist[2], DwtNvalue, ptr->time);
-    XtSetArg(arglist[3], DwtNinc,
-	(int)((ptr->width-ptr->xstart)/ptr->res/ptr->pageinc));
-    XtSetArg(arglist[4], DwtNshown,
-	(int)((ptr->width-ptr->xstart)/ptr->res));
-    XtSetValues(ptr->hscroll, arglist, 5);
-
-    XtSetArg(arglist[0], DwtNminValue, 0);
-    XtSetArg(arglist[1], DwtNmaxValue, ptr->numsig);
-    XtSetArg(arglist[2], DwtNvalue, ptr->sigstart);
-    XtSetArg(arglist[3], DwtNinc, 1);
-    XtSetArg(arglist[4], DwtNshown,ptr->numsigvis); 
-    XtSetValues(ptr->vscroll, arglist, 5);
-
+    update_scrollbar (trace->vscroll, trace->numsigstart, 1,
+		      0, trace->numsig - trace->numsigdel, trace->numsigvis); 
+    
     if (DTPRINT) printf("In get_geometry: x=%d y=%d width=%d height=%d\n",
 			x,y,width,height);
-}
-
-static DwtCallback fil_ok_cb[2] =
-{
-    {cb_fil_ok,  NULL},
-    {NULL,       NULL}
-};
-
-static DwtCallback fil_can_cb[2] =
-{
-    {cb_fil_can, NULL},
-    {NULL,       NULL}
-};
-
-void  get_file_name( ptr )
-    DISPLAY_SB	*ptr;
-{
-    char mask[200], *pchar;
-
-    if (DTPRINT) printf("In get_file_name ptr=%d\n",ptr);
-
-    if (!ptr->fileselect) {
-	strcpy (mask, ptr->filename);
-	file_directory (mask);
-	if ( trace_format == DECSIM )
-	    strcat (mask, "*.tra");
-	else if ( trace_format == HLO_TEMPEST )
-	    strcat (mask, "*.bt");
-
-	fil_ok_cb[0].tag = (int)ptr;
-	fil_can_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[0], DwtNactivateCallback, fil_ok_cb);
-	XtSetArg(arglist[1], DwtNcancelCallback, fil_can_cb);
-	XtSetArg(arglist[2], DwtNdirMask, DwtLatin1String(mask) );
-	XtSetArg(arglist[3], DwtNdirectionRToL, TRUE);
-	XtSetArg(arglist[4], DwtNdefaultPosition, TRUE);
-	XtSetArg(arglist[5], DwtNtextCols, 50);
-	ptr->fileselect = DwtFileSelectionCreate( ptr->main, "", arglist, 6);
-
-	XSync(ptr->disp,0);
-	}
-
-    XtManageChild(ptr->fileselect);
     }
 
-void cb_fil_ok(widget, ptr, reason)
+void  get_file_name( trace )
+    TRACE	*trace;
+{
+    char mask[200], *pchar;
+    
+    if (DTPRINT) printf("In get_file_name trace=%d\n",trace);
+    
+    if (!trace->fileselect) {
+	XtSetArg(arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple("Open Trace File") );
+
+	trace->fileselect = XmCreateFileSelectionDialog( trace->main, "file", arglist, 2);
+	XtAddCallback(trace->fileselect, XmNokCallback, cb_fil_ok, trace);
+	XtAddCallback(trace->fileselect, XmNcancelCallback, cb_fil_can, trace);
+	XtUnmanageChild( XmFileSelectionBoxGetChild (trace->fileselect, XmDIALOG_HELP_BUTTON));
+	
+	XSync(trace->display,0);
+	}
+    
+    XtManageChild(trace->fileselect);
+
+    strcpy (mask, trace->filename);
+    file_directory (mask);
+    
+    if ( trace_format == DECSIM )
+	strcat (mask, "*.tra");
+    else if ( trace_format == HLO_TEMPEST )
+	strcat (mask, "*.bt");
+    
+    XtSetArg(arglist[0], XmNdirMask, XmStringCreateSimple(mask) );
+    XtSetValues(trace->fileselect,arglist,1);
+    XSync(trace->display,0);
+    }
+
+void cb_fil_ok(widget, trace, reason)
     Widget	widget;
-    DISPLAY_SB	*ptr;
-    DwtFileSelectionCallbackStruct *reason;
+    TRACE	*trace;
+    XmFileSelectionBoxCallbackStruct *reason;
 {
     int d,status,charset,direction,language,rendition;
     char *tmp;
-    DwtCompStringContext context;
-
-    if (DTPRINT) printf("In cb_fil_ok ptr=%d\n",ptr);
-
+    
+    if (DTPRINT) printf("In cb_fil_ok trace=%d\n",trace);
+    
     /*
-    ** Unmanage the file select widget here and wait for sync so
-    ** the window goes away before the read process begins in case
-    ** the idle is very big.
-    */
-    XtUnmanageChild(ptr->fileselect);
-    XSync(ptr->disp,0);
-
-    if ( DwtInitGetSegment(&context, reason->value) == DwtSuccess ) {
-	if ( DwtGetNextSegment(&context, &tmp, &charset, &direction,
-			&language, &rendition) == DwtSuccess ) {
-	    if (DTPRINT) printf("filename=%s\n",tmp);
-	    }
-	else {
-	    printf("failure (GetNext)\n");
-	    }
-	}
-    else {
-	printf("failure (InitNext)\n");
-	}
-
-    strcpy (ptr->filename,tmp);
-
+     ** Unmanage the file select widget here and wait for sync so
+     ** the window goes away before the read process begins in case
+     ** the idle is very big.
+     */
+    XtUnmanageChild(trace->fileselect);
+    XSync(trace->display,0);
+    
+    tmp = extract_first_xms_segment(reason->value);
+    if (DTPRINT) printf("filename=%s\n",tmp);
+    
+    strcpy (trace->filename,tmp);
+    
     XtFree(tmp);
-
-    if (DTPRINT) printf("In cb_fil_ok Filename=%s\n",ptr->filename);
-    cb_fil_read (ptr);
+    
+    if (DTPRINT) printf("In cb_fil_ok Filename=%s\n",trace->filename);
+    cb_fil_read (trace);
     }
 
 
-void cb_fil_read(ptr)
-    DISPLAY_SB	*ptr;
+void cb_fil_read(trace)
+    TRACE	*trace;
 {
-    if (DTPRINT) printf("In cb_fil_read ptr=%d filename=%s\n",ptr,ptr->filename);
-
+    if (DTPRINT) printf("In cb_fil_read trace=%d filename=%s\n",trace,trace->filename);
+    
     /* Clear the data structures & the screen */
-    clear_display (0, ptr);
-    XSync(ptr->disp,0);
-
+    clear_display (0, trace);
+    set_cursor (trace, DC_BUSY);
+    XSync(trace->display,0);
+    
     /*
-    ** Read in the trace file using the format selected by the user
-    */
+     ** Read in the trace file using the format selected by the user
+     */
     if (trace_format == DECSIM)
-	read_DECSIM(ptr);
+	read_DECSIM(trace);
     else if (trace_format == HLO_TEMPEST)
-	read_HLO_TEMPEST(ptr);
-
+	read_HLO_TEMPEST(trace);
+    
     /* Change the name on title bar to filename */
-    change_title (ptr);
-
+    change_title (trace);
+    
     /*
-    ** Clear the number of deleted signals and the starting signal
-    */
-    ptr->numsigdel = 0;
-    ptr->sigstart = 0;
-
+     ** Clear the number of deleted signals and the starting signal
+     */
+    trace->numsigdel = 0;
+    trace->numsigstart = 0;
+    
     /* get applicable config files */
-    config_read_defaults (ptr);
-
+    config_read_defaults (trace);
+    
     /*
-    ** Clear the window and draw the screen with the new file
-    */
-    get_geometry(ptr);
-    XClearWindow(ptr->disp,ptr->wind);
-    draw(ptr);
-    drawsig(ptr);
+     ** Clear the window and draw the screen with the new file
+     */
+    set_cursor (trace, DC_NORMAL);
+    get_geometry(trace);
+    XClearWindow(trace->display,trace->wind);
+    draw(trace);
     }
 
-void cb_fil_can( widget, ptr, reason )
+void cb_fil_can( widget, trace, reason )
     Widget	widget;
-    DISPLAY_SB	*ptr;
-    DwtFileSelectionCallbackStruct *reason;
+    TRACE	*trace;
+    XmFileSelectionBoxCallbackStruct *reason;
 {
-    if (DTPRINT) printf("In cb_fil_can ptr=%d\n",ptr);
-
+    if (DTPRINT) printf("In cb_fil_can trace=%d\n",trace);
+    
     /* remove the file select widget */
-    XtUnmanageChild( ptr->fileselect );
+    XtUnmanageChild( trace->fileselect );
     }
 
 
-Widget popup_wid, ok_wid, can_wid, text_wid, label_wid;
-
-void get_data_popup(), ok(), can(), hit_return();
-
+/*
 static char io_trans_table[100]; 
 
-    static XtActionsRec io_action_table[] = {
-        {"hit_return", (XtActionProc)hit_return},
-        {NULL,        NULL}
-	};
+static XtActionsRec io_action_table[] = {
+    {"hit_return", (XtActionProc)cb_prompt_ok},
+    {NULL,        NULL}
+    };
 
-    XtTranslations io_trans_parsed;
-
-static DwtCallback ok_cb[2]=
-{
-        {ok,    NULL},
-        {NULL,  NULL}
-};
-
-static DwtCallback can_cb[2]=
-{
-        {can,   NULL},
-        {NULL,  NULL}
-};
-/*
-static DwtCallback get_data_cb[2]=
-{
-        {get_data_popup,   NULL},
-        {NULL,  NULL}
-};
+XtTranslations io_trans_parsed;
 */
 
-void 
-get_data_popup(ptr,string,type)
-DISPLAY_SB	*ptr;
-char		*string;
-int		type;
+void get_data_popup(trace,string,type)
+    TRACE	*trace;
+    char	*string;
+    int		type;
 {
-    static	MANAGED=FALSE;
-
     if (DTPRINT) 
-	printf("In get_data ptr=%d string=%s type=%d\n",ptr,string,type);
-
+	printf("In get_data trace=%d string=%s type=%d\n",trace,string,type);
+    
     /* parse the translation table - do this each time for diff types */
-    sprintf(io_trans_table,"<KeyPress>0xff0d: hit_return(%d,%d)",ptr,type); 
+/*
+    sprintf(io_trans_table,"<KeyPress>0xff0d: cb_prompt_ok(%d,%d)",trace,type); 
     XtAddActions(io_action_table, 1);
     io_trans_parsed = XtParseTranslationTable(io_trans_table);
-
-    if (!MANAGED)
-    {
-	/* create the dialog box popup window */
-	XtSetArg(arglist[0], DwtNstyle, DwtModal );
-	XtSetArg(arglist[1], DwtNwidth, DIALOG_WIDTH);
-	XtSetArg(arglist[2], DwtNheight, DIALOG_HEIGHT);
-	XtSetArg(arglist[3], DwtNdefaultPosition, TRUE);
-	popup_wid = DwtDialogBoxPopupCreate(ptr->work,"", arglist, 4);
-
-	/* create the label widget */
-	XtSetArg(arglist[0], DwtNx, 5 );
-	XtSetArg(arglist[1], DwtNy, 5 );
-	label_wid = DwtLabelCreate( popup_wid,"",arglist,2);
-	XtManageChild( label_wid );
-
-	/* create the OK push button */
-	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String(" OK ") );
-	XtSetArg(arglist[1], DwtNx, 5);
-	XtSetArg(arglist[2], DwtNy, 40);
-	XtSetArg(arglist[3], DwtNsensitive, TRUE);
-	ok_wid = DwtPushButtonCreate(popup_wid,"",arglist,4);
-	XtManageChild( ok_wid );
-    
-	/* create the CANCEL push button */
-	XtManageChild(can_wid=DwtPushButton(popup_wid,"",30,40,
-               DwtLatin1String(" Cancel "), can_cb, NULL));
-
+*/    
+    if (trace->prompt_popup == NULL) {
 	/* only need to create the widget once - now just manage/unmanage */
-	MANAGED = TRUE;
-    }
+	/* create the dialog box popup window */
+	/* XtSetArg(arglist[0], XmNstyle, DwtModal ); */
+	XtSetArg(arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg(arglist[1], XmNwidth, DIALOG_WIDTH);
+	XtSetArg(arglist[2], XmNheight, DIALOG_HEIGHT);
+	trace->prompt_popup = XmCreatePromptDialog(trace->work,"", arglist, 3);
+	XtAddCallback(trace->prompt_popup, XmNokCallback, cb_prompt_ok, trace);
+	XtAddCallback(trace->prompt_popup, XmNcancelCallback, cb_prompt_cancel, trace);
 
-    XtSetArg(arglist[0], DwtNlabel, DwtLatin1String(string));
-    XtSetValues(label_wid,arglist,1);
-
+	XtUnmanageChild( XmSelectionBoxGetChild (trace->prompt_popup, XmDIALOG_HELP_BUTTON));
+	}
+    
+    /*
     XtSetArg(arglist[0], DwtNtextMergeTranslations, io_trans_parsed );
     XtSetValues(popup_wid,arglist,1);
-
-    ok_cb[0].tag = type;
-    XtSetArg(arglist[0], DwtNactivateCallback, ok_cb );
-    XtSetValues(ok_wid,arglist,1);
-
-    /* create the simple text widget */
-    XtSetArg(arglist[0], DwtNrows, 1 );
-    XtSetArg(arglist[1], DwtNcols, 10 );
-    XtSetArg(arglist[2], DwtNx, 5 );
-    XtSetArg(arglist[3], DwtNy, 20 );
-    text_wid = DwtSTextCreate( popup_wid, "", arglist, 4);
-    XtManageChild( text_wid );
-
+    */
+    XtSetArg(arglist[0], XmNdialogTitle, XmStringCreateSimple(string) );
+    XtSetArg(arglist[1], XmNtextString, XmStringCreateSimple("") );
+    XtSetValues(trace->prompt_popup,arglist,2);
+    
     /* manage the popup window */
-    XtManageChild(popup_wid);
-}
-
-void
-ok(w, type, reason)
-Widget		w;
-int		type;
-DwtFileSelectionCallbackStruct *reason;
-{
-    int		num;
-    char	*list[2],string1[10],string2[10];
-
-    if (DTPRINT) printf("In ok_cb type=%d\n",type);
-
-    sprintf(string1,"%d",curptr);
-    sprintf(string2,"%d",type);
-
-    list[0] = string1;
-    list[1] = string2;
-
-    num = 2;
- 
-    hit_return(w,NULL,list,&num);
-
-    return;
-}
-
-void
-can( widget, tag, reason )
-Widget		widget;
-DISPLAY_SB	*tag;
-DwtFileSelectionCallbackStruct *reason;
-{
-
-    if (DTPRINT) printf("In can_cb\n");
-    XtUnmanageChild(popup_wid);
-
-}
-
-void
-hit_return(w,event,params,numparams)
-Widget		w;
-XEvent		*event;
-char		**params;
-int		*numparams;
-{
-    char	*tmp,data[20],string[20];
-    DISPLAY_SB	*ptr;
-    int		type,tempi;
-    float	tempf;
-
-    /* initialize to NULL string */
-    string[0] = '\0';
-
-    if (DTPRINT) printf("in hit return!\n");
-
-    if (DTPRINT) printf("*numparams=%d\n",*numparams);
-
-    /* obtain the ptr */
-    ptr = (DISPLAY_SB *)atoi(params[0]);
-    if (DTPRINT) printf("ptr=%d\n",ptr);
-
-    /* obtain the type */
-    type = atoi(params[1]);
-    if (DTPRINT) printf("type=%d\n",type);
-
-    /* do stuff depending on type of data */
-    switch(type)
-    {
-	case IO_GRIDRES:
-	    /* get the data and store in display structure */
-	    strcpy(data, tmp = DwtSTextGetString(text_wid));
-	    tempi = atoi(data);
-	    if (tempi > 0)
-		ptr->grid_res = tempi;
-	    else
-	    {
-		sprintf(message,"Value %d out of range",tempi);
-		dino_message_ack(ptr,message);
-		return;
-	    }
-    
-	    /* validate the geometry */
-	    get_geometry( ptr );
-	    break;
-
-	case IO_RES:
-	    /* get the data and store in display structure */
-	    strcpy(data, tmp = DwtSTextGetString(text_wid) );
-	    tempi = atoi(data);
-	    if (tempi <= 0)
-	    {
-		sprintf(message,"Value %d out of range",tempi);
-		dino_message_ack(ptr,message);
-		return;
-	    }
-	    else
-	    {
-		ptr->res = ((float)(ptr->width-ptr->xstart))/(float)tempi;
-    
-	        /* change the resolution string on display */
-	 	strcat(string,"Res=");
-		strcat(string,data);
-		strcat(string," ns");
-		XtSetArg(arglist[0],DwtNlabel, DwtLatin1String(string));
-		XtSetValues(ptr->command.reschg_but,arglist,1);
-	    }
-	    /* validate the geometry */
-	    get_geometry( ptr );
-	    break;
-
-	case IO_READCUSTOM:
-	    /* get the data and store in display structure */
-	    strcpy(data, tmp = DwtSTextGetString(text_wid) );
-	    printf("Read Custom File: %s\n",data);
-	    break;
-
-	case IO_SAVECUSTOM:
-	    /* get the data and store in display structure */
-	    strcpy(data, tmp = DwtSTextGetString(text_wid) );
-	    printf("Save Custom File: %s\n",data);
-	    break;
-
-	default:
-	    printf("Error - bad type %d\n",type);
+    trace->prompt_type = type;
+    XtManageChild(trace->prompt_popup);
     }
+
+void    cb_prompt_cancel( widget, trace, reason )
+    Widget		widget;
+    TRACE	*trace;
+    XmAnyCallbackStruct *reason;
+{
+    if (DTPRINT) printf("In cb_prompt_cancel\n");
+    XtUnmanageChild(trace->prompt_popup);
+    }
+
+void    cb_prompt_ok(w, trace, reason)
+    Widget		w;
+    TRACE	*trace;
+    XmSelectionBoxCallbackStruct *reason;
+{
+    char	*valstr;
+    char	string[20]="";
+    int		tempi;
+    float	tempf;
+    
+    if (DTPRINT) printf("In cb_prompt_ok type=%d\n",trace->prompt_type);
+    
+    /* Get value */
+    valstr = extract_first_xms_segment (reason->value);
+    tempi = atoi(valstr);
 
     /* unmanage the popup window */
-    XtUnmanageChild(popup_wid);
-
-    /* destroy the text widget */
-    XtDestroyWidget(text_wid);
-
+    XtUnmanageChild(trace->prompt_popup);
+    
+    /* do stuff depending on type of data */
+    switch(trace->prompt_type)
+	{
+      case IO_GRIDRES:
+	/* get the data and store in display structure */
+	if (tempi > 0)
+	    trace->grid_res = tempi;
+	else {
+	    sprintf(message,"Value %d out of range",tempi);
+	    dino_error_ack(trace,message);
+	    return;
+	    }
+	
+	/* validate the geometry */
+	get_geometry( trace );
+	break;
+	
+      case IO_RES:
+	/* get the data and store in display structure */
+	if (tempi <= 0) {
+	    sprintf(message,"Value %d out of range",tempi);
+	    dino_error_ack(trace,message);
+	    return;
+	    }
+	else {
+	    trace->res = ((float)(trace->width-trace->xstart))/(float)tempi;
+	    
+	    /* change the resolution string on display */
+	    sprintf(string,"Res=%d ns",(int)((trace->width-trace->xstart)/trace->res) );
+	    XtSetArg(arglist[0],XmNlabelString, XmStringCreateSimple(string));
+	    XtSetValues(trace->command.reschg_but,arglist,1);
+	    }
+	/* validate the geometry */
+	get_geometry( trace );
+	break;
+	
+      default:
+	printf("Error - bad type %d\n",trace->prompt_type);
+	}
+    
     /* redraw the screen */
-    XClearWindow(ptr->disp, ptr->wind);
-    draw(ptr);
-    drawsig(ptr);
-}
+    XClearWindow(trace->display, trace->wind);
+    draw(trace);
+    }
 
 
-void 
-dino_message_info(ptr,msg)
-DISPLAY_SB	*ptr;
-char		*msg;
+void dino_message_info(trace,msg)
+    TRACE	*trace;
+    char		*msg;
 {
     short	wx,wy,wh,ww;
     static	MAPPED=FALSE;
     static Widget message;
-
+    
     if (DTPRINT) printf("In dino_message_info msg=%s\n",msg);
-
+    
     /* display message at terminal */
     printf("DINO_MESSAGE_INFO: %s\n",msg);
-
+    
     /* display message in main_wid window */
-
-
-    return;
-}
-
-/* Put up message and wait for acknowledgement */
-/*
-void 
-dino_message_ack_hold(ptr,msg)
-    DISPLAY_SB	*ptr;
-    char	*msg;
-{
-    dino_message_ack(ptr,msg);
-     
     }
-*/
 
-void 
-dino_message_ack(ptr,msg)
-DISPLAY_SB	*ptr;
-char		*msg;
+void dino_message_ack(trace, type, msg)
+    TRACE	*trace;
+    int		type;	/* See dino_warning_ack macros, 1=warning */
+    char		*msg;
 {
     short	wx,wy,wh,ww;
     static	MAPPED=FALSE;
     static Widget message;
-
+    Arg		arglist[10];
+    
     if (DTPRINT) printf("In dino_message_ack msg=%s\n",msg);
-
+    
     /* create the widget if it hasn't already been */
     if (!MAPPED)
-    {
-	cb_arglist[0].proc = message_ack;
-	cb_arglist[0].tag = (int)message;
-	cb_arglist[1].proc = NULL;
-	XtSetArg(arglist[0], DwtNyesCallback, cb_arglist);
-	XtSetArg(arglist[1], DwtNdefaultPosition, TRUE);
-	message = DwtMessageBoxCreate(ptr->work, "", arglist, 2);
+	{
+	XtSetArg(arglist[0], XmNdefaultPosition, TRUE);
+	switch (type) {
+	  case 1:
+	    message = XmCreateWarningDialog(trace->work, "warning", arglist, 1);
+	    break;
+	  default:
+	    message = XmCreateErrorDialog(trace->work, "error", arglist, 1);
+	    break;
+	    }
+	XtAddCallback(message, XmNokCallback, message_ack, trace);
+	XtUnmanageChild( XmMessageBoxGetChild (message, XmDIALOG_CANCEL_BUTTON));
+	XtUnmanageChild( XmMessageBoxGetChild (message, XmDIALOG_HELP_BUTTON));
 	MAPPED=TRUE;
-    }
-
+	}
+    
     /* change the label value and location */
-    XtSetArg(arglist[0], DwtNlabel, DwtLatin1String(msg));
-    XtSetValues(message,arglist,1);
-
+    XtSetArg(arglist[0], XmNmessageString, XmStringCreateSimple(msg));
+    XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple("Dinotrace Message") );
+    XtSetValues(message,arglist,2);
+    
     /* manage the widget */
     XtManageChild(message);
-}
+    }
 
-void
-message_ack(widget, tag, reason )
-Widget		widget;
-Widget		*tag;
-DwtFileSelectionCallbackStruct *reason;
+void    message_ack(widget, tag, reason )
+    Widget		widget;
+    Widget		*tag;
+    XmAnyCallbackStruct *reason;
 {
     if (DTPRINT) printf("In message_ack\n");
-
+    
     /* unmanage the widget */
     XtUnmanageChild(widget);
-}
+    }
 
 /******************************************************************************
  *
@@ -634,146 +517,142 @@ DwtFileSelectionCallbackStruct *reason;
  *****************************************************************************/
 
 DINO_NUMBER_TO_VALUE(num)
-int	num;
+    int	num;
 {
     switch(num)
-    {
-	case STATE_1:
-		printf("1");
-		return;
-
-	case STATE_0:
-		printf("0");
-		return;
-
-	case STATE_U:
-		printf("U");
-		return;
-
-	case STATE_Z:
-		printf("Z");
-		return;
-
-	case STATE_B32:
-		printf("B32");
-		return;
-
-	default:
-		printf("UNKNOWN VALUE");
-		return;
+	{
+      case STATE_1:
+	printf("1");
+	return;
+	
+      case STATE_0:
+	printf("0");
+	return;
+	
+      case STATE_U:
+	printf("U");
+	return;
+	
+      case STATE_Z:
+	printf("Z");
+	return;
+	
+      case STATE_B32:
+	printf("B32");
+	return;
+	
+      default:
+	printf("UNKNOWN VALUE");
+	return;
+	}
     }
-}
 
-void
-print_sig_names(w,ptr)
-Widget		w;
-DISPLAY_SB	*ptr;
+void    print_sig_names(w,trace)
+    Widget		w;
+    TRACE	*trace;
 {
     int		i;
     short	*pbus;
-
-    printf("There are %d signals in this trace.\n",ptr->numsig);
+    
+    printf("There are %d signals in this trace.\n",trace->numsig);
     printf("Num:\tType:\tName:\n");
-
-    for (i=0; i< ptr->numsig; i++)
-    {
-	printf("%d)\t\t%s\n",i,(*(ptr->signame)).array[i]);
-    }
-
-    printf("Bus array: ptr->bus[]=");
-    pbus = ptr->bus;
-    for (i=0; i< ptr->numsig; i++) {
+    
+    for (i=0; i< trace->numsig; i++)
+	{
+	printf("%d)\t\t%s\n",i,(*(trace->signame)).array[i]);
+	}
+    
+    printf("Bus array: trace->bus[]=");
+    pbus = trace->bus;
+    for (i=0; i< trace->numsig; i++) {
 	printf("%d|",*(pbus+i));
 	}
-
-    print_signal_states (ptr);
+    
+    print_signal_states (trace);
     }
 
-void
-print_all_traces(w,ptr)
-Widget		w;
-DISPLAY_SB	*ptr;
+void    print_all_traces(w,trace)
+    Widget		w;
+    TRACE	*trace;
 {
     printf("In print_all_traces.\n");
-}
+    }
 
-void
-print_screen_traces(w,ptr)
-Widget		w;
-DISPLAY_SB	*ptr;
+void    print_screen_traces(w,trace)
+    Widget		w;
+    TRACE	*trace;
 {
     int		i,adj,num;
     SIGNAL_SB	*sig_ptr;
     SIGNAL_LW	*cptr;
-
-    printf("There are %d signals currently visible.\n",ptr->numsigvis);
-    printf("Which signal do you wish to view (0-%d): ",ptr->numsigvis-1);
+    
+    printf("There are %d signals currently visible.\n",trace->numsigvis);
+    printf("Which signal do you wish to view (0-%d): ",trace->numsigvis-1);
     scanf("%d",&num);
-    if ( num < 0 || num > ptr->numsigvis-1 )
-    {
+    if ( num < 0 || num > trace->numsigvis-1 )
+	{
 	printf("Illegal Value.\n");
 	return;
-    }
-
-    adj = ptr->time * ptr->res - ptr->xstart;
+	}
+    
+    adj = trace->time * trace->res - trace->xstart;
     printf("Adjustment value is %d\n",adj);
-
-    sig_ptr = (SIGNAL_SB *)ptr->startsig;
-    for (i=0; i<num; i++)
-    {
+    
+    sig_ptr = (SIGNAL_SB *)trace->dispsig;
+    for (i=0; i<num; i++) {
 	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;	
-    }
-
+	}
+    
     cptr = (SIGNAL_LW *)sig_ptr->cptr;
-
+    
     printf("Signal %s starts at %d with a value of ",sig_ptr->signame,cptr->time);
     DINO_NUMBER_TO_VALUE(cptr->state);
     printf("\n");
-
+    
     while( cptr->time != 0x1FFFFFFF &&
-	   (cptr->time*ptr->res-adj) < ptr->width - XMARGIN)
-    {
+	  (cptr->time*trace->res-adj) < trace->width - XMARGIN)
+	{
 	DINO_NUMBER_TO_VALUE(cptr->state);
 	printf(" at time %d ns",cptr->time);
-
+	
 	if ( cptr->state >= STATE_B32 )
-	{
-	    switch(sig_ptr->type)
 	    {
-		case STATE_B32:
-		    cptr++;
-		    printf(" with a value of %x\n",*((unsigned int *)cptr));
-		    break;
-
-		case STATE_B64:
-		    cptr++;
-		    printf(" with a value of %x ",*((unsigned int *)cptr));
-		    cptr++;
-		    printf("%x\n",*((unsigned int *)cptr));
-		    break;
-
-		case STATE_B96:
-		    cptr++;
-		    printf(" with a value of %x ",*((unsigned int *)cptr));
-		    cptr++;
-		    printf("%x ",*((unsigned int *)cptr));
-		    cptr++;
-		    printf("%x\n",*((unsigned int *)cptr));
-		    break;
-
-		default:
-		    printf("Error: Bad sig_ptr->type=%d\n",sig_ptr->type);
-		    break;
-	    }
+	    switch(sig_ptr->type)
+		{
+	      case STATE_B32:
+		cptr++;
+		printf(" with a value of %x\n",*((unsigned int *)cptr));
+		break;
+		
+	      case STATE_B64:
+		cptr++;
+		printf(" with a value of %x ",*((unsigned int *)cptr));
+		cptr++;
+		printf("%x\n",*((unsigned int *)cptr));
+		break;
+		
+	      case STATE_B96:
+		cptr++;
+		printf(" with a value of %x ",*((unsigned int *)cptr));
+		cptr++;
+		printf("%x ",*((unsigned int *)cptr));
+		cptr++;
+		printf("%x\n",*((unsigned int *)cptr));
+		break;
+		
+	      default:
+		printf("Error: Bad sig_ptr->type=%d\n",sig_ptr->type);
+		break;
+		}
 	    cptr++;
-	}
+	    }
 	else
-	{
+	    {
 	    printf("\n");
 	    cptr += sig_ptr->inc;
+	    }
 	}
     }
-}
 
 
 /* Keep only the directory portion of a file spec */
@@ -781,53 +660,53 @@ void file_directory (strg)
     char *strg;
 {
     char *pchar;
-
+    
     if ((pchar=strrchr(strg,']')) != NULL )
 	*(pchar+1) = '\0';
     else
 	if ((pchar=strrchr(strg,':')) != NULL )
 	    *(pchar+1) = '\0';
-    else
-	strg[0] = '\0';
+	else
+	    strg[0] = '\0';
     }
 
 
-void change_title(ptr)
-    DISPLAY_SB	*ptr;
+void change_title(trace)
+    TRACE	*trace;
 {
     char title[300],icontitle[300],*pchar;
-
+    
     /*
-    ** Change the name on title bar to filename
-    */
+     ** Change the name on title bar to filename
+     */
     strcpy(title,DTVERSION);
-    if (ptr->filename[0]!='\0') {
+    if (trace->filename[0]!='\0') {
 	strcat(title," - ");
-	strcat(title,ptr->filename);
+	strcat(title,trace->filename);
 	}
-
+    
     /* For icon title drop extension and directory */
-    if (ptr->filename[0]!='\0') {
-	strcpy (icontitle, ptr->filename);
-	if ((pchar=strrchr(ptr->filename,']')) != NULL )
+    if (trace->filename[0]!='\0') {
+	strcpy (icontitle, trace->filename);
+	if ((pchar=strrchr(trace->filename,']')) != NULL )
 	    strcpy (icontitle, pchar+1);
 	else
-	    if ((pchar=strrchr(ptr->filename,':')) != NULL )
+	    if ((pchar=strrchr(trace->filename,':')) != NULL )
 		strcpy (icontitle, pchar+1);
 	if ((pchar=strchr(icontitle,'.')) != NULL )
 	    *(pchar) = '\0';
 	if ((pchar=strchr(icontitle,';')) != NULL )
 	    *(pchar) = '\0';
 	/* Tack on the version number */
-	if ((pchar=strrchr(ptr->filename,';')) != NULL )
+	if ((pchar=strrchr(trace->filename,';')) != NULL )
 	    strcat (icontitle, pchar);
 	}
     else {
 	strcpy(icontitle, DTVERSION);
 	}
     
-    XtSetArg(arglist[0], DwtNtitle, title);
-    XtSetArg(arglist[1], DwtNiconName, icontitle);
+    XtSetArg(arglist[0], XmNtitle, title);
+    XtSetArg(arglist[1], XmNiconName, icontitle);
     XtSetValues(toplevel,arglist,2);
     }
 

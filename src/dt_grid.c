@@ -22,92 +22,81 @@
  */
 
 
-#include <X11/DECwDwtApplProg.h>
 #include <X11/Xlib.h>
+#include <X11/Xm.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
 
 
 
-void
-grid_res_cb( w, ptr, cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtAnyCallbackStruct	*cb;
+void grid_res_cb( w, trace, cb)
+    Widget			w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
 {
 
-    if (DTPRINT) printf("In grid_res_cb - ptr=%d\n",ptr);
+    if (DTPRINT) printf("In grid_res_cb - trace=%d\n",trace);
 
     /* input the grid resolution from the user */
-    get_data_popup(ptr,"Grid Res",IO_GRIDRES);
+    get_data_popup(trace,"Grid Res",IO_GRIDRES);
 }
 
-void
-grid_align_cb(w, ptr, cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtAnyCallbackStruct	*cb;
+void grid_align_cb(w, trace, cb)
+    Widget			w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
 {
 
-    if (DTPRINT) printf("In grid_align_cb - ptr=%d\n",ptr);
+    if (DTPRINT) printf("In grid_align_cb - trace=%d\n",trace);
 
     /* remove any previous events */
-    remove_all_events(ptr);
+    remove_all_events(trace);
 
     /* process all subsequent button presses as grid aligns */
-    XtAddEventHandler(ptr->work,ButtonPressMask,TRUE,align_grid,ptr);
+    XtAddEventHandler(trace->work,ButtonPressMask,TRUE,align_grid,trace);
+    }
 
-}
-
-void
-grid_reset_cb(w, ptr, cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtAnyCallbackStruct	*cb;
+void grid_reset_cb(w, trace, cb)
+    Widget			w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf("In grid_reset_cb - ptr=%d\n",ptr);
+    if (DTPRINT) printf("In grid_reset_cb - trace=%d\n",trace);
 
     /* reset the alignment back to zero and resolution to 100 */
-    ptr->grid_align = 0;
-    ptr->grid_res = 100;
+    trace->grid_align = 0;
+    trace->grid_res = 100;
 
-    update_signal_states (ptr);
+    update_signal_states (trace);
 
     /* cancel the button actions */
-    remove_all_events(ptr);
+    remove_all_events(trace);
 
     /* redraw the screen */
-    get_geometry(ptr);
-    XClearWindow(ptr->disp,ptr->wind);
-    drawsig(ptr);
-    draw(ptr);
+    get_geometry(trace);
+    XClearWindow(trace->display,trace->wind);
+    draw(trace);
+    }
 
-    return;
-}
-
-void
-align_grid(w, ptr, ev)
-Widget			w;
-DISPLAY_SB		*ptr;
-XButtonPressedEvent	*ev;
+void align_grid(w, trace, ev)
+    Widget			w;
+    TRACE		*trace;
+    XButtonPressedEvent	*ev;
 {
     int		i,j,time;
 
-    if (DTPRINT) printf("In align_grid - ptr=%d x=%d y=%d\n",ptr,ev->x,ev->y);
+    if (DTPRINT) printf("In align_grid - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
 
     /* check if button has been clicked on trace portion of screen */
-    if ( ev->x < ptr->xstart || ev->x > ptr->width - XMARGIN )
+    if ( ev->x < trace->xstart || ev->x > trace->width - XMARGIN )
 	return;
 
     /* convert x value to a new grid_align (time) value */
-    ptr->grid_align = (ev->x + ptr->time * ptr->res - ptr->xstart) / ptr->res;
+    trace->grid_align = (ev->x + trace->time * trace->res - trace->xstart) / trace->res;
 
     /* redraw the screen with new cursors */
-    get_geometry(ptr);
-    XClearWindow(ptr->disp,ptr->wind);
-    drawsig(ptr);
-    draw(ptr);
-
-    return;
-}
+    get_geometry(trace);
+    XClearWindow(trace->display,trace->wind);
+    draw(trace);
+    }
