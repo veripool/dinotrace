@@ -480,6 +480,7 @@ extern void	vscroll_drag_cb (Widget w);
 extern void	socket_create (void);
 
 /* dt_draw */
+extern void	update_scrollbar (Widget w, int value, int inc, int min, int max, int size);
 extern void	draw_update_sigstart (void);
 extern void	draw_perform (void);
 extern void	draw_update (void);
