@@ -29,7 +29,7 @@ Dinotrace manual for configuration options.
 @enumerate
 @item
 The latest version of Dinotrace is available at 
-@uref{http://www.ultranet.com/~wsnyder/veripool/dinotrace}.
+@uref{http://www.veripool.com/dinotrace}.
 Download the latest package from that site, and decompress.
 @samp{gunzip dinotrace_version.tar.gz ; tar xvf dinotrace_version.tar}
 

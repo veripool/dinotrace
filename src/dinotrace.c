@@ -6,7 +6,7 @@
  *
  * Author: Wilson Snyder <wsnyder@world.std.com> or <wsnyder@iname.com>
  *
- * Code available from: http://www.ultranet.com/~wsnyder/veripool/dinotrace
+ * Code available from: http://www.veripool.com/dinotrace
  *
  ******************************************************************************
  *
@@ -324,7 +324,7 @@ and is WITHOUT ANY WARRANTY.\n\
 Please see the help menu or %sdinotrace.txt for documentation.\n\
 \n\
 A complete Dinotrace kit is available on:\n\
-http://www.ultranet.com/~wsnyder/veripool/dinotrace\n\
+http://www.veripool.com/dinotrace\n\
 \n\
 For configuration information, Dinotrace reads in order:\n\
      %sdinotrace.dino\n\
