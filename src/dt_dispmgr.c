@@ -277,6 +277,7 @@ void init_globals ()
 
     if (DTPRINT_ENTRY) printf ("in init_globals\n");
 
+    global->preserved_trace = NULL;
     global->delsig = NULL;
     global->selected_sig = NULL;
     global->cursor_head = NULL;

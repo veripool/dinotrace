@@ -60,6 +60,7 @@ int fil_line_num=0;
 /****************************** UTILITIES ******************************/
 
 void free_data (trace)
+    /* Free trace information, also used when deleting preserved structure */
     TRACE	*trace;
 {
     TRACE	*trace_ptr;
@@ -161,12 +162,13 @@ void fil_read_cb (trace)
 
     /* Clear the data structures & the screen */
     XClearWindow (global->display, trace->wind);
-    /* free memory associated with the data */
-    free_data (trace);
-
     set_cursor (trace, DC_BUSY);
     XSync (global->display,0);
-    
+
+    /* free memory associated with the data */
+    sig_cross_preserve(trace);
+    free_data (trace);
+
     /* get applicable config files */
     config_read_defaults (trace, TRUE);
     
@@ -207,7 +209,8 @@ void fil_read_cb (trace)
 	sprintf (message,"Can't open file %s", trace->filename);
 	dino_error_ack (trace, message);
 
-	/* Clear cursor and return */
+	/* Clear cursor and return*/
+	sig_cross_restore (trace);
 	change_title (trace);
 	set_cursor (trace, DC_NORMAL);
 	return;
@@ -237,6 +240,7 @@ void fil_read_cb (trace)
 		dino_error_ack (trace, message);
 
 		/* Clear cursor and return */
+		sig_cross_restore (trace);
 		change_title (trace);
 		set_cursor (trace, DC_NORMAL);
 		return;
@@ -755,6 +759,9 @@ void read_trace_end (trace)
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	sig_ptr->xsigname = XmStringCreateSimple (sig_ptr->signame);
 	}
+
+    /* Preserve file information */
+    sig_cross_restore (trace);
 
     /* Read .dino file stuff yet again to get signal_heighlights */
     /* Don't report errors, as they would pop up for a second time. */

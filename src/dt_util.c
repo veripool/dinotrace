@@ -44,6 +44,7 @@ static char rcsid[] = "$Id$";
 #include <Xm/Form.h>
 #include <Xm/PushB.h>
 #include <Xm/PushBG.h>
+#include <Xm/ToggleB.h>
 #include <Xm/RowColumn.h>
 
 #include "dinotrace.h"
@@ -410,6 +411,14 @@ void  get_file_name ( trace )
 	trace->fileselect.format_option = XmCreateOptionMenu (trace->fileselect.work_area,"format",arglist,2);
 	XtManageChild (trace->fileselect.format_option);
 
+	/* Create save_ordering button */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Preserve Signal Ordering"));
+	XtSetArg (arglist[1], XmNx, 0);
+	XtSetArg (arglist[2], XmNy, 100);
+	XtSetArg (arglist[3], XmNshadowThickness, 1);
+	trace->fileselect.save_ordering = XmCreateToggleButton (trace->fileselect.work_area,"save_ordering",arglist,4);
+	XtManageChild (trace->fileselect.save_ordering);
+	
 	XtManageChild (trace->fileselect.work_area);
 	
 	XSync (global->display,0);
@@ -417,6 +426,10 @@ void  get_file_name ( trace )
     
     XtManageChild (trace->fileselect.dialog);
 
+    /* Ordering */
+    XtSetArg (arglist[0], XmNset, global->save_ordering ? 1:0);
+    XtSetValues (trace->fileselect.save_ordering,arglist,1);
+    
     /* File format */
     if (filetypes[file_format].selection) {
 	XtSetArg (arglist[0], XmNmenuHistory, trace->fileselect.format_item[file_format]);
@@ -468,6 +481,8 @@ void fil_ok_cb (w, trace, cb)
     
     tmp = extract_first_xms_segment (cb->value);
     if (DTPRINT_FILE) printf ("filename=%s\n",tmp);
+    
+    global->save_ordering = XmToggleButtonGetState (trace->fileselect.save_ordering);
     
     strcpy (trace->filename, tmp);
     

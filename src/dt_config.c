@@ -45,6 +45,7 @@
 ! File Format:
 !	file_format	DECSIM | TEMPEST | VERILOG
 !	save_enables	ON | OFF
+!	save_ordering	ON | OFF
 !	signal_states	<signal_pattern> = {<State>, <State>...}
 !	vector_seperator "<char>"
 !       time_multiplier	<number>
@@ -504,6 +505,7 @@ void	config_process_line_internal (trace, line, eof)
 {
     char cmd[MAXSIGLEN];
     int value;
+    
     static SIGNALSTATE newsigst;
     static Boolean processing_sig_state = FALSE;
 
@@ -549,12 +551,14 @@ void	config_process_line_internal (trace, line, eof)
 	    value=DTPRINT;
 	    if (toupper(line[0])=='O' && toupper(line[1])=='N') DTPRINT = -1;
 	    else if (toupper(line[0])=='O' && toupper(line[1])=='F') DTPRINT = 0;
-	    else if (value >= 0) {
-		sscanf (line, "%lx", &value);
-		DTPRINT=value;
-		}
 	    else {
-		config_error_ack (trace, "Print must be set ON, OFF, or > 0\n");
+		sscanf (line, "%lx", &value);
+		if (value > 0) {
+		    DTPRINT=value;
+		    }
+		else {
+		    config_error_ack (trace, "Print must be set ON, OFF, or > 0\n");
+		    }
 		}
 	    if (DTPRINT) printf ("Config: DTPRINT=0x%x\n",value);
 	    }
@@ -563,6 +567,13 @@ void	config_process_line_internal (trace, line, eof)
 	    line += config_read_on_off (trace, line, &value);
 	    if (value >= 0) {
 		global->save_enables=value;
+		}
+	    }
+	else if (!strcmp(cmd, "SAVE_ORDERING")) {
+	    value=global->save_ordering;
+	    line += config_read_on_off (trace, line, &value);
+	    if (value >= 0) {
+		global->save_ordering=value;
 		}
 	    }
 	else if (!strcmp(cmd, "CURSOR")) {
@@ -1085,9 +1096,10 @@ void config_write_file (filename)
     /* Debug and Print skipped */
     fprintf (writefp, "!debug\t\t%s\n", DTDEBUG?"ON":"OFF");
     fprintf (writefp, "!print\t\t%d\n", DTPRINT);
+    fprintf (writefp, "!refreshing\t%d\n", global->redraw_manually?"MANUAL":"AUTO");
     fprintf (writefp, "save_enables\t%s\n", global->save_enables?"ON":"OFF");
+    fprintf (writefp, "save_ordering\t%s\n", global->save_ordering?"ON":"OFF");
     fprintf (writefp, "click_to_edge\t%s\n", global->click_to_edge?"ON":"OFF");
-    fprintf (writefp, "save_enables\t%s\n", global->save_enables?"ON":"OFF");
     fprintf (writefp, "page_inc\t%d\n", 
 	     global->pageinc==QPAGE ? 4 : (global->pageinc==QPAGE?2:1) );
     fprintf (writefp, "print_size\t");
@@ -1187,6 +1199,7 @@ void config_restore_defaults(trace)
 	free_signal_states (trace);
     
     global->pageinc = FPAGE;
+    global->save_ordering = TRUE;
 
     trace->sighgt = 20;	/* was 25 */
     trace->cursor_vis = TRUE;

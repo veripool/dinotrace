@@ -172,8 +172,12 @@ typedef enum {
 #define TIME_TO_XPOS(_xtime_) \
         ( ((_xtime_) - global->time) * global->res + global->xstart )
 
-/* Avoid binding error messages on XtFree */
-#define DFree(ptr) XtFree((char *)ptr)
+/* Avoid binding error messages on XtFree, NOTE ALSO clears the pointer! */
+#define DFree(ptr) { XtFree((char *)ptr); ptr = NULL; }
+
+/* Useful for debugging messages */
+#define DeNull(_str_) ( ((_str_)==NULL) ? "NULL" : (_str_) )
+#define DeNullSignal(_sig_) ( ((_sig_)==NULL) ? "NULLPTR" : (DeNull((_sig_)->signame) ) )
 
 typedef	long 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
 
@@ -189,15 +193,16 @@ extern Boolean	DTDEBUG;		/* Debugging mode */
 extern int	DTPRINT;		/* Information printing mode */
 extern int	DebugTemp;		/* Temp value for trying things */
 
-#define DTPRINT_ENTRY	(DTPRINT & 0x00000001)	/* Print routine entries */
-#define DTPRINT_CONFIG	(DTPRINT & 0x00000010)	/* Print config reading information */
-#define DTPRINT_FILE	(DTPRINT & 0x00000100)	/* Print file reading information */
-#define DTPRINT_DISPLAY	(DTPRINT & 0x00000200)	/* Print dispmgr information */
-#define DTPRINT_DRAW	(DTPRINT & 0x00000400)	/* Print dispmgr information */
-#define DTPRINT_PRINT	(DTPRINT & 0x00000800)	/* Print postscript printing information */
-#define DTPRINT_SEARCH	(DTPRINT & 0x00001000)	/* Print searching value/signal information */
-#define DTPRINT_BUSSES	(DTPRINT & 0x00002000)	/* Print make busses information */
-#define DTPRINT_SOCKET	(DTPRINT & 0x00010000)	/* Print socket connection information */
+#define DTPRINT_ENTRY	 (DTPRINT & 0x00000001)	/* Print routine entries */
+#define DTPRINT_CONFIG	 (DTPRINT & 0x00000010)	/* Print config reading information */
+#define DTPRINT_FILE	 (DTPRINT & 0x00000100)	/* Print file reading information */
+#define DTPRINT_DISPLAY	 (DTPRINT & 0x00000200)	/* Print dispmgr information */
+#define DTPRINT_DRAW	 (DTPRINT & 0x00000400)	/* Print dispmgr information */
+#define DTPRINT_PRINT	 (DTPRINT & 0x00000800)	/* Print postscript printing information */
+#define DTPRINT_SEARCH	 (DTPRINT & 0x00001000)	/* Print searching value/signal information */
+#define DTPRINT_BUSSES	 (DTPRINT & 0x00002000)	/* Print make busses information */
+#define DTPRINT_SOCKET	 (DTPRINT & 0x00010000)	/* Print socket connection information */
+#define DTPRINT_PRESERVE (DTPRINT & 0x00100000)	/* Print signal preservation information */
 
 /* File formats.  See also hardcoded case statement in dinotrace.c */
 #define	FF_AUTO		0		/* Automatic selection */
@@ -339,6 +344,7 @@ typedef struct {
     Widget dialog;
     Widget work_area;
     Widget format_menu, format_option, format_item[FF_NUMFORMATS];
+    Widget save_ordering;
     } FILE_WDGTS;
 
 typedef struct {
@@ -429,12 +435,12 @@ typedef struct st_signal {
 
     struct st_signal	*copyof;	/* Link to signal this is copy of (or NULL) */
     struct st_trace	*trace;		/* Trace signal belongs to (originally) */
-    /* struct st_signal	*verilog_copyof; / * Copy of another verilog signal (which has own data) */
     struct st_signal	*verilog_next;	/* Next verilog signal with same coding */
 
     char		*signame;	/* Signal name */
     XmString		xsigname;	/* Signal name as XmString */
     char		*signame_buspos;/* Signal name portion where bus bits begin (INSIDE signame) */
+
     ColorNum		color;		/* Signal line's Color number (index into trace->xcolornum) */
     ColorNum		search;		/* Number of search color is for, 0 = manual */
 
@@ -574,6 +580,7 @@ typedef struct st_trace {
 /* Global information */
 typedef struct {
     TRACE		*trace_head;	/* Pointer to first trace */
+    TRACE		*preserved_trace;	/* Pointer to old trace when reading in new one */
 
     SIGNAL	 	*delsig;       	/* Linked list of deleted signals */
     SIGNAL		*selected_sig;	/* Selected signal to move or add */
@@ -622,7 +629,8 @@ typedef struct {
     TimeRep		time_precision;	/* Time precision = TIMEREP_NS/TIMEREP_CYC */
     char		time_format[12]; /* Time format = printf format or *NULL */
     int			tempest_time_mult;	/* Time multiplier for tempest */
-    Boolean		save_enables;	/* Save enable wires */
+    Boolean		save_enables;	/* True to save enable wires */
+    Boolean		save_ordering;	/* True to save signal ordering */
 
     int			redraw_needed;	/* Some trace needs to refresh the screen when get a chance, 0=NO, 1=YES, 2=Do All */
     Boolean		redraw_manually;/* True if in manual refreshing mode */

@@ -80,6 +80,7 @@ void socket_input_cb (CLIENT *client,
 	    XtRemoveInput (*id_ptr);
 	    close (sock_client);
 	    DFree (client);
+	    return;
 	    }
 	else if (len < 0) {
 	    cont=FALSE;
