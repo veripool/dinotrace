@@ -7,11 +7,20 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-* Changes in Dinotrace 9.0h  5/1/2000
+* Changes in Dinotrace 9.0i  5/1/2000
 
 **	Major speed improvement in reading Tempest traces.
 	All trace formats now have less processing when building busses from
 	individual bits. [Steve Hoover]
+
+***	ASCII traces assume extra time so last line is not lost.
+	ASCII traces which had timestamps would not show the last state of the
+	bus, as Dinotrace did not guess at how long that last state was valid for.
+	Now, it looks at the smallest time step in the trace, and uses that
+	as a guess at the timescale.
+
+****	Builds on FreeBSD.  [Dan McMahill]
+
 
 * Changes in Dinotrace 9.0g  1/17/2000
 

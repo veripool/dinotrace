@@ -312,6 +312,8 @@ void ascii_read (
 
     char	*t;
     Boolean_t	chango_format=FALSE;
+    long	time_stamp_last;
+    long	smallest_delta_time = -1;
     long	sig_start_pos, sig_end_pos;
     char	*data_begin_ptr;
 
@@ -441,6 +443,7 @@ void ascii_read (
     /* Loop to read trace data and reformat */
     first_data = TRUE;
     time_stamp = -100;	/* so increment makes it 0 */
+    time_stamp_last = -100;
     while (1) {
 	if (data_begin_ptr) {
 	    /* We already got one line, use it. */
@@ -472,25 +475,30 @@ void ascii_read (
 		    printf ("%%E, Time underflow!\n");
 		}
 	    }
-	    
-	    if (first_data) {
-		trace->start_time = time_stamp;
-	    }
-	    trace->end_time = time_stamp;
 
 	    /* save information on each signal */
 	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 		ascii_string_add_cptr (sig_ptr, line_in + sig_ptr->file_pos, time_stamp, first_data);
 	    }
 
-	    first_data = FALSE;
+	    if (first_data) {
+		trace->start_time = time_stamp;
+		first_data = FALSE;
+	    } else {
+		if (smallest_delta_time < 0
+		    || ((time_stamp - time_stamp_last) < smallest_delta_time)) {
+		    smallest_delta_time = (time_stamp - time_stamp_last);
+		}
+	    }
+	    trace->end_time = time_stamp;
+	    time_stamp_last = time_stamp;
 	}
     }
 
-    if (chango_format) {
-	/* No timestamps, so include last line as valid data */
-	trace->end_time += 100;
-    }
+    /* No timestamps, or uniform timestamps, so include last line as valid data */
+    /* We'll always include some time so we don't loose the last line's info */
+    if (smallest_delta_time < 0) smallest_delta_time = 100;	// Occurs when only 1 line
+    trace->end_time += smallest_delta_time;
 
     DFree (header_start);
 
