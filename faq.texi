@@ -8,7 +8,7 @@
 @c %**end of header
 
 @set UPDATED November 1998
-@set VERSION 9.0d
+@set VERSION 9.0j
 
 @c All functions use these for searching ease
 @macro dmenu {f}
