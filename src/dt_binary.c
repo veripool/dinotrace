@@ -41,7 +41,7 @@ static char rcsid[] = "$Id$";
 #include "callbacks.h"
 #include "bintradef.h"
 
-
+#ifdef VMS
 #define TRA$W_NODNAMLEN tra$r_data.tra$$r_nnr_data.tra$r_fill_11.tra$r_fill_12.tra$w_nodnamlen
 #define TRA$T_NODNAMSTR tra$r_data.tra$$r_nnr_data.tra$r_fill_11.tra$r_fill_12.tra$t_nodnamstr
 #define TRA$B_DATTYP tra$r_data.tra$$r_nfd_data.tra$b_dattyp
@@ -49,6 +49,7 @@ static char rcsid[] = "$Id$";
 #define TRA$L_BITPOS tra$r_data.tra$$r_nfd_data.tra$l_bitpos
 #define TRA$L_TIME_LO tra$r_data.tra$$r_nsr_data.tra$r_fill_13.tra$r_fill_14.tra$l_time_lo
 #define TRA$L_TIME_HI tra$r_data.tra$$r_nsr_data.tra$r_fill_13.tra$r_fill_14.tra$l_time_hi
+#endif /* VMS */
 
 /* Extract 1 bit or 2 bits from bit position POS in the buffer */
 /* Type casting to long is important to prevent bit 7 & 8 from seperating */
@@ -338,6 +339,7 @@ void	fil_tempest_binary_to_value (sig_ptr, buf, value_ptr)
     value_ptr->siglw.sttime.state = state;
     }
 
+#ifdef VMS
 void decsim_read_binary (trace, read_fd)
     TRACE	*trace;
     int		read_fd;
@@ -542,6 +544,7 @@ void decsim_read_binary (trace, read_fd)
 
     read_trace_end (trace);
     }
+#endif /* VMS */
 
 
 void tempest_read (trace, read_fd)
@@ -559,6 +562,7 @@ void tempest_read (trace, read_fd)
     unsigned int	time, last_time=EOT;
     SIGNAL	*sig_ptr,*last_sig_ptr=NULL;
     VALUE	value;
+    int 	index;
 
     /*
      ** Read the file identification block
@@ -600,57 +604,53 @@ void tempest_read (trace, read_fd)
 		   sigFlags,sigOffset,sigWidth,sigChars,chardata);
 	    }
 	
-	if (1) {
-	    int index;
-
-	    for (index=sigWidth-1 ; index>=0; index--) {
-		/*
-		 ** Initialize all pointers and other stuff in the signal
-		 ** description block
-		 */
-		sig_ptr = (SIGNAL *)XtMalloc (sizeof(SIGNAL));
-		memset (sig_ptr, 0, sizeof (SIGNAL));
-		sig_ptr->trace = trace;
-		sig_ptr->forward = NULL;
-		if (trace->firstsig==NULL) {
-		    trace->firstsig = sig_ptr;
-		    sig_ptr->backward = NULL;
-		    }
-		else {
-		    last_sig_ptr->forward = sig_ptr;
-		    sig_ptr->backward = last_sig_ptr;
-		    }
-		if (sigWidth>1) {
-		    sig_ptr->bit_index = index;
-		    sig_ptr->bits = sigWidth;	/* Special, will be decomposed */
-		    }
-		else {
-		    sig_ptr->bit_index = -1;
-		    sig_ptr->bits = 0;
-		    }
-		if (index==sigWidth-1) sig_ptr->file_type.flag.vector_msb = TRUE;
-		sig_ptr->file_pos = sigOffset + index;
-		
-		/* These could be simplified as they map 1:1, but safer not to */
-		sig_ptr->file_type.flags = 0;
-		sig_ptr->file_type.flag.pin_input = ((sigFlags & 1) != 0);
-		sig_ptr->file_type.flag.pin_output = ((sigFlags & 2) != 0);
-		sig_ptr->file_type.flag.pin_psudo = ((sigFlags & 4) != 0);
-		sig_ptr->file_type.flag.pin_timestamp = ((sigFlags & 8) != 0);
-		sig_ptr->file_type.flag.four_state = ((sigFlags & 16) != 0);
-		
-		/*
-		 ** Copy the signal name, add EOS delimiter and initialize the pointer to it
-		 */
-		sig_ptr->signame = (char *)XtMalloc (10+sigChars); /* allow extra space in case becomes vector */
-		for (j=0;j<sigChars;j++)
-		    sig_ptr->signame[j] = chardata[j];
-		sig_ptr->signame[sigChars] = '\0';
-		
-		last_sig_ptr = sig_ptr;
+	for (index=sigWidth-1 ; index>=0; index--) {
+	    /*
+	     ** Initialize all pointers and other stuff in the signal
+	     ** description block
+	     */
+	    sig_ptr = (SIGNAL *)XtMalloc (sizeof(SIGNAL));
+	    memset (sig_ptr, 0, sizeof (SIGNAL));
+	    sig_ptr->trace = trace;
+	    sig_ptr->forward = NULL;
+	    if (trace->firstsig==NULL) {
+		trace->firstsig = sig_ptr;
+		sig_ptr->backward = NULL;
 		}
-	    }
+	    else {
+		last_sig_ptr->forward = sig_ptr;
+		sig_ptr->backward = last_sig_ptr;
+		}
+	    if (sigWidth>1) {
+		sig_ptr->bit_index = index;
+		sig_ptr->bits = sigWidth;	/* Special, will be decomposed */
+		}
+	    else {
+		sig_ptr->bit_index = -1;
+		sig_ptr->bits = 0;
+		}
+	    if (index==sigWidth-1) sig_ptr->file_type.flag.vector_msb = TRUE;
+	    sig_ptr->file_pos = sigOffset + index;
 	    
+	    /* These could be simplified as they map 1:1, but safer not to */
+	    sig_ptr->file_type.flags = 0;
+	    sig_ptr->file_type.flag.pin_input = ((sigFlags & 1) != 0);
+	    sig_ptr->file_type.flag.pin_output = ((sigFlags & 2) != 0);
+	    sig_ptr->file_type.flag.pin_psudo = ((sigFlags & 4) != 0);
+	    sig_ptr->file_type.flag.pin_timestamp = ((sigFlags & 8) != 0);
+	    sig_ptr->file_type.flag.four_state = ((sigFlags & 16) != 0);
+	    
+	    /*
+	     ** Copy the signal name, add EOS delimiter and initialize the pointer to it
+	     */
+	    sig_ptr->signame = (char *)XtMalloc (10+sigChars); /* allow extra space in case becomes vector */
+	    for (j=0;j<sigChars;j++)
+		sig_ptr->signame[j] = chardata[j];
+	    sig_ptr->signame[sigChars] = '\0';
+	    
+	    last_sig_ptr = sig_ptr;
+	    }
+    
 	/* Checks */
 	if (sig_ptr->file_type.flag.four_state != 0) {
 	    sprintf (message,"Four state tempest not supported.\nSignal %s will be wrong.",sig_ptr->signame);
@@ -673,9 +673,14 @@ void tempest_read (trace, read_fd)
     /* Read the signal trace data
      * Pass 0-(numRows-1) reads the data, pass numRows processes last line */
     first_data = TRUE;
-    for (i=0;i<numRows;i++) {
+
+    /* Don't use numRows as it is written when CCLI exits, and may be incorrect 
+       if CCLI was CTL-Ced */
+
+    while (1) {
 	/* Read a row of data */
 	status = read (read_fd, data, numBitsRowPad/8);
+	if (status < numBitsRowPad/8) break;	/* End of data */
 	/*
 	if (DTPRINT_FILE) {
 	    printf ("read: time=%d  status %d data=%08x %08x\n", data[0], 
