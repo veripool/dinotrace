@@ -683,9 +683,9 @@ void tempest_read (
 	    
 	    /* These could be simplified as they map 1:1, but safer not to */
 	    sig_ptr->file_type.flags = 0;
-	    sig_ptr->file_type.flag.pin_input = ((sigFlags & 1) != 0);
+	    sig_ptr->file_type.flag.pin_input  = ((sigFlags & 1) != 0);
 	    sig_ptr->file_type.flag.pin_output = ((sigFlags & 2) != 0);
-	    sig_ptr->file_type.flag.pin_psudo = ((sigFlags & 4) != 0);
+	    sig_ptr->file_type.flag.pin_psudo  = ((sigFlags & 4) != 0);
 	    sig_ptr->file_type.flag.pin_timestamp = ((sigFlags & 8) != 0);
 	    sig_ptr->file_type.flag.four_state = ((sigFlags & 16) != 0);
 	    
@@ -773,7 +773,7 @@ void tempest_read (
 	last_time = time;
 	if (first_data && have_phase) {
 	    int phase = data[1] & 1;
-	    printf ("Initial phase detected: %d\n", phase);
+	    if (DTPRINT_FILE) printf ("Initial phase detected: %d\n", phase);
 	    if (phase) time += MAX(1,global->tempest_time_mult/2);
 	}
 	
