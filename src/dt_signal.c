@@ -2187,6 +2187,18 @@ static void sig_modify_en_signal (
 	    en_cptr = CPTR_NEXT(en_cptr);
 	}
 
+	if (new_value.number[4]
+	    && (new_value.number[4] == (new_sig_ptr->value_mask[0] & 0xffffffff))
+	    && (new_value.number[5] == (new_sig_ptr->value_mask[1] & 0xffffffff))
+	    && (new_value.number[6] == (new_sig_ptr->value_mask[2] & 0xffffffff))
+	    && (new_value.number[7] == (new_sig_ptr->value_mask[3] & 0xffffffff))
+	    && (new_value.number[0] == (new_sig_ptr->value_mask[0] & 0xffffffff))
+	    && (new_value.number[1] == (new_sig_ptr->value_mask[1] & 0xffffffff))
+	    && (new_value.number[2] == (new_sig_ptr->value_mask[2] & 0xffffffff))
+	    && (new_value.number[3] == (new_sig_ptr->value_mask[3] & 0xffffffff))) {
+	    new_value.siglw.stbits.state = STATE_Z;
+	}
+
 	if ((CPTR_TIME(base_cptr) == EOT) && (CPTR_TIME(en_cptr) == EOT)) {
 	    first_last_data=TRUE;
 	}
