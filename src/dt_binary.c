@@ -569,7 +569,7 @@ void tempest_read (trace, read_fd)
      */
     status = read (read_fd, chardata, 4);
     chardata[4]='\0';
-    if (!status || strncmp (chardata,"BT0",3) ) {
+    if (!status || strncmp (chardata,"BT",2) ) {
 	sprintf (message, "Bad File Format (=%s)\n", chardata);
 	dino_error_ack(trace, message);
 	return;
