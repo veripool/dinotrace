@@ -1,1 +1,2022 @@
-punt
+\input texinfo @c -*-texinfo-*-
+@c %**start of header
+@stfilename dinotrace
+@settitle Dinotrace @value{VERSION}
+@c Put everything in one index
+@syncodeindex fn cp
+@syncodeindex vr cp
+@syncodeindex ky cp
+@synindex pg cp
+@syncodeindex tp cp
+@c For double-sided printing, uncomment:
+@c @setchapternewpage odd
+@footnotestyle separate
+@paragraphindent 2
+@finalout
+@c %**end of header
+
+@c Before release, run C-u C-c C-u C-a (texinfo-all-menus-update with a
+@c prefix arg).  This updates the node pointers, which texinfmt.el needs.
+
+@set ID $Id$
+@set VERSION 9.0a
+@set UPDATED June 1998
+@c All functions use these for searching ease
+@macro dmenu {f}
+@code{\f\}
+@end macro
+@iftex
+@global@let@dmenu=@code
+@end iftex
+
+@macro widget {f}
+@emph{\f\}
+@end macro
+@iftex
+@global@let@widget=@emph
+@end iftex
+
+@macro resource {f}
+@code{\f\}
+@end macro
+@iftex
+@global@let@resource=@code
+@end iftex
+
+@macro config {f}
+@code{\f\}
+@end macro
+@iftex
+@global@let@config=@code
+@end iftex
+
+@macro switch {f}
+@samp{\f\}
+@end macro
+@iftex
+@global@let@switch=@samp
+@end iftex
+
+@macro prog {f}
+@strong{\f\}
+@end macro
+@iftex
+@global@let@prog=@strong
+@end iftex
+
+@iftex
+@finalout
+@end iftex
+
+@dircategory Signal waveform tracing tool
+@direntry
+* Dinotrace: (Dinotrace).         Signal waveform tracing tool.
+@end direntry
+
+@ifinfo
+This file documents the Dinotrace package for viewing signal waveforms.
+
+Copyright (C) 1998 by Wilson Snyder. @email{wsnyder@@ultranet.com}
+
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+
+@ignore
+Permission is granted to process this file through TeX and print the
+results, provided the printed document carries copying permission
+notice identical to this one except for the removal of this paragraph
+(this paragraph not being relevant to the printed manual).
+
+@end ignore
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the entire
+resulting derived work is distributed under the terms of a permission
+notice identical to this one.
+
+Permission is granted to copy and distribute translations of this manual
+into another language, under the above conditions for modified versions,
+except that this permission notice may be stated in a translation approved
+by the author.
+@end ifinfo
+
+@setchapternewpage odd
+
+@c @finalout
+@shorttitlepage Dinotrace
+
+@titlepage
+@title Dinotrace
+@subtitle Signal Waveform Tracing
+@subtitle for Dinotrace @value{VERSION}
+@subtitle @value{UPDATED}
+@author Wilson Snyder   <@email{wsnyder@@ultranet.com}>
+
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 1998 Wilson Snyder
+
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the entire
+resulting derived work is distributed under the terms of a permission
+notice identical to this one.
+
+Permission is granted to copy and distribute translations of this manual
+into another language, under the above conditions for modified versions,
+except that this permission notice may be stated in a translation approved
+by the author.
+@end titlepage
+
+@node Top, Introduction, , (dir)
+@cindex Introduction
+@comment  node-name,  next,  previous,  up
+
+@ifinfo
+This file documents the Dinotrace package for signal waveform tracing.
+This is edition @value{ID}, for Dinotrace version @value{VERSION}.
+
+For the latest version, please see
+@url{http://www.ultranet.com/~wsnyder/veripool/dinotrace}
+
+Please feel free to send comments and suggestions to
+@email{wsnyder@@ultranet.com} or @email{wsnyder@@world.std.com}.  If you install this
+tool, please also send mail so that I can inform you of new
+releases.
+
+@end ifinfo
+
+@c The master menu, created with texinfo-master-menu, goes here.
+
+@c @menu
+@c * Tree Structuring::            A manual is like an upside down tree
+@c @end menu
+
+@c ======================================================================
+@node Summary
+@chapter Summary
+
+Dinotrace is a tool designed to aid in viewing Verilog Value Change
+Dump, ASCII, Verilator, Tempest CCLI, COSMOS, Chango and Decsim Binary
+simulation traces.  It is optimized for rapid design debugging using
+X-Windows Mosaic.  A special interface allows signal information to be
+annotated into source code using Emacs.
+
+Please see the file @file{INSTALL} in the distribution directory for
+installation instructions.
+
+@node Copying
+@section Copying
+@cindex Copying, Dinotrace
+
+Dinotrace is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2, or (at your option) any
+later version.
+
+Dinotrace is distributed in the hope that it will be useful, but
+@strong{without any warranty}; without even the implied warranty of
+@strong{merchantability} or @strong{fitness for a particular purpose}.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with Dinotrace; see the file @file{COPYING}.  If not, write to the Free
+Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.
+
+@c ======================================================================
+@node History
+@chapter History
+@cindex History
+
+Dinotrace was concieved in the early 1980's by Allen Gallotta at Digital
+Equipment Corporation, who wrote the code and supported it through
+version 4.2.  When created, it was the first graphical display tool for
+the simulators being designed at Digital.
+
+@pindex Verilator
+
+In 1992 I joined Digital Semiconductor (a division of Digital Equipment
+Corportation) and took over the support of Dinotrace.  I converted it
+from Digital's X toolkit to Motif, added color, highlighting, searching,
+and other features.  Several formats were added to Dinotrace to support
+Verilator, our group's own Verilog to C translator, written by Paul
+Wasson.  (And soon be available on the Dinotrace website at
+@url{http://www.ultranet.com/~wsnyder/veripool/verilator}.)  As the
+years went on, other groups started using the typical industry standard
+Verilog simulators.  Although programs like vwaves were available, they
+had some silly limitations.  Besides, we were hooked on Dinotrace, so I
+added Verilog format, and Dinotrace lived on.
+
+In 1998 I moved to Maker Communications, where I am currently employed.
+Life, however, was sad and incomplete without Dinotrace.  Through the
+efforts of existing DECies, mainly Duane Galbi, Digital graciously
+agreed to release the source code.  (Subject to the code not being
+resold, which is compatible with the GNU Public License.)
+
+Still at Maker Communications, life is now complete as Dinotrace can be
+shared by all.  This release is based upon the Digital version, with
+many enhancements, most notably portability improvements and true 4-state
+signal support.
+
+@node Contributors
+@section Contributors
+@cindex Contributors
+
+Many people have provided ideas and other assistance with Dinotrace.
+
+The major corporate sponsors of Dinotrace, by providing funds or
+equipment grants, are Digital Equipment Corporation, Intel Corporation,
+and Maker Communications.
+
+The people who have provided ideas for Dinotrace include Edward Arthur,
+Sally Barry, Josh Belkin, Yifat Ben-Shachar, Rachel Berman, Sass Berman,
+Mike Blake, Serge Bogdanov, Ronen Boneh, Gregg Bouchard, Bill Bruce,
+Lauren Carlson, Paul Chan, David Chen, Derrick Dacosta, Erik Debriae,
+Paul Dormitzer, Duane Galbi, Allen Gallotta, Steve Glaser, Mike Goulet,
+Larry Gust, Larry Herman, Dave Horan, Tom Hunt, Tracey Jones, Mike
+Kagen, Dan Katz, Sol Katzman, Steve Kolecki, Steve Lang, Charlie Lind,
+Ben Marshall, Bob McNamara, John Murphy, Lisa Noack, Mitch Norcross,
+Michael Quadri, Reinhard Schumann, Simcha, Jai Singh, Dean Sovie, Julie
+Staraitis, Bob Walsh, Paul Wasson, and Bob Yodlowski.
+
+@c ======================================================================
+@node Invoking Dinotrace
+@chapter Invoking Dinotrace
+@cindex Invoking Dinotrace
+
+Dinotrace accepts switches and filenames on the command line.  Any
+filenames on the command line will be read in before Dinotrace gives
+control to the user.
+
+@pindex gunzip
+@pindex uncompress
+@cindex .gz
+@cindex .Z
+Dinotrace accepts switches with leading @code{-}, and everything else is
+a trace filename.  Filenames are in standard Unix format, with a
+optional @file{.gz} or @file{.Z} extension to indicate the trace should
+be piped before opening through @prog{gunzip} or @prog{uncompress}
+respectively.
+
+These switches are supported, in addition to the standard @prog{X-11}
+switches, like @switch{-display}.
+
+@ftable @switch
+@item -verilog
+@findex -verilog
+Read following trace filenames using Verilog format.  This is the
+default format.
+@item -decsim
+@findex -decsim
+Read following trace filenames using Decsim format.  If running on
+a VMS system, Decsim Binary format is also supported.
+@item -tempest
+@findex -tempest
+@cindex File Format, Switch
+Read following trace filenames using Tempest/CCLI format.
+@item -noconfig
+@findex -noconfig
+@findex Configuration Files, Disabling
+Skip reading the standard global, user, and directory .dino files.
+Do read any trace-specific .dino files.
+@item -geometry @var{geometry}
+@findex -geometry
+@cindex Geometry, Switch
+Specifies the window size and position in standard
+X format (@var{width}X@var{height}+@var{xpos}+@var{ypos}).
+@item -res @var{resolution}
+@findex -res
+Specify the trace resolution.
+@end ftable
+
+@c ======================================================================
+@node Concepts
+@chapter Concepts
+
+      Radix        	Verilog Style  VHDL Style
+      Hex           	'h<num>      X"<num>"
+      Oct            	'o<num>      O"<num>"
+      Binary            'b<num>      B"<num>"
+      Decimal		'd<num>      D"<num>"
+      Real		'r<num>	     R"<num>"   **
+      Ascii (String)	's<str>      S"<str>"
+      Ascii (String)	"<strg>"
+
+**=Reals are only supported as 64 bit doubles in the native machine format.
+A Verilog file with a @code{real} will map to this type.  Changing regular
+signals to the real raxix will probably not map the value correctly.
+
+@c ======================================================================
+@node Screen Description
+@chapter Screen Description
+
+This chapter describes the layout of the screen, and the function of the
+various widget and menu items.
+
+@node Window Widgets
+@section Window Widgets
+
+The main window is broken into the display area, with signal names on
+the left and values stretching to the vertical scroll bar.  The vertical
+scroll bar on the right scrolls through the various signals, if they all
+cannot fit on the screen at once.  At the bottom of the screen is a time
+scroll bar on the right, and a signal name scroll bar on the left.
+
+@node Time Slider
+@subsection Time Slider
+@cindex Time Slider
+
+On the left bottom of the main window is the time scroll bar.
+
+@table @widget
+@item Drag
+Draging the time slider will scroll the time across the screen.  Lines
+are printed in the scroll area to indicate where cursors are located.
+
+@item Unit Dec
+@kindex @key{left}
+
+Clicking the <- arrow at the left of the time slider, or pressing
+@kbd{@key{left}} will move the time one grid #0 resolution (usually one
+clock) earlier.
+
+@item Unit Inc
+@kindex @key{right}
+
+Clicking the -> arrow at the right of the time slider, or pressing
+@kbd{@key{right}} will move the time one grid #0 resolution (usually one
+clock) later.
+
+@item Page Dec
+@kindex S-@key{left}
+
+Clinking the blank area at the left of the time slider, or pressing
+@kbd{S-@key{right}} will move the time one screen width earlier, so the
+time at the left of the screen is now at the right.  (Or 1/2 or 1/4
+screen width, depending on the @config{page_inc} customization setting.)
+
+@item Page Inc
+@kindex S-@key{right}
+
+Clinking the blank area at the right of the time slider, or pressing
+@kbd{S-@key{right}} will move the time one screen width later, so the
+time at the right of the screen is now at the left. (Or 1/2 or 1/4
+screen width, depending on the @config{page_inc} customization setting.)
+@end table
+
+@node Name Slider
+@subsection Name Slider
+@cindex Name Slider
+@cindex Signal Names, Scrolling
+
+The name slider is the horizontal scroll bar left of time scroll bar.
+
+@table @widget
+@item Drag
+@cindex Name Slider
+@cindex Signal Names, Scrolling
+Draging the name slider will scroll the signal names left and right so
+that they may be completely seen.  Dinotrace aligns the signals on the
+last dot (hiearchy character).
+@end table
+
+@node Signal Slider
+@subsection Signal Slider
+@cindex Signal Slider
+@cindex Signals, Scrolling
+
+The signal slider is the vertical scroll bar to the right of the window.
+
+@table @widget
+@item Drag
+@cindex Signal Slider
+Draging the signal slider will scroll the signals so that new signals
+can be seen.  Lines are printed in the scroll area to indicate where
+highlighted signals are located.
+
+@item Unit Dec
+@kindex @key{up}
+
+Clicking the <- arrow at the top of the signal slider, or pressing
+@kbd{@key{up}} will move the signals down one, displaying a new signal
+at the top.
+
+@item Unit Inc
+@kindex @key{down}
+
+Clicking the -> arrow at the bottom of the signal slider, or pressing
+@kbd{@key{down}} will move the Moves signals up one, displaying a new
+signal at the bottom.
+
+@item Page Dec
+@kindex S-@key{up}
+@kindex @key{pageup}
+
+Clicking the blank area above the signal slider, or pressing
+@kbd{@key{pageup}} will move the signals up one screen full, so the
+previous top signal is now at the bottom.
+
+@item Page Inc
+@kindex S-@key{down}
+@kindex @key{pagedown}
+
+Clicking the blank area below the signal slider, or pressing
+@kbd{@key{pagedown}} will move the signals down one screen full, so the
+previous bottom signal is now at the top.
+
+@end table
+
+@node Buttons
+@subsection Buttons
+
+The buttons below the lower scroll bar perform common functions that affect
+the display.
+
+@table @widget
+@item Begin
+@cindex Begin Button
+@cindex Time, Moving to Beginning
+@kindex @key{begin}
+
+Clicking the @widget{Begin} button below the time scroll bar, or
+pressing @kbd{@key{begin}} will move to the earliest time in the trace.
+
+@item End
+@cindex End Button
+@cindex Time, Moving to End
+@kindex @key{end}
+
+Clicking the @widget{End} button below the time scroll bar, or pressing
+@kbd{@key{end}} will move to the earliest time in the trace.
+
+@item Goto
+@cindex Goto Button
+@cindex Time, Goto
+@kindex g
+
+Clicking the @widget{Goto} button below the time scroll bar, or pressing
+@kbd{g} will make a popup that prompts for a time.  The window will
+scroll horizontally so that the entered time is centered on the screen.
+A option menu will place a cursor of the selected color at the time
+entered.
+
+@item Refresh
+@cindex Refresh Button
+
+Clicking the @widget{Refresh} button below the scroll bar will refresh
+the screen.  Normally this is automatic.  When using Dinotrace over slow
+links, it may be desirable to refresh manually, @xref{refreshing}.
+
+@item Resolution
+@cindex Resolution Button
+
+Clicking the @widget{Resolution} number button at the middle bottom will
+make a popup that can change the resolution to the number specified.
+
+@item Inc Res
+@cindex Resolution, Incrementing
+@cindex Increment Resolution Button
+
+Clicking the arrow button to the right of the @widget{Resolution} button
+expands the trace so the same amount of time takes more space.
+
+@item Dec Res
+@cindex Resolution, Decrementing
+@cindex Decrement Resolution Button
+
+Clicking the arrow button to the left of the @widget{Resolution} button
+expands the trace so the same amount of time takes less space.
+
+@item Zoom
+@cindex Time, Zooming
+@cindex Zoom Button
+
+Clicking the @widget{Zoom} button, then clicking @kbd{@key{MB1}} on two
+times expands the trace so that the time between the clicks occupies the
+entire screen.
+
+@item Full
+@cindex Full
+@cindex Time, Full Window
+
+Clicking the @widget{Full} button shrinks the resolution so that the
+entire trace fits onto the screen.  It is often quicker to press
+@widget{Full} then zoom to the desired location rather then scrolling.
+
+@end table
+
+@node Trace Menu
+@section Trace Menu
+
+@table @dmenu
+@item Read...
+@cindex Trace Read...
+@cindex Reading, Traces
+@kindex C-o
+
+Selecting the @dmenu{Trace Read} menu option, or pressing @kbd{C-o}
+pops up a file requester to read a trace.  The default is to read
+Verilog traces (@file{.dmp}).  To read other formats, the format must be
+set FIRST using the option menu, a command line switch, or the
+@config{file_format} configuration command.
+
+If a file ends in a @file{.Z} or @file{.gz} extention, it will be piped
+through uncompress or gunzip respectively before being read.
+
+@item ReRead
+@cindex Trace ReRead
+@cindex Rereading, Traces
+
+Selecting @dmenu{Trace ReReread} checks if there is a new version of the
+file currently begin displayed and reads it.  The file will only be read
+if a new one exists.  If no file is displayed, it is the same as the
+@dmenu{Trace Read} option.
+
+This is useful for rereading a trace after it has changed due to a new
+simulation run.
+
+@item ReRead All
+@cindex Trace ReRead All
+@kindex C-r
+
+Selecting @dmenu{Trace ReRead All}, or pressing @kbd{C-r}, checks every
+window to see if that window's file has been updated, and rereads if it
+has.
+
+@item Open...
+@cindex Trace Open...
+@cindex Opening, Traces
+
+Selecting @dmenu{Trace Open} shrinks the current window in half, and
+opens another Dinotrace window, linked in time to the original.  The two
+traces will then pan together and share cursors, etc.  Multiple window
+support is intended for traces that have the same time lengths.
+@xref{Customization Traces} for how to change the default window sizes,
+such as to not shrink the original window when opening.
+
+@item Close
+@cindex Trace Close
+@cindex Closing, Traces
+
+Selecting @dmenu{Trace Close} closes the current window if more then one
+is open.  If this is the only one remaining open, use @dmenu{Trace Exit}
+instead.
+
+@item Clear
+@cindex Trace Clear
+@cindex Clearing, Traces
+
+Selecting @dmenu{Trace Clear} closes all other windows and resets
+Dinotrace as if Dinotrace was exited and ran again.
+
+@item Print...
+@cindex Trace Print...
+@cindex Print...
+@cindex Printing
+
+Selecting @dmenu{Trace Print} pops up a file requester allowing the
+current screen to be printed to a file.  The amount of time, and number
+of signals on the screen will represent the time and signals on one page
+of paper.
+
+The include off-screen times button will print multiple @dfn{horizontal}
+pages of paper, so that all times in the trace is printed.  The include
+off-screen signals button will print multiple @dfn{vertical} pages, so that
+all signals are printed.  Both may be checked and taped together to get
+a nice wall hanging.
+
+The @widget{EPS} option will make a Encapsulated Postscript file that does not
+include all of the headers.  This is suitable for making figures for
+inclusion in other documents.
+
+@item Print
+@cindex Trace Print
+
+Selecting @dmenu{Trace Print} performs a print using the last @dmenu{Trace
+Print...} settings.
+
+@item Exit
+@cindex Trace Exit
+@cindex Exiting
+
+Selecting @dmenu{Trace Exit} will exit Dinotrace.
+
+@end table
+
+@node Customize Menu
+@section Customize Menu
+
+@table @dmenu
+@item Change...
+@cindex Customize Change...
+
+Selecting @dmenu{Customize Change} pops up a requester that allows the
+configuration to be customized.  @xref{Customization Files} for
+permanent configuration.
+
+@item Grid...
+@cindex Customize Grid...
+@cindex Grid...
+@cindex Grid, Customization
+
+Selecting @dmenu{Customize Grid} pops up a requester that allows the
+configuration to be customized.  @xref{Customization Files} for
+permanent configuration.  Note that grid #0 is used for moving one
+increment, and for counting cycles.
+
+@item Read...
+@cindex Customize Read...
+@cindex Reading, Customization
+
+Selecting @dmenu{Customize Read} pops up a requester that reads the
+specified @file{.dino} file.  The requester also allows enabling and
+disabling of which @file{.dino} files will be read when a new trace is
+read.
+
+@item ReRead
+@cindex Customize ReRead
+
+Selecting @dmenu{Customize ReRead} will reread the customize
+@file{.dino} files.  This is useful for applying changes to Dinotrace
+after a @file{.dino} file has been edited outside Dinotrace.
+
+@item Save As...
+@cindex Customize Save As...
+@cindex Saving, Customization
+
+Selecting @dmenu{Customize Save As...} will create a popup.  A filename
+may then be entered to save the current customization settings.  Buttons
+allow different portions of the configuration to be written.  Note that
+many of the settings that will be saved can be applied only to one
+window, and should be edited out before being included in any global
+@file{dinotrace.dino} files.
+
+@item Restore
+@cindex Customize Restore
+@cindex Restoring, Customization
+
+Selecting @dmenu{Customize Restore} will restore the customization
+options to their program defaults.  It will not read any @file{.dino}
+files.
+
+@end table
+@c ------------------------------
+
+@node Cursor Menu
+@section Cursor Menu
+
+@table @dmenu
+@item Add
+@cindex Cursor Add
+@cindex Adding, Cursors
+@kindex c
+@kindex C
+
+Selecting @dmenu{Cursor Add}, or pressing @kbd{c}, then clicking
+@kbd{@key{MB1}} will insert cursors at the clicked on times.  The
+@dmenu{Next} color button, or pressing @kbd{C} will select the next
+color down in the menu from the last color selected.  @xref{cursor_add}
+for the equivelent configuration file command.
+
+@item Highlight
+@cindex Cursor Highlight
+@cindex Highlighting, Cursors
+
+Selecting @dmenu{Cursor Delete} then clicking @kbd{@key{MB1}} on cursors
+will change the color of those cursors.
+
+@item Move
+@cindex Cursor Move
+@cindex Moving, Cursors
+
+Selecting @dmenu{Cursor Move} then draging @kbd{@key{MB1}} on a cursor
+will move that cursor.  Press and hold mouse button one and release when
+the cursor is at the new time desired.  Moving a cursor that was created
+with @dmenu{Signal Search} will make that cursor permanent; the cursor
+will not go away if the search is changed.
+
+@item Delete
+@cindex Cursor Delete
+@cindex Deleting, Cursors
+
+Selecting @dmenu{Cursor Delete} then clicking @kbd{@key{MB1}} on cursors
+will delete those cursors.  To delete cursors that were created by
+@dmenu{Value Search} (those with dotted lines), turn off the second
+button on the @dmenu{Value Search} requester.
+
+@item Clear
+@cindex Cursor Clear
+@cindex Clearing, Cursors
+
+Selecting @dmenu{Cursor Clear} will delete all cursors.
+
+@item Cancel
+@cindex Cursor Cancel
+@kindex @key{esc}
+
+Selecting @dmenu{Cursor Cancel}, or pressing @kbd{@key{esc}} will stop
+@kbd{@key{MB1}} mouse clicks from having any affect.
+
+@end table
+
+@c ------------------------------
+@node Signal Menu
+@section Signal Menu
+
+@table @dmenu
+@item Add...
+@cindex Signal Add
+@cindex Adding, Signals
+
+Selecting @dmenu{Signal Add} will pop up a popup allowing a signal to be
+selected then added at the point where @kbd{@key{MB1}} is clicked.
+@xref{signal_add} for the equivelent configuration file command.
+
+@item Highlight
+@cindex Signal Highlight
+@cindex Highlighting, Signals
+@kindex s
+@kindex S
+
+Selecting @dmenu{Signal Highlight}, or pressing @kbd{s}, then clicking
+@kbd{@key{MB1}} on signals changes the color of those signals.
+@xref{signal_highlight} for the equivelent configuration file command.
+
+@item Move
+@cindex Signal Move
+@cindex Moving, Signals
+
+Selecting @dmenu{Signal Move} then clicking @kbd{@key{MB1}} on a signal
+and clicking @kbd{@key{MB1}} again on a new position moves a signal.
+Signals may be moved between traces, but closing a trace eliminates all
+signals that were originally from that trace.  @xref{signal_move} for
+the equivelent configuration file command.
+
+@item Copy
+@cindex Signal Copy
+@cindex Copying, Signals
+
+Selecting @dmenu{Signal Copy} then clicking @kbd{@key{MB1}} on a signal
+and clicking @kbd{@key{MB1}} again on a new position copies a signal.
+Signals may be copied between traces, but closing a trace eliminates all
+signals that were originally from that trace.  @xref{signal_copy} for
+the equivelent configuration file command.
+
+
+@item Delete
+@cindex Signal Delete
+@cindex Deleting, Signals
+
+Selecting @dmenu{Signal Delete} then clicking @kbd{@key{MB1}} on signals
+deletes those signals.  @dmenu{Signal Select} may be used to recover the
+deleted signals.  @xref{signal_delete} for the equivelent configuration
+file command.
+
+@item Radix
+@cindex Signal Radix
+@cindex Radix, Signals
+
+Selecting @dmenu{Signal Radix} then clicking @kbd{@key{MB1}} on signals
+changes the radix of the signals to the one selected.  Note that the
+@code{real} radix is detected for Verilog automatically, and changing
+other non-real signals to a real format probably won't display the
+values you wish.  @xref{signal_radix} for the equivelent configuration
+file command.
+
+@item Search...
+@cindex Signal Search...
+@cindex Searching, Signals
+@cindex Finding, Signals
+
+Selecting @dmenu{Signal Search} opens a popup for highlighing signal
+names.  Nine signal names which will be searched for in the trace are
+specified.  A signal name pattern, potentially containing @kbd{*} to match
+any number of characters, or @kbd{?} to match any single character is entered
+into a text widget and the toggle buttons to the left is activated.  Any
+signal name which matches the signal name pattern will be highlighted
+using the color of the toggle button, just as if @dmenu{Signal Highlight} was
+used to color it.  Highlighting a signal makes it permanent; it will not
+go away when the search that found that signal changes.
+
+@item Select...
+@cindex Signal Select...
+@cindex Selecting, Signal
+@kindex C-f
+
+Selecting @dmenu{Signal Select}, or pressing @kbd{C-f}, presents a
+requester which lists the names of the signals which are being
+displayed, and those which are deleted.  Both lists have a pattern at
+the top which a signal must match to be displayed.  Clicking on a signal
+will add it to the bottom of the other list.  Clicking on the
+@widget{Add All} or @widget{Delete All} will affect all of those in the
+list.  By specifying a pattern then @widget{Add All} or @widget{Delete
+All}, signals which match a pattern can be added or deleted.  The
+@widget{Delete Constant Value} button will delete only those signals
+which have a single constant value for all times in the trace.
+
+@item Cancel
+@cindex Signal Cancel
+
+Selecting @dmenu{Signal Cancel} will stop @kbd{@key{MB1}} mouse clicks
+from having any affect.
+
+@end table
+
+@c ------------------------------
+
+@node Value Menu
+@section Value Menu
+
+@table @dmenu
+@item Annotate...
+@cindex Value Annotate...
+@cindex Annotate...
+@cindex Annotation
+@cindex Emacs, Annotation
+
+Selecting @dmenu{Value Annotate...} makes a file with the highlighted
+signals, and values under every cursor.  Behavioral code can then be
+highlighed with the values by @file{dinotrace.el}'s reading the written
+file.  Cursors which are exactly on a edge of a signal will get the
+value that the signal is changing _to_, not from.
+
+Buttons specify which cursor and signal colors are included in the file.
+If a button is on, the color is included, else it is as if the cursor
+did not exist, or the signal was not highlighted.
+
+User cursors are those placed using the @dmenu{Cursor Add} menu.
+Automatic cursors are from searching for values or cursors placed by
+@file{.dino} files.
+
+See @xref{Dinotrace and Emacs}
+
+@item Annotate
+@cindex Value Annotate
+@kindex a
+
+Selecting @dmenu{Value Annotate}, or pressing @kbd{a} annotates code
+using the last Annotate... settings.  @xref{annotate} for the equivelent
+configuration file command.
+
+@item Highlight
+@cindex Value Highlight
+@cindex Highlighting, Values
+@kindex v
+@kindex V
+
+Selecting @dmenu{Value Highlight}, or pressing @kbd{v}, then clicking
+@kbd{@key{MB1}} on a value loads that value into one of the 9 search
+values, and highlights it where it occurs in the trace.  The search
+value can then be seen and modified with the @dmenu{Value Search} popup.
+@xref{value_highlight} for the equivelent configuration file command.
+
+@item Examine
+@cindex Value Examine
+@cindex Examining, Values
+
+Selecting @dmenu{Value Examine} then holding @kbd{@key{MB1}} on a signal
+will show the state of the signal under the mouse.  @kbd{@key{MB2}} can
+always be used for this feature.
+
+@item Search...
+@cindex Value Search...
+@cindex Searching, Values
+
+Selecting @dmenu{Value Search...} allows specification of 9 values to be
+searched for in the trace.  Each value is entered into a text widget and
+one or two toggle buttons to the left are activated.  With the first
+button active, anywhere that the value appears in a trace that value
+will be printed using the color of the toggle button.  The second button
+will add a cursor at the time where the value begins.  Cursors that are
+placed in this fashion are displayed as dotted lines, and will go away
+if the search value is changed.  Highlighting or moving a cursor makes
+it permanent; it will not go away when the search changes.
+@xref{value_search} for the equivelent configuration file command.
+
+@item Cancel
+@cindex Value Cancels
+
+Selecting @dmenu{Value Cancel} will stop @kbd{@key{MB1}} mouse clicks
+from having any affect.
+
+@end table
+
+@c ======================================================================
+@node Keyboard Shortcuts
+@chapter Keyboard Shortcuts
+@cindex Keyboard Shortcuts
+
+This chapter describes the keyboard shortcuts for Dinotrace.
+
+Any menu function may be invoked with the standard Motif accelerators;
+hold down @kbd{@key{ALT}} then press the first letter of the menu name.
+Release @kbd{@key{ALT}} and press the underlined letter of the submenu
+item, and so on.
+
+The following keys are also hardcoded: Function keys have the identical
+function when using GNU Emacs's Verilog, C, Merlin, or CCLI modes.
+
+@table @kbd
+@item @key{MB2}
+@dmenu{Value Examine}
+
+@item @key{up}
+Signal scroll up one signal
+@item S-@key{up}
+Signal scroll up a screenfull
+@item @key{down}
+Signal scroll down one signal
+@item S-@key{down}
+Signal scroll down a screenfull
+@item @key{pageup}
+Signal scroll up a screenfull
+@item @key{pagedown}
+Signal scroll down a screenfull
+@item @key{left}
+Time scroll left a grid #0 increment
+@item S-@key{left}
+Time scroll left a screenfull
+@item @key{right}
+Time scroll left a grid #0 increment
+@item S-@key{right}
+Time scroll left a screenfull
+@item @key{begin}
+Beginning of time
+@item @key{end}
+End of time
+
+@item @key{esc}
+@dmenu{Signal Cancel}
+
+@item a
+@dmenu{Value Annotate}
+@item c
+@dmenu{Cursor Add} with current color
+@item C
+@dmenu{Cursor Add} with next color
+@item g
+Goto time
+@item s
+@dmenu{Signal Highlight} with current color
+@item S
+@dmenu{Signal Highlight} with next color
+@item v
+@dmenu{Value Highlight} with current color
+@item V
+@dmenu{Value Highlight} with next color
+
+@item C-f
+@dmenu{Signal Search...}
+@item C-o
+@dmenu{Trace Read...}
+@item C-r
+@dmenu{Trace ReRead All}
+
+@end table
+
+@c ======================================================================
+@node Customization Files
+@chapter Customization Files
+
+This chapter describes customization files, and the commands that
+may be used in them.
+
+Customization files allow the options and display in Dinotrace to
+be customized to suit a specific site, user, directory, and trace.
+
+@node Automatically Read Files
+@section Automatically Read Files
+
+When a trace file is read using the @dmenu{Trace Read} menu option,
+several configuration files are read automatically: (On VMS,
+@file{$DINODISK} and @file{$DINOCONFIG} are defines, not environment
+variables, and @file{SYS$LOGIN} is used as ~.)
+
+@table @file
+
+@item $DINODISK:dinotrace.dino
+@cindex DINODISK
+
+The @file{$DINODISK:dinotrace.dino} file is intended to have site wide
+defaults.  This will probably contain a @config{file_format verilog} or similar
+commands.
+
+@item $DINOCONFIG
+@cindex DINOCONFIG
+
+The @file{$DINOCONFIG} file is intended to be used for session specific
+start-up, like setting screen size depending on what type of system
+you are using.  Users will probably point this to several possible sources
+using their @file{.login}.
+
+@item ~/dinotrace.dino
+
+The @file{~/dinotrace.dino} file is for user defaults.  The author for
+example has a @config{signal_height 15} and @config{signal_delete_constant *},
+which are both personal preferance items.
+
+@item @{current/trace/directory@}/dinotrace.dino
+
+The @file{@{current/trace/directory@}/dinotrace.dino} is for signal_states
+and other information on a per-simulation setup basis.  This probably
+includes @config{signal_state} commands (unless they are in the global
+dinotrace.dino).
+
+@item @{current/trace/directory@}/CURRENT_TRACE_NAME.dino
+
+The @file{@{current/trace/directory@}/CURRENT_TRACE_NAME.dino} is for
+highlighting and such that only apply to the current file.  See the
+enclosed example @prog{Perl} script that will parse a log file for times
+that errors occurred and write a dino that places a cursor at every such
+time.
+
+@end table
+
+@node Configuration Commands
+@section Configuration Commands
+
+Configuration files are organized with one command per line, with the
+exception of @config{signal_states}, which may be multiple lines.  Case
+is ignored in all but statenames.  The commands are:
+
+@node #
+@subsection #
+@findex # (configuration comment)
+@cindex Comments
+@config{#}	@var{comment}
+
+Comments out the remainder of the line.
+
+@node page_inc
+@subsection page_inc
+@findex page_inc
+@config{page_inc}		@var{4 | 2 | 1}
+
+Changes the increment used during pageInc and pageDec clicks on the
+horizontal scroll-bar.  1=full page, 2=half, 4=quarter.  Same as the
+page option menu in @dmenu{Customize Change}.
+
+@node rise_fall_time
+@subsection rise_fall_time
+@findex rise_fall_time
+@config{rise_fall_time}	@var{number}
+
+Changes the slope used when drawing signal assertions and deassertion.
+Use 0 to minimize the @config{rise_fall_time}.
+
+@node signal_height
+@subsection signal_height
+@findex signal_height
+@cindex Height, Signals
+@config{signal_height}	@var{number}
+
+Changes the vertical spacing between signals on the screen.  Same as the
+slider in @dmenu{Customize Change}.
+
+@node grid
+@subsection grid
+@findex grid
+@config{grid}		@var{grid_number}       ON | OFF
+
+Enables or disables the grid.  Same as the visible toggle buttons in
+@dmenu{Customize Grid}.
+
+@node grid_resolution
+@subsection grid_resolution
+@findex grid_resolution
+@cindex Resolution, Grids
+@config{grid_resolution}	@var{grid_number}       @var{number} | AUTO
+
+Changes the horizontal space between grids, normally the period of a
+clock.  Specify a number in nanoseconds, or @code{AUTO} to compute the
+grid based on the @config{grid_signal}.
+
+@node grid_align
+@subsection grid_align
+@findex grid_align
+@cindex Aligning, Grids
+@config{grid_align}	@var{grid_number}       @var{number} | ASSERTION | DEASSERTION
+
+Changes the horizontal location of the first grid mark.  Specify a
+number in nanoseconds, @samp{ASSERTION} to align with the asserting edge
+of the @config{grid_signal}, or @samp{DEASSERTION} to align with the
+deasserting edge of the @config{grid_signal}.  The grid may also align
+with changes in a bus, although in that case @samp{ASSERTION} and
+@samp{DEASSERTION} have the same effect.
+
+@node grid_signal
+@subsection grid_signal
+@findex grid_signal
+@cindex Signal, Grids
+@config{grid_signal}	@var{grid_number}	@var{pattern}
+
+Specifies which signal is to be used when calculating the period and
+alignment with grid_resolution and grid_alignment respectively.  The
+first signal that matches the pattern is used, it defaults to
+@samp{"*"}, which is the first signal in the trace.  If no signal is
+found that matches the pattern, that grid will be disabled.
+
+@node grid_type
+@subsection grid_type
+@findex grid_type
+@config{grid_type}	@var{pattern}	NORMAL | WIDE
+
+Specifies normal grids, or extra wide grids.  Wide grids are plotted 2
+pixels wide, and help low-contrast colors show up better.
+
+@node grid_color
+@subsection grid_color
+@cindex Color, Grids
+@findex grid_color
+@config{grid_color}	@var{grid_number}	@var{color}
+
+Changes the color used to display the grid.
+
+@node refreshing
+@subsection refreshing
+@findex refreshing
+@cindex Refreshing, Mode
+@config{refreshing}		AUTO | MANUAL
+
+In automatic refresh mode, any change in the screen such as zooming,
+draging, or exposing refreshes (redraws) the screen.  When set to manual
+the screen will only redraw when the refresh gadget is pressed.  Note
+that when in manual mode, it is just as if the display @emph{was}
+refreshed, so for example clicking on the display is relative to the
+@emph{new} display. Useful when using slow network links, such as dialup
+@pindex eXcursion
+@pindex exceed
+@prog{eXcursion} or @prog{exceed}.
+
+@node refresh
+@subsection refresh
+@findex refresh
+@cindex Refreshing, Doing
+@config{refresh}
+
+Refresh the screen, even if in manual refresh mode.  When a @file{.dino}
+file is being read, the screen will not be refreshed until the entire file
+is completly read, unless a @config{refresh} command is used.
+
+@node annotate
+@subsection annotate
+@findex annotate
+@cindex Annotation
+@config{annotate}
+
+Makes the annotation file, like the @dmenu{Value Annotate} menu.
+
+@node resolution
+@subsection resolution
+@findex resolution
+@cindex Resolution
+@config{resolution}		@var{number}
+
+Sets the screen resolution, like the @widget{Resolution} Button on the
+bottom of the screen.
+
+@node save_enables
+@subsection save_enables
+@findex save_enables
+@cindex Enables, Saving
+@cindex Tristates, Saving
+@config{save_enables}	ON | OFF
+
+When reading in verilator CCLI traces, Dinotrace converts two-state
+enables and data signals into a single four-state signal, then deletes
+the original signals.  When @config{save_enables} is on, the original
+signals are not deleted.  This is useful for debugging problems related
+to tristating.
+
+@node save_ordering
+@subsection save_ordering
+@findex save_ordering
+
+@config{save_ordering}	ON | OFF
+
+When set, Dinotrace will attempt to preserve signal colors, ordering,
+and deletions between the trace that existed before and the new trace
+being read in.  Signals that were deleted because they were constants
+are not preserved, they will be recalculated.  When clear, the new trace
+does not preserve any ordering information.
+
+@node signal_goto
+@subsection signal_goto
+@findex signal_goto
+@cindex Goto, Signal
+@config{signal_goto}		@var{signal}
+
+Move the window so that signal is in the center of the window.  If the
+signal was already on the screen, do nothing.
+
+@node time_goto
+@subsection time_goto
+@findex time_goto
+@cindex Goto, Time
+@config{time_goto}		@var{time}
+
+Move the window so that time is in the center of the window.  If time
+was already on the screen, do nothing.
+
+@node time_rep
+@subsection time_rep
+@cindex Representation, Time
+@findex time_rep
+@config{time_rep}		@var{number} | PS | NS | US | CYCLE
+
+Changes the time representation to be in picoseconds, nanoseconds,
+microseconds or in number of grid #0 cycles.  Cycle based timing is good
+for performance estimates.  Same as the buttons in @dmenu{Customize
+Change}.  If a number, then that number is the baseline in picoseconds.
+For example, @samp{2000} will make one unit on the screen be equal to 2
+ns in the trace file.  Default is nanoseconds.
+
+@node time_precision
+@subsection time_precision
+@cindex Precision, Time
+@findex time_precision
+@config{time_precision}	PS | NS | US
+
+Changes the internal precision to be in picoseconds, nanoseconds, or
+microseconds.  Traces that are read in will have all times rounded to
+this number.  Setting to higher units requires less memory and speeds up
+execution.  This parameter must only be changed in the global or user
+@file{dinotrace.dino} files, as it should not change between reading
+different traces.  Default is nanoseconds.
+
+Only Decsim Binary and Verilog formats contain absolute time periods,
+and these will be scaled by the precision.  Decsim Ascii traces are
+always assumed to be in nanoseconds.  The Tempest format will be assumed
+to be in the same units as the @config{time_precision}, and will not be
+scaled.
+
+@node time_format
+@subsection time_format
+@cindex Format, Time
+@findex time_format
+@config{time_format}		%0.6lf | %0.6lg | %lg | ""
+
+Changes the number of decimal places used to print times.  This format
+string is the same as that used by the C-Language printf command.  (See
+@cite{man printf} or @cite{HELP CC RUN PRINTF}.) Some of the useful
+choices are @samp{%0.6lf} which will print 6 decimal places with
+trailing zeros (123.450000), @samp{%0.6lg} which will print up to 6
+decimal places (123.45), and @samp{%lg} which will print the number of
+decimal places required to fully show the number.
+	
+The default is null ("").  When null time_precision and time_rep will
+set the preferred format for time stamps.  For example, setting
+@config{time_precision PS} and @config{time_rep NS} will make times
+display as "nn.ppp ns" where n is the nanoseconds, and p is the
+picoseconds.
+
+@node time_multiplier
+@subsection time_multiplier
+@findex time_multiplier
+@cindex Multiplier, Time
+@cindex Tempest Traces
+@config{time_multiplier}	@var{number}
+
+When reading Tempest traces, the multiplier will be used to convert the
+phase counter to the time.  Defaults to 2.
+
+@node file_format
+@subsection file_format
+@cindex Format, File
+@findex file_format
+@config{file_format}		DECSIM | TEMPEST | VERILOG
+
+Changes the file format to be read.  Same as the buttons in the
+@dmenu{Trace Open} menu.
+
+@node cursor
+@subsection cursor
+@findex cursor
+@cindex Cursor, Enables
+@config{cursor}		ON | OFF
+
+Enables or disables the cursors.  Same as the toggle buttons in
+@dmenu{Customize Change}.
+
+@node cursor_add
+@subsection cursor_add
+@findex cursor_add
+@cindex Cursor, Add
+@cindex Adding, Cursors
+@config{cursor_add}	@var{time} @var{color} [-USER] [@var{comment}]
+
+Adds a cursor of color number @var{color} (0 to 9) at the specified
+time.  If specified, add @var{comment} that may be seen with
+@dmenu{Value Examine}.  The cursor will be dotted, and will disappear
+the next time a file is read in.  The @code{-USER} flag makes the cursor
+like a manual cursor; it will be a solid line and will not disappear on
+rereads.
+
+@node click_to_edge
+@subsection click_to_edge
+@findex click_to_edge
+@cindex Edge, Clicking to
+@config{click_to_edge}	ON | OFF
+
+Enables or disables whether adding a cursor or grid close to a signal
+edge will place the cursor on that edge.
+
+@node debug
+@subsection debug
+@findex debug
+@cindex Debugging, Mode
+@config{debug}		ON | OFF
+
+Enables or disables debugging mode.
+
+@node print
+@subsection print
+@findex print
+@cindex Debugging, Print
+@config{print}		@var{number} | ON | OFF
+
+Enables or disables debugging print mode at the specified
+informational level.
+
+@node print_size
+@subsection print_size
+@findex print_size
+@cindex Page Size, Print
+@config{print_size}		A | B | EPSPORT | EPSLAND
+
+Selects the paper size, A (8 1/2" by 11") or B (11" by 17").
+@code{EPSPORT} and @code{EPSLAND} make an Encapsulated Postscript file
+without headers, in portrait or landscape layout, suitable for inclusion
+in other documents.
+
+Same as the buttons in the @dmenu{Trace Print} popup.
+
+@node vector_separator
+@subsection vector_separator
+@findex vector_separator
+@cindex Separator, Vector
+@config{vector_separator}	"@var{character}"
+
+Sets the character that separates the base signal name from vector
+numbers.  The default is @samp{[}, which means that the signal
+@samp{alpha[1]} consists of vector number 1 in the signal named alpha.
+Three other useful combinations are @samp{_} for spider signals
+@samp{alpha_1}, @samp{<} for Decsim signals @samp{alpha<1>}, and null
+("") for no separator @samp{alpha1}.  If the separator is null ("") then
+@samp{<} will still be accepted.  Tempest traces are assumed to use the
+@samp{<} separator, and setting it otherwise will split up all of the
+bits into individual entries.
+
+@node start_geometry
+@subsection start_geometry
+@findex start_geometry
+@cindex Geometry, Start
+@config{start_geometry}	@var{width}x@var{height}+@var{xoffset}+@var{yoffset}
+
+Specifies the geometry to be used when the first window is opened by
+Dinotrace.  Specified in standard X-Windows format, for example
+@config{start_geometry 1200x900+20+95} specifies a window at position
+20, 95 of width 1200 and height 900.
+
+@node open_geometry
+@subsection open_geometry
+@findex open_geometry
+@cindex Geometry, Open
+@config{open_geometry}	@var{width}[%]x@var{height}[%]+@var{xoffset}[%]+@var{yoff}[%]
+
+Specifies the geometry to be used when a new trace window is created
+with @dmenu{Trace Open} menu.  The format may be the same as
+@config{start_geometry}, in which case the exact dimensions specified
+will be used for the new window.  Percentage may be used to specify a
+position and size relative to the old window.  For example the default
+is @samp{open_geometry 100%x50%+0%+50%} which means that the new
+window will have the same width and half the height of the old window.
+The position will be the same in the x direction and 50% more (not 50%
+of the value) in the y direction.
+
+@node shrink_geometry
+@subsection shrink_geometry
+@findex shrink_geometry
+@cindex Geometry, Shrink
+@config{shrink_geometry}	@var{width}%x@var{height}%+@var{xoffset}%+@var{yoff}%
+
+Specifies the geometry to be used when a old trace window is being
+shrunk with @dmenu{Trace Open} menu option.  Absolute positions should
+not be used, instead percentages should be used to specify a position
+and size relative to the original window size.  For example the default
+is @samp{shrink_geometry 100%x50%+0%+0%} which means that when the new
+opened window is created the old window will have the same width, X, and
+Y position, but half the height of the old window.
+
+@node value_highlight
+@subsection value_highlight
+@findex value_highlight
+@cindex Highlighting, Values
+@config{value_highlight} @var{value} @var{color} [@var{signal_pattern}] -COLOR -CURSOR
+
+Searches for the value in signals matching the pattern.  If the
+@code{-COLOR} flag is set, changes the color of the value to @var{color}
+(0 to 9).  If the @code{-CURSOR} flag is set, adds a cursor of the
+specified @var{color}. The signal_pattern is the name of the signal
+inside the trace, with @key{*} being a wild card that matches any number
+of characters.
+
+@node signal_highlight
+@subsection signal_highlight
+@findex signal_highlight
+@cindex Highlighting, Signals
+@config{signal_highlight}       @var{signal_pattern}   @var{color} 
+
+Changes the color of any signals matching @var{signal_pattern} to the
+given color number @var{color} (0 to 9).  The signal_pattern is the name
+of the signal inside the trace, with @key{*} being a wild card that
+matches any number of characters.
+
+@node signal_add
+@subsection signal_add
+@findex signal_add
+@cindex Adding, Signals
+@config{signal_add}		@var{signal_pattern} [@var{after_signal}] [@var{color}]
+
+Adds signals matching @var{signal_pattern} from the trace, if the signal was
+deleted.  If the signal hasn't been deleted, nothing happens.  If the
+@var{after_signal} is provided, the signal is added after the first
+signal that matches the @var{after_signal} pattern.  If
+@var{after_signal} is not provided, the new signal is added to the end
+of the trace.
+
+@node signal_delete
+@subsection signal_delete
+@findex signal_delete
+@cindex Deleting, Signals
+@config{signal_delete}	@var{signal_pattern}
+
+Deletes signals matching @var{signal_pattern} from the trace.
+
+@node signal_delete_constant
+@subsection signal_delete_constant
+@findex signal_delete_constant
+@config{signal_delete_constant}	@var{signal_pattern} [-IGNOREXZ]
+
+Deletes signals matching the pattern, which have a constant value, from
+the trace.  If @code{-IGNOREXZ} is specified, don't consider transitions
+to/from unknown or tristate as making a signal non-constant.  Useful for
+reducing a large number of signals down to only those which change.
+
+@node signal_copy
+@subsection signal_copy
+@findex signal_copy
+@cindex Copying, Signals
+@config{signal_copy}		@var{signal_pattern} [@var{after_signal}] [@var{color}]
+
+Copies signals matching @var{signal_pattern} from the trace to a new
+position.  If the @var{after_signal} is provided, the signal is added
+after the first signal that matches the @var{after_signal} pattern.  If
+@var{after_signal} is not provided or is not found, the new signal is
+added to the end of the trace.
+
+@node signal_move
+@subsection signal_move
+@findex signal_move
+@cindex Moving, Signals
+@config{signal_move}		@var{signal_pattern} [@var{after_signal}] [@var{color}]
+
+Move signals matching @var{signal_pattern} to a new position.  If the
+@var{after_signal} is provided, the signal is moved after the first
+signal that matches the @var{after_signal} pattern.  If
+@var{after_signal} is not provided, the new signal is added to the end
+of the trace.
+
+@node signal_rename
+@subsection signal_rename
+@findex signal_rename
+@cindex Renaming, Signals
+@config{signal_rename}	@var{signal_pattern} @var{new_signal_name} [@var{color}]
+
+Changes the @strong{first} signal matching @var{signal_pattern} to have
+the name @var{new_signal_name} This can be used to make a alias copy of
+a signal by copying a signal, then renaming it.
+
+@node signal_radix
+@subsection signal_radix
+@findex signal_radix
+@cindex Radix, Signals
+@config{signal_radix}	@var{signal_pattern} @var{radix}
+
+Changes signals matching @var{signal_pattern} to have the specified
+radix.  Note that the @code{real} radix is detected for Verilog
+automatically, and changing other non-real signals to a real format
+probably won't display the values you wish.
+
+@node signal_states
+@subsection signal_states
+@findex signal_states
+@cindex States, Signals
+@config{signal_states}	@var{signal_pattern} = @{@var{State}, @var{State}...@};
+
+Allows the value of a bus to be translated to a text string.  The
+@var{signal_pattern} is the name of the signal inside the trace, with
+@kbd{*} being a wild card that matches any number of characters.  Each
+state is the text to be displayed, using the characters
+@kbd{0-9A-Z%._/}.  States are assigned in numerical order starting with
+zero, unless a @code{##=} proceeds a statename: If a statename is of the
+form @code{##=name}, for example in @code{7=Read} the Read name is
+assigned to the bus value seven.  (The number is always in decimal.)
+The next assignment will be to 8 if no number is specified.
+
+Example:
+
+@example
+signal_states *cpucreq[2:0] = @{
+   1=Barrier, Fetch, FetchM, Read, Write, LDx_L, STx_C@};
+@end example
+
+In this example, any signal ending in @samp{cpucreq[2:0]} (any case)
+will convert 1 to Barrier, 2 to Fetch, etc.  Unspecified values, such as
+0 and 8 will be displayed as a number.  If the state does not fit on the
+screen, the number will be printed instead.  Text strings may only be
+defined for state numbers 0-255.
+
+@c ======================================================================
+@node X Resources
+@chapter X Resources
+
+This chapter describes the X-Windows resources that Dinotrace supports.
+
+Dinotrace uses the X resource database for color and font selection.
+
+To use a resource, put in your ~/.Xdefaults file
+@example
+Dinotrace*Foreground: Black
+Dinotrace*Background: #cacaaaaa9191
+Dinotrace*color1: DarkOliveGreen
+@end example
+
+Then type at the shell @samp{xrdb ~/.Xdefaults} to reread the database.
+
+Dinotrace adds the following resources over and above the core X Toolkit
+resource names and classes (such as foreground and background):
+
+@table @resource
+@cindex Color, Searching
+@item color@var{#}
+@findex color#
+
+@resource{color#}, where @var{#} is 1-9, specifies the colors for
+searches, highlighting, and cursors.  color0 is fixed to the foreground
+color.
+
+@item barcolor
+@findex barcolor
+@cindex Color, Bars
+
+@resource{barcolor} specifies the color to be used for the background of
+alternate signals.  Defaults to 7% greener then the background color.
+Those that remember green bar tractor-feed paper should feel comfortable
+with this default.
+
+@item signalfont
+@findex signalfont
+
+@resource{signalfont} specifies the font to be used for signal names
+along the sides of the trace window.  Defaults to
+@code{-*-Fixed-Medium-R-Normal--*-120-*-*-*-*-*-1}
+
+@item timefont
+@findex timefont
+@cindex Font, Time
+
+@resource{timefont} specifies the font to be used for time values along
+the top of the trace window.  Defaults to
+@code{-*-Courier-Medium-R-Normal--*-120-*-*-*-*-*-1}
+
+@item valuefont
+@findex valuefont
+@cindex Font, Value
+
+@resource{valuefont} specifies the font to be used for values inside
+buses.  Defaults to @code{-*-Fixed-Medium-R-Normal--*-100-*-*-*-*-*-1}
+
+@end table
+
+@c ======================================================================
+@node Dinotrace and Emacs
+@chapter Dinotrace and Emacs
+
+This chapter describes the interaction between Dinotrace and Emacs.
+
+FIX!
+
+@c ======================================================================
+@node File Formats
+@chapter File Formats
+
+This chapter describes the file formats supported by Dinotrace, and how
+to produce them with various simulators.
+
+If you're making a quick trace that is small, the ASCII format is
+probably quickest and dirtiest.  If you're making a real 4-state
+simulator, Tempest XOR format is very compact and fast.  A example
+reader for this format is included with the Dinotrace distribution.
+
+@c ----------------------------------------------------------------------
+@node Verilog Value Change Dumps
+@section Verilog Value Change Dumps
+
+Dinotrace can read the Value Change Dump format, common with
+simulators such as Verilog-XL, VCS, and many others.
+
+VCD files have a @file{.dmp} extension.  Under the @dmenu{Trace Read}
+menu, select Verilog Format.  Select @dmenu{Trace Read} to read the file.
+If this is your standard format, you can set it permanantly by placing
+in the @file{$DINODISK:dinotrace.dino} file:
+
+@example
+file_format verilog
+vector_separator "["
+@end example
+
+VCD files can contain a great number of signals, potentially every net
+in the design.  To cut down on the clutter, Dinotrace removes any signal
+that is identical to a signal higher up in the design heiarchy.  For
+example, if the signal @samp{top.cpu.cache.index_addr[7:0]} is the same
+net as @samp{top.cpu.addr[27:20]}, then only the latter will be shown in
+Dinotrace.
+
+To save disk space you may wish to store files as gziped.  This will
+result in about a 10 times space savings, and Dinotrace will uncompress
+them automatically.  (By detecting the @file{.gz} extension and piping
+through gunzip.  Gunzip must exist in your @code{$PATH} for this to
+work.)
+
+@node Making VCDs in Verilog
+@subsection Making VCDs in Verilog
+@cindex Verilog-XL, Making Traces
+@cindex VCS, Making Traces
+
+To create a value change dump file inside of Verilog, add the code
+somewhere in a module:
+
+@example
+// Create a dump file
+intial begin
+        $dumpfile ("trace_top.dmp");
+        $dumpvars (12, top);
+end
+@end example
+
+Where top is the name of the module to be traced, trace_top.dmp is the
+output file, and 12 is the number of levels of hiearchy underneath top
+to be traced.  Dinotrace expects the @file{.dmp} extension.  This
+command will dump all signals in the module top.  For more information
+on dump files, see @cite{Chapter 18 of the Verilog-XL reference manual}.
+
+@node VCD File Format
+@subsection VCD File Format
+
+For a description of the VCD file format, see @cite{Chapter 18 of the
+Verilog-XL reference manual}.
+
+@c ----------------------------------------------------------------------
+@node ASCII Traces
+@section ASCII Traces
+@cindex ASCII Traces
+
+The initial format that Dinotrace supported was a Decsim ASCII format.
+This format is still very useful for reading traces created by
+@prog{perl} scripts and other quick programs.  For large traces, any of
+the other formats will make significantly smaller files.
+
+@node Making Decsim ASCII Traces
+@subsection Making Decsim ASCII Traces
+@cindex Decsim, Making Traces
+
+Decsim provides both ASCII and binary formats.  For a Decsim ASCII
+trace, type at the command prompt:
+
+@example
+set trace/radix=2/vector/header/exact/logname=name
+	clock, signal1, signal2, signal3
+@end example
+
+For information, see @xref{Making Decsim Binary Traces}.
+
+@node ASCII Trace Format
+@subsection ASCII Trace Format
+@cindex ASCII Trace Format
+
+The ASCII Trace format is broken into two pieces, the header, and the
+data lines.
+
+The header consists of a leading !, followed by signal names that are
+read vertically, with each bit in a independant column.  Some character
+separates the signal name from the bit number, this exact character
+varies depending on the simulator.  The header is actually optional,
+Dinotrace will create some pretty boring names if the header is not
+present.
+
+Here's a header, with the signal names SIG[2:0] and OUT.  (Read it sideways.)
+
+@example
+!     SSS
+!     III
+!     GGGO
+!     ___U
+!     210T
+@end example
+
+The data follows, with one time per line.  The spaces leading the header
+above were added so that the first signal column lines up with the first
+value after the timestamp.  Actually, the timestamps are optional, in
+which case Dinotrace will assign successive times, starting at 0 and
+incrementing by 100 to each data line.
+
+@example
+0     xxxx
+100   000x
+103   0000
+200   1100
+203   0001
+@end example
+
+Dinotrace understands the values @code{0}, @code{L}, @code{0}, @code{H},
+the tristate @code{Z}, and the unknowns @code{?}, @code{X}, and
+@code{U}.  Case does not matter.
+
+@c ----------------------------------------------------------------------
+
+@node Tempest Traces
+@section Tempest Traces
+
+Dinotrace supports Digital's tempest (BT02) format, as produced by CCLI,
+COSMOS and other tools.  After creating a trace, start up Dinotrace.
+Under the @dmenu{Trace Read} menu section, select @widget{Tempest
+Format}.  (To make this the default, read the instructions about
+configuration files.)  Select @dmenu{Trace Read} to read the file.
+
+Tempest designs use underscores to indicate bus subscripts.  To have
+Dinotrace collapse signals into vectors, create a configuration file
+with the line: @config{vector_separator "_"}
+
+To save disk space you may wish to store files as gziped.  This
+will result in about a 50 times space savings, and Dinotrace will
+uncompress them automatically.
+
+@node Making Verilator Traces
+@section Making Verilator Traces
+@cindex Verilator, Making Traces
+
+Dinotrace can read in Verilator traces created using CCLI.  Dinotrace
+will convert the two signals that Verilator creates for tristate busses
+(foo and foo__en) into a single signal with tristates shown normally.
+
+@node Making Cosmos Traces
+@section Making Cosmos Traces
+@cindex Cosmos, Making Traces
+
+Dinotrace can read in COSMOS traces created under Merlin.  Dinotrace
+will convert the two signals that COSMOS creates for each signal (foo
+and foo__cos) into a single signal with unknowns shown normally.
+
+@node Tempest Trace Format
+@section Tempest Trace Format
+@cindex Tempest Trace Format
+
+The Tempest Trace Format is a relatively simple binary format.  Files
+all have a @file{.bt} extension, and are stored by unix @code{write()}s
+of arrays of @strong{little-endian} longwords.  (Little is the
+endianness as Windows NT and Digital Unix, and opposite that of Suns.)
+
+The first record is at the head of the file, and is the identification
+block.
+
+@table @samp
+@item char (4 bytes)
+@cindex BT02
+File signature plus revision (e.g. @samp{BT02}).
+@item uint (32 bits)
+Number of bytes for the header.
+@item uint (32 bits)
+Number of signals.
+@item uint (32 bits)
+Number of simulation rows (Do not rely on this, it is not correct if not known when the header is written)
+@item uint (32 bits)
+Number of bits per simulation 'row', non-padded.
+@item uint (32 bits)
+Number of bits per simulation 'row', padded to mod 64.
+@end table
+
+Following that is a signal description block for every signal in the design.
+The number of such records was read from the above identification block.
+
+@table @samp
+@item uint (32 bits)
+Flags for signal characteristics:
+@table @samp
+@item bit 0
+Signal is input.           
+@item bit 1
+Signal is output.                  
+@item bit 2
+Signal is pseudo-pin.
+@item bit 3
+Signal contains time-stamp value (not a real signal in design).
+@item bit 4
+Signal is 3 or 4 state (not 2 state).
+@end table
+@item uint (32 bits)
+Offset in body row (in bits).
+@item uint (32 bits)
+Width of signal (in bits).
+@item uint (32 bits)
+Number of chars in signal name.  @var{n} below.
+@item char (@var{n} bytes)
+Signal name, not null terminated.
+@item char padding (8-(@var{n}%(8 bytes))) if @var{n}%8 != 0
+Padding characters to insure quadword alignment.
+@end table
+
+Finally is binary packed data.  Each simulation row contains the value
+of all signals at that timestamp.  The location of each bit was defined
+in the signal description blocks above.  For example, storage of 300
+signals requires 320 bits per row of simulation data.  This data
+continues to EOF.  (The number of simulation rows in the header may not
+be correct if it was unknown at the time the header was written.)
+
+For three and four state signals, the four state bit in the flag section
+is set for that signal.  Two bits are stored in the file per wire bit,
+where 00=0, 01=1, 10=tristate, and 11=unknown.
+
+@c ----------------------------------------------------------------------
+
+@node Tempest XOR Traces
+@section Tempest XOR Traces
+
+Dinotrace and Verilator have colluded to make a derivative of the
+Tempest format, called XOR format (format string BX02).  This format is
+detected by Dinotrace automatically when tempest format is selected.
+
+Ungziped files are only slightly smaller than as traditional Tempest
+files.  Gziping however yields a 90% shrink in file size.  Since the
+code to generate the trace is compiled in, the actual simulation time to
+create the trace is also greatly reduced, speeding simulations by 30% or
+so.
+
+@node Making Verilator XOR Traces
+@section Making Verilator XOR Traces
+@cindex Verilator, Making Traces
+
+Verilator makes Tempest XOR traces using the fast trace @prog{perl}
+script (see the @cite{Verilator Manual}).  A list of signals to be
+traced must be provided at compile time.
+
+@node Tempest XOR Format
+@section Tempest XOR Format
+@cindex Tempest XOR Format
+@cindex BX02
+
+Tempest XOR format is very close to tempest normal format.  The first
+difference is that the format characters are BX02 rather then BT02.
+
+The second difference is that the binary data for each time record is a
+XOR of the previous row's binary data.  (Starting with all zeros before
+the first record.)  Thus if a single signal changes in a given time, the
+first longword will have a couple of bits set to indicate the bits that
+changed in the timestamp, and a single bit will be set in a later
+longword for the bit that changed.
+
+This seemingly trivial change greatly improves compression, as 0's are
+now the majority of the file, and compress to near nothing.
+
+Any Tempest XOR format readers and writers should only operate on gziped
+files.  Thus the normal file extension is @file{.bt.gz}.
+
+@c ----------------------------------------------------------------------
+@node Decsim Binary
+@section Decsim Binary
+
+The Digital internal Decsim simulator has a propriatory format supported
+by Dinotrace built under VMS only.
+
+Decsim designs use <>'s to indicate bus subscripts.  To have Dinotrace
+collapse signals into vectors, create a configuration file with the
+line: @config{vector_separator "<"}.
+
+@node Making Decsim Binary Traces
+@subsection Making Decsim Binary Traces
+@cindex Decsim, Making Binary Traces
+
+Decsim uses the set trace command to create Dinotrace compatible
+traces.  Usually a clock should be the first signal as Dinotrace
+will automatically align the grid to the first signal in a trace.
+
+At the command prompt, type:
+
+@example
+set trace/radix=2/vector/binary/exact/logname=name
+	clock, signal1, signal2, signal3
+@end example
+
+Our group creates a trace file for each subchip, and turns that
+trace into a macro in a separate file.  This way the same trace may
+be called from many tests. For example:
+
+@file{TRACE_subchip.IND}:
+@example
+macro/command TRACE_subchip [$text] =
+set trace/radix=2/vector/binary/exact/logname=$text
+	clock,
+	signal1,
+	signal2
+$endmacro
+@end example
+
+A test would then call:
+@example
+@@TRACE_subchip.IND
+TRACE_subchip testname_subchip
+@end example
+
+The test will create a file testname_subchip.TRA.  We find this naming
+convention convenient as it will group all of the traces from one chip
+together.  For example, running the test @file{ERRORS} with the trace
+files @file{TRACE_SSM.IND} and @file{TRACE_CSR.IND} creates the trace
+files @file{ERRORS_SSM.TRA} and @file{ERRORS_CSR.TRA}.
+
+@c ======================================================================
+
+@node Bugs
+@chapter Bugs
+@cindex Bugs
+
+This chapter describes bug reporting and the known bugs in the current
+version.
+
+Please report bugs to @email{wsnyder@@ultranet.com}
+
+The following bugs are known to exist:
+
+@itemize @bullet
+@item
+@pindex lessTIF
+When using @prog{lessTIF}, the lines indicating highlighted signals and
+cursors that appear in the scroll bars may not always appear.  To
+make them reappear, simply press the refresh widget.
+
+@item
+@pindex Motif
+The Ultrix version of Dinotrace requires @prog{Motif V1.1.3}.  It will run
+under older versions, however toolkit warnings will be printed
+which may be ignored and Trace Open will make the window size too
+large.
+
+@item
+@cindex Decsim, Arrays Bug
+Decsim does not correctly create binary traces of arrays.  For
+example @code{signal[1:0]<1:0>} will not display the correct data in
+Dinotrace because Decsim incorrectly creates the file.  Decsim will
+work correctly if the trace is changed to ASCII.
+
+@item
+There is a problem with the @prog{X-11} Toolkit that causes strange dots
+to appear in the trace window.  This only occurs on some systems.
+Please contact me if this occurs on your systems.
+
+@end itemize
+
+@c ======================================================================
+@node Index, , Index, Top
+@unnumbered Index
+
+This is an alphabetical index of this manual.
+
+@printindex cp
+
+@contents
+@bye
+@comment
+  Local Variables:
+  eval:(setq font-lock-keywords `(t
+    ("^\\(@c\\|@comment\\)\\>.*"
+     (0 font-lock-comment-face))
+    ("@\\([a-zA-Z]+\\|[^ 	\n]\\)"
+     (1 font-lock-keyword-face))
+    ("^\\*\\(.*\\)[	 ]*$"
+     (1 font-lock-function-name-face t))
+    ("@\\(emph\\|strong\\|b\\|i\\){\\([^}]+\\)"
+     (2 font-lock-comment-face))
+    ("@\\(file\\|prog\\|kbd\\|key\\|url\\|email\\){\\([^}]+\\)"
+     (2 font-lock-string-face))
+    ("@\\(samp\\|config\\|dmenu\\|resource\\|switch\\|widget\\|code\\|var\\|math\\){\\([^}]+\\)"
+     (2 font-lock-variable-name-face))
+    ("@\\(cite\\|xref\\|pxref\\){\\([^}]+\\)"
+     (2 font-lock-reference-face))
+    ("@\\(end\\|itemx?\\) +\\(.+\\)"
+     (2 font-lock-function-name-face keep))))
+  End:
+@end comment
+
