@@ -230,11 +230,6 @@ extern XGCValues	xgcv;
 
 extern Arg		arglist[20];
 
-/* Grid Automatic flags */
-#define GRID_RES_AUTO		-4
-#define GRID_ALN_AUTO_DEASS	-3
-#define GRID_ALN_AUTO_ASS	-2
-
 typedef struct {
     Widget	menu;
     Widget	pdmenu[11];
@@ -282,6 +277,18 @@ typedef struct {
     } CUSTOM_WDGTS;
 
 typedef struct {
+    struct st_trace	*trace;		/* Link back, as callbacks won't know without it */
+    enum { BEGIN=0, END=1} type;
+    DTime  dastime;
+    /* Begin stuff */
+    Widget time_label;
+    Widget time_pulldown;
+    Widget time_pulldownbutton[4];
+    Widget time_option;
+    Widget time_text;
+    } RANGE_WDGTS;
+
+typedef struct {
     Widget customize;
     Widget size_menu;
     Widget size_option;
@@ -295,10 +302,10 @@ typedef struct {
     Widget notelabel;
     Widget pagelabel;
     Widget all_signals;
-    Widget all_times;
-    Widget s1;
-    Widget b1;
-    Widget b3;
+    RANGE_WDGTS begin_range;
+    RANGE_WDGTS end_range;
+    Widget print;
+    Widget cancel;
     } PRINT_WDGTS;
 
 typedef struct {
@@ -367,7 +374,7 @@ typedef struct {
     Widget siglabel, signal;
     Widget periodlabel, period;
     Widget align;
-    Widget auto_period;
+    Widget period_auto;
     /* Auto stuff */
     Widget autopulldown;
     Widget autopulldownbutton[MAX_SRCH+1];
@@ -451,8 +458,8 @@ typedef struct st_cursor {
 typedef struct st_grid {
     int			period;		/* Grid period (time between ticks) */
     int			alignment;	/* Grid alignment (time grid starts at) */
-    enum { USER=0, AUTO=1 }	res_auto;	/* Status of automatic grid resolution */
-    enum { USER=0, ASS=1, DEASS=2 } align_auto; /* Status of automatic grid alignment */
+    enum { PA_USER=0, PA_AUTO=1 }	period_auto;	/* Status of automatic grid resolution */
+    enum { AA_USER=0, AA_ASS=1, AA_DEASS=2 } align_auto; /* Status of automatic grid alignment */
     Boolean		visible;	/* True if grid is visible */
     Boolean		wide_line;	/* True to draw a double-width line */
     char 		signal[MAXSIGLEN];	/* Signal name of the clock */
@@ -600,8 +607,6 @@ typedef struct st_trace {
     GRID		grid[MAXGRIDS];	/* Grid information */
     Boolean		cursor_vis;	/* True if cursors are visible */
 
-    int			numpag;		/* Number of pages in dt_printscreen */
-
     DTime		start_time;	/* Time of beginning of trace */
     DTime		end_time;	/* Time of ending of trace */
 
@@ -633,7 +638,6 @@ typedef struct {
     char		**argv;		/* Program argv for X stuff */
 
     char		directory[MAXFNAMELEN];	/* Current directory name */
-    char		printnote[MAXFNAMELEN];	/* Note to print */
 
     ColorNum		highlight_color; /* Color selected for sig/cursor highlight */
     ColorNum		goto_color;	/* Cursor color to place on a 'GOTO' -1=none */
@@ -660,15 +664,18 @@ typedef struct {
     char		anno_socket[MAXFNAMELEN];	/* Annotation socket number */
 
     int			pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
-    PrintSize		print_size;	/* Size of paper for dt_printscreen */
-    Boolean		print_all_signals; /* Print all signals in the trace */
-    Boolean		print_all_times;   /* Print all times in the trace */
     Boolean		click_to_edge;	/* True if clicking to edges is enabled */
     TimeRep		time_precision;	/* Time precision = TIMEREP_NS/TIMEREP_CYC */
     char		time_format[12]; /* Time format = printf format or *NULL */
     int			tempest_time_mult;	/* Time multiplier for tempest */
     Boolean		save_enables;	/* True to save enable wires */
     Boolean		save_ordering;	/* True to save signal ordering */
+
+    char		printnote[MAXFNAMELEN];	/* Note to print */
+    PrintSize		print_size;	/* Size of paper for dt_printscreen */
+    Boolean		print_all_signals; /* Print all signals in the trace */
+    DTime		print_begin_time;  /* Starting time for printing */
+    DTime		print_end_time;	/* Ending time for printing */
 
     int			redraw_needed;	/* Some trace needs to refresh the screen when get a chance, 0=NO, 1=YES, 2=Do All */
     Boolean		redraw_manually;/* True if in manual refreshing mode */

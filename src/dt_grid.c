@@ -98,8 +98,8 @@ void	grid_calc_auto (trace, grid_ptr)
     }
     
     /* Set defaults based on changes */
-    switch (grid_ptr->res_auto) {
-      case AUTO:
+    switch (grid_ptr->period_auto) {
+      case PA_AUTO:
 	if (rise1 < rise2)	grid_ptr->period = rise2 - rise1;
 	else if (fall1 < fall2) grid_ptr->period = fall2 - fall1;
 	break;
@@ -107,16 +107,16 @@ void	grid_calc_auto (trace, grid_ptr)
     
     /* Alignment */
     switch (grid_ptr->align_auto) {
-      case ASS:
+      case AA_ASS:
 	if (rise1) grid_ptr->alignment = rise1 % grid_ptr->period;
 	break;
-      case DEASS:
+      case AA_DEASS:
 	if (fall1) grid_ptr->alignment = fall1 % grid_ptr->period;
 	break;
     }
     
     if (DTPRINT_FILE) printf ("grid autoset signal %s align=%d %d\n", sig_ptr->signame,
-       grid_ptr->align_auto, grid_ptr->res_auto);
+       grid_ptr->align_auto, grid_ptr->period_auto);
     if (DTPRINT_FILE) printf ("grid rises=%d,%d,%d, falls=%d,%d,%d, period=%d, align=%d\n",
        rise1,rise2,rise3, fall1,fall2,fall3,
        grid_ptr->period, grid_ptr->alignment);
@@ -269,8 +269,8 @@ void grid_reset_cb (w, trace, cb)
 	grid_ptr->color = grid_num;
 	grid_ptr->period = 100;
 	grid_ptr->alignment = 0;
-	grid_ptr->res_auto = AUTO;
-	grid_ptr->align_auto = ASS;
+	grid_ptr->period_auto = PA_AUTO;
+	grid_ptr->align_auto = AA_ASS;
 	if (grid_num == 0) {
 	    /* Enable only one grid by default */
 	    grid_ptr->visible = TRUE;
@@ -302,7 +302,7 @@ void    grid_customize_sensitives_cb (w, trace, cb)
 
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 	/* Period value, desensitize if automatic */
-	opt = XmToggleButtonGetState (trace->gridscus.grid[grid_num].auto_period) ? AUTO:USER;
+	opt = XmToggleButtonGetState (trace->gridscus.grid[grid_num].period_auto) ? PA_AUTO:PA_USER;
 	XtSetArg (arglist[0], XmNsensitive, (opt==0));
 	XtSetValues (trace->gridscus.grid[grid_num].period, arglist, 1);
 
@@ -332,21 +332,21 @@ void    grid_customize_widget_update_cb (w, trace, cb)
 
 	XmToggleButtonSetState (trace->gridscus.grid[grid_num].visible, (grid_ptr->visible), TRUE);
 	XmToggleButtonSetState (trace->gridscus.grid[grid_num].wide_line, (grid_ptr->wide_line), TRUE);
-	XmToggleButtonSetState (trace->gridscus.grid[grid_num].auto_period, (grid_ptr->res_auto == AUTO), TRUE);
+	XmToggleButtonSetState (trace->gridscus.grid[grid_num].period_auto, (grid_ptr->period_auto == PA_AUTO), TRUE);
 
 	/* Period value */
 	time_to_string (trace, strg, grid_ptr->period, TRUE);
 	XmTextSetString (trace->gridscus.grid[grid_num].period, strg);
 
 	/* Color */
-	XtSetArg (arglist[0], XmNmenuHistory, trace->gridscus.grid[grid_num].pulldownbutton[grid_ptr->color], strg);
+	XtSetArg (arglist[0], XmNmenuHistory, trace->gridscus.grid[grid_num].pulldownbutton[grid_ptr->color]);
 	XtSetValues (trace->gridscus.grid[grid_num].options, arglist, 1);
 	/* Must redraw color box on any exposures */
 	XtAddEventHandler (trace->gridscus.popup, ExposureMask, TRUE, grid_customize_option_cb, trace);
 
 	/* Edge Mode */
 	opt=(int)grid_ptr->align_auto;	/* Weedy, enums are defined to be equiv to descriptions */
-	XtSetArg (arglist[0], XmNmenuHistory, trace->gridscus.grid[grid_num].autopulldownbutton[opt], strg);
+	XtSetArg (arglist[0], XmNmenuHistory, trace->gridscus.grid[grid_num].autopulldownbutton[opt]);
 	XtSetValues (trace->gridscus.grid[grid_num].autooptions, arglist, 1);
     }
 
@@ -433,9 +433,9 @@ void    grid_customize_cb (w,trace,cb)
 	    XtSetArg (arglist[1], XmNy, y);
 	    XtSetArg (arglist[2], XmNlabelString, XmStringCreateSimple ("Auto Period"));
 	    XtSetArg (arglist[3], XmNshadowThickness, 1);
-	    trace->gridscus.grid[grid_num].auto_period = XmCreateToggleButton (trace->gridscus.popup,"autores",arglist,4);
-	    XtAddCallback (trace->gridscus.grid[grid_num].auto_period, XmNvalueChangedCallback, grid_customize_sensitives_cb, trace);
-	    XtManageChild (trace->gridscus.grid[grid_num].auto_period);
+	    trace->gridscus.grid[grid_num].period_auto = XmCreateToggleButton (trace->gridscus.popup,"autores",arglist,4);
+	    XtAddCallback (trace->gridscus.grid[grid_num].period_auto, XmNvalueChangedCallback, grid_customize_sensitives_cb, trace);
+	    XtManageChild (trace->gridscus.grid[grid_num].period_auto);
 	    
 	    /* Period */
 	    XtSetArg (arglist[0], XmNrows, 1);
@@ -584,8 +584,8 @@ void    grid_customize_ok_cb (w,trace,cb)
 	strcpy (grid_ptr->signal, XmTextGetString (trace->gridscus.grid[grid_num].signal));
 	grid_ptr->visible = XmToggleButtonGetState (trace->gridscus.grid[grid_num].visible);
 	grid_ptr->wide_line = XmToggleButtonGetState (trace->gridscus.grid[grid_num].wide_line);
-	grid_ptr->res_auto = XmToggleButtonGetState (trace->gridscus.grid[grid_num].auto_period) ? AUTO:USER;
-	if (grid_ptr->res_auto == USER) {
+	grid_ptr->period_auto = XmToggleButtonGetState (trace->gridscus.grid[grid_num].period_auto) ? PA_AUTO:PA_USER;
+	if (grid_ptr->period_auto == PA_USER) {
 	    grid_ptr->period = string_to_time (trace, XmTextGetString (trace->gridscus.grid[grid_num].period));
 	}
 

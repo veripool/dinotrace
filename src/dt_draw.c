@@ -130,6 +130,7 @@ void draw_cursors (trace)
     TRACE	*trace;                        
 {         
     int		len,end_time;
+    int		last_drawn_xloc;
     char 	strg[MAXSTATELEN+16];		/* String value to print out */
     CURSOR 	*csr_ptr;			/* Current cursor being printed */
     Position	x1,mid,x2,y2;
@@ -144,6 +145,7 @@ void draw_cursors (trace)
     /* initial the y colors for drawing */
     y2 = ( (int)((trace->height-trace->ystart)/trace->sighgt) - 1 ) *
 	trace->sighgt + trace->sighgt/2 + trace->ystart + 2;
+    last_drawn_xloc = -1;
     
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 	
@@ -168,8 +170,11 @@ void draw_cursors (trace)
 	    /* draw the cursor value */
 	    time_to_string (trace, strg, csr_ptr->time, FALSE);
 	    len = XTextWidth (global->time_font,strg,strlen (strg));
-	    XDrawString (global->display,trace->wind,
-			 trace->gc, x1-len/2, y2+10, strg, strlen (strg));
+	    if (len/2 < (x1 - last_drawn_xloc)) {
+		last_drawn_xloc = x1 + len/2 + 2;
+		XDrawString (global->display,trace->wind,
+			     trace->gc, x1-len/2, y2+10, strg, strlen (strg));
+	    }
 	    
 	    /* if there is a previous visible cursor, draw delta line */
 	    if ( csr_ptr->prev && (csr_ptr->prev->time > global->time) ) {

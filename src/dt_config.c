@@ -483,6 +483,8 @@ int	config_read_grid (trace, line, grid_pptr)
     else {
 	*grid_pptr = &(trace->grid[grid_num]);
     }
+
+    return (outlen);
 }
 
 /**********************************************************************
@@ -652,11 +654,11 @@ void	config_process_line_internal (trace, line, eof)
 	    if (grid_ptr) {
 		if (value >= 1) {
 		    grid_ptr->period = value;
-		    grid_ptr->res_auto = USER;
+		    grid_ptr->period_auto = PA_USER;
 		}
 		else {
 		    if (toupper(pattern[0])=='A')
-			grid_ptr->res_auto = AUTO;
+			grid_ptr->period_auto = PA_AUTO;
 		    else {
 			config_error_ack (trace, "Grid_res must be >0, or ASSERTION\n");
 		    }
@@ -670,13 +672,13 @@ void	config_process_line_internal (trace, line, eof)
 	    if (grid_ptr) {
 		if (value >= 1) {
 		    grid_ptr->alignment = value;
-		    grid_ptr->align_auto = USER;
+		    grid_ptr->align_auto = AA_USER;
 		}
 		else {
 		    if (toupper(pattern[0])=='A')
-			grid_ptr->align_auto = ASS;
+			grid_ptr->align_auto = AA_ASS;
 		    else if (toupper(pattern[0])=='D')
-			grid_ptr->align_auto = DEASS;
+			grid_ptr->align_auto = AA_DEASS;
 		    else {
 			config_error_ack (trace, "Grid_align must be >0, ASSERTION, or DEASSERTION\n");
 		    }
@@ -1210,14 +1212,14 @@ void config_write_file (filename)
 
 		fprintf (writefp, "grid\t\t%s\t%d\n", grid_ptr->visible?"ON":"OFF", grid_num);
 		fprintf (writefp, "grid_resolution\t");
-		switch (grid_ptr->res_auto) {
-		  case AUTO:		fprintf (writefp, "ASSERTION\t%d\n", grid_num);	break;
+		switch (grid_ptr->period_auto) {
+		  case PA_AUTO:		fprintf (writefp, "ASSERTION\t%d\n", grid_num);	break;
 		  default:		fprintf (writefp, "%d\t%d\n", grid_ptr->period, grid_num);	break;
 		}
 		fprintf (writefp, "grid_align\t");
 		switch (grid_ptr->align_auto) {
-		  case ASS:		fprintf (writefp, "ASSERTION\t%d\n", grid_num);	break;
-		  case DEASS:		fprintf (writefp, "DEASSERTION\t%d\n", grid_num);	break;
+		  case AA_ASS:		fprintf (writefp, "ASSERTION\t%d\n", grid_num);	break;
+		  case AA_DEASS:	fprintf (writefp, "DEASSERTION\t%d\n", grid_num);	break;
 		  default:		fprintf (writefp, "%d\t%d\n", grid_ptr->alignment, grid_num);	break;
 		}
 	    }
@@ -1279,7 +1281,6 @@ void config_restore_defaults(trace)
 
     trace->sighgt = 20;	/* was 25 */
     trace->cursor_vis = TRUE;
-    trace->numpag = 1;
     trace->sigrf = SIG_RF;
     trace->timerep = global->time_precision;
     trace->vector_seperator = '<';

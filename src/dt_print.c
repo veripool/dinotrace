@@ -52,14 +52,166 @@ static char rcsid[] = "$Id$";
 
 extern void	ps_drawsig(), ps_draw(), ps_draw_grid(), ps_draw_cursors();
 
-
+/* If XTextWidth is called in this file, then something's wrong, as X widths != print widths */
 
+
+void    ps_range_sensitives_cb (w, range_ptr, cb)
+    Widget		w;
+    RANGE_WDGTS		*range_ptr;	/* <<<< NOTE not TRACE!!! */
+    XmSelectionBoxCallbackStruct *cb;
+{
+    int		opt;
+    int		active;
+    char	strg[20];
+    TRACE	*trace;
+
+    if (DTPRINT_ENTRY) printf ("In ps_range_sensitives_cb\n");
+
+    trace = range_ptr->trace;	/* Snarf from range, as the callback doesn't have it */
+
+    opt = option_to_number(range_ptr->time_option, range_ptr->time_pulldownbutton, 3);
+    
+    switch (opt) {
+      case 3:	/* Window */
+	active = FALSE;
+	range_ptr->dastime = (range_ptr->type == BEGIN) ? global->time 
+	    :   (global->time + (( trace->width - XMARGIN - global->xstart ) / global->res));
+	break;
+      case 2:	/* Trace */ 
+	active = FALSE;
+	range_ptr->dastime = (range_ptr->type == BEGIN) ? trace->start_time : trace->end_time;
+	break;
+      case 1:	/* Cursor */
+	active = FALSE;
+	range_ptr->dastime = (range_ptr->type == BEGIN) ? cur_time_first(trace) : cur_time_last(trace);
+	break;
+      default:	/* Manual */
+	active = TRUE;
+	break;
+    }
+
+    XtSetArg (arglist[0], XmNsensitive, active);
+    XtSetValues (range_ptr->time_text, arglist, 1);
+    if (!active) {
+	time_to_string (trace, strg, range_ptr->dastime, TRUE);
+	XmTextSetString (range_ptr->time_text, strg);
+    }
+    else {
+	range_ptr->dastime = string_to_time (range_ptr->trace, XmTextGetString (range_ptr->time_text));
+    }
+}
+
+
+void    ps_range_create (trace, range_ptr, popup, x_ptr, y_ptr, descrip, type)
+    TRACE		*trace;
+    RANGE_WDGTS		*range_ptr;
+    Widget		popup;		/* What the root widget is */
+    Position		*x_ptr,*y_ptr;	/* Pointer to coords, x is modified */
+    char		*descrip;	/* Description of selection */
+    Boolean		type;		/* True if END, else beginning */
+{
+    int x,y;
+
+    if (DTPRINT_ENTRY) printf ("In ps_create_range - trace=%d\n",trace);
+
+    x = *x_ptr;
+    y = *y_ptr;
+    
+    if (!range_ptr->trace) {
+	range_ptr->trace = trace;
+	range_ptr->type = type;
+
+	/* Label */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (descrip) );
+	XtSetArg (arglist[1], XmNx, x);
+	XtSetArg (arglist[2], XmNy, y);
+	trace->prntscr.label = XmCreateLabel (trace->prntscr.customize,"",arglist,3);
+	XtManageChild (trace->prntscr.label);
+	y+=20;
+	
+	/* Begin pulldown */
+	range_ptr->time_pulldown = XmCreatePulldownMenu (popup,"time_pulldown",arglist,0);
+
+	if (range_ptr->type == BEGIN)
+	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Window Left Edge") );
+	else XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Window Right Edge") );
+	range_ptr->time_pulldownbutton[3] =
+	    XmCreatePushButtonGadget (range_ptr->time_pulldown,"pdbutton0",arglist,1);
+	XtAddCallback (range_ptr->time_pulldownbutton[3], XmNactivateCallback, ps_range_sensitives_cb, range_ptr);
+	XtManageChild (range_ptr->time_pulldownbutton[3]);
+
+	if (range_ptr->type == BEGIN)
+	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Trace Beginning") );
+	else XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Trace End") );
+	range_ptr->time_pulldownbutton[2] =
+	    XmCreatePushButtonGadget (range_ptr->time_pulldown,"pdbutton0",arglist,1);
+	XtAddCallback (range_ptr->time_pulldownbutton[2], XmNactivateCallback, ps_range_sensitives_cb, range_ptr);
+	XtManageChild (range_ptr->time_pulldownbutton[2]);
+
+	if (range_ptr->type == BEGIN)
+	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("First Cursor") );
+	else XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Last Cursor") );
+	range_ptr->time_pulldownbutton[1] =
+	    XmCreatePushButtonGadget (range_ptr->time_pulldown,"pdbutton0",arglist,1);
+	XtAddCallback (range_ptr->time_pulldownbutton[1], XmNactivateCallback, ps_range_sensitives_cb, range_ptr);
+	XtManageChild (range_ptr->time_pulldownbutton[1]);
+
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Entered Time") );
+	range_ptr->time_pulldownbutton[0] =
+	    XmCreatePushButtonGadget (range_ptr->time_pulldown,"pdbutton0",arglist,1);
+	XtAddCallback (range_ptr->time_pulldownbutton[0], XmNactivateCallback, ps_range_sensitives_cb, range_ptr);
+	XtManageChild (range_ptr->time_pulldownbutton[0]);
+
+	XtSetArg (arglist[0], XmNsubMenuId, range_ptr->time_pulldown);
+	XtSetArg (arglist[1], XmNx, x+10);
+	XtSetArg (arglist[2], XmNy, y);
+	range_ptr->time_option = XmCreateOptionMenu (popup,"options",arglist,3);
+	XtManageChild (range_ptr->time_option);
+
+	/* Default */
+	XtSetArg (arglist[0], XmNmenuHistory, range_ptr->time_pulldownbutton[3], strg);
+	XtSetValues (range_ptr->time_option, arglist, 1);
+
+	/* Begin Text */
+	XtSetArg (arglist[0], XmNrows, 1);
+	XtSetArg (arglist[1], XmNcolumns, 10);
+	XtSetArg (arglist[2], XmNx, x+190);
+	XtSetArg (arglist[3], XmNy, y+3);
+	XtSetArg (arglist[4], XmNresizeHeight, FALSE);
+	XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
+	range_ptr->time_text = XmCreateText (popup,"textn",arglist,6);
+	XtManageChild (range_ptr->time_text);
+
+	y += 50;
+    }
+
+    /* Get initial values correct */
+    ps_range_sensitives_cb (NULL, range_ptr, NULL);
+
+    *x_ptr = x;
+    *y_ptr = y;
+}
+
+
+DTime	ps_range_value (range_ptr)
+    RANGE_WDGTS		*range_ptr;
+    /* Read the range value */
+{
+    /* Make sure have latest cursor, etc */
+    ps_range_sensitives_cb (NULL, range_ptr, NULL);
+
+    return (range_ptr->dastime);
+}
+
+
 void    ps_dialog (w,trace,cb)
     Widget		w;
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
     
 {
+    int			x=10,y=3;
+
     if (DTPRINT_ENTRY) printf ("In print_screen - trace=%d\n",trace);
     
     if (!trace->prntscr.customize)
@@ -72,60 +224,43 @@ void    ps_dialog (w,trace,cb)
 	
 	/* create label widget for text widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Name") );
-	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 3);
+	XtSetArg (arglist[1], XmNx, x);
+	XtSetArg (arglist[2], XmNy, y);
 	trace->prntscr.label = XmCreateLabel (trace->prntscr.customize,"",arglist,3);
 	XtManageChild (trace->prntscr.label);
+	y+=30;
 	
 	/* create the file name text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 30);
-	XtSetArg (arglist[2], XmNx, 10);
-	XtSetArg (arglist[3], XmNy, 35);
+	XtSetArg (arglist[2], XmNx, x);
+	XtSetArg (arglist[3], XmNy, y);
 	XtSetArg (arglist[4], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
 	trace->prntscr.text = XmCreateText (trace->prntscr.customize,"",arglist,6);
 	XtManageChild (trace->prntscr.text);
 	XtAddCallback (trace->prntscr.text, XmNactivateCallback, ps_print_req_cb, trace);
+	y+=45;
 	
 	/* create label widget for notetext widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Note") );
-	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 75);
+	XtSetArg (arglist[1], XmNx, x);
+	XtSetArg (arglist[2], XmNy, y);
 	trace->prntscr.label = XmCreateLabel (trace->prntscr.customize,"",arglist,3);
 	XtManageChild (trace->prntscr.label);
+	y+=22;
 	
 	/* create the print note text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 30);
-	XtSetArg (arglist[2], XmNx, 10);
-	XtSetArg (arglist[3], XmNy, 110);
+	XtSetArg (arglist[2], XmNx, x);
+	XtSetArg (arglist[3], XmNy, y);
 	XtSetArg (arglist[4], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
 	trace->prntscr.notetext = XmCreateText (trace->prntscr.customize,"notetext",arglist,6);
 	XtManageChild (trace->prntscr.notetext);
 	XtAddCallback (trace->prntscr.notetext, XmNactivateCallback, ps_print_req_cb, trace);
-	
-	/* Create number of pages label */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Number of Pages") );
-	XtSetArg (arglist[1], XmNx, 20);
-	XtSetArg (arglist[2], XmNy, 150);
-	trace->prntscr.pagelabel = XmCreateLabel (trace->prntscr.customize,"",arglist,3);
-	XtManageChild (trace->prntscr.pagelabel);
-	
-	/* Create number of pages slider */
-	XtSetArg (arglist[0], XmNshowValue, 1);
-	XtSetArg (arglist[1], XmNx, 20);
-	XtSetArg (arglist[2], XmNy, 170);
-	XtSetArg (arglist[3], XmNwidth, 120);
-	XtSetArg (arglist[4], XmNvalue, trace->numpag);
-	XtSetArg (arglist[5], XmNminimum, 1);
-	XtSetArg (arglist[6], XmNmaximum, 50);
-	XtSetArg (arglist[7], XmNorientation, XmHORIZONTAL);
-	XtSetArg (arglist[8], XmNprocessingDirection, XmMAX_ON_RIGHT);
-	trace->prntscr.s1 = XmCreateScale (trace->prntscr.customize,"numpag",arglist,9);
-	XtAddCallback (trace->prntscr.s1, XmNvalueChangedCallback, ps_numpag_cb, trace);
-	XtManageChild (trace->prntscr.s1);
+	y+=55;
 	
 	/* Create radio box for page size */
 	trace->prntscr.size_menu = XmCreatePulldownMenu (trace->prntscr.customize,"size",arglist,0);
@@ -146,52 +281,46 @@ void    ps_dialog (w,trace,cb)
 	trace->prntscr.sizeel = XmCreatePushButtonGadget (trace->prntscr.size_menu,"sizeel",arglist,1);
 	XtManageChild (trace->prntscr.sizeel);
 	
-	XtSetArg (arglist[0], XmNx, 160);
-	XtSetArg (arglist[1], XmNy, 180);
+	XtSetArg (arglist[0], XmNx, x);
+	XtSetArg (arglist[1], XmNy, y);
 	XtSetArg (arglist[2], XmNlabelString, XmStringCreateSimple ("Layout"));
 	XtSetArg (arglist[3], XmNsubMenuId, trace->prntscr.size_menu);
 	trace->prntscr.size_option = XmCreateOptionMenu (trace->prntscr.customize,"sizeo",arglist,4);
 	XtManageChild (trace->prntscr.size_option);
-
-	/* Create all_times button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include off-screen times"));
-	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 220);
-	XtSetArg (arglist[3], XmNshadowThickness, 1);
-	trace->prntscr.all_times = XmCreateToggleButton (trace->prntscr.customize,
-							 "all_times",arglist,4);
-	XtManageChild (trace->prntscr.all_times);
+	y+=45;
 
 	/* Create all_signals button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include off-screen signals"));
-	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 255);
+	XtSetArg (arglist[1], XmNx, x);
+	XtSetArg (arglist[2], XmNy, y);
 	XtSetArg (arglist[3], XmNshadowThickness, 1);
 	trace->prntscr.all_signals = XmCreateToggleButton (trace->prntscr.customize,
 							   "all_signals",arglist,4);
 	XtManageChild (trace->prntscr.all_signals);
+	y+=45;
+
+	ps_range_create (trace, &(trace->prntscr.begin_range), trace->prntscr.customize,
+			 &x, &y, "Begin Printing at:", 0);
+
+	ps_range_create (trace, &(trace->prntscr.end_range), trace->prntscr.customize,
+			 &x, &y, "End Printing at:", 1);
 
 	/* Create Print button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Print") );
-	XtSetArg (arglist[1], XmNx, 10 );
-	XtSetArg (arglist[2], XmNy, 300 );
-	trace->prntscr.b1 = XmCreatePushButton (trace->prntscr.customize, "print",arglist,3);
-	XtAddCallback (trace->prntscr.b1, XmNactivateCallback, ps_print_req_cb, trace);
-	XtManageChild (trace->prntscr.b1);
+	XtSetArg (arglist[1], XmNx, x );
+	XtSetArg (arglist[2], XmNy, y );
+	trace->prntscr.print = XmCreatePushButton (trace->prntscr.customize, "print",arglist,3);
+	XtAddCallback (trace->prntscr.print, XmNactivateCallback, ps_print_req_cb, trace);
+	XtManageChild (trace->prntscr.print);
 	
 	/* create cancel button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
-	XtSetArg (arglist[1], XmNx, 170 );
-	XtSetArg (arglist[2], XmNy, 300 );
-	trace->prntscr.b3 = XmCreatePushButton (trace->prntscr.customize,"cancel",arglist,3);
-	XtAddCallback (trace->prntscr.b3, XmNactivateCallback, unmanage_cb, trace->prntscr.customize);
-	XtManageChild (trace->prntscr.b3);
+	XtSetArg (arglist[1], XmNx, x+160 );
+	XtSetArg (arglist[2], XmNy, y );
+	trace->prntscr.cancel = XmCreatePushButton (trace->prntscr.customize,"cancel",arglist,3);
+	XtAddCallback (trace->prntscr.cancel, XmNactivateCallback, unmanage_cb, trace->prntscr.customize);
+	XtManageChild (trace->prntscr.cancel);
 	}
-    
-    /* reset number of pages to one */
-    trace->numpag = 1;
-    XtSetArg (arglist[0], XmNvalue, trace->numpag);
-    XtSetValues (trace->prntscr.s1,arglist,1);
     
     /* reset page size */
     switch (global->print_size) {
@@ -212,8 +341,6 @@ void    ps_dialog (w,trace,cb)
     XtSetValues (trace->prntscr.size_option, arglist, 1);
 
     /* reset flags */
-    XtSetArg (arglist[0], XmNset, global->print_all_times ? 1:0);
-    XtSetValues (trace->prntscr.all_times,arglist,1);
     XtSetArg (arglist[0], XmNset, global->print_all_signals ? 1:0);
     XtSetValues (trace->prntscr.all_signals,arglist,1);
 
@@ -227,32 +354,10 @@ void    ps_dialog (w,trace,cb)
     
     /* if a file has been read in, make printscreen buttons active */
     XtSetArg (arglist[0],XmNsensitive, (trace->loaded)?TRUE:FALSE);
-    XtSetValues (trace->prntscr.b1,arglist,1);
+    XtSetValues (trace->prntscr.print,arglist,1);
     
     /* manage the popup on the screen */
     XtManageChild (trace->prntscr.customize);
-    }
-
-void    ps_numpag_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmScaleCallbackStruct *cb;
-{
-    int		max;
-    DTime	pagetime;
-    
-    if (DTPRINT_ENTRY) printf ("In ps_numpag_cb - trace=%d value passed=%d\n",trace,cb->value);
-    
-    /* calculate ns per page */
-    pagetime = (int)((trace->width - global->xstart)/global->res);
-    
-    /* calculate max number of pages from current time to end */
-    max = (trace->end_time - global->time)/pagetime;
-    if ( (trace->end_time - global->time) % pagetime )
-	max++;;
-    
-    /* update num pages making sure user didn't select too many */
-    trace->numpag = MIN ((int)cb->value,max);
     }
 
 void    ps_print_direct_cb (w,trace,cb)
@@ -284,7 +389,10 @@ void    ps_print_req_cb (w,trace,cb)
     else global->print_size = PRINTSIZE_A;
 
     global->print_all_signals = XmToggleButtonGetState (trace->prntscr.all_signals);
-    global->print_all_times = XmToggleButtonGetState (trace->prntscr.all_times);
+
+    /* ranges */
+    global->print_begin_time = ps_range_value ( &(trace->prntscr.begin_range) );
+    global->print_end_time = ps_range_value ( &(trace->prntscr.end_range) );
 
     /* get note */
     strcpy (global->printnote, XmTextGetString (trace->prntscr.notetext));
@@ -311,8 +419,10 @@ void    ps_print_internal (trace)
     int		encapsulated;
     SIGNAL	*sig_ptr, *sig_end_ptr;
     int		numprt;
-    DTime	printtime;	/* Time to start on */
+    DTime	printtime;	/* Time current page starts on */
     char	pagenum[20];
+    char	sstrg[20];
+    char	estrg[20];
     
     if (DTPRINT_ENTRY) printf ("In ps_print_internal - trace=%d\n",trace);
     
@@ -340,13 +450,10 @@ void    ps_print_internal (trace)
     sigs_per_page = trace->numsigvis;
     
     /* Reset stuff if doing all times */
-    horiz_pages = trace->numpag;
-    if (global->print_all_times) {
-	/* calculate number of pages needed to draw the entire trace */
-	horiz_pages = (trace->end_time - trace->start_time)/time_per_page;
-	if ( (trace->end_time - trace->start_time) % time_per_page )
-	    horiz_pages++;
-	}
+    /* calculate number of pages needed to draw the entire trace */
+    horiz_pages = (global->print_end_time - global->print_begin_time)/time_per_page;
+    if ( (global->print_end_time - global->print_begin_time) % time_per_page )
+	horiz_pages++;
 
     /* Reset stuff if doing all signals */
     vert_pages = 1;
@@ -408,13 +515,8 @@ void    ps_print_internal (trace)
     /* print out each page */
     for (horiz_page=0; horiz_page<horiz_pages; horiz_page++) {
 	
-	/* Start time */
-	if (horiz_pages > 1) {
-	    printtime = time_per_page * horiz_page + trace->start_time;
-	    }
-	else {
-	    printtime = global->time;
-	    }
+	/* Time at left edge of printout */
+	printtime = time_per_page * horiz_page + global->print_begin_time;
 
 	/* Signal to start on */
 	if (vert_pages > 1) {
@@ -447,10 +549,14 @@ void    ps_print_internal (trace)
 		else			sprintf (pagenum, "Page %d-%d", horiz_page+1, vert_page+1);
 		}
 	    
+	    /* decode times */
+	    time_to_string (trace, sstrg, printtime, FALSE);
+	    time_to_string (trace, estrg, printtime + time_per_page, FALSE);
+
 	    /* output the page header macro */
-	    fprintf (psfile, "(%d-%d %s) (%d %s/page) (%s) (%s) (%s) (%s) (%s) %s\n",
-		     printtime,			/* start time */
-		     printtime + time_per_page,	/* end time */
+	    fprintf (psfile, "(%s-%s %s) (%d %s/page) (%s) (%s) (%s) (%s) (%s) %s\n",
+		     sstrg,			/* start time */
+		     estrg,			/* end time */
 		     timeunits,
 		     time_per_page,			/* resolution */
 		     timeunits,
@@ -509,11 +615,11 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
     SIGNAL	*sig_end_ptr;	/* Last signal to print */
     DTime	printtime;	/* Time to start on */
 {
-    int c=0,i,adj,ymdpt,yt,xloc,xend,len,mid,xstart,ystart;
-    int x1,y1,x2,y2;
-    float iff,xlocf,xtimf;
+    int c=0,adj,ymdpt,xloc,xend,xstart,ystart;
+    int y1,y2;
     SIGNAL_LW *cptr,*nptr;
     char strg[32];
+    char vstrg[32];
     unsigned int value;
     int unstroked=0;		/* Number commands not stroked */
     int		grid_num;
@@ -543,10 +649,6 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		}
 	    }
 
-	/* output y information - note reverse from draw() due to y-axis */
-	fprintf (psfile,"/y1 %d YADJ def /ym %d YADJ def /y2 %d YADJ def\n",
-		y2,ymdpt,y1);
-	
 	/* Compute starting points for signal */
 	xstart = global->xstart;
 	switch ( cptr->sttime.state )
@@ -561,8 +663,10 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	  default: printf ("Error: State=%d\n",cptr->sttime.state); break;
 	    }
 	
+	/* output y information - note reverse from draw() due to y-axis */
 	/* output starting positional information */
-	fprintf (psfile,"%d %d START\n",xstart,ystart);
+	fprintf (psfile,"%d %d %d %d %d START_SIG\n",
+		 ymdpt, y1, y2, xstart, ystart);
 	
 	/* Loop as long as the time and end of trace are in current screen */
 	while ( cptr->sttime.time != EOT && xloc < xend )
@@ -596,43 +700,46 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		
 	      case STATE_B32: if ( xloc > xend ) xloc = xend;
 		value = *((unsigned int *)cptr+1);
+
+		if (trace->busrep == HBUS)
+		    sprintf (vstrg,"%x", value);
+		else if (trace->busrep == OBUS)
+		    sprintf (vstrg,"%o", value);
+
 		/* Below evaluation left to right important to prevent error */
 		if ( (sig_ptr->decode != NULL) &&
 		    (value < sig_ptr->decode->numstates) &&
 		    (sig_ptr->decode->statename[value][0] != '\0')) {
 		    strcpy (strg, sig_ptr->decode->statename[value]);
+		    fprintf (psfile,"%d (%s) (%s) STATE_B_FB\n",xloc,vstrg,strg);
 		    }
 		else {
-		    if (trace->busrep == HBUS)
-			sprintf (strg,"%x", value);
-		    else if (trace->busrep == OBUS)
-			sprintf (strg,"%o", value);
+		    fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
 		    }
 		
-		fprintf (psfile,"%d (%s) STATE_B32\n",xloc,strg);
 		break;
 		
 	      case STATE_B64: if ( xloc > xend ) xloc = xend;
 		if (trace->busrep == HBUS)
-		    sprintf (strg,"%x %08x",*((unsigned int *)cptr+2),
+		    sprintf (vstrg,"%x %08x",*((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
-		    sprintf (strg,"%o %o",*((unsigned int *)cptr+2),
+		    sprintf (vstrg,"%o %o",*((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		
-		fprintf (psfile,"%d (%s) STATE_B32\n",xloc,strg);
+		fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
 		break;
 		
 	      case STATE_B96: if ( xloc > xend ) xloc = xend;
 		if (trace->busrep == HBUS)
-		    sprintf (strg,"%x %08x %08x",*((unsigned int *)cptr+3),
+		    sprintf (vstrg,"%x %08x %08x",*((unsigned int *)cptr+3),
 			    *((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
-		    sprintf (strg,"%o %o %o",*((unsigned int *)cptr+3),
+		    sprintf (vstrg,"%o %o %o",*((unsigned int *)cptr+3),
 			    *((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
-		fprintf (psfile,"%d (%s) STATE_B32\n",xloc,strg);
+		fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
 		break;
 		
 	      default: printf ("Error: State=%d\n",cptr->sttime.state); break;
@@ -665,7 +772,7 @@ void ps_drawsig (trace, psfile, sig_ptr, sig_end_ptr)
     SIGNAL	*sig_end_ptr;	/* Last signal to print */
 {
     int		c=0,ymdpt;
-    int		x1,y1;
+    int		y1;
     
     if (DTPRINT_ENTRY) printf ("In ps_drawsig - filename=%s\n",trace->filename);
     
@@ -676,8 +783,7 @@ void ps_drawsig (trace, psfile, sig_ptr, sig_end_ptr)
     for (; sig_ptr && sig_ptr!=sig_end_ptr; sig_ptr = sig_ptr->forward) {
 
 	/* calculate the location to start drawing the signal name */
-	x1 = global->xstart;
-	/* printf ("x1=%d, xstart=%d, %s\n",x1,global->xstart, sig_ptr->signame); */
+	/* printf ("xstart=%d, %s\n",global->xstart, sig_ptr->signame); */
 	
 	/* calculate the y location to draw the signal name and draw it */
 	y1 = trace->height - trace->ystart - c * trace->sighgt - SIG_SPACE;
@@ -696,7 +802,6 @@ void ps_draw_cursors (trace, psfile, printtime)
 {
     Position	x1,x2,y1,y2;
     char 	strg[32];
-    int		len,mid;
     int		adj,xend;
     CURSOR	*csr_ptr;
     
@@ -710,6 +815,10 @@ void ps_draw_cursors (trace, psfile, printtime)
 	y2 = trace->height - ( (int)((trace->height-trace->ystart)/trace->sighgt)-1) *
 	    trace->sighgt - trace->sighgt/2 - trace->ystart - 2;
 	xend = trace->width - XMARGIN;
+	adj = printtime * global->res - global->xstart;
+
+	/* Start cursor, for now == start grid */
+	fprintf (psfile,"%d %d %d START_GRID\n", y2, y1, y2-8);
 
 	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 
@@ -719,39 +828,17 @@ void ps_draw_cursors (trace, psfile, printtime)
 		/* draw the vertical cursor line */
 		x1 = csr_ptr->time * global->res - adj;
 		if (x1 > xend) break;	/* past end of screen, since sorted list no more to do */
-		fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
-			 x1,y1,x1,y2);
 		
 		/* draw the cursor value */
 		time_to_string (trace, strg, csr_ptr->time, FALSE);
- 		len = XTextWidth (global->time_font,strg,strlen (strg));
-		fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n",
-			 x1-len/2,y2-8,strg);
+		fprintf (psfile,"%d (%s) GRID\n", x1, strg);
 		
 		/* if there is a previous visible cursor, draw delta line */
 		if ( csr_ptr->prev && csr_ptr->prev->time > printtime ) {
 
 		    x2 = csr_ptr->prev->time * global->res - adj;
 		    time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
- 		    len = XTextWidth (global->time_font,strg,strlen (strg));
-		    
-		    /* write the delta value if it fits */
- 		    if ( x1 - x2 >= len + 6 ) {
-			/* calculate the mid pt of the segment */
-			mid = x2 + (x1 - x2)/2;
-			fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
-				 x2,y2+5,mid-len/2-2,y2+5);
-			fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
-				 mid+len/2+2,y2+5,x1,y2+5);
-			
-			fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n",
-				 mid-len/2,y2+2,strg);
-		    }
- 		    /* or just draw the delta line */
- 		    else {
-			fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
-				 x1,y2+5,x2,y2+5);
-		    }
+		    fprintf (psfile,"%d %d %d (%s) CURSOR_DELTA\n", x1, x2, y2+5, strg);
 		}
 	    }
 	}
@@ -763,25 +850,13 @@ void ps_draw_grid (trace, psfile, printtime, grid_ptr)
     FILE	*psfile;
     DTime	printtime;	/* Time to start on */
     GRID	*grid_ptr;		/* Grid information */
-{
+{ 
     char 	strg[MAXSTATELEN+16];	/* String value to print out */
-    char 	primary_dash[4];	/* Dash pattern */
     int		end_time;
-    int		time_width;		/* Width of time printing */
     DTime	xtime;
-    int		x_last_time;		/* Last x coordinate time was printed at */
     Position	x2;			/* Coordinate of current time */
-    Position	y1,y2,yt;		/* Starting and ending points */
+    Position	yl,yh,yt;		/* Starting and ending points */
 
-    /*
-    int c=0,i,adj,ymdpt,yt,xloc,xend,len,mid,xstart,ystart;
-    int x1,y1,x2,y2;
-    float iff,xlocf,xtimf;
-    SIGNAL_LW *cptr,*nptr;
-    char strg[32];
-    unsigned int value;
-    */
-    
     if (grid_ptr->period < 1) grid_ptr->period = 1;	/* Prevents round-down to 0 causing infinite loop */
 
     /* Is the grid too small or invisible?  If so, skip it */
@@ -794,37 +869,34 @@ void ps_draw_grid (trace, psfile, printtime, grid_ptr)
     
     /* Start to left of right edge */
     xtime = printtime;
-    end_time = printtime + (( trace->width - XMARGIN - global->xstart ) / global->res);
+    end_time = printtime + (( trace->width - XMARGIN - global->xstart) / global->res);
 
     /* Move starting point to the right to hit where a grid line is aligned */
     xtime = ((xtime / grid_ptr->period) * grid_ptr->period) + (grid_ptr->alignment % grid_ptr->period);
 
     /* If possible, put one grid line inside the signal names */
-    if (((grid_ptr->period * global->res) < global->xstart)
+    if (((grid_ptr->period * global->res) < 0)
 	&& (xtime >= grid_ptr->period)) {
 	xtime -= grid_ptr->period;
     }
 
     /* Other coordinates */
     yt = trace->height - 20;
-    y1 = trace->height - trace->ystart + SIG_SPACE/4;
-    y2 = trace->sighgt;
+    yl = trace->sighgt;
+    yh = trace->height - trace->ystart + SIG_SPACE/4;
+
+    /* Start grid */
+    fprintf (psfile,"%d %d %d START_GRID\n", yh, yl, yt-10);
 
     /* Loop through grid times */
     for ( ; xtime <= end_time; xtime += grid_ptr->period) {
-	x2 = TIME_TO_XPOS (xtime);
+	x2 = ( ((xtime) - printtime) * global->res + global->xstart );	/* Similar to TIME_TO_XPOS (xtime) */
 
 	/* compute the time value and draw it if it fits */
 	time_to_string (trace, strg, xtime, FALSE);
-	time_width = XTextWidth (global->time_font,strg,strlen (strg));
-	if ( (x2 - x_last_time) >= (time_width+5) ) {
-	    /* Draw if space, centered on grid line */
-	    fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n", x2, yt-10, strg);
-	    x_last_time = x2;
-	}
-	    
-	/* if the grid is visible, draw a vertical dashed line */
-	fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n", x2, y1, x2, y2);
+
+	/* Draw if space, centered on grid line */
+	fprintf (psfile,"%d (%s) GRID\n", x2, strg);
     }
 }
 
