@@ -860,18 +860,80 @@ char *val_examine_string (
     return (strg);
 }
 	
+/* Get window size, calculate what fits on the screen and update scroll bars */
+void geo (
+    Trace	*trace)
+{
+    uint_t	width,height,dret,x,y;
+    XGetGeometry ( global->display, XtWindow (trace->main), (Window *)&dret,
+		   &x, &y, &width, &height, &dret, &dret);
+    printf ("WIDTH %d HEIGHT %d\n", width, height);
+}
+
+
+void rgc (Widget w, int d)
+{
+int i;
+    for (i=0;i<d;i++) printf(" "); 
+    printf("%p ip %p type\n",w, RC_PopupPosted(w));
+    if (XmIsMenuShell(w)) printf ("MENUSHELL ");
+    if (RC_Type(w)==XmMENU_POPUP) printf ("POPUP ");
+    if (RC_Type(w)==XmMENU_OPTION) printf ("OPTION ");
+    if (MS_PrivateShell(w)) printf ("PRIVSH ");
+    if (RC_CascadeBtn(w)) printf ("CASC ");
+    if (XtIsSubclass(w, vendorShellWidgetClass)) printf ("VEND ");
+    printf("\n");
+    _XmRemoveGrab (w);
+    XtCallCallbacks(w, XtNpopdownCallback, NULL);
+    for (i = 0; i < MGR_NumChildren(w); i++)
+    {
+	rgc (MGR_Children(w)[i], d+1);
+    }
+}
+
 void    val_examine_popdown (
     Trace	*trace)
 {
     if (trace->examine.popup) {
-//	XButtonPressedEvent evst, *ev=&evst;
-//	(xmMenuShellClassRec.menu_shell.popdownDone) (trace->examine.popup, (XEvent*) ev, NULL, 0);
+	XtPopdown (trace->examine.popup);
+#if 0
+	Widget w;
+	XButtonPressedEvent event, *ev=&event;
+	event.type = ButtonRelease;
+	event.button = 2;
+	event.time = CurrentTime;
 
+	XtUnmapWidget (trace->examine.popup);
+
+	printf ("xtmenupopdown\n");
+	w = trace->examine.popup;
+//	w = XtParent(trace->examine.popup);
+CKPT();
+	(xmMenuShellClassRec.menu_shell_class.popdownOne) (w, (XEvent*) ev, NULL, 0);
+CKPT();
+	(xmMenuShellClassRec.menu_shell_class.popdownDone) (w, (XEvent*) ev, NULL, 0);
+CKPT();
+	(xmMenuShellClassRec.menu_shell_class.popdownEveryone) (w, (XEvent*) ev, NULL, 0);
+CKPT();
+//	XtCallActionProc (trace->examine.popup, "MenuShellPopdownDone", (XEvent*)ev, NULL, 0);
+//	XtCallActionProc (trace->examine.workrc, "MenuShellPopdownDone", (XEvent*)ev, NULL, 0);
+//	XtCallActionProc (trace->examine.label, "MenuShellPopdownDone", (XEvent*)ev, NULL, 0);
+//	XtCallActionProc (trace->examine.popup, "XtMenuPopdown", (XEvent*)ev, NULL, 0);
+//	XtCallActionProc (trace->examine.workrc, "XtMenuPopdown", (XEvent*)ev, NULL, 0);
+//	XtCallActionProc (trace->examine.label, "XtMenuPopdown", (XEvent*)ev, NULL, 0);
+CKPT();
+	_XmXtMenuPopdown (w, (XEvent*)ev, NULL, 0);
+	_XmRemoveGrab (w);
+CKPT();
+	rgc (w, 1);
+CKPT();
+#endif
 	if (XtIsManaged(trace->examine.popup)) {
 	    XtUnmanageChild (trace->examine.label);
 	    XtUnmanageChild (trace->examine.workrc);
 	    XtUnmanageChild (trace->examine.popup);
 	}
+
 	/* We'll regenerate, as the text gets hosed elsewise */
 	XtDestroyWidget (trace->examine.label);
 	XtDestroyWidget (trace->examine.workrc);
@@ -911,6 +973,81 @@ xxCreatePopupMenu(Widget parent, char *name,
 
     return w;
 }
+
+/* define the full class record */
+typedef struct _XxMenuShellClassRec {
+    CoreClassPart core_class;
+    CompositeClassPart composite_class;
+    ShellClassPart shell_class;
+    OverrideShellClassPart override_shell_class;
+    XmMenuShellClassPart menu_shell_class;
+} XxMenuShellClassRec;
+
+typedef struct _XxMenuShellClassRec *XxMenuShellWidgetClass;
+XxMenuShellClassRec xxMenuShellClassRec = {
+    /* Core class part */
+    {
+	/* superclass            */ (WidgetClass) &overrideShellClassRec,
+        /* class_name            */ "XmMenuShell",
+	/* widget_size           */ sizeof(XmMenuShellRec),
+	/* class_initialize      */ class_initialize,
+	/* class_part_initialize */ class_part_initialize,
+	/* class_inited          */ False,
+	/* initialize            */ initialize,
+	/* initialize_hook       */ NULL,
+	/* realize               */ realize,
+	/* actions               */ actions,
+	/* num_actions           */ XtNumber(actions),
+	/* resources             */ resources,
+	/* num_resources         */ XtNumber(resources),
+	/* xrm_class             */ NULLQUARK,
+	/* compress_motion       */ True,
+	/* compress_exposure     */ XtExposeCompressMaximal /*XtExposeCompressMultiple*/,
+	/* compress_enterleave   */ True,
+	/* visible_interest      */ False,
+	/* destroy               */ destroy,
+	/* resize                */ resize,
+	/* expose                */ XtInheritExpose /*expose*/,
+	/* set_values            */ set_values,
+	/* set_values_hook       */ NULL,
+	/* set_values_almost     */ XtInheritSetValuesAlmost,
+	/* get_values_hook       */ NULL,
+	/* accept_focus          */ NULL,
+	/* version               */ XtVersion,
+	/* callback offsets      */ NULL,
+	/* tm_table              */ _XmMenuShell_translations,
+	/* query_geometry        */ NULL,
+	/* display_accelerator   */ NULL,
+	/* extension             */ (XtPointer)&_XmMenuSCoreClassExtRec
+    },
+    /* Composite class part */
+    {
+	/* geometry manager */ geometry_manager,
+        /* change_managed   */ change_managed,
+        /* insert_child     */ insert_child,
+        /* delete_child     */ XtInheritDeleteChild,
+        /* extension        */ NULL,	
+    },
+    /* Shell class part */
+    {
+	/* extension        */ NULL,
+    },
+    /* Override class part */
+    {
+	/* extension        */ NULL,
+    },
+    /* XmMenuShell class part */
+    {
+        /* popdownOne          */ MenuShellPopdownOne, 
+        /* popdownEveryone     */ MenuShellPopdownEveryone,
+        /* popdownDone         */ MenuShellPopdownDone, 
+        /* popupSharedMenupane */ MenuShellPopupSharedMenuPane,
+	/* extension           */ NULL,
+    },
+};
+/* *INDENT-ON* */
+
+WidgetClass xxMenuShellWidgetClass = (WidgetClass)&xxMenuShellClassRec;
 
 void    val_examine_popup (
     /* Create the popup menu for val_examine, based on cursor position x,y */
@@ -953,18 +1090,23 @@ void    val_examine_popup (
     /* It's probably tempting to use XmCreatePopupMenu. */
     /* Don't.  It was that way, but the keyboard grab proved problematic */
     /* Don't manage this guy, he's just a container */
-    XtSetArg (arglist[0], XmNallowShellResize, TRUE);
+    XtSetArg (arglist[0], XmNallowShellResize, FALSE);
     XtSetArg (arglist[1], XmNx, ev->x_root);
     XtSetArg (arglist[2], XmNy, ev->y_root);
-//    XtSetArg (arglist[3], XmNactions, ev->y_root);
-//    trace->examine.popup = XtCreatePopupShell
-//	("examinepopup", overrideShellWidgetClass, trace->main, arglist, 3);
-//    trace->examine.popup = XmCreatePopupMenu
-//	(trace->main, "expop", arglist, 3);
-//    trace->examine.popup = xxCreatePopupMenu
-//	(trace->main, "expop", arglist, 3, ev);
+#if 0
+    trace->examine.popup = XmCreatePopupMenu (trace->main,"xx", arglist,3);
+#endif
+
+#define X 1
+#if X
+    trace->examine.popup = XtCreatePopupShell
+	("examinepopup", overrideShellWidgetClass, trace->main, arglist, 3);
+    
+#else
+// Delete manage below and this just breaks keybindings
     trace->examine.popup = XtCreatePopupShell
 	("popup_examine", xmMenuShellWidgetClass, trace->main, arglist, 3);
+#endif
 
     /* Row column for menu shell */
 #if 0
@@ -978,23 +1120,37 @@ void    val_examine_popup (
 #endif
 
     /* Row column for a nice border */
+    XtSetArg (arglist[0], XmNrowColumnType, XmWORK_AREA);
     XtSetArg (arglist[0], XmNrowColumnType, XmMENU_POPUP);
-//    XtSetArg (arglist[0], XmNrowColumnType, XmWORK_AREA);
     XtSetArg (arglist[1], XmNborderWidth, 1);
     XtSetArg (arglist[2], XmNentryAlignment, XmALIGNMENT_CENTER);
-    trace->examine.workrc = XmCreateRowColumn (trace->examine.popup,"workrc",arglist,3);
+    trace->examine.workrc = XmCreateRowColumn (
+#if 0
+	trace->examine.poprc,
+#else
+	trace->examine.popup,
+#endif
+	"workrc",arglist,3);
 
     /* Finally the label */
     xs = string_create_with_cr (strg);
     XtSetArg (arglist[0], XmNlabelString, xs);
-    trace->examine.label = XmCreateLabel (trace->examine.workrc, "popuplabel",arglist,1);
+    trace->examine.label = XmCreateLabel (
+	trace->examine.workrc,
+//	trace->examine.popup,
+ "popuplabel",arglist,1);
     DManageChild (trace->examine.label, trace, MC_GLOBALKEYS);
     XmStringFree (xs);
 
     /* Putem up */
     DManageChild (trace->examine.workrc, trace, MC_GLOBALKEYS);
-//    DManageChild (trace->examine.poprc, trace, MC_GLOBALKEYS);
+#if 0
+    DManageChild (trace->examine.poprc, trace, MC_GLOBALKEYS);
+#endif
+#if X
 //    DManageChild (trace->examine.popup, trace, MC_GLOBALKEYS);
+    XtPopup (trace->examine.popup, XtGrabNone);
+#endif
 
     /* Make sure we find out when button gets released */
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->examine.popup),
@@ -1003,6 +1159,7 @@ void    val_examine_popup (
     /* We definately shouldn't have to force exposure of the popup. */
     /* However, the reality is lessTif doesn't seem to draw the text unless we do */
     /* This is a unknown bug in lessTif; it works fine on the true Motif */
+//    (xmRowColumnClassRec.core_class.expose) (trace->examine.popup, (XEvent*) ev, NULL);
     (xmRowColumnClassRec.core_class.expose) (trace->examine.workrc, (XEvent*) ev, NULL);
     (xmLabelClassRec.core_class.expose) (trace->examine.label, (XEvent*) ev, NULL);
 }
@@ -1027,9 +1184,12 @@ void    val_examine_ev (
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonReleaseMask|PointerMotionMask|StructureNotifyMask|ExposureMask);
     
+geo(trace);
+
     /* Create */
     val_examine_popup (trace, ev);
     
+geo(trace);
     /* loop and service events until button is released */
     while ( 1 ) {
 	/* wait for next event */
@@ -1072,6 +1232,7 @@ void    val_examine_ev (
     /* unmanage popup */
     val_examine_popdown (trace);
     draw_needed (trace);
+geo(trace);
 }
 
 void    val_examine_popup_act (
