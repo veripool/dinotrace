@@ -1915,7 +1915,12 @@ void sig_modify_enables (trace)
 	    base_sig_ptr = sig_find_signame (trace, nonenablename);
 
 	    en_sig_ptr = sig_ptr;
-	    sig_ptr = sig_ptr->forward;	/*** INC early as pointers may change! ***/
+
+	    /* Point to next signal, as we will be deleting several, */
+	    /* make sure we don't point at one being deleted */
+	    sig_ptr = sig_ptr->forward;
+	    while (sig_ptr && ((sig_ptr == en_sig_ptr) || (sig_ptr==base_sig_ptr))) sig_ptr = sig_ptr->forward;
+
 	    free (nonenablename);
 
 	    if (base_sig_ptr) {
