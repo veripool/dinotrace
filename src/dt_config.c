@@ -958,6 +958,8 @@ void config_read_defaults (trace, report_errors)
     char newfilename[MAXFNAMELEN];
     char *pchar;
 
+    if (DTPRINT_ENTRY) printf ("In config_read_defaults\n");
+
     /* Erase old cursors */
     cur_delete_of_type (CONFIG);
 
@@ -1010,6 +1012,8 @@ void config_read_defaults (trace, report_errors)
     update_signal_states (trace);
     val_update_search ();
     sig_update_search ();
+
+    if (DTPRINT_ENTRY) printf ("Exit config_read_defaults\n");
     }
 
 /**********************************************************************
