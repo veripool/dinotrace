@@ -245,6 +245,7 @@ Please see %sDINOTRACE.TXT for documentation.\n\
 \n\
 A complete Dinotrace kit is available on:\n\
      CADSYS::CORE$KITS:DINOTRACE*.*\n\
+ or     CAD::CORE$KITS:DINOTRACE*.*\n\
 \n\
 For configuration information, Dinotrace reads:\n\
      %sdinotrace.dino\n\
