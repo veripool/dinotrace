@@ -196,7 +196,7 @@ See the Help menu for more information.");
 	}
 #endif
 
-    draw_all_needed (trace);
+    draw_all_needed ();
 
     /* Load up the file on the command line, if any */
     /* Parse filenames */

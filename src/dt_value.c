@@ -436,7 +436,7 @@ void    val_examine_unpopup_act (w)
 	trace->examine.popup = NULL;
 	}
     /* redraw the screen as popup may have mangled widgets */
-    /* draw_all_needed (trace);*/
+    /* draw_all_needed ();*/
     }
 
 char *events[40] = {"","", "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelease", "MotionNotify",
@@ -707,7 +707,7 @@ void    val_search_ok_cb (w,trace,cb)
 
     val_update_search ();
 
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 void    val_search_apply_cb (w,trace,cb)
@@ -758,7 +758,7 @@ void    val_highlight_ev (w,trace,ev)
 
     /* redraw the screen */
     val_update_search ();
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 

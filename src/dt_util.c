@@ -312,7 +312,7 @@ void new_time (trace)
 	}
     
     /* Update windows */
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 /* Get window size, calculate what fits on the screen and update scroll bars */
@@ -538,7 +538,7 @@ void    prompt_ok_cb (w, trace, cb)
       case IO_GRIDRES:
 	/* get the data and store in display structure */
 	trace->grid_res = (int)restime;
-	draw_all_needed (trace);
+	draw_all_needed ();
 	break;
 	
       case IO_RES:
@@ -799,7 +799,7 @@ void    debug_increase_debugtemp_cb (w,trace,cb)
 {
     DebugTemp++;
     printf ("New DebugTemp = %d\n", DebugTemp);
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 void    debug_decrease_debugtemp_cb (w,trace,cb)
@@ -809,7 +809,7 @@ void    debug_decrease_debugtemp_cb (w,trace,cb)
 {
     DebugTemp--;
     printf ("New DebugTemp = %d\n", DebugTemp);
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 

@@ -215,7 +215,7 @@ void    cur_clr_cb (w, trace, cb)
     /* cancel the button actions */
     remove_all_events (trace);
     
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 void    cur_highlight_cb (w,trace,cb)
@@ -255,7 +255,7 @@ void    cur_add_ev (w, trace, ev)
     /* make the cursor */
     cur_add (time, global->highlight_color, USER);
     
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 void    cur_move_ev (w, trace, ev)
@@ -356,7 +356,7 @@ void    cur_move_ev (w, trace, ev)
     cur_add (time, csr_ptr->color, USER);
     XtFree ((char *)csr_ptr);
     
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 void    cur_delete_ev (w, trace, ev)
@@ -376,7 +376,7 @@ void    cur_delete_ev (w, trace, ev)
     cur_remove (csr_ptr);
     DFree (csr_ptr);
     
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 void    cur_highlight_ev (w, trace, ev)
@@ -395,6 +395,6 @@ void    cur_highlight_ev (w, trace, ev)
     /* change color */
     csr_ptr->color = global->highlight_color;
     
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
