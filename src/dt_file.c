@@ -149,7 +149,8 @@ void fil_read_cb (trace)
     int		read_fd;
     FILE	*read_fp;	/* Routines are responsible for assigning this! */
     char	*pchar;
-    char 	pipecmd[MAXFNAMELEN+20]="";
+    char 	pipecmd[MAXFNAMELEN+20];
+    pipecmd[0]='\0';	/* MIPS: no automatic aggregate initialization */
 
     if (DTPRINT_ENTRY) printf ("In fil_read_cb trace=%d filename=%s\n",trace,trace->filename);
     
