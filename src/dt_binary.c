@@ -380,6 +380,7 @@ void decsim_read_binary (
 		if (last_sig_ptr) last_sig_ptr->forward = sig_ptr;
 		sig_ptr->backward = last_sig_ptr;
 		if (trace->firstsig==NULL) trace->firstsig = sig_ptr;
+		trace->lastsig = sig_ptr;
 		break;
 
 		/**** TYPE: Node signal name data ****/
@@ -711,6 +712,7 @@ void tempest_read (
 	pad_len = (sigChars%8) ? 8 - (sigChars%8) : 0;
 	status = read (read_fd, chardata, pad_len);
     }
+    trace->lastsig = last_sig_ptr;
 
     /* Make the busses */
     fil_make_busses (trace, FALSE);

@@ -711,6 +711,7 @@ struct st_trace {
     DFile_t		dfile;		/* File trace came from (to be independant later) */
 
     Signal_t		*firstsig;	/* Linked list of all nondeleted signals */
+    Signal_t		*lastsig;	/* Linked list of all nondeleted signals */
     Signal_t		*dispsig;	/* Pointer within sigque to first signal on screen */
 
     uint_t		numsig;		/* Total number of signals, excluding deleted */

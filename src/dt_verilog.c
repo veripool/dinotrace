@@ -74,8 +74,6 @@ static int	verilog_fd;
 static char	*verilog_text = NULL;
 static Boolean_t verilog_eof;
 
-static Signal_t	*last_sig_ptr;		/* last signal read in */
-
 /* Pointer to array of signals sorted by pos. (Special hash table) */
 /* *(signal_by_pos[VERILOG_ID_TO_POS ("abc")]) gives signal ABC */
 static Signal_t	**signal_by_pos;	
@@ -340,10 +338,10 @@ static void	verilog_process_var (
     val_zero (&(new_sig_ptr->file_value));
 
     /* initialize all the pointers that aren't NULL */
-    if (last_sig_ptr) last_sig_ptr->forward = new_sig_ptr;
-    new_sig_ptr->backward = last_sig_ptr;
+    if (trace->lastsig) trace->lastsig->forward = new_sig_ptr;
+    new_sig_ptr->backward = trace->lastsig;
     if (trace->firstsig==NULL) trace->firstsig = new_sig_ptr;
-    last_sig_ptr = new_sig_ptr;
+    trace->lastsig = new_sig_ptr;
 
     /* copy signal info */
     len = strlen (signame);
@@ -463,8 +461,7 @@ static void	verilog_process_definitions (
     
     /* Allocate space for one signal pointer for each of the possible codes */
     /* This will, of course, use a lot of memory for large traces.  It will be very fast though */
-    signal_by_pos = (Signal_t **)XtMalloc (sizeof (Signal_t *) * (signal_by_pos_max + 1));
-    memset (signal_by_pos, 0, sizeof (Signal_t *) * (signal_by_pos_max + 1));
+    signal_by_pos = (Signal_t **)XtCalloc (sizeof (Signal_t *), (signal_by_pos_max + 1));
 
     /* Also set aside space so every signal could change in a single cycle */
     signal_update_array = (Signal_t **)XtMalloc (sizeof (Signal_t *) * (signal_by_pos_max + 1));
@@ -927,8 +924,8 @@ void verilog_read (
     time_scale = time_divisor;
 
     /* Signal description data */
-    last_sig_ptr = NULL;
     trace->firstsig = NULL;
+    trace->lastsig = NULL;
     signal_by_pos = NULL;
     scope_level = 0;
 

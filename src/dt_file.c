@@ -97,6 +97,7 @@ void free_data (
     /* free signal data and each signal structure */
     sig_free (trace, trace->firstsig, FALSE, TRUE);
     trace->firstsig = NULL;
+    trace->lastsig = NULL;
     trace->dispsig = NULL;
     trace->numsig = 0;
 }

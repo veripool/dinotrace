@@ -106,6 +106,8 @@ void sig_free (
 		    trace_ptr->dispsig = sig_ptr->forward;
 		if ( sig_ptr == trace_ptr->firstsig )
 		    trace_ptr->firstsig = sig_ptr->forward;
+		if ( sig_ptr == trace_ptr->lastsig )
+		    trace_ptr->lastsig = sig_ptr->backward;
 	    }
 
 	    /* free the signal data */
@@ -163,6 +165,10 @@ static void sig_remove_from_queue (
     if ( sig_ptr == trace->firstsig ) {
 	trace->firstsig = sig_ptr->forward;
     }
+    /* if the signal is the last signal, change it */
+    if ( sig_ptr == trace->lastsig ) {
+	trace->lastsig = sig_ptr->backward;
+    }
 
     trace->numsig--;
 }
@@ -187,17 +193,11 @@ static void    sig_add_to_queue (
     /* Insert into first position? */
     if (loc_sig_ptr == NULL) {
 	next_sig_ptr = trace->firstsig;
-	trace->firstsig = sig_ptr;
-	prev_sig_ptr = (next_sig_ptr)? next_sig_ptr->backward : NULL;
+	prev_sig_ptr = NULL;
     }
     else if (loc_sig_ptr == ADD_LAST) {
-	prev_sig_ptr = NULL;
-	for (next_sig_ptr = trace->firstsig; next_sig_ptr; next_sig_ptr = next_sig_ptr->forward) {
-	    prev_sig_ptr = next_sig_ptr;
-	}
-	if (!prev_sig_ptr) {
-	    trace->firstsig = sig_ptr;
-	}
+	next_sig_ptr = NULL;
+	prev_sig_ptr = trace->lastsig;
     }
     else {
 	next_sig_ptr = loc_sig_ptr->forward;
@@ -217,13 +217,12 @@ static void    sig_add_to_queue (
 	prev_sig_ptr->forward = sig_ptr;
     }
 
+    if (!prev_sig_ptr) trace->firstsig = sig_ptr;
+    if (!next_sig_ptr) trace->lastsig = sig_ptr;
+
     /* if the signal is the first screen signal, change it */
     if ( next_sig_ptr && ( next_sig_ptr == trace->dispsig )) {
         trace->dispsig = sig_ptr;
-    }
-    /* if the signal is the signal, change it */
-    if ( next_sig_ptr && ( next_sig_ptr == trace->firstsig )) {
-	trace->firstsig = sig_ptr;
     }
     /* if no display sig, but is regular first sig, make the display sig */
     if ( trace->firstsig && !trace->dispsig) {
@@ -1867,6 +1866,7 @@ void sig_cross_preserve (
 
     /* Tell old trace that it no longer has any signals */
     trace->firstsig = NULL;
+    trace->lastsig = NULL;
     trace->dispsig = NULL;
     trace->numsigstart = 0;
 }
@@ -2030,6 +2030,7 @@ void sig_cross_restore (
 	back_sig_pptr = &(newlist_firstsig);
 	old_sig_ptr = global->preserved_trace->firstsig;	/* This will trash old list, kill heads now */
 	global->preserved_trace->firstsig = NULL;
+	global->preserved_trace->lastsig = NULL;
 	global->preserved_trace->dispsig = NULL;
 	if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 	while (old_sig_ptr) {
@@ -2096,6 +2097,7 @@ void sig_cross_restore (
 	    new_sig_ptr->backward = old_sig_ptr;
 	    old_sig_ptr = new_sig_ptr;
 	}
+	trace->lastsig = old_sig_ptr;
 
 	/* Restore scrolling position */
 	trace->dispsig = (new_dispsig) ? new_dispsig : trace->firstsig;

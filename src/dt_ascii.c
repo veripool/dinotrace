@@ -244,6 +244,7 @@ static void decsim_read_ascii_header (
 
 	last_sig_ptr = sig_ptr;
     }
+    trace->lastsig = last_sig_ptr;
 
     /* Save where lines begin */
     line=0;

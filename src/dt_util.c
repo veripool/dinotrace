@@ -890,6 +890,7 @@ void    debug_signal_integrity (
 {
     Value_t	*cptr;
     Value_t	*cptr_last;
+    Signal_t	*last_sig_ptr;
     DTime_t	last_time;
     uint_t	nsigstart, nsig;
     Boolean_t	hitstart;
@@ -962,6 +963,10 @@ void    debug_signal_integrity (
 	    print_sig_info (sig_ptr);
 	}
 	cptr_last = cptr;
+	last_sig_ptr = sig_ptr;
+    }
+    if (last_sig_ptr != trace->lastsig) {
+	printf ("%%E, %s, Last signal pointer, %p!=%p\n", list_name, last_sig_ptr, trace->lastsig);
     }
 
     if (!del) {
