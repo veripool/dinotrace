@@ -7,6 +7,17 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.0b  8/3/98
+
+** Enhancements:
+
+**	Value Plus Dumps (aka VPD aka VCD+) are now supported by piping 
+	through vpd2vcd.  Added supporting -vpd command line and
+	file_format vpd configuration options.
+
+****	Counfigures and builds on Linux.  [Celia Clause]
+
+
 * Changes in Dinotrace 9.0a  4/13/98
 
 ** Enhancements:

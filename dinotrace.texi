@@ -20,9 +20,9 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set ID 9.0a
-@set VERSION 9.0a
-@set UPDATED June 1998
+@set ID 9.0b
+@set VERSION 9.0b
+@set UPDATED August 1998
 @c All functions use these for searching ease
 @macro dmenu{f}
 @code{\f\}
@@ -273,6 +273,11 @@ switches, like @switch{-display}.
 
 Read following trace filenames using Verilog format.  This is the
 default format.
+
+@item -vpd
+@findex -vpd
+
+Read following trace filenames using Verilog Plus Dump format.
 
 @item -decsim
 @findex -decsim
@@ -1592,7 +1597,7 @@ phase counter to the time.  Defaults to 2.
 @subsection file_format
 @cindex Format, File
 @findex file_format
-@config{file_format}		DECSIM | TEMPEST | VERILOG
+@config{file_format}		DECSIM | TEMPEST | VERILOG | VPD
 
 Changes the file format to be read.  Same as the buttons in the
 @dmenu{Trace Open} menu.
@@ -1927,6 +1932,7 @@ the like.  This is what separates Dinotrace from the rest.
 * Signal Matching::             
 * Entering Dinotrace-Mode::     
 * Exiting Dinotrace Mode::      
+* Configuring Dinotrace-Mode::  
 * Keys in Dinotrace Mode::      
 @end menu
 
@@ -2003,7 +2009,7 @@ It will not read a new annotation file if one has already been read in.
 
 @end table
 
-@node Exiting Dinotrace Mode, Keys in Dinotrace Mode, Entering Dinotrace-Mode, Dinotrace and Emacs
+@node Exiting Dinotrace Mode, Configuring Dinotrace-Mode, Entering Dinotrace-Mode, Dinotrace and Emacs
 @section Exiting Dinotrace Mode
 
 There are two ways to exit Dinotrace Mode:
@@ -2025,7 +2031,25 @@ and will remove annotations and make the buffer writable.
 
 @end table
 
-@node Keys in Dinotrace Mode,  , Exiting Dinotrace Mode, Dinotrace and Emacs
+@node Configuring Dinotrace-Mode, Keys in Dinotrace Mode, Exiting Dinotrace Mode, Dinotrace and Emacs
+@section Configuring Dinotrace-Mode
+
+These keys configure Dinotrace Mode:
+
+@table @kbd
+@item C-x C-a a
+@itemx M-x dinotrace-hiearchy-set
+@kindex C-x C-a a
+
+@kbd{C-x C-a a} will specify the hiearchy as a regular expression.  Any
+signals must match this regular expression in order to be annotated.
+This is useful if the same signal name appears in many modules with
+different values; you can thus choose which modules the signals will
+come from.
+
+@end table
+
+@node Keys in Dinotrace Mode,  , Configuring Dinotrace-Mode, Dinotrace and Emacs
 @section Keys in Dinotrace Mode
 
 When inside a Dinotrace Mode buffer, many keys are defined to affect
@@ -2113,6 +2137,7 @@ reader for this format is included with the Dinotrace distribution.
 @c ----------------------------------------------------------------------
 @menu
 * Verilog Value Change Dumps::  
+* Verilog Value Plus Dumps::    
 * ASCII Traces::                
 * Tempest Traces::              
 * Making Verilator Traces::     
@@ -2124,7 +2149,7 @@ reader for this format is included with the Dinotrace distribution.
 * Decsim Binary::               
 @end menu
 
-@node Verilog Value Change Dumps, ASCII Traces, File Formats, File Formats
+@node Verilog Value Change Dumps, Verilog Value Plus Dumps, File Formats, File Formats
 @section Verilog Value Change Dumps
 
 Dinotrace can read the Value Change Dump format, common with
@@ -2187,7 +2212,55 @@ For a description of the VCD file format, see @cite{Chapter 18 of the
 Verilog-XL reference manual}.
 
 @c ----------------------------------------------------------------------
-@node ASCII Traces, Tempest Traces, Verilog Value Change Dumps, File Formats
+@node Verilog Value Plus Dumps, ASCII Traces, Verilog Value Change Dumps, File Formats
+@section Verilog Value Plus Dumps
+
+Dinotrace can read the Value Plus Dump format, common with VCS.
+
+VPD files have a @file{.vpd} extension.  Under the @dmenu{Trace Read}
+menu, select Verilog VPD Format.  Select @dmenu{Trace Read} to read the file.
+If this is your standard format, you can set it permanently by placing
+in the @file{$DINODISK:dinotrace.dino} file:
+
+@example
+file_format vpd
+vector_separator "["
+@end example
+
+For this to work, you must have the @prog{vpd2vcd} program installed in
+your search path.  It was distributed with VCS, and requires a key to
+operate; contact your simulation vendor for details.
+
+Dinotrace will convert the format to a standard VCD file using a pipe.
+Thus all of the notes above for the @xref{Verilog Value Change Dumps}
+also apply to this format.
+
+@menu
+* Making VPDs in Verilog::      
+@end menu
+
+@node Making VPDs in Verilog,  , Verilog Value Plus Dumps, Verilog Value Plus Dumps
+@subsection Making VPDs in Verilog
+@cindex Verilog-XL, Making Traces
+@cindex VCS, Making Traces
+
+To create a value plus dump file inside of Verilog, add the code
+somewhere in a module:
+
+@example
+// Create a vpd file
+initial begin
+        $vcdpluson (12, top);
+end
+@end example
+
+Where top is the name of the module to be traced, and 12 is the number
+of levels of hierarchy underneath top to be traced.  For this to work
+you may also need a @switch{-I} or other compile time option for your
+simulator.
+
+@c ----------------------------------------------------------------------
+@node ASCII Traces, Tempest Traces, Verilog Value Plus Dumps, File Formats
 @section ASCII Traces
 @cindex ASCII Traces
 

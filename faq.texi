@@ -7,8 +7,8 @@
 @finalout
 @c %**end of header
 
-@set UPDATED June 1998
-@set VERSION 9.0a
+@set UPDATED August 1998
+@set VERSION 9.0b
 
 @c All functions use these for searching ease
 @macro dmenu {f}
@@ -280,11 +280,14 @@ there's nothing to worry about.)
 @chapter Suggestions
 
 @c --------------------
-@section Can Dinotrace read VCD+ format files?
+@section Can Dinotrace directly read VCD+/VPD format files?
 
 Nope, sorry.  VCD+ is a proprietary format, and the reading code must be
 licensed for a fee before being used.  This is obviously not possible with
 the distribution philosophy of Dinotrace.
+
+You can however convert VCD+ files on the fly using vpd2vcd.  See the
+documentation for details.
 
 @c --------------------
 @section Can Dinotrace be ported to Windows NT?
