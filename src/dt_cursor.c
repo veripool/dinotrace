@@ -266,10 +266,14 @@ void cur_write (FILE *writefp, char *c)
 	time_to_string (global->trace_head, strg, csr_ptr->time, FALSE);
 	switch (csr_ptr->type) {
 	case USER:
-	    fprintf (writefp, "%scursor_add %s %d -user\n",c, strg, csr_ptr->color);
+	    fprintf (writefp, "%scursor_add %s %d -user",c, strg, csr_ptr->color);
+	    if (csr_ptr->note && csr_ptr->note[0]) fprintf (writefp, " \"%s\"", csr_ptr->note);
+	    fprintf (writefp, "\n");
 	    break;
 	case CONFIG:
-	    fprintf (writefp, "%scursor_add %s %d\n",c, strg, csr_ptr->color);
+	    fprintf (writefp, "%scursor_add %s %d",c, strg, csr_ptr->color);
+	    if (csr_ptr->note && csr_ptr->note[0]) fprintf (writefp, " \"%s\"", csr_ptr->note);
+	    fprintf (writefp, "\n");
 	    break;
 	default:
 	    break;

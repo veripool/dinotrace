@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in [].
 
 **      NEWS file is now renamed Changes.
 
+****	Save cursor notes in Customize save files.  [Thomas Dmukauskas]
+
 * Dinotrace 9.1n 10/22/2004
 
 ****	Fix slow file reading with >128 bit __en signals. [Ta-Chung Chang]

@@ -1404,6 +1404,7 @@ is ignored in all but state names.  The commands are:
 * signal_delete_constant::      
 * signal_copy::                 
 * signal_move::                 
+* signal_note::                 
 * signal_rename::               
 * signal_radix::                
 * signal_waveform::             
@@ -1878,7 +1879,7 @@ after the first signal that matches the @var{after_signal} pattern.  If
 @var{after_signal} is not provided or is not found, the new signal is
 added to the end of the trace.
 
-@node signal_move, signal_rename, signal_copy, Configuration Commands
+@node signal_move, signal_note, signal_copy, Configuration Commands
 @subsection signal_move
 @findex signal_move
 @cindex Moving, Signals
@@ -1890,7 +1891,17 @@ signal that matches the @var{after_signal} pattern.  If
 @var{after_signal} is not provided, the new signal is added to the end
 of the trace.
 
-@node signal_rename, signal_radix, signal_move, Configuration Commands
+@node signal_note, signal_rename, signal_move, Configuration Commands
+@subsection signal_note
+@findex signal_note
+@cindex Notes, Signals
+@config{signal_note}		@var{signal_pattern} @var{note}
+
+Add the specified note to signals matching @var{signal_pattern}.  The
+signal note may be viewed by pressing with the Examine button over the
+signal name.
+
+@node signal_rename, signal_radix, signal_note, Configuration Commands
 @subsection signal_rename
 @findex signal_rename
 @cindex Renaming, Signals
