@@ -32,6 +32,9 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****    Fixed read followed by reread keep appending scope names. [George
 	Varughese]
+
+****    Fixed Verilog reading for TOPS traces. [Dieter Werth]
+
 
 * Changes in Dinotrace 9.0f  9/29/1999
 

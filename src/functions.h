@@ -333,7 +333,7 @@ extern void	sig_search_ok_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackSt
 extern void	sig_search_apply_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
 
 /* dt_value.c routines */
-extern void	val_minimize (Value_t *value_ptr);
+extern void	val_minimize (Value_t *value_ptr, Signal_t *sig_ptr);
 extern void	val_update_search (void);
 extern void	val_states_update (void);
 extern void	val_to_string (const Radix_t *radix_ptr, char *strg, const Value_t *value_ptr, Boolean_t display);

@@ -178,7 +178,7 @@ static void	read_4state_to_value (
 	default: value_ptr->siglw.stbits.state = bitval; break;
 	}
     } else {
-	val_minimize (value_ptr);
+	val_minimize (value_ptr, NULL);
     }
 }
 

@@ -334,7 +334,8 @@ void    val_to_string (
 }
 
 void	val_minimize (
-    Value_t	*value_ptr
+    Value_t	*value_ptr,
+    Signal_t	*sig_ptr
     )
     /* Given a STATE_B128, try to shrink to something smaller if we can */
 {
@@ -352,7 +353,18 @@ void	val_minimize (
 	}
 	else value_ptr->siglw.stbits.state = STATE_B128;
     } else {
-	if (!num123 && !num567) {
+	if ((value_ptr->number[0] == value_ptr->number[4])
+	    && (value_ptr->number[1] == value_ptr->number[5])
+	    && (value_ptr->number[2] == value_ptr->number[6])
+	    && (value_ptr->number[3] == value_ptr->number[7])
+	    && sig_ptr
+	    && (value_ptr->number[0] == sig_ptr->value_mask[0])
+	    && (value_ptr->number[1] == sig_ptr->value_mask[1])
+	    && (value_ptr->number[2] == sig_ptr->value_mask[2])
+	    && (value_ptr->number[3] == sig_ptr->value_mask[3])	    
+	    ) {
+	    value_ptr->siglw.stbits.state = STATE_Z;
+	} else if (!num123 && !num567) {
 	    value_ptr->siglw.stbits.state = STATE_F32;
 	    value_ptr->number[1] = value_ptr->number[4];
 	    value_ptr->number[4] = 0;
@@ -486,7 +498,7 @@ void    string_to_value (
 	}
     }
 
-    val_minimize (value_ptr);
+    val_minimize (value_ptr, NULL);
 }
 
 Boolean_t  val_equal (

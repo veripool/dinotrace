@@ -661,7 +661,7 @@ static void	verilog_enter_busses (
 	    if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } 
 
 	    /* Make cptr have correct state */
-	    val_minimize (&(sig_ptr->file_value));
+	    val_minimize (&(sig_ptr->file_value), sig_ptr);
 
 	    /* Enter the cptr */
 	    sig_ptr->file_value.time = time;
