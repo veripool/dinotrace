@@ -86,36 +86,17 @@ static void print_signame_scrolled (
 /* Print signame scrolled to right point */
 {
     char *basename;
-    char *out;
-    char *cp;
-    int outpos;
-    int frontspaces;	/* How many spaces should be in front of sig to align hiearchy */
-    int frontnamepos;	/* What namepos is, with 0 at frontspaces[0] */
     int siglen, baselen;
-
-    fprintf (psfile, "(");
 
     basename = sig_basename (trace, sig_ptr);
     siglen = strlen(sig_ptr->signame);
     baselen = strlen(basename);
-    out = (char *)XtMalloc(10+global->namepos_visible);
 
-    frontspaces = global->namepos_hier - (siglen - baselen);
-    frontnamepos = ((global->namepos_hier + global->namepos_base
-		     - global->namepos_visible)
-		    - global->namepos);
-    /* Copy it */
-    for (outpos=0, cp=out; outpos < global->namepos_visible; outpos++, cp++) {
-	int namepos = frontnamepos + outpos - frontspaces;
-	if (namepos==(siglen - baselen)) {
-	    fprintf (psfile, ") (");
-	}
-	if (namepos>=0 && namepos<siglen) 
-	    fputc (sig_ptr->signame[namepos], psfile);
-	else fputc (' ', psfile);
+    if (global->prefix_enable) {
+	fprintf(psfile, "(%.*s) (%-*s)", siglen - baselen, sig_ptr->signame, global->namepos_base, basename);
+    } else {
+	fprintf(psfile, "() (%-*s)", global->namepos_base, basename);
     }
-
-    fprintf (psfile, ")");
 }
 
 void    print_reset (
