@@ -75,7 +75,7 @@ void draw_grid (trace)
     yt = 20;
     y1 = trace->ystart - SIG_SPACE/4;
     y2 = trace->height - trace->sighgt;
-    if (trace->grid_res_auto == GRID_RES_AUTO_DOUBLE) grid_res_inc = trace->grid_res/2;
+    if (trace->grid_type == GRID_RES_AUTO_DOUBLE) grid_res_inc = trace->grid_res/2;
     else grid_res_inc = trace->grid_res;
     if (grid_res_inc < 1) grid_res_inc = 1;	/* Prevents round-down to 0 causing infinite loop */
     
@@ -111,7 +111,7 @@ void draw_grid (trace)
 	    /* End-of-Loop */
 	    xlocf += grid_res_inc*global->res;
 	    xtime += grid_res_inc;
-	    if (trace->grid_res_auto == GRID_RES_AUTO_DOUBLE) on_secondary = ! on_secondary;
+	    if (trace->grid_type == GRID_RES_AUTO_DOUBLE) on_secondary = ! on_secondary;
 	    }
 	}
     

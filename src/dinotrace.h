@@ -537,6 +537,7 @@ typedef struct st_trace {
     int			grid_res;	/* Grid resolution (time between ticks) */
     int			grid_align;	/* Grid alignment (time grid starts at) */
     Boolean		grid_vis;	/* True if grid is visible */
+    int			grid_type;	/* Grid status (now just double) */
     int			grid_res_auto;	/* Number or status of automatic grid resolution */
     int			grid_align_auto; /* Number or status of automatic grid alignment */
     Boolean		cursor_vis;	/* True if cursors are visible */
