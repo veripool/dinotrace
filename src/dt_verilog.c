@@ -40,6 +40,10 @@ static char rcsid[] = "$Id$";
 #include "dinotrace.h"
 #include "callbacks.h"
 
+/* File locals */
+static int verilog_line_num=0;
+static char *current_file="";
+
 /* Stack of scopes, 0=top level.  Grows up to MAXSCOPES */
 #define MAXSCOPES 20
 static char	scopes[MAXSCOPES][MAXSIGLEN];
@@ -91,7 +95,7 @@ void	verilog_read_till_end (line, readfp)
 	if (feof (readfp)) return;
 	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
 	/* if (DTPRINT_FILE) printf ("line='%s'\n",line); */
-	line_num++;
+	verilog_line_num++;
 	}
     }
 
@@ -105,7 +109,7 @@ void	verilog_read_timescale (line, readfp)
     if (!*line) {
 	fgets (new_line, 1000, readfp);
 	line = new_line;
-	line_num++;
+	verilog_line_num++;
 	if (feof (readfp)) return;
 	}
 
@@ -126,7 +130,7 @@ void	verilog_read_timescale (line, readfp)
       case 'f':
       default:
 	if (DTPRINT) printf ("Unknown time scale unit '%c'\non line %d of %s\n",
-			     *line, line_num, current_file);
+			     *line, verilog_line_num, current_file);
 	}
     if (time_scale == 0) time_scale = 1;
     if (DTPRINT_FILE) printf ("timescale=%d\n",time_scale);
@@ -372,10 +376,10 @@ void	verilog_read_data (trace, readfp)
 
     while (1) {
 	fgets (new_line, 1000, readfp);
-	line_num++;
+	verilog_line_num++;
 	line = new_line;
 	if (feof(readfp)) break;
-	/*if (line_num % 5000 == 0) printf ("Line %d\n", line_num);*/
+	/*if (verilog_line_num % 5000 == 0) printf ("Line %d\n", verilog_line_num);*/
 	if (DTPRINT_FILE) {
 	    line[strlen(line)-1]= '\0';
 	    printf ("line='%s'\n",line);
@@ -579,7 +583,7 @@ void	verilog_process_lines (trace, readfp)
 	fgets (line_stor, 1000, readfp);
 	line = line_stor;
 	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
-	line_num++;
+	verilog_line_num++;
 
 	/* if (DTPRINT_FILE) printf ("line='%s'\n",line); */
 
@@ -613,10 +617,10 @@ void	verilog_process_lines (trace, readfp)
 		scope_level++;
 		}
 	    else {
-		if (DTPRINT_FILE) printf ("%%E, Too many scope levels on verilog line %d\n", line_num);
+		if (DTPRINT_FILE) printf ("%%E, Too many scope levels on verilog line %d\n", verilog_line_num);
 		
 		sprintf (message, "Too many scope levels\non line %d of %s\n",
-			 cmd, line_num, current_file);
+			 cmd, verilog_line_num, current_file);
 		dino_error_ack (trace,message);
 		}
 	    }
@@ -633,10 +637,10 @@ void	verilog_process_lines (trace, readfp)
 	    verilog_read_data (trace, readfp);
 	    }
 	else {
-	    if (DTPRINT_FILE) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, line_num);
+	    if (DTPRINT_FILE) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, verilog_line_num);
 	    
 	    sprintf (message, "Unknown command '%s'\non line %d of %s\n",
-		     cmd, line_num, current_file);
+		     cmd, verilog_line_num, current_file);
 	    dino_error_ack (trace,message);
 	    }
 	}
@@ -663,7 +667,7 @@ void verilog_read (trace, read_fd)
     trace->firstsig = NULL;
     signal_by_pos = NULL;
 
-    line_num=0;
+    verilog_line_num=0;
     current_file = trace->filename;
     verilog_process_lines (trace, readfp);
 
