@@ -687,6 +687,7 @@ void ps_draw_grids (trace, psfile, printtime)
 	grid_ptr = &(trace->grid[grid_num]);
 	if ( grid_ptr->visible
 	    && ((grid_ptr->period * global->res) >= MIN_GRID_RES)	/* not too small */
+	    && (grid_ptr->period > 0)
 	    && (grid_ptr->period < grid_smallest_ptr->period) ) {
 	    grid_smallest_ptr = grid_ptr;
 	}
