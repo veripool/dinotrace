@@ -178,11 +178,7 @@ void	val_update_search ()
 			}
 		    else {
 			/* Make new cursor at this location */
-			csr_ptr = (CURSOR *)XtMalloc (sizeof (CURSOR));
-			csr_ptr->time = cptr->sttime.time;
-			csr_ptr->color = cursorize;
-			csr_ptr->search = cursorize;
-			add_cursor (csr_ptr);
+			cur_add (cptr->sttime.time, cursorize, cursorize);
 			}
 		    cursorize = 0;
 		    }
@@ -200,7 +196,7 @@ void	val_update_search ()
 	new_csr_ptr = csr_ptr;
 	csr_ptr = csr_ptr->next;
 	if (new_csr_ptr->search==-1) {
-	    remove_cursor (new_csr_ptr);
+	    cur_remove (new_csr_ptr);
 	    DFree (new_csr_ptr);
 	    }
 	}
@@ -475,9 +471,9 @@ void    val_search_cb (w,trace,cb)
     if (!trace->value.search) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Value Search Requester") );
-	XtSetArg (arglist[2], XmNwidth, 500);
-	XtSetArg (arglist[3], XmNheight, 400);
-	trace->value.search = XmCreateBulletinBoardDialog (trace->work,"search",arglist,4);
+	/* XtSetArg (arglist[2], XmNwidth, 500);
+	   XtSetArg (arglist[3], XmNheight, 400); */
+	trace->value.search = XmCreateBulletinBoardDialog (trace->work,"search",arglist,2);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Color"));
 	XtSetArg (arglist[1], XmNx, 5);

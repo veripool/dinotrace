@@ -28,6 +28,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -44,7 +45,7 @@ Boolean		DTDEBUG=FALSE,		/* Debugging mode */
 		DTPRINT=FALSE;		/* Information printing mode */
 int		DebugTemp=0;		/* Temp value for trying things */
 int		file_format=FF_DECSIM;	/* Type of trace to support */
-char		message[100];		/* generic string for messages */
+char		message[1000];		/* generic string for messages */
 XGCValues	xgcv;
 Arg		arglist[20];
 GLOBAL		*global;
@@ -154,7 +155,7 @@ int    main (argc, argv)
     /* Load config options (such as file_format) */
     /* Create a temporary trace structure for this, as config will want to write to the trace structure */
     trace = malloc_trace ();
-    config_read_defaults (trace);
+    config_read_defaults (trace, TRUE);
     DFree (trace);
     global->trace_head = NULL;
 
@@ -199,7 +200,7 @@ Prior versions by Allen Gallotta.\n\
 Please see %sDINOTRACE.TXT for documentation.\n\
 \n\
 A complete Dinotrace kit is available on:\n\
-     DIPS::DISK$DIPS_PAGE:[SNYDER.RELEASE.DINOTRACE]\n\
+     CADSYS::CORE$KITS:DINOTRACE*.*\n\
 \n\
 For configuration information, Dinotrace reads:\n\
      %sdinotrace.dino\n\
@@ -209,18 +210,22 @@ For configuration information, Dinotrace reads:\n\
 	     DTVERSION,
 	     COMPILE_DATE_STRG,
 #ifdef VMS
-	     "VAX VMS",
-#else
 #ifdef __alpha
-	     "Alpha OSF",
+	     "VMS Alpha",
+#else
+	     "VMS VAX",
+#endif /* __alpha */
+#else /* not VMS */
+#ifdef __alpha
+	     "OSF Alpha",
 #else
 #ifdef __mips
-	     "MIPS",
+	     "Ultrix MIPS",
 #else
 	     "Unknown OS",
-#endif __mips
-#endif __alpha
-#endif VMS
+#endif /* __mips */
+#endif /* __alpha */
+#endif /* VMS */
 
 #ifdef VMS
 	     "DINODISK:",

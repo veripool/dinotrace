@@ -85,12 +85,17 @@ void hscroll_pageinc (w,trace,cb)
 {
     if (DTPRINT) printf ("In hscroll_pageinc - trace=%d  old_time=%d",trace,global->time);
 
-    if ( trace->pageinc == QPAGE )
+    switch ( global->pageinc ) {
+      case QPAGE:
 	global->time += (int) (( (trace->width-global->xstart)/global->res)/4);
-    else if ( trace->pageinc == HPAGE )
+	break;
+      case HPAGE:
 	global->time += (int) (( (trace->width-global->xstart)/global->res)/2);
-    else if ( trace->pageinc == FPAGE )
+	break;
+      case FPAGE:
 	global->time += (int) ((trace->width-global->xstart)/global->res);
+	break;
+	}
 
     if (DTPRINT) printf (" new time=%d\n",global->time);
 
@@ -102,14 +107,19 @@ void hscroll_pagedec (w,trace,cb)
     TRACE		*trace;
     XmScrollBarCallbackStruct *cb;
 {
-    if (DTPRINT) printf ("In hscroll_pagedec - trace=%d  old_time=%d",trace,global->time);
+    if (DTPRINT) printf ("In hscroll_pagedec - trace=%d  old_time=%d pageinc=%d",trace,global->time,global->pageinc);
 
-    if ( trace->pageinc == QPAGE )
+    switch ( global->pageinc ) {
+      case QPAGE:
 	global->time -= (int) (( (trace->width-global->xstart)/global->res)/4);
-    else if ( trace->pageinc == HPAGE )
+	break;
+      case HPAGE:
 	global->time -= (int) (( (trace->width-global->xstart)/global->res)/2);
-    else if ( trace->pageinc == FPAGE )
+	break;
+      case FPAGE:
 	global->time -= (int) ((trace->width-global->xstart)/global->res);
+	break;
+	}
 
     if (DTPRINT) printf (" new time=%d\n",global->time);
 
@@ -172,9 +182,13 @@ void vscroll_new (trace,inc)
     TRACE	*trace;
     int 	inc;	/* Lines to move, signed, +1, -1, or +- n */
 {
+    int		maxsig;
     if (DTPRINT) printf ("in vscroll_new inc=%d start=%d\n",inc,trace->numsigstart);
 
-    while ( (inc > 0) && trace->dispsig && trace->dispsig->forward ) {
+    maxsig = max_sigs_on_screen(trace);
+
+    while ( (inc > 0) && trace->dispsig && trace->dispsig->forward
+	   && (trace->numsigstart <= (trace->numsig - maxsig))) {
 	trace->numsigstart++;
 	trace->dispsig = trace->dispsig->forward;
 	inc--;
@@ -223,7 +237,7 @@ void vscroll_pagedec (w,trace,cb)
     int sigs;
 
     /* Not numsigvis because may not be limited by screen size */
-    sigs = (int) ((trace->height-trace->ystart)/trace->sighgt);
+    sigs = max_sigs_on_screen (trace);
 
     if ( (global->cursor_head != NULL) &&
 	 trace->cursor_vis &&
@@ -427,9 +441,9 @@ void    win_goto_cb (w,trace,cb)
     if (!trace->gotos.popup) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Goto Time") );
-	XtSetArg (arglist[2], XmNwidth, 500);
-	XtSetArg (arglist[3], XmNheight, 400);
-	trace->gotos.popup = XmCreateBulletinBoardDialog (trace->work,"goto",arglist,4);
+	/* XtSetArg (arglist[2], XmNwidth, 500);
+	   XtSetArg (arglist[3], XmNheight, 400); */
+	trace->gotos.popup = XmCreateBulletinBoardDialog (trace->work,"goto",arglist,2);
 	XtAddCallback (trace->gotos.popup, XmNmapCallback, win_goto_option_cb, trace);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Time"));
@@ -582,7 +596,6 @@ void    win_goto_ok_cb (w,trace,cb)
 {
     char	*strg;
     DTime	time;
-    CURSOR	*csr_ptr;
 
     if (DTPRINT) printf ("In win_goto_ok_cb - trace=%d\n",trace);
 
@@ -595,7 +608,8 @@ void    win_goto_ok_cb (w,trace,cb)
     time = string_to_time (trace, strg);
 
     /* unmanage the popup window */
-    XtRemoveEventHandler (trace->gotos.popup, ExposureMask, TRUE, win_goto_option_cb, trace);
+    XtRemoveEventHandler (trace->gotos.popup, ExposureMask, TRUE,
+			  (XtEventHandler)win_goto_option_cb, trace);
     XtUnmanageChild (trace->gotos.popup);
 
     if (time > 0) {
@@ -614,11 +628,7 @@ void    win_goto_ok_cb (w,trace,cb)
 	/* Add cursor if wanted */
 	if (global->goto_color > 0) {
 	    /* make the cursor */
-	    csr_ptr = (CURSOR *)XtMalloc (sizeof (CURSOR));
-	    csr_ptr->time = time;
-	    csr_ptr->color = global->goto_color;
-	    csr_ptr->search = 0;
-	    add_cursor (csr_ptr);
+	    cur_add (time, global->goto_color, 0);
 	    }
 
 	new_time (trace);

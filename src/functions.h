@@ -40,17 +40,18 @@ extern void
 extern void
     cur_add_cb(), cur_mov_cb(), cur_del_cb(), cur_clr_cb(),
     cur_highlight_cb(), cur_highlight_ev(),
-    cur_add_ev(), cur_move_ev(), cur_delete_ev(), clear_cursor(),
-    add_cursor(CURSOR *),
-    remove_cursor(CURSOR *);
+    cur_add_ev(), cur_move_ev(), cur_delete_ev(),
+    cur_add (DTime, ColorNum, int),
+    cur_remove (CURSOR *);
     
 /* dt_config.c routines */
 extern void
-    config_read_defaults(), config_read_file(), upcase_string(),
-    config_restore_defaults(),
-    config_parse_geometry ();
-extern SIGNALSTATE *find_signal_state();
-extern int	wildmat();
+    config_read_defaults (),
+    config_read_file (), upcase_string(),
+    config_restore_defaults (TRACE *),
+    config_parse_geometry (char *, GEOMETRY *);
+extern SIGNALSTATE *find_signal_state (TRACE *, char *);
+extern int	wildmat ();
     
 /* dt_grid.c routines */
 extern void
@@ -60,6 +61,7 @@ extern void
 /* dt_signal.c routines */
 extern void
     sig_update_search(), sig_free(),
+    sig_highlight_pattern (TRACE *, int, char *),
     /**/
     sig_add_cb(), sig_add_ev(), sig_mov_cb(), sig_move_ev(),
     sig_del_cb(), sig_delete_ev(), sig_copy_cb(), sig_copy_ev(),
@@ -92,6 +94,7 @@ extern void
     fil_string_to_value(),
     fil_add_cptr(),
     decsim_read_ascii(), 
+    cptr_to_value(),
     read_trace_end(), help_cb(), help_trace_cb(), update_signal_states();
 
 /* dt_util routines */

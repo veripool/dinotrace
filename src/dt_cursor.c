@@ -21,6 +21,7 @@
  *				 support
  */
 
+#include <stdio.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -31,13 +32,13 @@
 
 /****************************** UTILITIES ******************************/
 
-void    remove_cursor (csr_ptr)
+void    cur_remove (csr_ptr)
     /* Cursor is removed from list, but not freed! */
     CURSOR	*csr_ptr;	/* Cursor to remove */
 {
     CURSOR	*next_csr_ptr, *prev_csr_ptr;
     
-    if (DTPRINT) printf ("In remove_cursor\n");
+    if (DTPRINT) printf ("In cur_remove\n");
     
     /* redirect the next pointer */
     prev_csr_ptr = csr_ptr->prev;
@@ -57,13 +58,21 @@ void    remove_cursor (csr_ptr)
 	}
     }
 
-void add_cursor (new_csr_ptr)
-    CURSOR *new_csr_ptr;
+void cur_add (ctime, color, search)
+    DTime	ctime;
+    ColorNum	color;
+    int		search;
 {
+    CURSOR *new_csr_ptr;
     CURSOR *prev_csr_ptr, *csr_ptr;
     
-    if (DTPRINT) printf ("In add_cursor - time=%d\n",new_csr_ptr->time);
+    if (DTPRINT) printf ("In cur_add - time=%d\n",ctime);
     
+    new_csr_ptr = (CURSOR *)XtMalloc (sizeof (CURSOR));
+    new_csr_ptr->time = ctime;
+    new_csr_ptr->color = color;
+    new_csr_ptr->search = search;
+
     prev_csr_ptr = NULL;
     for (csr_ptr = global->cursor_head;
 	 csr_ptr && ( csr_ptr->time < new_csr_ptr->time );
@@ -83,7 +92,6 @@ void add_cursor (new_csr_ptr)
     new_csr_ptr->prev = prev_csr_ptr;
     if (csr_ptr) csr_ptr->prev = new_csr_ptr;
     }
-
 
 /****************************** MENU OPTIONS ******************************/
 
@@ -200,7 +208,6 @@ void    cur_add_ev (w, trace, ev)
     XButtonPressedEvent	*ev;
 {
     DTime	time;
-    CURSOR	*csr_ptr;
     
     if (DTPRINT) printf ("In add cursor - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
     
@@ -209,11 +216,7 @@ void    cur_add_ev (w, trace, ev)
     if (time<0) return;
     
     /* make the cursor */
-    csr_ptr = (CURSOR *)XtMalloc (sizeof(CURSOR));
-    csr_ptr->time = time;
-    csr_ptr->color = global->highlight_color;
-    csr_ptr->search = 0;
-    add_cursor (csr_ptr);
+    cur_add (time, global->highlight_color, 0);
     
     /* redraw the screen with new cursors */
     redraw_all (trace);
@@ -303,10 +306,9 @@ void    cur_move_ev (w, trace, ev)
     XChangeGC (global->display,trace->gc,GCFunction,&xgcv);
     
     /* remove, change time, and add back the cursor */
-    remove_cursor (csr_ptr);
-    csr_ptr->time = time;
-    csr_ptr->search = 0;
-    add_cursor (csr_ptr);
+    cur_remove (csr_ptr);
+    cur_add (time, csr_ptr->color, 0);
+    XtFree ((char *)csr_ptr);
     
     /* redraw the screen with new cursor position */
     redraw_all (trace);
@@ -325,7 +327,7 @@ void    cur_delete_ev (w, trace, ev)
     if (!csr_ptr) return;
     
     /* delete the cursor */
-    remove_cursor (csr_ptr);
+    cur_remove (csr_ptr);
     DFree (csr_ptr);
     
     /* redraw the screen with new cursors */

@@ -25,6 +25,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 /*#include <descrip.h> - removed for Ultrix support... */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -220,6 +221,19 @@ SIGNAL *replicate_signal (trace, sig_ptr)
     return (new_sig_ptr);
     }
 
+/* Returns SIGNAL or NULL if not found */
+SIGNAL *sig_find_signame (trace, signame)
+    TRACE	*trace;
+    char	*signame;
+{
+    SIGNAL	*sig_ptr;
+    
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	if (!strcmp (sig_ptr->signame, signame)) return (sig_ptr);
+	}
+    return (NULL);
+    }
+
 void	sig_update_search ()
 {
     TRACE	*trace;
@@ -248,6 +262,28 @@ void	sig_update_search ()
 	    }
 	}
     }
+
+void    sig_highlight_pattern (trace, color, pattern)
+    TRACE	  	*trace;
+    int			color;
+    char		*pattern;
+{
+    SIGNAL		*sig_ptr;
+    
+    if (DTPRINT) printf ("In sig_highlight_wild - trace=%d pat='%s'\n",trace, pattern);
+    
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	if (wildmat (sig_ptr->signame, pattern)) {
+	    /* Change the color */
+	    sig_ptr->color = color;
+	    sig_ptr->search = 0;
+	    }
+	}
+
+    /* redraw the screen */
+    /* redraw_all (trace); */
+    }
+
 
 /****************************** MENU OPTIONS ******************************/
 
@@ -432,9 +468,9 @@ void    sig_search_cb (w,trace,cb)
     if (!trace->signal.search) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Signal Search Requester") );
-	XtSetArg (arglist[2], XmNwidth, 500);
-	XtSetArg (arglist[3], XmNheight, 400);
-	trace->signal.search = XmCreateBulletinBoardDialog (trace->work,"search",arglist,4);
+	/* XtSetArg (arglist[2], XmNwidth, 500);
+	   XtSetArg (arglist[3], XmNheight, 400); */
+	trace->signal.search = XmCreateBulletinBoardDialog (trace->work,"search",arglist,2);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Color"));
 	XtSetArg (arglist[1], XmNx, 5);
@@ -1128,4 +1164,201 @@ void    sig_sel_del_list_cb (w,trace,cb)
 	}
     sig_sel_pattern_cb (NULL, trace, NULL);
     }
+
+/**********************************************************************/
+
+#if defined(VMS) || defined(mips)
+char *strdup(s)
+    char *s;
+{
+    char *d;
+    d=(char *)malloc(strlen(s)+1);
+    strcpy (d, s);
+    return (d);
+    }
+#endif
+
+void sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr)
+    TRACE	*trace;
+    SIGNAL	*en_sig_ptr, *base_sig_ptr;
+{
+    SIGNAL	*new_sig_ptr;
+    char	*tp, *enablename;
+    SIGNAL_LW	*base_cptr, *en_cptr;
+    VALUE	new_value, base_value, en_value;
+    int		has_ones;
+    int		has_zeros;
+    
+    if (DTPRINT) printf ("sig_modify_en_signal %s + %s -> %s\n", en_sig_ptr->signame,
+			 base_sig_ptr->signame, base_sig_ptr->signame);
+
+    if (en_sig_ptr->bits != base_sig_ptr->bits) {
+	printf ("sig_modify_en_signal, can't combine different sizes of %s and %s!!!\n",
+		base_sig_ptr->signame, base_sig_ptr->signame);
+	return;
+	}
+    
+    new_sig_ptr = replicate_signal (trace, base_sig_ptr);
+    /* Forget this is a copy, and allocate new data storage space */
+    new_sig_ptr->signame = strdup (new_sig_ptr->signame);
+    new_sig_ptr->copyof = NULL;
+    new_sig_ptr->bptr = (SIGNAL_LW *)XtMalloc (BLK_SIZE);
+    new_sig_ptr->cptr = new_sig_ptr->bptr;
+    new_sig_ptr->blocks = 1;
+
+    base_cptr = (SIGNAL_LW *)(base_sig_ptr)->bptr,
+    en_cptr = (SIGNAL_LW *)(en_sig_ptr)->bptr; 
+    cptr_to_value (base_cptr, &base_value);
+    cptr_to_value (en_cptr, &en_value);
+
+    while ((base_cptr->sttime.time != EOT) 
+	   && (en_cptr->sttime.time != EOT)) {
+	/*if (DTPRINT) {
+	    printf ("BASE "); print_cptr (base_cptr);
+	    printf ("EN "); print_cptr (en_cptr);
+	    }*/
+	 
+	if (base_cptr->sttime.time == en_cptr->sttime.time) {
+	    cptr_to_value (en_cptr, &en_value);
+	    cptr_to_value (base_cptr, &base_value);
+	    }
+	else if (base_cptr->sttime.time < en_cptr->sttime.time) {
+	    cptr_to_value (base_cptr, &base_value);
+	    }
+	else {
+	    cptr_to_value (en_cptr, &en_value);
+	    }
+
+	switch (en_value.siglw.sttime.state) {
+	  case STATE_0:
+	    has_ones = 0;
+	    has_zeros = 1;
+	    break;
+	  case STATE_1:
+	    has_ones = 1;
+	    has_zeros = 0;
+	    break;
+	  case STATE_B32:
+	  case STATE_B64:
+	  case STATE_B96:
+	    has_ones =
+		( en_value.number[0] & en_sig_ptr->value_mask[0]
+		 | en_value.number[1] & en_sig_ptr->value_mask[1]
+		 | en_value.number[2] & en_sig_ptr->value_mask[2] );
+	    has_zeros =
+		(  (~ en_value.number[0]) & en_sig_ptr->value_mask[0]
+		 | (~ en_value.number[1]) & en_sig_ptr->value_mask[1]
+		 | (~ en_value.number[2]) & en_sig_ptr->value_mask[2] );
+	    break;
+	    } /* switch */
+
+	/* printf ("has0=%d has1=%d\n", has_zeros, has_ones); */
+
+	new_value.siglw.number = base_value.siglw.number;
+	new_value.number[0] = base_value.number[0];
+	new_value.number[1] = base_value.number[1];
+	new_value.number[2] = base_value.number[2];
+
+	if (has_zeros) {
+	    if (has_ones) {
+		new_value.siglw.sttime.state = STATE_U;
+		}
+	    else {
+		new_value.siglw.sttime.state = STATE_Z;
+		}
+	    }
+
+	if (base_cptr->sttime.time == en_cptr->sttime.time) {
+	    new_value.siglw.sttime.time = base_cptr->sttime.time;
+	    base_cptr += base_sig_ptr->lws;
+	    en_cptr += en_sig_ptr->lws;
+	    }
+	else if (base_cptr->sttime.time < en_cptr->sttime.time) {
+	    new_value.siglw.sttime.time = base_cptr->sttime.time;
+	    base_cptr += base_sig_ptr->lws;
+	    }
+	else {
+	    new_value.siglw.sttime.time = en_cptr->sttime.time;
+	    en_cptr += en_sig_ptr->lws;
+	    }
+
+	/* printf ("Time %d, type = %d\n",
+	    new_value.siglw.sttime.time,
+	    new_value.siglw.sttime.state); */
+
+	fil_add_cptr (new_sig_ptr, &new_value, TRUE);
+	}
+
+    add_signal_to_queue (trace, new_sig_ptr, base_sig_ptr, &trace->dispsig);
+    trace->numsig++;
+
+    if (! global->save_enables) {
+	sig_free (trace, base_sig_ptr, FALSE, FALSE);
+	sig_free (trace, en_sig_ptr, FALSE, FALSE);
+	trace->numsig-=2;
+	}
+    /* read_mark_cptr_end (trace) */
+    }
+
+void strcpy_overlap (d, s)
+    char *d,*s;
+{
+    while (*d++ = *s++) ;
+    }
+
+void sig_modify_enables (trace)
+    TRACE	*trace;
+{
+    SIGNAL	*sig_ptr, *en_sig_ptr, *base_sig_ptr, *new_sig_ptr;
+    char	*tp, *nonenablename;
+    Boolean	did_one=FALSE;
+    
+    for (sig_ptr = trace->firstsig; sig_ptr; ) {
+	for (tp=sig_ptr->signame; *tp; tp++) {
+	    if (tp[0]=='_' && tp[1]=='_'
+		&& ( ( tp[2]=='e' && tp[3]=='n')
+		    || (tp[2]=='E' && tp[3]=='N')
+		    || ( tp[2]=='i' && tp[3]=='n' && tp[4]=='e' && tp[5]=='n')
+		    || ( tp[2]=='I' && tp[3]=='N' && tp[4]=='E' && tp[5]=='N') ))
+		break;
+	    }
+	if (*tp) {
+	    /* Got enable! */
+
+	    /* if (DTPRINT) printf ("Checking %s\n", sig_ptr->signame); */
+	    nonenablename = strdup (sig_ptr->signame);
+
+	    /* Chop _en from the middle of the name (sig__en<xx> -> sig<xx>)*/
+	    if (tp[2]=='e' || tp[2]=='E') {
+		strcpy_overlap (nonenablename + (tp - sig_ptr->signame), 
+				nonenablename + (tp - sig_ptr->signame) + 4);
+		}
+	    else {
+		/* (sig__inen<xx> -> sig__in<xx>)*/
+		strcpy_overlap (nonenablename + (tp - sig_ptr->signame) + 4, 
+				nonenablename + (tp - sig_ptr->signame) + 6);
+		}
+	    
+	    base_sig_ptr = sig_find_signame (trace, nonenablename);
+
+	    en_sig_ptr = sig_ptr;
+	    sig_ptr = sig_ptr->forward;	/*** INC early as pointers may change! ***/
+	    free (nonenablename);
+
+	    if (base_sig_ptr) {
+		sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr);
+		did_one = TRUE;
+		}
+	    }
+	else {
+	    sig_ptr = sig_ptr->forward;
+	    }
+	}
+
+    if (did_one) {
+	if (DTPRINT) printf ("Done sig_modify_enables\n");
+	/*read_mark_cptr_end (trace);*/
+	}
+    }
+
 

@@ -62,9 +62,9 @@ void cus_dialog_cb (w,trace,cb)
 	
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple (title) );
-	XtSetArg (arglist[2], XmNwidth, 600);
-	XtSetArg (arglist[3], XmNheight, 400);
-	trace->custom.customize = XmCreateBulletinBoardDialog (trace->work,"customize",arglist,4);
+	/* XtSetArg (arglist[2], XmNwidth, 600);
+	   XtSetArg (arglist[3], XmNheight, 400); */
+	trace->custom.customize = XmCreateBulletinBoardDialog (trace->work,"customize",arglist,2);
 	
 	/* Create label for page increment */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Page Inc/Dec"));
@@ -249,11 +249,11 @@ void cus_dialog_cb (w,trace,cb)
 	}
 
     /* Update with current custom values */
-    XtSetArg (arglist[0], XmNset, (trace->pageinc==4));
+    XtSetArg (arglist[0], XmNset, (global->pageinc==QPAGE));
     XtSetValues (trace->custom.tpage1,arglist,1);
-    XtSetArg (arglist[0], XmNset, (trace->pageinc==2));
+    XtSetArg (arglist[0], XmNset, (global->pageinc==HPAGE));
     XtSetValues (trace->custom.tpage2,arglist,1);
-    XtSetArg (arglist[0], XmNset, (trace->pageinc==1));
+    XtSetArg (arglist[0], XmNset, (global->pageinc==FPAGE));
     XtSetValues (trace->custom.tpage3,arglist,1);
     
     XtSetArg (arglist[0], XmNset, (trace->busrep==OBUS));
@@ -299,7 +299,7 @@ void cus_read_cb (w,trace,cb)
     
     /* create popup to get filename */
     
-    config_read_file (trace, "DINODISK:DINOTRACE.DINO", 0);
+    config_read_file (trace, "DINODISK:DINOTRACE.DINO", FALSE, TRUE);
     
     /* Reformat and refresh */
     redraw_all (trace);
@@ -312,7 +312,7 @@ void cus_reread_cb (w,trace,cb)
 {
     if (DTPRINT) printf ("in cus_reread_cb trace=%d\n",trace);
     
-    config_read_defaults (trace);
+    config_read_defaults (trace, TRUE);
     
     /* Reformat and refresh */
     redraw_all (trace);
@@ -361,10 +361,10 @@ void	cus_ok_cb (w,trace,cb)
     else trace->timerep = TIMEREP_NS;
 
     if (XmToggleButtonGetState (trace->custom.tpage1))
-	trace->pageinc = QPAGE;
-    if (XmToggleButtonGetState (trace->custom.tpage2))
-	trace->pageinc = FPAGE;
-    else trace->pageinc = HPAGE;
+	global->pageinc = QPAGE;
+    else if (XmToggleButtonGetState (trace->custom.tpage2))
+	global->pageinc = HPAGE;
+    else global->pageinc = FPAGE;
     
     /* hide the customize window */
     XtUnmanageChild (trace->custom.customize);

@@ -28,10 +28,10 @@
 #include <sys/stat.h>
 
 #ifdef VMS
-#include <file.h>
-#include <unixio.h>
-#include <math.h> /* removed for Ultrix support... */
-#endif VMS
+# include <file.h>
+# include <unixio.h>
+# include <math.h> /* removed for Ultrix support... */
+#endif
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>

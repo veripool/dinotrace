@@ -25,6 +25,7 @@
  *     WPS	15-Feb-93	V5.2 print number if state doesn't fit
  */
 
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -96,6 +97,9 @@ extern void draw_hscroll (),
  */                          
 
 
+#define MAXCNT	4000		/* Maximum number of segment pairs to draw before stopping this signal */
+/* Don't make this above 4000, as some servers choke with that many points. */
+
 void draw (trace)                                 
     TRACE	*trace;                        
 {         
@@ -103,7 +107,7 @@ void draw (trace)
     int	x1,x2,y1,y2;
     int numprt;				/* Number of signals printed out on screen */
     int srch_this_color;		/* Color to print signal if matches search value */
-    XPoint Pts[6000];			/* Array of points to plot */
+    XPoint Pts[MAXCNT+100];			/* Array of points to plot */
     float iff,xlocf,xtimf;
     char strg[MAXSTATELEN+16];		/* String value to print out */
     register SIGNAL_LW *cptr,*nptr;	/* Current value pointer and next value pointer */
@@ -193,7 +197,7 @@ void draw (trace)
 	    }
 	
 	/* Loop as long as the time and end of trace are in current screen */
-	while ( cptr->sttime.time != EOT && Pts[cnt].x < xend && cnt < 5000) {
+	while ( cptr->sttime.time != EOT && Pts[cnt].x < xend && cnt < MAXCNT) {
 
 	    /* find the next transition */
 	    nptr = cptr + sig_ptr->lws;
@@ -387,7 +391,6 @@ void draw (trace)
 	
 	/* draw the lines */
 	XDrawLines (global->display, trace->wind, trace->gc, Pts, cnt, CoordModeOrigin);
-
 	} /* end of FOR */
     
     /* Back to default color */

@@ -26,16 +26,18 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V6.6"
+#define DTVERSION	"Dinotrace V6.7a"
 /*#define EXPIRATION	(60*60*24*30)	/ * In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
 /* Turn off alignment for any structures that will be read/written onto Disk! */
-#ifndef __alpha
+/*
+#ifndef __osf__
 #pragma member_alignment
-#endif __alpha
+#endif
+*/
 
-#define MAXSIGLEN	128	/* Maximum length of signal names */
+#define MAXSIGLEN	256	/* Maximum length of signal names */
 #define MAXFNAMELEN	200	/* Maximum length of file names */
 #define MAXSTATENAMES	130	/* Maximum number of state name translations */
 #define MAXSTATELEN	32	/* Maximum length of state names */
@@ -43,6 +45,7 @@
 #define	MIN_GRID_RES	512.0	/* Minimum grid resolution */
 #define BLK_SIZE	512	/* Trace data block size */
 #define	CLICKCLOSE	20	/* Number of pixels that are "close" for click-to-edges */
+#define MAXCOLORS	11	/* Maximum number of colors 0-10 */
 
 #define	RES_SCALE	((float)500.0)	/* Scaling factor for entering resolution */
 
@@ -132,7 +135,7 @@ typedef enum {
          _a > _b ? _a : _b; })
 # else
 #  define MAX(_a_,_b_) ( ( ( _a_ ) > ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
-# endif __GNUC__
+# endif
 #endif
 
 #ifndef MIN
@@ -143,8 +146,22 @@ typedef enum {
          _a < _b ? _a : _b; })
 # else
 #   define MIN(_a_,_b_) ( ( ( _a_ ) < ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
-# endif __GNUC__
+# endif
 #endif
+
+#ifndef ABS
+# if __GNUC__
+#   define ABS(a) \
+       ({typedef _ta = (a);  \
+         _ta _a = (a);     \
+         _a < 0 ? - _a : _a; })
+# else
+#   define ABS(_a_) ( ( ( _a_ ) < 0 ) ? ( - (_a_) ) : ( _a_ ) )
+# endif
+#endif
+
+#define max_sigs_on_screen(_trace_) \
+        ((int)(((_trace_)->height - (_trace_)->ystart) / (_trace_)->sighgt))
 
 /* Avoid binding error messages on XtFree */
 #define DFree(ptr) XtFree((char *)ptr)
@@ -174,7 +191,7 @@ extern struct st_filetypes {
     /* void		(*routine);	/ * Routine to read it */
     } filetypes[8];
 
-extern char		message[100];		/* generic string for messages */
+extern char		message[1000];	/* generic string for messages */
 
 extern XGCValues	xgcv;
 
@@ -431,7 +448,7 @@ typedef struct st_trace {
     int			numsigstart;	/* signal to start displaying */
 
     Window		wind;		/* X window */
-    Pixel		xcolornums[11];	/* X color numbers (pixels) for normal/highlight */
+    Pixel		xcolornums[MAXCOLORS];	/* X color numbers (pixels) for normal/highlight */
     Pixel		barcolornum;	/* X color number for the signal bar background */
     XFontStruct		*text_font;	/* Display's Text font */
     GC                  gc;
@@ -470,7 +487,6 @@ typedef struct st_trace {
     Position		ystart;		/* Start Y pos of signals on display (dispmgr) */
     Position		sighgt;		/* Height of signals (customize) */
     int			sigrf;		/* Signal rise/fall time spec */
-    int			pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
     int			busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS */
     TimeRep		timerep;	/* Time representation = TIMEREP_NS/TIMEREP_CYC */
 
@@ -516,17 +532,19 @@ typedef struct {
 
     ColorNum		highlight_color; /* Color selected for sig/cursor highlight */
     ColorNum		goto_color;	/* Cursor color to place on a 'GOTO' -1=none */
-    char *		color_names[11];	/* Names of the colors from the user */
+    char *		color_names[MAXCOLORS];	/* Names of the colors from the user */
     char *		barcolor_name;	/* name of the signal bar color */
 
     GEOMETRY		start_geometry;	/* Geometry to open first trace with */
     GEOMETRY		open_geometry;	/* Geometry to open later traces with */
     GEOMETRY		shrink_geometry; /* Geometry to shrink trace->open traces with */
 
+    int			pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
     PrintSize		print_size;	/* Size of paper for dt_printscreen */
     Boolean		click_to_edge;	/* True if clicking to edges is enabled */
     TimeRep		time_precision;	/* Time precision = TIMEREP_NS/TIMEREP_CYC */
     char		time_format[12]; /* Time format = printf format or *NULL */
+    Boolean		save_enables;	/* Save enable wires */
 
     DTime		time;		/* Time of trace at left edge of screen */
     float		res;		/* Resolution of graph width (gadgets) */
@@ -536,5 +554,4 @@ typedef struct {
     } GLOBAL;
 
 extern GLOBAL *global;
-
 

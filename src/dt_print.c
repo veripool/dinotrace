@@ -30,9 +30,9 @@
 #include <stdlib.h>
 
 #ifdef VMS
-#include <math.h>
-#include <descrip.h>
-#endif VMS
+# include <math.h>
+# include <descrip.h>
+#endif
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
@@ -64,10 +64,10 @@ void    ps_dialog (w,trace,cb)
     if (!trace->prntscr.customize)
 	{
 	XtSetArg (arglist[0],XmNdefaultPosition, TRUE);
-	XtSetArg (arglist[1],XmNwidth, 300);
-	XtSetArg (arglist[2],XmNheight, 225);
-	XtSetArg (arglist[3],XmNdialogTitle, XmStringCreateSimple ("Print Screen Menu"));
-	trace->prntscr.customize = XmCreateBulletinBoardDialog (trace->work, "print",arglist,4);
+	XtSetArg (arglist[1],XmNdialogTitle, XmStringCreateSimple ("Print Screen Menu"));
+	/* XtSetArg (arglist[2],XmNwidth, 300);
+	   XtSetArg (arglist[3],XmNheight, 225); */
+	trace->prntscr.customize = XmCreateBulletinBoardDialog (trace->work, "print",arglist,2);
 	
 	/* create label widget for text widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Name") );

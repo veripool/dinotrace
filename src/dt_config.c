@@ -23,18 +23,29 @@
  *	!		Comment
  *	#		Eventual preprocessor (#INCLUDE at least)
  *
- *	page_inc	4 | 2 | 1
- *	rise_fall_time	Number
- *	signal_height	Number
+ *	click_to_edge	ON | OFF
+ *	cursor		ON | OFF
+ *	cursor_add	<color> <time>
+ *	debug		ON | OFF
+ *	file_format	DECSIM | TEMPEST | VERILOG
  *	grid		ON | OFF
  *	grid_align	Number | AUTO_ASSERTION | AUTO_DEASSERTION
  *	grid_resolution	Number | AUTO_ASSERTION | AUTO_DEASSERTION
- *	cursor		ON | OFF
- *NYI	cursor_add	Number
- *	signal_states	Signal_Name = {State, State, State}
- *NYI	signal_rename	Signal_Name = New_Signal_Name
- *	debug		ON | OFF
+ *	open_geometry	<width>[%]x<height>[%]+<xoffset>[%]+<yoff>[%]
+ *	page_inc	4 | 2 | 1
  *	print		ON | OFF
+ *	print_size	A | B | EPS
+ *	rise_fall_time	Number
+ *	save_enables	ON | OFF		(Not documented)
+ *	shrink_geometry	<width>%x<height>%+<xoffset>%+<yoff>%
+ *	signal_height	Number
+ *	signal_highlight <color> <signal_name>
+ *	signal_states	<signal_name> = {State, State, State}
+ *	start_geometry	<width>x<height>+<xoffset>+<yoffset>
+ *	time_format	%0.6lf | %0.6lg | %lg | ""
+ *	time_precision	NS | US | PS
+ *	time_rep	NS | US | PS | CYCLE
+ *	vector_seperator "char"
  *	
  */
 
@@ -47,10 +58,10 @@
 #include <sys/stat.h>
 
 #ifdef VMS
-#include <file.h>
-#include <strdef.h>
-#include <math.h> /* removed for Ultrix support... */
-#endif VMS
+# include <file.h>
+# include <strdef.h>
+# include <math.h> /* removed for Ultrix support... */
+#endif
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
@@ -65,6 +76,7 @@
 #define isstatesep(ch)  (!isstatechr(ch) && (ch)!='}' )
 
 int line_num=0;
+Boolean config_report_errors;
 char *current_file="";
 
 /* Line reading support */
@@ -309,7 +321,8 @@ void	config_parse_geometry (line, geometry)
     GEOMETRY	*geometry;
     /* Like XParseGeometry, but handles percentages */
 {
-    int		flags, x, y, wid, hei;
+    int		flags, x, y;
+    unsigned int wid, hei;
     char	noper_line[100];
     char	*tp;
 
@@ -348,6 +361,20 @@ void	config_parse_geometry (line, geometry)
     }
 
 
+void	config_error_ack (trace, message)
+    TRACE	*trace;
+    char	*message;
+{
+    char	newmessage[1000];
+
+    if (!config_report_errors) return;
+
+    strcpy (newmessage, message);
+    sprintf (newmessage + strlen(newmessage), "on line %d of %s\n", line_num, current_file);
+    dino_error_ack (trace, newmessage);
+    }
+
+
 /**********************************************************************
 *	config_process_states
 **********************************************************************/
@@ -374,7 +401,7 @@ void	config_process_states (trace, oldline, readfp)
     while (*line!='}') {
 	if (!*line) {
 	    if (feof(readfp)) {
-		dino_error_ack(trace,"Unexpected EOF during SIGNAL_STATES command in config file");
+		config_error_ack (trace, "Unexpected EOF during SIGNAL_STATES\n");
 		return;
 		}
 	    config_get_line (newline, 1000, readfp);
@@ -389,9 +416,9 @@ void	config_process_states (trace, oldline, readfp)
 	    line += config_read_state (line, newstate, &statenum);
 	    /* printf ("Got = %d '%s'\n", statenum, newstate); */
 	    if (statenum < 0 || statenum >= MAXSTATENAMES) {
-		sprintf (message, "Over maximum of %d SIGNAL_STATES for signal",
+		sprintf (message, "Over maximum of %d SIGNAL_STATES for signal %s\n",
 			 MAXSTATENAMES, newsigst.signame);
-		dino_error_ack(trace,message);
+		config_error_ack (trace,message);
 		/* No return, as will just ignore remaining errors */
 		}
 	    else {
@@ -444,9 +471,7 @@ void	config_process_line (trace, line, readfp)
 	    DTDEBUG=value;
 	    }
 	else {
-	    sprintf (message, "Debug must be set ON or OFF\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "Debug must be set ON or OFF\n");
 	    }
 	}
     else if (!strcmp(cmd, "PRINT")) {
@@ -457,9 +482,17 @@ void	config_process_line (trace, line, readfp)
 	    DTPRINT=value;
 	    }
 	else {
-	    sprintf (message, "Print must be set ON or OFF\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "Print must be set ON or OFF\n");
+	    }
+	}
+    else if (!strcmp(cmd, "SAVE_ENABLES")) {
+	value=global->save_enables;
+	line += config_read_on_off (line, &value);
+	if (value >= 0) {
+	    global->save_enables=value;
+	    }
+	else {
+	    config_error_ack (trace, "Save_enables must be set ON or OFF\n");
 	    }
 	}
     else if (!strcmp(cmd, "CURSOR")) {
@@ -470,9 +503,7 @@ void	config_process_line (trace, line, readfp)
 	    trace->cursor_vis = value;
 	    }
 	else {
-	    sprintf (message, "Cursor must be set ON or OFF\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "Cursor must be set ON or OFF\n");
 	    }
 	}
     else if (!strcmp(cmd, "GRID")) {
@@ -483,9 +514,7 @@ void	config_process_line (trace, line, readfp)
 	    trace->grid_vis = value;
 	    }
 	else {
-	    sprintf (message, "Grid must be set ON or OFF\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "Grid must be set ON or OFF\n");
 	    }
 	}
     else if (!strcmp(cmd, "CLICK_TO_EDGE")) {
@@ -496,9 +525,7 @@ void	config_process_line (trace, line, readfp)
 	    global->click_to_edge = value;
 	    }
 	else {
-	    sprintf (message, "Click_to_edge must be set ON or OFF\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "Click_to_edge must be set ON or OFF\n");
 	    }
 	}
     else if (!strcmp(cmd, "SIGNAL_HEIGHT")) {
@@ -507,9 +534,7 @@ void	config_process_line (trace, line, readfp)
 	if (value >= 15 && value <= 50)
 	    trace->sighgt = value;
 	else {
-	    sprintf (message, "Signal_height must be 15-50\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "Signal_height must be 15-50\n");
 	    }
 	}
     else if (!strcmp(cmd, "GRID_RESOLUTION")) {
@@ -536,9 +561,7 @@ void	config_process_line (trace, line, readfp)
 	    else if (toupper(line[0])=='D')
 		trace->grid_align_auto = GRID_AUTO_DEASS;
 	    else {
-		sprintf (message, "Grid_align must be >0, ASSERTION, or DEASSERTION\non line %d of %s\n",
-			 line_num, current_file);
-		dino_error_ack(trace,message);
+		config_error_ack (trace, "Grid_align must be >0, ASSERTION, or DEASSERTION\n");
 		}
 	    }
 	if (DTPRINT) printf ("grid_align_auto = %d\n", trace->grid_align_auto);
@@ -550,15 +573,15 @@ void	config_process_line (trace, line, readfp)
 	trace->sigrf = value;
 	}
     else if (!strcmp(cmd, "PAGE_INC")) {
-	value = trace->pageinc;
+	value = global->pageinc;
 	line += config_read_int (line, &value);
-	if (value == 1 || value == 2 || value == 4)
-	    trace->pageinc = value;
+	if (value == 1) global->pageinc = FPAGE;
+	else if (value == 2) global->pageinc = HPAGE;
+	else if (value == 4) global->pageinc = QPAGE;
 	else {
-	    sprintf (message, "Page_Inc must be 1, 2, or 4\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "Page_Inc must be 1, 2, or 4\n");
 	    }
+	if (DTPRINT) printf ("page_inc = %d\n", global->pageinc);
 	}
     else if (!strcmp(cmd, "TIME_REP")) {
 	switch (toupper(line[0])) {
@@ -567,9 +590,7 @@ void	config_process_line (trace, line, readfp)
 	  case 'P':	trace->timerep = TIMEREP_PS;	break;
 	  case 'C':	trace->timerep = TIMEREP_CYC;	break;
 	  default:
-	    sprintf (message, "Time_Rep must be PS, NS, US, or CYCLE\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "Time_Rep must be PS, NS, US, or CYCLE\n");
 	    }
 	if (DTPRINT) printf ("timerep = %d\n", trace->timerep);
 	}
@@ -579,9 +600,7 @@ void	config_process_line (trace, line, readfp)
 	  case 'U':	global->time_precision = TIMEREP_US;	break;
 	  case 'P':	global->time_precision = TIMEREP_PS;	break;
 	  default:
-	    sprintf (message, "Time_Precision must be PS, NS, or US\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "Time_Precision must be PS, NS, or US\n");
 	    }
 	if (DTPRINT) printf ("time_precision = %d\n", global->time_precision);
 	}
@@ -604,9 +623,7 @@ void	config_process_line (trace, line, readfp)
 	    else global->print_size = PRINTSIZE_EPSPORT;
 	    break;
 	  default:
-	    sprintf (message, "Print_Size must be A, B, EPSLAND, or EPSPORT\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "Print_Size must be A, B, EPSLAND, or EPSPORT\n");
 	    }
 	}
     else if (!strcmp(cmd, "FILE_FORMAT")) {
@@ -625,9 +642,7 @@ void	config_process_line (trace, line, readfp)
 	    file_format = FF_VERILOG;
 	    break;
 	  default:
-	    sprintf (message, "File_Format must be DECSIM, TEMPEST or VERILOG\non line %d of %s\n",
-		     line_num, current_file);
-	    dino_error_ack(trace,message);
+	    config_error_ack (trace, "File_Format must be DECSIM, TEMPEST or VERILOG\n");
 	    }
 	if (DTPRINT) printf ("File_format = %d\n", file_format);
 	}
@@ -640,6 +655,40 @@ void	config_process_line (trace, line, readfp)
 	    trace->vector_seperator = '\0';
 	    }
 	if (DTPRINT) printf ("Vector_seperator = '%c'\n", trace->vector_seperator);
+	}
+    else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
+	char pattern[MAXSIGLEN]="";
+	int color;
+	line += config_read_int (line, &color);
+	if (color < 0 || color >= MAXCOLORS) {
+	    sprintf (message, "Signal_Highlight color must be 0 to %d\n", MAXCOLORS);
+	    config_error_ack (trace, message);
+	    }
+	else {
+	    line += config_read_signal (line, pattern);
+	    if (!pattern[0]) {
+		config_error_ack (trace, "Signal_Highlight signal name must not be null\n");
+		}
+	    else {
+		sig_highlight_pattern (trace, color, pattern);
+		}
+	    }
+	}
+    else if (!strcmp(cmd, "CURSOR_ADD")) {
+	int color;
+	DTime ctime;
+	char strg[MAXSIGLEN]="";
+
+	line += config_read_int (line, &color);
+	if (color < 0 || color >= MAXCOLORS) {
+	    sprintf (message, "Cursor_Add color must be 0 to %d\n", MAXCOLORS);
+	    config_error_ack (trace,message);
+	    }
+	else {
+	    line += config_read_signal (line, strg);
+	    ctime = string_to_time (trace, strg);
+	    cur_add (ctime, color, 0);
+	    }
 	}
     else if (!strcmp(cmd, "START_GEOMETRY")) {
 	if (*line=='"') line++;
@@ -657,9 +706,8 @@ void	config_process_line (trace, line, readfp)
 	config_process_states (trace, line, readfp);
 	}
     else {
-	sprintf (message, "Unknown command '%s'\non line %d of %s\n",
-		 cmd, line_num, current_file);
-	dino_error_ack(trace,message);
+	sprintf (message, "Unknown command '%s'\n", cmd);
+	config_error_ack (trace, message);
 	}
     }
 
@@ -667,19 +715,21 @@ void	config_process_line (trace, line, readfp)
 *	config_read_file
 **********************************************************************/
 
-void config_read_file(trace, filename, report_error)
+void config_read_file (trace, filename, report_notfound, report_errors)
     TRACE	*trace;
-    char *filename;	/* Specific filename of CONFIG file */
-    int report_error;
+    char	*filename;	/* Specific filename of CONFIG file */
+    Boolean	report_notfound, report_errors;
 {
     FILE	*readfp;
     char line[1000];
 
     if (DTPRINT) printf("Reading config file %s\n", filename);
 
+    config_report_errors = report_errors;
+
     /* Open File For Reading */
     if (!(readfp=fopen(filename,"r"))) {
-	if (report_error) {
+	if (report_notfound) {
 	    if (DTPRINT) printf("%%E, Can't Open File %s\n", filename);
 	    sprintf(message,"Can't open file %s",filename);
 	    dino_error_ack(trace, message);
@@ -699,32 +749,32 @@ void config_read_file(trace, filename, report_error)
     fclose (readfp);
     }
 
-
 /**********************************************************************
 *	config_read_defaults
 **********************************************************************/
 
-void config_read_defaults(trace)
+void config_read_defaults (trace, report_errors)
     TRACE	*trace;
+    Boolean	report_errors;
 {
     char newfilename[MAXFNAMELEN];
     char *pchar;
 
 #ifdef VMS
-    config_read_file (trace, "DINODISK:DINOTRACE.DINO", 0);
-    config_read_file (trace, "SYS$LOGIN:DINOTRACE.DINO", 0);
+    config_read_file (trace, "DINODISK:DINOTRACE.DINO", FALSE, report_errors);
+    config_read_file (trace, "SYS$LOGIN:DINOTRACE.DINO", FALSE, report_errors);
 #else
     newfilename[0] = '\0';
     if (NULL != (pchar = getenv ("DINODISK"))) strcpy (newfilename, pchar);
     if (newfilename[0]) strcat (newfilename, "/");
     strcat (newfilename, "dinotrace.dino");
-    config_read_file (trace, newfilename, 0);
+    config_read_file (trace, newfilename, FALSE, report_errors);
 
     newfilename[0] = '\0';
     if (NULL != (pchar = getenv ("HOME"))) strcpy (newfilename, pchar);
     if (newfilename[0]) strcat (newfilename, "/");
     strcat (newfilename, "dinotrace.dino");
-    config_read_file (trace, newfilename, 0);
+    config_read_file (trace, newfilename, FALSE, report_errors);
 #endif
 
     /* Same directory as trace, dinotrace.dino */
@@ -732,7 +782,7 @@ void config_read_defaults(trace)
 	strcpy (newfilename, trace->filename);
 	file_directory (newfilename);
 	strcat (newfilename, "dinotrace.dino");
-	config_read_file (trace, newfilename, 0);
+	config_read_file (trace, newfilename, FALSE, report_errors);
 	}
     
     /* Same directory as trace, same file, but .dino extension */
@@ -741,7 +791,7 @@ void config_read_defaults(trace)
 	if ((pchar=strrchr(newfilename,'.')) != NULL )
 	    *pchar = '\0';
 	strcat (newfilename, ".dino");
-	config_read_file (trace, newfilename, 0);
+	config_read_file (trace, newfilename, FALSE, report_errors);
 	}
 
     /* Apply the statenames */
@@ -760,6 +810,8 @@ void config_restore_defaults(trace)
     if (trace->signalstate_head != NULL)
 	free_signal_states (trace);
     
+    global->pageinc = FPAGE;
+
     trace->sighgt = 20;	/* was 25 */
     trace->cursor_vis = TRUE;
     trace->grid_vis = TRUE;
@@ -767,7 +819,6 @@ void config_restore_defaults(trace)
     trace->grid_align = 0;
     trace->numpag = 1;
     trace->sigrf = SIG_RF;
-    trace->pageinc = FPAGE;
     trace->timerep = global->time_precision;
     trace->vector_seperator = '<';
 

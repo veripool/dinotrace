@@ -28,10 +28,10 @@
 #include <sys/stat.h>
 
 #ifdef VMS
-#include <file.h>
-#include <unixio.h>
-#include <math.h> /* removed for Ultrix support... */
-#endif VMS
+# include <file.h>
+# include <unixio.h>
+# include <math.h> /* removed for Ultrix support... */
+#endif
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
@@ -92,7 +92,7 @@ int	EXTRACT_2STATE (buf,pos)
     }
 #endif
 
-#ifndef __alpha
+#ifndef __osf__
 #pragma inline (read_4state_to_value)
 #endif
 int	read_4state_to_value (sig_ptr, buf, value_ptr)
@@ -181,7 +181,7 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
     return (state);
     }
 
-#ifndef __alpha
+#ifndef __osf__
 #pragma inline (read_2state_to_value)
 #endif
 int	read_2state_to_value (sig_ptr, buf, value_ptr)
@@ -218,7 +218,7 @@ int	read_2state_to_value (sig_ptr, buf, value_ptr)
 
 
 
-#ifndef __alpha
+#ifndef __osf__
 #pragma inline (fil_decsim_binary_to_value)
 #endif
 void	fil_decsim_binary_to_value (sig_ptr, buf, value_ptr)
@@ -269,7 +269,7 @@ void	fil_decsim_binary_to_value (sig_ptr, buf, value_ptr)
     value_ptr->siglw.sttime.state = state;
     }
 
-#ifndef __alpha
+#ifndef __osf__
 #pragma inline (fil_tempest_binary_to_value)
 #endif
 void	fil_tempest_binary_to_value (sig_ptr, buf, value_ptr)
@@ -558,8 +558,8 @@ void tempest_read (trace, read_fd)
     int		status;
     int		numBytes,numRows,numBitsRow,numBitsRowPad;
     int		sigChars,sigFlags,sigOffset,sigWidth;
-    char		chardata[256];
-    unsigned int	data[256];
+    char		chardata[1024];
+    unsigned int	*data;
     int		first_data;
     int		i,j;
     int		pad_len;
@@ -662,16 +662,19 @@ void tempest_read (trace, read_fd)
     /* Make the busses */
     read_make_busses (trace);
 
+    /* Make storage space, with some overhead */
+    data = (unsigned int *)XtMalloc (128 + numBitsRowPad/8);
+
     /* Read the signal trace data
      * Pass 0-(numRows-1) reads the data, pass numRows processes last line */
     first_data = TRUE;
     for (i=0;i<numRows;i++) {
 	/* Read a row of data */
 	status = read (read_fd, data, numBitsRowPad/8);
-	if (DTPRINT) {
+	/*if (DTPRINT) {
 	    printf ("read: time=%d  data=%08x %08x\n", data[0], 
 		   data[0], data[1]);
-	    }
+	    }*/
 	
 	/** Extract the phase - this will be used as a 'time' value and
 	 ** is multiplied by 100 to make the trace easier to read
@@ -692,8 +695,8 @@ void tempest_read (trace, read_fd)
 	/* Perhaps it's because both were written by SEG CAD. */
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    fil_tempest_binary_to_value (sig_ptr, data, &value);
-	    if (DTPRINT) printf ("SIg %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
-		    value.number[0]);
+	    /*if (DTPRINT) printf ("SIg %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
+		    value.number[0]);*/
 	    value.siglw.sttime.time = time;
 	    fil_add_cptr (sig_ptr, &value, !first_data);
 	    }
@@ -703,5 +706,7 @@ void tempest_read (trace, read_fd)
 
     /* Now add EOT to each signal and reset the cptr */
     read_trace_end (trace);
+
+    XtFree ((char *)data);
     }
 

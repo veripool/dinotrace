@@ -110,10 +110,12 @@ XmString string_create_with_cr (msg)
 char *date_string ()
 {
     static char	date_str[50];
-    int		time_num;
+    time_t	time_num;
+    struct tm *timestr;
     
     time_num=time (NULL);
-    strcpy (date_str, asctime (localtime (&time_num)));
+    timestr = localtime (&time_num);
+    strcpy (date_str, asctime (timestr));
     if (date_str[strlen (date_str)-1]=='\n')
 	date_str[strlen (date_str)-1]='\0';
 
@@ -181,7 +183,7 @@ void    update_scrollbar (w,value,inc,min,max,size)
 
 void 	add_event (type, callback)
     int		type;
-    void	*callback;
+    void	(*callback)();
 {
     TRACE	*trace;
 
@@ -273,11 +275,11 @@ void new_time (trace)
     }
 
 /* Get window size, calculate what fits on the screen and update scroll bars */
-
 void get_geometry ( trace )
     TRACE	*trace;
 {
-    int		x,y,width,height,dret,max_y;
+    int		x,y,max_y;
+    unsigned int	width,height,dret;
     
     XGetGeometry ( global->display, XtWindow (trace->work), (Window *)&dret,
 		 &x, &y, &width, &height, &dret, &dret);
@@ -286,8 +288,7 @@ void get_geometry ( trace )
     trace->height = height;
     
     /* calulate the number of signals possibly visible on the screen */
-    /* same calculation in get_geometry */
-    max_y = (int)((trace->height-trace->ystart)/trace->sighgt);
+    max_y = max_sigs_on_screen (trace);
     trace->numsigvis = MIN (trace->numsig - trace->numsigstart,max_y);
     
     /* if there are cursors showing, subtract one to make room for cursor */
@@ -448,9 +449,9 @@ void get_data_popup (trace,string,type)
 	/* create the dialog box popup window */
 	/* XtSetArg (arglist[0], XmNstyle, DwtModal ); */
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
-	XtSetArg (arglist[1], XmNwidth, DIALOG_WIDTH);
-	XtSetArg (arglist[2], XmNheight, DIALOG_HEIGHT);
-	trace->prompt_popup = XmCreatePromptDialog (trace->work,"", arglist, 3);
+	/* XtSetArg (arglist[1], XmNheight, DIALOG_HEIGHT); */
+	/* no width so autochosen XtSetArg (arglist[2], XmNwidth, DIALOG_WIDTH); */
+	trace->prompt_popup = XmCreatePromptDialog (trace->work,"", arglist, 1);
 	XtAddCallback (trace->prompt_popup, XmNokCallback, prompt_ok_cb, trace);
 	XtAddCallback (trace->prompt_popup, XmNcancelCallback, unmanage_cb, trace->prompt_popup);
 
@@ -990,7 +991,7 @@ DTime string_to_time (trace, strg)
     return ((DTime)f_time);
     }
 
-#pragma inline (time_to_strg)
+#pragma inline (time_to_string)
 void time_to_string (trace, strg, time, relative)
     /* convert specific time value into the string passed in */
     DTime	time;
@@ -1063,7 +1064,7 @@ void time_to_string (trace, strg, time, relative)
 	}
     }
 
-#pragma inline (time_units_to_strg)
+#pragma inline (time_units_to_string)
 char *time_units_to_string (timerep)
     /* find units for the given time represetation */
     TimeRep	timerep;
@@ -1081,7 +1082,7 @@ char *time_units_to_string (timerep)
 	}
     }
 
-#pragma inline (time_units_to_multiplier)i
+#pragma inline (time_units_to_multiplier)
 DTime time_units_to_multiplier (timerep)
     /* find units for the given time represetation */
     TimeRep	timerep;

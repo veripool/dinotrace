@@ -27,6 +27,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -102,9 +103,10 @@ void set_menu_closes ()
 	}
     }
 
-void trace_open_cb (w,trace)
+void trace_open_cb (w,trace,cb)
     Widget		w;
     TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
 {
     Position x,y,width,height;
     Position new_x,new_y,new_width,new_height;
@@ -151,9 +153,10 @@ void trace_open_cb (w,trace)
     trace_read_cb (NULL, trace_new);
     }
 
-void trace_close_cb (w,trace)
+void trace_close_cb (w,trace,cb)
     Widget		w;
     TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
 {
     TRACE	*trace_ptr;
 
@@ -181,9 +184,10 @@ void trace_close_cb (w,trace)
     set_menu_closes ();
     }
 
-void trace_clear_cb (w,trace)
+void trace_clear_cb (w,trace,cb)
     Widget		w;
     TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
 {
     TRACE	*trace_ptr;
     TRACE	*trace_next;
@@ -211,9 +215,10 @@ void trace_clear_cb (w,trace)
     init_globals();
     }
 
-void trace_exit_cb (w,trace)
+void trace_exit_cb (w,trace,cb)
     Widget		w;
     TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
 {
     TRACE		*trace_next;
 
@@ -361,7 +366,8 @@ TRACE *create_trace (xs,ys,xp,yp)
     int		xs,ys,xp,yp;
 {
     char	string[20];
-    int		x1,x2;
+    /*    int		x1,x2;
+	  unsigned int junk; */
     int		i;
     int		pd=0,pde=0,pds=0;
     TRACE	*trace;
@@ -614,7 +620,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_POSITION );
     XtSetArg (arglist[1], XmNleftPosition, 45);
     XtSetArg (arglist[2], XmNbottomAttachment, XmATTACH_FORM );
-    XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple ("Res") );
+    XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple ("Res=xxxxxx ns") );
     trace->command.reschg_but = XmCreatePushButton (trace->command.command, "res", arglist, 4);
     XtAddCallback (trace->command.reschg_but, XmNactivateCallback, win_chg_res_cb, trace);
     XtManageChild (trace->command.reschg_but);
@@ -740,8 +746,10 @@ TRACE *create_trace (xs,ys,xp,yp)
     trace->signalstate_head = NULL;
     config_restore_defaults (trace);
     
+    /*
     XGetGeometry (global->display, XtWindow (trace->work), (Window*) &x1, &x1,
 		 &x1, &x2, &x1, &x1, &x1);
+		 */
 
     trace->gc = XCreateGC (global->display, trace->wind, 0, NULL);
 

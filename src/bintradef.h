@@ -123,7 +123,7 @@
 #define tra$s_nfd_rec_siz 152
 #define tra$s_nnr_rec_siz 32
 #define tra$s_ems_rec_siz 48
-#ifndef __alpha
+#ifndef __osf__
 #pragma nomember_alignment
 #endif
 struct bintrarec {
