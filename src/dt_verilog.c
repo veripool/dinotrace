@@ -932,7 +932,9 @@ static void	verilog_read_data (
 			}
 		    }
 		    offset = size - strlen(value_strg);
-		    if (offset != 0) {
+		    if (offset < 0) {
+			printf("Bad file format, string length off on line %d, %d %d\n", verilog_line_num,size,strlen(value_strg));
+		    } else if (offset != 0) {
 			char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
 			memmove (value_strg + offset, value_strg, strlen(value_strg)+1);
 			memset (value_strg, extend_char, offset);
