@@ -1,4 +1,4 @@
-#pragma ident "$Id$"
+#ident "$Id$"
 /******************************************************************************
  * dt_verilog.c --- Verilog dump file reading
  *
@@ -262,6 +262,16 @@ static void	verilog_process_var (
     int		t, len;
     char	code[10];
 
+    /*
+      $var reg       5 :    r [4:0] $end
+      $var reg   5 : 2 x    r [4:0] $end
+      $var wire      1 v&   Z [-1] $end			<<<<< ignore [-1]
+      $var wire      1 R    addr_h [6] $end
+      $var reg       1 !    clk  $end
+      $var reg      11 "    count [10:0] $end
+      $var real     64 /$   ad_off_delay $end
+    */
+
     /* Read <vartype> */
     cmd = verilog_gettok();
     is_real = (!strcmp(cmd,"real"));
@@ -272,6 +282,7 @@ static void	verilog_process_var (
 
     /* read next token */
     /* if token == ":", msb and lsb are given */
+    cmd = verilog_gettok();
     if(!strcmp(cmd, ":")) {
 	msb = bits;
 
@@ -302,7 +313,7 @@ static void	verilog_process_var (
     strcat (signame, cmd);
     cmd = verilog_gettok();
     if (*cmd != '$' && strcmp(cmd, "[-1]")) {
-	strcpy (signame, basename);
+	/* Add vector to signal */
 	strcat (signame, cmd);
     }
     
@@ -323,7 +334,8 @@ static void	verilog_process_var (
     new_sig_ptr->file_type.flags = 0;
     new_sig_ptr->file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
 
-    if (DTPRINT_FILE) printf ("var %s %s/%d %s %s\n", is_real?"real":"reg/wire", cmd,bits, code, signame);
+    if (DTPRINT_FILE) printf ("var %s %d %s %s\n",
+			      is_real?"real":"reg/wire", bits, code, signame);
 
     val_zero (&(new_sig_ptr->file_value));
 

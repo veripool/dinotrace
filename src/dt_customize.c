@@ -1,4 +1,4 @@
-#pragma ident "$Id$"
+#ident "$Id$"
 /******************************************************************************
  * dt_customize.c --- customization requestor
  *

@@ -1,4 +1,4 @@
-#pragma ident "$Id$"
+#ident "$Id$"
 /******************************************************************************
  * dt_printscreen.c --- postscript output routines
  *

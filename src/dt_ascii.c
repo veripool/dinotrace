@@ -1,4 +1,4 @@
-#pragma ident "$Id$"
+#ident "$Id$"
 /******************************************************************************
  * dt_ascii.c --- ascii trace file reading
  *

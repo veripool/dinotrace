@@ -1,4 +1,4 @@
-#pragma ident "$Id$"
+#ident "$Id$"
 /******************************************************************************
  * dinotrace.c --- main routine and documentation
  *
@@ -316,8 +316,8 @@ Configured %s for %s\n\
 Written by Wilson Snyder\n\
 <wsnyder@ultranet.com> or <wsnyder@iname.com>\n\
 \n\
-Copyright 1998 by Wilson Snyder\n\
-Copyright 1993,1994,1995,1996,1997 by Digital Equipment Corporation.\n\
+Copyright 1998-2000 by Wilson Snyder\n\
+Copyright 1993-1997 by Digital Equipment Corporation.\n\
 This software is covered by the GNU Public License,\n\
 and is WITHOUT ANY WARRANTY.\n\
 \n\

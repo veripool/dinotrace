@@ -1,4 +1,4 @@
-#pragma ident "$Id$"
+#ident "$Id$"
 /******************************************************************************
  * dt_signal.c --- signal handling, searching, etc
  *
@@ -1891,7 +1891,7 @@ static void sig_cross_sigmatch (
     old_bits = old_sig_ptr->bits;
 
     while (1) {
-	/*printf ("Compare %s == %s\n", old_sig_ptr->signame, new_sig_ptr->signame);*/
+	printf ("Compare %s == %s\n", old_sig_ptr->signame, new_sig_ptr->signame);
 	if (new_sig_ptr->bits == old_bits	/* Redundant, but speeds strcmp */
 	    && !strcmp (new_sig_ptr->signame, old_signame)) {
 	    /* Match */
