@@ -12,7 +12,7 @@
  *
  * Some of the code in this file was originally developed for Digital
  * Semiconductor, a division of Digital Equipment Corporation.  They
- * gratefuly have agreed to share it, and thus the bas version has been
+ * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
  *
@@ -560,7 +560,7 @@ void    cur_move_ev (
 {
     DTime_t	time;
     Position	x1,x2,y1,y2;
-    static	last_x = 0;
+    static	int last_x = 0;
     XEvent	event;
     DCursor_t	*csr_ptr;
     XMotionEvent *em;
