@@ -481,6 +481,12 @@ static void	verilog_process_var (
     cmd = verilog_gettok();
     bits = atoi (cmd);
     verilog_max_bits = MAX (verilog_max_bits, bits);	/* Count before we break into 128 bit pieces */
+    if (bits<0) {
+	sprintf (message,"Negative bit count on line %d of %s\n",
+		 verilog_line_num, current_file);
+	dino_error_ack (trace, message);
+	return;
+    }
 
     /* read next token */
     /* if token == ":", msb and lsb are given */
