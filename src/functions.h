@@ -384,6 +384,8 @@ extern void 	fil_select_set_pattern (Trace_t *trace, Widget dialog, char *patter
 #ifndef fil_add_cptr
 extern void	fil_add_cptr (Signal_t *sig_ptr, Value_t *value_ptr, Boolean_t nocheck);
 #endif
+extern void	trace_reread_all (void);
+extern void	trace_reread (Trace_t* trace);
 
 extern void	fil_format_option_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
 extern void	fil_ok_cb (Widget w, Trace_t *trace, XmFileSelectionBoxCallbackStruct *cb);
@@ -481,6 +483,7 @@ extern void	vscroll_pagedec_cb (Widget w);
 extern void	vscroll_drag_cb (Widget w);
 
 /* dt_socket */
+extern void	socket_set_os_signals (void);
 extern void	socket_create (void);
 
 /* dt_draw */

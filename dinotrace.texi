@@ -145,6 +145,7 @@ releases.
 * Keyboard Shortcuts::          
 * Customization Files::         
 * X Resources::                 
+* Remote Control::              
 * Dinotrace and Emacs::         
 * File Formats::                
 * Bugs::                        
@@ -1948,7 +1949,7 @@ screen, the number will be printed instead.  Text strings may only be
 defined for state numbers 0-255.
 
 @c ======================================================================
-@node X Resources, Dinotrace and Emacs, Customization Files, Top
+@node X Resources, Remote Control, Customization Files, Top
 @chapter X Resources
 
 This chapter describes the X-Windows resources that Dinotrace supports.
@@ -2011,7 +2012,20 @@ buses.  Defaults to @code{-*-Fixed-Medium-R-Normal--*-100-*-*-*-*-*-1}
 @end table
 
 @c ======================================================================
-@node Dinotrace and Emacs, File Formats, X Resources, Top
+@node Remote Control, Dinotrace and Emacs, X Resources, Top
+@chapter Remote Control
+@cindex Signals, SIGUSR
+
+Dinotrace can be triggered to reread traces by sending a USR1 signal
+to it.  This allows build environments to automatically refresh dinotrace
+when a new waves file is available.  See the kill manpage for details on
+sending a signal, usually it's @code{kill -USR1 %?dino}.
+
+After annotation, Emacs creates a socket that can be used to send commands
+into it.  See the Emacs chapter and internal code for details.
+
+@c ======================================================================
+@node Dinotrace and Emacs, File Formats, Remote Control, Top
 @chapter Dinotrace and Emacs
 @cindex Emacs, Annotation
 

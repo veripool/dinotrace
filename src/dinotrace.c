@@ -265,6 +265,8 @@ See the Help menu for more information.");
 	}
     }
 
+    socket_set_os_signals ();
+
     /* loop forever */
     /*This code ~= XtAppMainLoop (global->appcontext);*/
     while (1) {

@@ -176,19 +176,17 @@ void trace_read_cb (
     XSync (global->display,0);
 }
 
-void trace_reread_all_cb (
-    Widget		w,
-    Trace_t		*trace)
+void trace_reread_all ()
 {
+    Trace_t*		trace;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
-	    trace_reread_cb (w, trace);
+	    trace_reread(trace);
 	}
     }
 }
 
-void trace_reread_cb (
-    Widget		w,
+void trace_reread (
     Trace_t		*trace)
 {
     char *semi;
@@ -196,7 +194,7 @@ void trace_reread_cb (
     struct stat		newstat;	/* New status on the reread file*/
 
     if (!trace->loaded)
-	trace_read_cb (w,trace);
+	trace_read_cb (NULL, trace);
     else {
 	/* Drop ;xxx */
 	if ((semi = strchr (trace->dfile.filename,';')))
@@ -797,3 +795,11 @@ void fil_trace_end (
     if (DTPRINT_FILE) printf ("fil_trace_end: Done\n");
 }
 
+/****************************** MENU OPTIONS ******************************/
+
+void trace_reread_all_cb (Widget w, Trace_t* trace) {
+    trace_reread_all();
+}
+void trace_reread_cb (Widget w, Trace_t* trace) {
+    trace_reread (trace);
+}

@@ -12,7 +12,7 @@
  *
  * Some of the code in this file was originally developed for Digital
  * Semiconductor, a division of Digital Equipment Corporation.  They
- * gratefuly have agreed to share it, and thus the bas version has been
+ * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
  * 
@@ -93,6 +93,19 @@ typedef struct st_client {
 #if !HAVE_GETHOSTNAME_PROTO
 extern int gethostname (char *name, int namelen);
 #endif
+
+/*** OS SIGNALS ********************************************************************/
+
+void socket_sig_hup (int sig)
+{
+    if (DTPRINT_SOCKET) printf ("SIG HUP\n");
+    trace_reread_all_cb(NULL,NULL);
+}
+
+void socket_set_os_signals ()
+{
+    signal (SIGUSR1, &socket_sig_hup);	// Reread All
+}
 
 /*** MAIN ********************************************************************/
 
