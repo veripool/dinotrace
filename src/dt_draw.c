@@ -273,7 +273,7 @@ void draw_cursors (
 	    }
 	    else {
 		XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0,0);
-		XSetDashes (global->display, trace->gc, 0, "\002\002", 2);
+		XSetDashes (global->display, trace->gc, 0, "\003\001", 2);
 	    }
 	    
 	    /* draw the cursor */
