@@ -7,6 +7,11 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.1k 06/06/2003
+
+****	Fix crash with busses that are replicated with different widths.
+
+
 * Changes in Dinotrace 9.1j 03/22/2003
 
 ****	When window is resized, keep same percentage of trace visible.

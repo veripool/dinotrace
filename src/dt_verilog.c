@@ -928,7 +928,7 @@ static void	verilog_read_data (
 		    Signal_t	*loop_sig_ptr;
 		    for (loop_sig_ptr=sig_ptr; loop_sig_ptr; loop_sig_ptr=loop_sig_ptr->verilog_next) {
 			if (!loop_sig_ptr->copyof) {
-			    size += loop_sig_ptr->bits;
+			    size = MAX(size, (loop_sig_ptr->file_pos + loop_sig_ptr->bits));
 			}
 		    }
 		    offset = size - strlen(value_strg);
@@ -936,6 +936,14 @@ static void	verilog_read_data (
 			printf("Bad file format, string length off on line %d, %d %d\n", verilog_line_num,size,strlen(value_strg));
 		    } else if (offset != 0) {
 			char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
+			//printf ("Extend %d mb %d ll %d size %d\n",offset,verilog_max_bits,strlen(value_strg), size);
+			//printf ("LN: '%s'\n",value_strg);
+			if (offset + strlen(value_strg)+1 > (verilog_max_bits+5)) {
+			    printf("Bad file reading, verilog bus length off on line %d, %d %d\n", verilog_line_num,size,verilog_max_bits);
+			    for (loop_sig_ptr=sig_ptr; loop_sig_ptr; loop_sig_ptr=loop_sig_ptr->verilog_next) {
+				if (!loop_sig_ptr->copyof) printf("  Includes %d %d %s\n", loop_sig_ptr->bits, loop_sig_ptr->file_pos, loop_sig_ptr->signame);
+			    }
+			}
 			memmove (value_strg + offset, value_strg, strlen(value_strg)+1);
 			memset (value_strg, extend_char, offset);
 		    }
