@@ -583,12 +583,13 @@ static int bin_read (int fd, void *buf, size_t size)
 {
     int got_tot = 0;
     int remaining = size;
+    char* bufc = (char*)buf;
     if (size <= 0) return 0;
     do {
-	int got_this = read (fd, buf, remaining);
+	int got_this = read (fd, bufc, remaining);
 	if (got_this>0) {
 	    got_tot += got_this;
-	    ((char *)buf) += got_this;
+	    bufc += got_this;
             remaining -= got_this;
 	} else if (got_this < 0) {
 	    if (errno != EAGAIN && errno != EINTR) {
