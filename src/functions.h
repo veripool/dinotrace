@@ -125,7 +125,13 @@ extern void sig_modify_enables (TRACE *);
 extern void sig_delete_selected (/*Boolean*/);
 extern void sig_move_selected (/*Boolean*/);
 extern void sig_copy_selected (/*Boolean*/);
+extern void sig_wildmat_select (TRACE *, char *);
 extern void sig_goto_pattern (TRACE *, char *);
+extern void sig_cross_preserve (TRACE *);
+extern void sig_cross_restore (TRACE *);
+#if defined(VMS) || defined(mips)
+extern char *strdup(s)
+#endif
     
 /* dt_value.c routines */
 extern void
@@ -153,6 +159,7 @@ extern void
     fil_string_to_value(),
     decsim_read_ascii(), 
     read_trace_end(), help_cb(), help_trace_cb(), update_signal_states();
+extern void fgets_dynamic ();
 #ifndef fil_add_cptr
 extern void fil_add_cptr();
 #endif

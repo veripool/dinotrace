@@ -565,7 +565,7 @@ int    win_goto_number (trace)
 void    win_goto_option_cb (w,trace,cb)
     Widget	w;
     TRACE	*trace;
-    XmSelectionBoxCallbackStruct *cb;
+    XmSelectionBoxCallbackStruct *cb;	/* OR     XButtonPressedEvent	*ev; */
     /* Puts the color in the option menu, since Xm does not copy colors on selection */
     /* Also used as an event callback for exposures */
 {
