@@ -1042,7 +1042,7 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	    break;
 	    }
 	}
-    if (*t) t++;
+    if (*t && t!=header_start) t++;
     data_begin_ptr = t;
 
     /* Skip beginning spaces */
