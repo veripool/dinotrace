@@ -800,9 +800,9 @@ void draw_update ()
  *	it already works.
  **********************************************************************/
 
-/* If set, the scroll pixmap is double buffered ala LessTIF */
-/* If clear, modify the scrollbar directly and ignore double buffering (vms???) */
-#define BUFFERED_PIXMAP 1
+/* If set, the scroll pixmap is double buffered ala LessTIF 0.85 */
+/* If clear, modify the scrollbar directly and ignore double buffering (Motif/LessTif 0.89) */
+#define BUFFERED_PIXMAP 0
 
 static void draw_hscroll (
     Trace *trace)
@@ -834,6 +834,9 @@ static void draw_hscroll (
     xscale =
 	(float)((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_width	/* sc width */
 	/ (float)(trace->end_time - trace->start_time);		/* range of times */
+
+    /* printf ("pixmap = %lx, xmin=%d xmax=%d  ymin=%d ymax=%d slider %d %d scale %f\n",
+       pixmap, xmin, xmax, ymin, ymax, slider_xmin, slider_xmax, xscale); */
 
     /* Blank area to either side of slider */
     XSetForeground (global->display, trace->gc,
