@@ -647,22 +647,20 @@ void	val_transition_cnt (Signal_t* sig_ptr, Value_t* stop_cptr, int* negedgesp, 
     int		negedges = 0;
     int		last_state = -1;
     for (cptr = sig_ptr->bptr; (CPTR_TIME(cptr) != EOT); cptr = CPTR_NEXT(cptr)) {
-	if (last_state>=0) {
-	    /**/
-	    switch (cptr->siglw.stbits.state) {
-	    case STATE_0:
-		if (last_state==STATE_1) negedges++;
-		break;
-	    case STATE_1:
-		if (last_state==STATE_0) posedges++;
-		break;
-	    case STATE_Z:
-	    case STATE_B32:
-	    case STATE_B128:
-	    case STATE_F32:
-	    case STATE_F128:
-		break;
-	    }
+	/**/
+	switch (cptr->siglw.stbits.state) {
+	case STATE_0:
+	    if (last_state==STATE_1 || last_state<0) negedges++;
+	    break;
+	case STATE_1:
+	    if (last_state==STATE_0 || last_state<0) posedges++;
+	    break;
+	case STATE_Z:
+	case STATE_B32:
+	case STATE_B128:
+	case STATE_F32:
+	case STATE_F128:
+	    break;
 	}
 	last_state = cptr->siglw.stbits.state;
 	if (cptr == stop_cptr) break;
