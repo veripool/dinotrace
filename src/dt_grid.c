@@ -38,7 +38,7 @@ void grid_res_cb (w, trace, cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf ("In grid_res_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_res_cb - trace=%d\n",trace);
 
     /* input the grid resolution from the user */
     get_data_popup (trace,"Grid Res",IO_GRIDRES);
@@ -49,7 +49,7 @@ void grid_align_cb (w, trace, cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf ("In grid_align_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_align_cb - trace=%d\n",trace);
 
     /* remove any previous events */
     remove_all_events (trace);
@@ -63,7 +63,7 @@ void grid_reset_cb (w, trace, cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf ("In grid_reset_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In grid_reset_cb - trace=%d\n",trace);
 
     /* reset the alignment back to zero and resolution to 100 */
     trace->grid_align = 0;
@@ -85,7 +85,7 @@ void grid_align_ev (w, trace, ev)
 {
     DTime		time;
 
-    if (DTPRINT) printf ("In grid_align_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (DTPRINT_ENTRY) printf ("In grid_align_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
 
     /* convert x value to a new grid_align (time) value */
     time = posx_to_time_edge (trace, ev->x, ev->y);

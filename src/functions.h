@@ -41,11 +41,12 @@ extern void
     cur_add_cb(), cur_mov_cb(), cur_del_cb(), cur_clr_cb(),
     cur_highlight_cb(), cur_highlight_ev(),
     cur_add_ev(), cur_move_ev(), cur_delete_ev(),
-    cur_add (DTime, ColorNum, int),
+    cur_add (DTime, ColorNum, CursorType),
     cur_remove (CURSOR *);
     
 /* dt_config.c routines */
 extern void
+    print_signal_states(),
     config_read_defaults (),
     config_read_file (), upcase_string(),
     config_restore_defaults (TRACE *),
@@ -73,6 +74,7 @@ extern void
     
 /* dt_value.c routines */
 extern void
+    val_annotate_cb(), val_annotate_do_cb(), val_annotate_ok_cb(), val_annotate_apply_cb(),
     val_examine_cb(), val_examine_ev(),
     val_search_cb(), val_search_ok_cb(), val_search_apply_cb(),
     val_update_search();
@@ -107,7 +109,8 @@ extern void
     dino_message_ack(), 
     fil_read_cb(), get_data_popup(), time_to_string(),
     fil_format_option_cb(),
-    print_sig_names(), print_all_traces(), print_screen_traces();
+    print_sig_names(), print_all_traces(), print_screen_traces(), print_sig_info(SIGNAL *);
+extern SIGNAL_LW *cptr_at_time ();
 extern char	*extract_first_xms_segment (XmString);
 extern XmString	string_create_with_cr (char *);
 extern char	*date_string ();
@@ -123,7 +126,7 @@ extern CURSOR	*time_to_cursor ();
     
 /* dt_window routines */
 extern void
-    win_expose_cb(), 
+    win_expose_cb(), win_resize_cb(),
     win_goto_cb(), win_goto_option_cb(),
     win_goto_ok_cb(), win_goto_cancel_cb(),
     win_chg_res_cb(), win_inc_res_cb(), win_dec_res_cb(), 

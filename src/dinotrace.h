@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V6.7b"
+#define DTVERSION	"Dinotrace V7.0a"
 /*#define EXPIRATION	(60*60*24*30)	/ * In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
@@ -88,6 +88,8 @@
 #define	dino_information_ack(tr,msg)	dino_message_ack (tr, 2, msg)
 
 #define SIG_SPACE	5	/* Space for drawing signal names */
+#define PDASH_HEIGHT	2	/* Heigth of primary dash, <= SIG_SPACE, in pixels */
+#define SDASH_HEIGHT	2	/* Heigth of primary dash, <= SIG_SPACE, in pixels */
 #define SIG_RF		2	/* Rise fall number of pixels */
 #define DELU	 	5	/* Delta distance for drawing U's */
 #define DELU2		10	/* 2x DELU */
@@ -107,12 +109,11 @@
 #define HBUS 4
 
 /* Time representation enums */
-typedef enum {
-    TIMEREP_NS,		/* Must be zero */
-    TIMEREP_PS,
-    TIMEREP_US,
-    TIMEREP_CYC
-	} TimeRep;
+#define TIMEREP_PS 1.0
+#define TIMEREP_NS 1000.0
+#define TIMEREP_US 1000000.0
+#define TIMEREP_CYC -1.0
+typedef double TimeRep;
 
 /* Print page sizes */
 typedef enum {
@@ -169,15 +170,26 @@ typedef enum {
 #define max_sigs_on_screen(_trace_) \
         ((int)(((_trace_)->height - (_trace_)->ystart) / (_trace_)->sighgt))
 
+#define TIME_TO_XPOS(_xtime_) \
+        ( ((_xtime_) - global->time) * global->res + global->xstart )
+
 /* Avoid binding error messages on XtFree */
 #define DFree(ptr) XtFree((char *)ptr)
 
 typedef	long 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
 typedef	int	ColorNum;
 
-extern Boolean	DTDEBUG,		/* Debugging mode */
-		DTPRINT;		/* Information printing mode */
+extern Boolean	DTDEBUG;		/* Debugging mode */
+extern int	DTPRINT;		/* Information printing mode */
 extern int	DebugTemp;		/* Temp value for trying things */
+
+#define DTPRINT_ENTRY	(DTPRINT & 0x00000001)	/* Print routine entries */
+#define DTPRINT_CONFIG	(DTPRINT & 0x00000010)	/* Print config reading information */
+#define DTPRINT_FILE	(DTPRINT & 0x00000100)	/* Print file reading information */
+#define DTPRINT_DISPLAY	(DTPRINT & 0x00000200)	/* Print dispmgr information */
+#define DTPRINT_DRAW	(DTPRINT & 0x00000400)	/* Print dispmgr information */
+#define DTPRINT_PRINT	(DTPRINT & 0x00000800)	/* Print postscript printing information */
+#define DTPRINT_SEARCH	(DTPRINT & 0x00001000)	/* Print searching value/signal information */
 
 /* File formats.  See also hardcoded case statement in dinotrace.c */
 #define	FF_AUTO		0		/* Automatic selection */
@@ -207,8 +219,11 @@ extern int		line_num;
 extern char		*current_file;
 
 /* Grid Automatic flags */
-#define GRID_AUTO_ASS	-2
-#define GRID_AUTO_DEASS	-1
+#define GRID_RES_AUTO_DOUBLE	-5
+#define GRID_RES_AUTO		-4
+#define GRID_ALN_AUTO_DEASS	-3
+#define GRID_ALN_AUTO_ASS	-2
+#define GRID_ALN_AUTO_TWOCLOCK	-1
 
 typedef struct {
     Widget	menu;
@@ -274,6 +289,17 @@ typedef struct {
     Widget b1;
     Widget b3;
     } PRINT_WDGTS;
+
+typedef struct {
+    Widget dialog;
+    Widget label1, label2, label3;
+    Widget cursors[MAX_SRCH+1];
+    Widget signals[MAX_SRCH+1];
+    Widget text;
+    Widget ok;
+    Widget apply;
+    Widget cancel;
+    } ANNOTATE_WDGTS;
 
 typedef struct {
     Widget add;
@@ -366,14 +392,20 @@ typedef struct st_sigsearch {
     } SIGSEARCH;
 
 /* Cursor information structure (one per cursor) */
+typedef enum {
+    USER=0,	/* User placed it, preserve across rereading traces */
+    SEARCH,	/* Value search, replace as needed */
+    SEARCHOLD,	/* Old search, used by val_update_search only */
+    CONFIG	/* Config file read in, replace when reread */
+    } CursorType;
+
 typedef struct st_cursor {
     struct st_cursor	*next;		/* Forward link to next cursor */
     struct st_cursor	*prev;		/* Backward link to previous cursor */
 
     DTime		time;		/* Time cursor is placed at */
     ColorNum		color;		/* Color number (index into trace->xcolornum) */
-
-    int			search;		/* Number of search cursor is for, 0 = manual */
+    CursorType		type;		/* Type of cursor */
     } CURSOR;
 
 /* Signal information structure (one per each signal in a trace window) */
@@ -399,6 +431,7 @@ typedef struct st_signal {
     int			blocks;		/* Number of time data blocks */
     int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20), -1=none */
     int			lsb_index;	/* Bit subscript of last index in a signal (<20:10> == 10), -1=none */
+    int			bit_index;	/* Bit subscript of this bit, ignoring <>'s, tempest only */
     int			bits;		/* Number of bits in a bus, 0=single */
     int			file_pos;	/* Position of the bits in the file line */
     int			file_end_pos;	/* Ending position of the bits in the file line */
@@ -411,6 +444,7 @@ typedef struct st_signal {
 	    int		pin_timestamp:1; /* (Tempest) Pin is a time-stamp */
 	    int		four_state:1;	/* (Tempest, Binary) Signal is four state (U, Z) */
 	    int		perm_vector:1;	/* (Verilog) Signal is a permanent vector, don't vectorize */
+	    int		vector_msb:1;	/* (Tempest) Signal starts a defined vector, may only be new MSB */
 	    } flag;
 	int		flags;
 	}		file_type;	/* File specific type of trace, two/fourstate, etc */
@@ -430,7 +464,7 @@ typedef struct {
     Widget enable[MAX_SRCH];
     Widget cursor[MAX_SRCH];
     Widget add_sigs, add_pat, add_all;
-    Widget delete_sigs, delete_pat, delete_all;
+    Widget delete_sigs, delete_pat, delete_all, delete_const;
     Widget ok;
     Widget apply;	/* ?? */
     Widget cancel;
@@ -466,6 +500,7 @@ typedef struct st_trace {
     COMMAND_WDGTS	command;
     CUSTOM_WDGTS	custom;
     PRINT_WDGTS		prntscr;
+    ANNOTATE_WDGTS	annotate;
     SIGNAL_WDGTS	signal;
     EXAMINE_WDGTS	examine;
     GOTOS_WDGTS		gotos;
@@ -547,6 +582,11 @@ typedef struct {
     GEOMETRY		open_geometry;	/* Geometry to open later traces with */
     GEOMETRY		shrink_geometry; /* Geometry to shrink trace->open traces with */
 
+    Boolean		anno_poppedup;	/* Annotation has been poped up on some window */
+    Boolean		anno_ena_signal[MAX_SRCH+1];   /* Annotation signal enables */
+    Boolean		anno_ena_cursor[MAX_SRCH+1];    /* Annotation cursor enables */
+    char		anno_filename[MAXFNAMELEN]; /* Annotation file name */
+
     int			pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
     PrintSize		print_size;	/* Size of paper for dt_printscreen */
     Boolean		print_all_signals; /* Print all signals in the trace */
@@ -554,6 +594,7 @@ typedef struct {
     Boolean		click_to_edge;	/* True if clicking to edges is enabled */
     TimeRep		time_precision;	/* Time precision = TIMEREP_NS/TIMEREP_CYC */
     char		time_format[12]; /* Time format = printf format or *NULL */
+    int			tempest_time_mult;	/* Time multiplier for tempest */
     Boolean		save_enables;	/* Save enable wires */
 
     DTime		time;		/* Time of trace at left edge of screen */

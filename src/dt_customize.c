@@ -51,7 +51,7 @@ void cus_dialog_cb (w,trace,cb)
 {
     char		title[MAXFNAMELEN + 15];
     
-    if (DTPRINT) printf ("In customize - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In customize - trace=%d\n",trace);
     
     if (!trace->custom.customize)
 	{
@@ -295,7 +295,7 @@ void cus_read_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf ("in cus_read_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("in cus_read_cb trace=%d\n",trace);
     
     /* create popup to get filename */
     
@@ -310,7 +310,7 @@ void cus_reread_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf ("in cus_reread_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("in cus_reread_cb trace=%d\n",trace);
     
     config_read_defaults (trace, TRUE);
     
@@ -323,7 +323,7 @@ void	cus_restore_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf ("in cus_restore_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("in cus_restore_cb trace=%d\n",trace);
     
     /* do the default thing */
     config_restore_defaults (trace);
@@ -337,7 +337,7 @@ void	cus_ok_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf ("In cus_ok_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cus_ok_cb - trace=%d\n",trace);
     
     XmScaleGetValue (trace->custom.s1, (int*) &(trace->sighgt));
     trace->grid_vis = XmToggleButtonGetState (trace->custom.grid_state);
@@ -378,7 +378,7 @@ void	cus_apply_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf ("In cus_apply_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cus_apply_cb - trace=%d\n",trace);
     
     /* Pretend an OK */
     cus_ok_cb (w,trace,cb);

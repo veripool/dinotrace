@@ -32,6 +32,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <ctype.h>
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
@@ -41,8 +42,8 @@
 #include "callbacks.h"
 #include "compile_date.h"
 
-Boolean		DTDEBUG=FALSE,		/* Debugging mode */
-		DTPRINT=FALSE;		/* Information printing mode */
+Boolean		DTDEBUG=FALSE;		/* Debugging mode */
+int		DTPRINT=0;		/* Information printing mode */
 int		DebugTemp=0;		/* Temp value for trying things */
 int		file_format=FF_DECSIM;	/* Type of trace to support */
 char		message[1000];		/* generic string for messages */
@@ -86,7 +87,10 @@ int    main (argc, argv)
             DTDEBUG = TRUE;
 	    }
         else if ( !strcmp (argv[i], "-print") ) {
-            DTPRINT = TRUE;
+	    if (isdigit(argv[i+1][0])) {
+		sscanf (argv[++i], "%x", & DTPRINT );
+		}
+	    else DTPRINT = -1;
 	    }
         else if ( !strcmp (argv[i], "-tempest") ) {
             file_format = FF_TEMPEST;

@@ -2,24 +2,34 @@
 ! dinotrace.dino
 !
 !	! Comment
-!	page_inc	4 | 2 | 1
-!	rise_fall_time	Number
-!	signal_height	Number
+! Config:
+!	click_to_edge	ON | OFF
+!	cursor		ON | OFF
 !	grid		ON | OFF
-!	grid_resolution	Number | AUTO
-!	grid_align	Number | ASSERTION | DEASSERTION
-!	time_rep	US | NS | PS | CYCLE
+!	grid_align	<number> | ASSERTION | DEASSERTION | TWOCLOCK
+!	grid_resolution	<number> | AUTO | DOUBLE
+!	page_inc	4 | 2 | 1
+!	print_size	A | B | EPSPORT | EPSLAND
+!	rise_fall_time	<number>
+!	signal_height	<number>
 !	time_format	%0.6lf | %0.6lg | "" 
 !	time_precision	US | NS | PS
+!	time_rep	<number> | US | NS | PS | CYCLE
+! File Format:
 !	file_format	DECSIM | TEMPEST | VERILOG | DECSIM_Z
-!	cursor		ON | OFF
-!	click_to_edge	ON | OFF
-!	print_size	A | B | EPSPORT | EPSLAND
+!	save_enables	ON | OFF
+!	signal_states	<signal_pattern> = {<State>, <State>...}
 !	vector_seperator "<char>"
-!	start_geometry	<width>x<height>+<xoffset>+<yoffset>
+!       time_multiplier	<number>
+! Geometry/resources:
 !	open_geometry	<width>[%]x<height>[%]+<xoffset>[%]+<yoff>[%]
 !	shrink_geometry	<width>%x<height>%+<xoffset>%+<yoff>%
-!	signal_states	Signal_Name = {State, State, State}
+!	start_geometry	<width>x<height>+<xoffset>+<yoffset>
+! Modification of traces:
+!	signal_delete	<signal_pattern>
+!	signal_delete_constant	<signal_pattern>
+!	cursor_add	<color> <time>
+!	signal_highlight <color> <signal_name>
 !
 ! A dinotrace.dino file in your home directory, in the trace
 ! directory, or with the same name as the trace will override this file.

@@ -69,7 +69,7 @@ int	EXTRACT_2STATE (buf,pos)
 
     return (((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 1);
 
-    if (DTPRINT) printf ("extr2st buf %x pos %x temp %x ", buf, pos);
+    if (DTPRINT_FILE) printf ("extr2st buf %x pos %x temp %x ", buf, pos);
 
     /*
       (( ( *((((unsigned long *)_buf_) + ((_pos_)>>5))) ) >> ((_pos_) & 0x1F) )&1)
@@ -81,7 +81,7 @@ int	EXTRACT_2STATE (buf,pos)
     bit_mask = (pos) & 0x1F;
     bit_data = ( data >> bit_mask ) & 1;
 
-    if (DTPRINT) printf (" Data %x >> Mask %x = %d Bit %d\n", data, bit_mask, data>>bit_mask,bit_data);
+    if (DTPRINT_FILE) printf (" Data %x >> Mask %x = %d Bit %d\n", data, bit_mask, data>>bit_mask,bit_data);
     /*
     for (bit_mask=0; bit_mask<32; bit_mask++) {
       printf ("%d=%x  ", bit_mask, data>>bit_mask);
@@ -386,7 +386,7 @@ void decsim_read_binary (trace, read_fd)
 	      case tra$k_mdr:
 		break;
 	      default:
-		if (DTPRINT) printf ( "Unknown header type %d\n", buf->tra$b_type);
+		if (DTPRINT) printf ( "%%E, Unknown header type %d\n", buf->tra$b_type);
 		}
 	    break;
 
@@ -399,12 +399,12 @@ void decsim_read_binary (trace, read_fd)
 
 		/**** TYPE: End Of Signal Section ****/
 	      case tra$k_nss:
-		read_make_busses (trace);
+		read_make_busses (trace, TRUE);
 		break;
 
 		/**** TYPE: Unknown ****/
 	      default:
-		if (DTPRINT) printf ("Unknown section identifier type %d\n", buf->tra$b_type);
+		if (DTPRINT) printf ("%%E, Unknown section identifier type %d\n", buf->tra$b_type);
 		}
 	    break;
 
@@ -418,7 +418,7 @@ void decsim_read_binary (trace, read_fd)
 		memset (sig_ptr, 0, sizeof (SIGNAL));
 		sig_ptr->trace = trace;
 		sig_ptr->file_pos = buf->TRA$L_BITPOS;
-		/* if (DTPRINT) printf ("Reading signal format data, ptr=%d\n", sig_ptr); */
+		/* if (DTPRINT_FILE) printf ("Reading signal format data, ptr=%d\n", sig_ptr); */
 
 		sig_ptr->file_type.flags = 0;
 		sig_ptr->file_type.flag.four_state = ! (buf->TRA$B_DATTYP == tra$k_twosta);
@@ -437,7 +437,7 @@ void decsim_read_binary (trace, read_fd)
 
 		/**** TYPE: Node signal name data ****/
 	      case tra$k_nnr:
-		/* if (DTPRINT) printf ("Reading signal name data, ptr=%d\n", sig_ptr); */
+		/* if (DTPRINT_FILE) printf ("Reading signal name data, ptr=%d\n", sig_ptr); */
 		len = buf->TRA$W_NODNAMLEN;
 		sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
 		strncpy (sig_ptr->signame, buf->TRA$T_NODNAMSTR, (size_t) len);
@@ -523,13 +523,13 @@ void decsim_read_binary (trace, read_fd)
 
 	    /**** CLASS: Unknown ****/
 	  default:
-	    if (DTPRINT) printf ("Unknown record class %d, assuming ASCII\n", buf->tra$b_class);
+	    if (DTPRINT_FILE) printf ("Unknown record class %d, assuming ASCII\n", buf->tra$b_class);
 	    decsim_read_ascii (trace, read_fd, NULL);
 	    return;
 	    }
 	}
 
-    if (DTPRINT) printf ("Times = %d to %d\n", trace->start_time, trace->end_time);
+    if (DTPRINT_FILE) printf ("Times = %d to %d\n", trace->start_time, trace->end_time);
 
     /* Print skipping statistics * /
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -565,8 +565,8 @@ void tempest_read (trace, read_fd)
     status = read (read_fd, chardata, 4);
     chardata[4]='\0';
     if (!status || strncmp (chardata,"BT0",3) ) {
-	if (DTPRINT) printf ("Bad File Format (=%s)\n", chardata);
-	dino_error_ack (trace,"Bad File Format");
+	sprintf (message, "Bad File Format (=%s)\n", chardata);
+	dino_error_ack(trace, message);
 	return;
 	}
     status = read (read_fd, &numBytes, 4);
@@ -575,7 +575,7 @@ void tempest_read (trace, read_fd)
     status = read (read_fd, &numBitsRow, 4);
     status = read (read_fd, &numBitsRowPad, 4);
 
-    if (DTPRINT) {
+    if (DTPRINT_FILE) {
 	printf ("File Sig=%s Bytes=%d Signals=%d Rows=%d Bits/Row=%d Bits/Row(pad)=%d\n",
 	       chardata,numBytes,trace->numsig,numRows,numBitsRow,numBitsRowPad);
 	}
@@ -594,48 +594,62 @@ void tempest_read (trace, read_fd)
 	status = read (read_fd, chardata, sigChars);
 	chardata[sigChars] = '\0';
 	
-	if (DTPRINT) {
+	if (DTPRINT_FILE) {
 	    printf ("sigFlags=%x sigOffset=%d sigWidth=%d sigChars=%d sigName=%s\n",
 		   sigFlags,sigOffset,sigWidth,sigChars,chardata);
 	    }
 	
-	/*
-	 ** Initialize all pointers and other stuff in the signal
-	 ** description block
-	 */
-	sig_ptr = (SIGNAL *)XtMalloc (sizeof(SIGNAL));
-	memset (sig_ptr, 0, sizeof (SIGNAL));
-	sig_ptr->trace = trace;
-	sig_ptr->forward = NULL;
-	if (trace->firstsig==NULL) {
-	    trace->firstsig = sig_ptr;
-	    sig_ptr->backward = NULL;
-	    }
-	else {
-	    last_sig_ptr->forward = sig_ptr;
-	    sig_ptr->backward = last_sig_ptr;
-	    }
-	sig_ptr->lsb_index = 0;
-	sig_ptr->msb_index = 0;
-	sig_ptr->bits = sigWidth - 1;
-	sig_ptr->file_pos = sigOffset;
+	if (1) {
+	    int index;
 
-	/* These could be simplified as they map 1:1, but safer not to */
-	sig_ptr->file_type.flags = 0;
-	sig_ptr->file_type.flag.pin_input = ((sigFlags & 1) != 0);
-	sig_ptr->file_type.flag.pin_output = ((sigFlags & 2) != 0);
-	sig_ptr->file_type.flag.pin_psudo = ((sigFlags & 4) != 0);
-	sig_ptr->file_type.flag.pin_timestamp = ((sigFlags & 8) != 0);
-	sig_ptr->file_type.flag.four_state = ((sigFlags & 16) != 0);
-	
-	/*
-	 ** Copy the signal name, add EOS delimiter and initialize the pointer to it
-	 */
-	sig_ptr->signame = (char *)XtMalloc (10+sigChars); /* allow extra space in case becomes vector */
-	for (j=0;j<sigChars;j++)
-	    sig_ptr->signame[j] = chardata[j];
-	sig_ptr->signame[sigChars] = '\0';
-	
+	    for (index=sigWidth-1 ; index>=0; index--) {
+		/*
+		 ** Initialize all pointers and other stuff in the signal
+		 ** description block
+		 */
+		sig_ptr = (SIGNAL *)XtMalloc (sizeof(SIGNAL));
+		memset (sig_ptr, 0, sizeof (SIGNAL));
+		sig_ptr->trace = trace;
+		sig_ptr->forward = NULL;
+		if (trace->firstsig==NULL) {
+		    trace->firstsig = sig_ptr;
+		    sig_ptr->backward = NULL;
+		    }
+		else {
+		    last_sig_ptr->forward = sig_ptr;
+		    sig_ptr->backward = last_sig_ptr;
+		    }
+		if (sigWidth>1) {
+		    sig_ptr->bit_index = index;
+		    sig_ptr->bits = sigWidth;	/* Special, will be decomposed */
+		    }
+		else {
+		    sig_ptr->bit_index = -1;
+		    sig_ptr->bits = 0;
+		    }
+		if (index==sigWidth-1) sig_ptr->file_type.flag.vector_msb = TRUE;
+		sig_ptr->file_pos = sigOffset + index;
+		
+		/* These could be simplified as they map 1:1, but safer not to */
+		sig_ptr->file_type.flags = 0;
+		sig_ptr->file_type.flag.pin_input = ((sigFlags & 1) != 0);
+		sig_ptr->file_type.flag.pin_output = ((sigFlags & 2) != 0);
+		sig_ptr->file_type.flag.pin_psudo = ((sigFlags & 4) != 0);
+		sig_ptr->file_type.flag.pin_timestamp = ((sigFlags & 8) != 0);
+		sig_ptr->file_type.flag.four_state = ((sigFlags & 16) != 0);
+		
+		/*
+		 ** Copy the signal name, add EOS delimiter and initialize the pointer to it
+		 */
+		sig_ptr->signame = (char *)XtMalloc (10+sigChars); /* allow extra space in case becomes vector */
+		for (j=0;j<sigChars;j++)
+		    sig_ptr->signame[j] = chardata[j];
+		sig_ptr->signame[sigChars] = '\0';
+		
+		last_sig_ptr = sig_ptr;
+		}
+	    }
+	    
 	/* Checks */
 	if (sig_ptr->file_type.flag.four_state != 0) {
 	    sprintf (message,"Four state tempest not supported.\nSignal %s will be wrong.",sig_ptr->signame);
@@ -647,12 +661,10 @@ void tempest_read (trace, read_fd)
 	 */
 	pad_len = (sigChars%8) ? 8 - (sigChars%8) : 0;
 	status = read (read_fd, chardata, pad_len);
-
-	last_sig_ptr = sig_ptr;
 	}
 
     /* Make the busses */
-    read_make_busses (trace);
+    read_make_busses (trace, FALSE);
 
     /* Make storage space, with some overhead */
     data = (unsigned int *)XtMalloc (128 + numBitsRowPad/8);
@@ -663,7 +675,7 @@ void tempest_read (trace, read_fd)
     for (i=0;i<numRows;i++) {
 	/* Read a row of data */
 	status = read (read_fd, data, numBitsRowPad/8);
-	/*if (DTPRINT) {
+	/*if (DTPRINT_FILE) {
 	    printf ("read: time=%d  data=%08x %08x\n", data[0], 
 		   data[0], data[1]);
 	    }*/
@@ -671,7 +683,7 @@ void tempest_read (trace, read_fd)
 	/** Extract the phase - this will be used as a 'time' value and
 	 ** is multiplied by 100 to make the trace easier to read
 	 */
-	time = data[0] * 2;
+	time = data[0] * global->tempest_time_mult;
 	if (time == last_time) time++;
 	last_time = time;
 	
@@ -687,7 +699,7 @@ void tempest_read (trace, read_fd)
 	/* Perhaps it's because both were written by SEG CAD. */
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    fil_tempest_binary_to_value (sig_ptr, data, &value);
-	    /*if (DTPRINT) printf ("SIg %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
+	    /*if (DTPRINT_FILE) printf ("SIg %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
 		    value.number[0]);*/
 	    value.siglw.sttime.time = time;
 	    fil_add_cptr (sig_ptr, &value, !first_data);

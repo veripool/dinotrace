@@ -1,5 +1,5 @@
 
-char dinopost[] = "% Header last modified 5/11/94 by Wilson Snyder, RICKS::SNYDER\n\
+char dinopost[] = "% Header last modified 11/12/94 by Wilson Snyder, RICKS::SNYDER\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
 \n\
@@ -8,9 +8,9 @@ char dinopost[] = "% Header last modified 5/11/94 by Wilson Snyder, RICKS::SNYDE
   /PG_WID exch def		% def PG_WID = 11 * 72\n\
   /PG_HGT exch def		% def PG_HGT = 8.5 * 72\n\
   /sigrf exch def		% signal rf time\n\
+  /xstart exch def		% xstart of DINOTRACE window\n\
   /width exch def		% width of DINOTRACE window\n\
   /height exch def		% height of DINOTRACE window\n\
-  /XADJ { PG_WID width div mul } def\n\
   /YADJ { PG_HGT 50 sub height div mul 50 add } def\n\
   /YTRN { PG_HGT 50 sub height div mul } def\n\
   /DEL { 3 XADJ } def		% def DEL\n\
@@ -39,9 +39,9 @@ char dinopost[] = "% Header last modified 5/11/94 by Wilson Snyder, RICKS::SNYDE
 { newpath			% clear current path\n\
   90 rotate			% rotates to landscape\n\
   0 PG_HGT neg translate	% translates so you can see the image\n\
-  3 setlinewidth		% set the line width of the border\n\
 \n\
-  0 0 MT 0 PG_HGT LT PG_WID PG_HGT LT PG_WID 0 LT 0 0 LT stroke % draw bounding box\n\
+  %3 setlinewidth		% set the line width of the border\n\
+  %0 0 MT 0 PG_HGT LT PG_WID PG_HGT LT PG_WID 0 LT 0 0 LT stroke % draw bounding box\n\
 \n\
   /Helvetica-BoldOblique findfont 30 scalefont setfont % choose large font\n\
   1 setlinecap 1 setlinejoin 1 setlinewidth	% set line char\n\
@@ -72,11 +72,23 @@ char dinopost[] = "% Header last modified 5/11/94 by Wilson Snyder, RICKS::SNYDE
 \n\
 /RIGHTSHOW	% right justify the signal names adj=(x2-x1-stringwidth)\n\
 { dup stringwidth pop	% get width of string\n\
-  100 XADJ 5 sub	% calculate right edge of text position\n\
-%  currentpoint pop sub	% patched WPS - get starting location of text and sub\n\
-  exch sub		% subtract stringwidth\n\
+  0 exch sub		% subtract stringwidth\n\
   0 rmoveto show	% adjust strating location of text and show\n\
-} def \n\
+} def\n\
+\n\
+/SIGMARGIN	% set margin to max of this width or prev widths\n\
+{ stringwidth pop dup	% get width of string\n\
+  sigwidth gt {		% compare to current width\n\
+  /sigwidth exch def	% set it\n\
+  } { pop } ifelse\n\
+} def\n\
+\n\
+/XSCALESET	% set signal xscaling after all signals were margined\n\
+{ /sigwidth sigwidth 20 add def		% left margin creation\n\
+  /sigstart sigwidth 10 add def		% space between signal and values\n\
+  /sigxscale PG_WID sigstart sub width xstart sub div def	% Scaling for signal section\n\
+  /XADJ { xstart sub sigxscale mul sigstart add } def	% convert X screen to print coord\n\
+} def\n\
 \n\
 /START { stroke YADJ exch XADJ exch MT } def\n\
 \n\

@@ -37,8 +37,161 @@
 #include "dinotrace.h"
 #include "callbacks.h"
 
+#define MAXCNT	4000		/* Maximum number of segment pairs to draw before stopping this signal */
+#define OVERLAPSPACE 2		/* Number of pixels within which two signal transitions are visualized as one */
+/* Don't make this above 4000, as some servers choke with that many points. */
+
 extern void draw_hscroll (),
     draw_vscroll ();
+
+void draw_grid (trace)
+    TRACE	*trace;                        
+{         
+    char strg[MAXSTATELEN+16];		/* String value to print out */
+    char primary_dash[4];		/* Dash pattern */
+    float 	xlocf,xtimf,xendf;
+    int		adj,x_last_time,yt,y1,y2;
+    DTime	xtime;
+    Boolean 	on_secondary = FALSE;	/* Now plotting secondary edge */
+    int		grid_res_inc;
+
+    xendf = (float)(trace->width - XMARGIN);
+    adj = global->time * global->res - global->xstart;
+
+    /*** draw the time line and the grid if its visible ***/
+    
+    /* calculate the starting window pixel location of the first time */
+    xlocf = trace->grid_align - trace->grid_res;	/* Start back 1 clock so BOTH will plot on left edge */
+    xlocf = (xlocf + (global->time-trace->grid_align) / trace->grid_res*trace->grid_res)
+	* global->res - adj;
+    
+    /* calculate the starting time */
+    xtimf = (xlocf + (float)adj)/global->res + .001;
+    
+    /* initialize some parameters */
+    x_last_time = 0;
+    xtime = (int)xtimf;
+    yt = 20;
+    y1 = trace->ystart - SIG_SPACE/4;
+    y2 = trace->height - trace->sighgt;
+    if (trace->grid_res_auto == GRID_RES_AUTO_DOUBLE) grid_res_inc = trace->grid_res/2;
+    else grid_res_inc = trace->grid_res;
+    if (grid_res_inc < 1) grid_res_inc = 1;	/* Prevents round-down to 0 causing infinite loop */
+    
+    /* create the dash pattern for the vertical grid lines */
+    primary_dash[0] = PDASH_HEIGHT;
+    primary_dash[1] = trace->sighgt - primary_dash[0];
+    
+    /* set the line attributes as the specified dash pattern */
+    XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0, 0);
+    XSetDashes (global->display, trace->gc, 0, primary_dash, 2);
+    
+    /* check if there is a reasonable amount of increments to draw the time grid */
+    if ( (xendf - xlocf)/ (trace->grid_res*global->res) < MIN_GRID_RES ) {
+        for (xlocf=xlocf; xlocf < xendf; ) {
+	    if (xlocf > 0) {
+		/* compute the time value and draw it if it fits */
+		time_to_string (trace, strg, xtime, FALSE);
+		if ( (int)xlocf - x_last_time >= XTextWidth (trace->text_font,strg,strlen (strg)) + 5 ) {
+		    XDrawString (global->display,trace->wind,
+				 trace->gc, (int)xlocf, yt, strg, strlen (strg));
+		    x_last_time = (int)xlocf;
+		    }
+	    
+		/* if the grid is visible, draw a vertical dashed line */
+		if (trace->grid_vis) {
+		    XDrawLine (global->display, trace->wind,trace->gc, (int)xlocf,y1, (int)xlocf,y2);
+		    if (!on_secondary) {
+			XDrawLine (global->display, trace->wind,trace->gc, 1+(int)xlocf,y1, 1+(int)xlocf,y2);
+			}
+		    }
+		}
+
+	    /* End-of-Loop */
+	    xlocf += grid_res_inc*global->res;
+	    xtime += grid_res_inc;
+	    if (trace->grid_res_auto == GRID_RES_AUTO_DOUBLE) on_secondary = ! on_secondary;
+	    }
+	}
+    
+    /* reset the line attributes */
+    XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
+    }
+
+void draw_cursors (trace)
+    TRACE	*trace;                        
+{         
+    int		len,end_time;
+    char 	strg[MAXSTATELEN+16];		/* String value to print out */
+    CURSOR 	*csr_ptr;			/* Current cursor being printed */
+    int		x1,mid,x2,y2;
+    char 	nonuser_dash[2];		/* Dashed line for nonuser cursors */
+
+    nonuser_dash[0]=2;	nonuser_dash[1]=2;	/* Can't auto-init in ultrix compiler */
+
+    end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
+
+    /* initial the y colors for drawing */
+    y2 = ( (int)((trace->height-trace->ystart)/trace->sighgt) - 1 ) *
+	trace->sighgt + trace->sighgt/2 + trace->ystart + 2;
+    
+    for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
+	
+	/* check if cursor is on the screen */
+	if ((csr_ptr->time > global->time) && (csr_ptr->time < end_time)) {
+	    
+	    /* Change color */
+	    XSetForeground (global->display, trace->gc,
+			    trace->xcolornums[csr_ptr->color]);
+	    if (csr_ptr->type==USER) {
+		XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
+		}
+	    else {
+		XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0,0);
+		XSetDashes (global->display, trace->gc, 0, nonuser_dash, 2);
+		}
+	    
+	    /* draw the cursor */
+	    x1 = TIME_TO_XPOS (csr_ptr->time);
+	    XDrawLine (global->display,trace->wind,trace->gc,x1,25,x1,y2);
+	    
+	    /* draw the cursor value */
+	    time_to_string (trace, strg, csr_ptr->time, FALSE);
+	    len = XTextWidth (trace->text_font,strg,strlen (strg));
+	    XDrawString (global->display,trace->wind,
+			 trace->gc, x1-len/2, y2+10, strg, strlen (strg));
+	    
+	    /* if there is a previous visible cursor, draw delta line */
+	    if ( csr_ptr->prev && (csr_ptr->prev->time > global->time) ) {
+		
+		x2 = TIME_TO_XPOS (csr_ptr->prev->time);
+		time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
+		len = XTextWidth (trace->text_font,strg,strlen (strg));
+		
+		/* write the delta value if it fits */
+		XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
+		if ( x1 - x2 >= len + 6 ) {
+		    /* calculate the mid pt of the segment */
+		    mid = x2 + (x1 - x2)/2;
+		    XDrawLine (global->display, trace->wind, trace->gc,
+			       x2, y2-5, mid-len/2-2, y2-5);
+		    XDrawLine (global->display, trace->wind, trace->gc,
+			       mid+len/2+2, y2-5, x1, y2-5);
+		    
+		    XDrawString (global->display,trace->wind,
+				 trace->gc, mid-len/2, y2, strg, strlen (strg));
+		    }
+		/* or just draw the delta line */
+		else {
+		    XDrawLine (global->display, trace->wind,
+			       trace->gc, x2, y2-5, x1, y2-5);
+		    }
+		}
+	    }
+	}
+    /* Reset */
+    XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
+    }
 
 /*
  *
@@ -97,34 +250,25 @@ extern void draw_hscroll (),
  */                          
 
 
-#define MAXCNT	4000		/* Maximum number of segment pairs to draw before stopping this signal */
-#define OVERLAPSPACE 2		/* Number of pixels within which two signal transitions are visualized as one */
-/* Don't make this above 4000, as some servers choke with that many points. */
-
 void draw (trace)                                 
     TRACE	*trace;                        
 {         
-    int c=0,i,cnt,adj,ymdpt,yt,xloc,xend,du,len,mid,yfntloc;
+    int c=0,i,cnt,adj,ymdpt,xloc,xend,du,len,mid,yfntloc;
     int last_drawn_xloc;
-    unsigned int last_drawn_state;
+    unsigned int last_drawn_state=EOT;
     int	x1,x2,y1,y2;
     int numprt;				/* Number of signals printed out on screen */
     int srch_this_color;		/* Color to print signal if matches search value */
     XPoint Pts[MAXCNT+100];			/* Array of points to plot */
-    float iff,xlocf,xtimf;
     char strg[MAXSTATELEN+16];		/* String value to print out */
     register SIGNAL_LW *cptr,*nptr;	/* Current value pointer and next value pointer */
     SIGNAL *sig_ptr;			/* Current signal being printed */
-    CURSOR *csr_ptr;			/* Current cursor being printed */
     unsigned int value;
     /* int temp_color=0; */
     /* char temp_strg[20]; */
     int end_time;
-    int oldpix;
-    XColor	xcolor;
-    Colormap	cmap;
     
-    if (DTPRINT) printf ("In draw - filename=%s\n",trace->filename);
+    if (DTPRINT_ENTRY) printf ("In draw - filename=%s\n",trace->filename);
     
     /* don't draw anything if no file is loaded */
     if (!trace->loaded) return;
@@ -137,9 +281,9 @@ void draw (trace)
     
     xend = trace->width - XMARGIN;
     adj = global->time * global->res - global->xstart;
-    end_time = ( xend + adj ) / global->res;
+    end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
     
-    if (DTPRINT) printf ("global->res=%f adj=%d time=%d-%d\n",global->res,adj,
+    if (DTPRINT_DRAW) printf ("global->res=%f adj=%d time=%d-%d\n",global->res,adj,
 			     global->time, end_time);
     
     /* Loop and draw each signal individually */
@@ -210,7 +354,7 @@ void draw (trace)
 	    if (nptr->sttime.time == EOT) break;
 	    
 	    /* find the x location for the end of this segment */
-	    xloc = nptr->sttime.time * global->res - adj;
+	    xloc = TIME_TO_XPOS (nptr->sttime.time);
 	    
 	    /* printf ("L %07x\t%d < %d < %d\n", cptr, last_drawn_xloc+OVERLAPSPACE, xloc, xend); */
 	    if ( (last_drawn_state==(cptr->sttime.state)) && ((last_drawn_xloc+OVERLAPSPACE) > xloc)
@@ -420,111 +564,10 @@ void draw (trace)
     /* Back to default color */
     XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
 
-    /*** draw the time line and the grid if its visible ***/
-    
-    /* calculate the starting window pixel location of the first time */
-    xlocf = (trace->grid_align + (global->time-trace->grid_align)
-	     /trace->grid_res*trace->grid_res)*global->res - adj;
-    
-    /* calculate the starting time */
-    xtimf = (xlocf + (float)adj)/global->res + .001;
-    
-    /* initialize some parameters */
-    i = 0;
-    x1 = (int)xtimf;
-    yt = 20;
-    y1 = trace->ystart - SIG_SPACE/4;
-    y2 = trace->height - trace->sighgt;
-    
-    /* create the dash pattern for the vertical grid lines */
-    strg[0] = SIG_SPACE/2;
-    strg[1] = trace->sighgt - strg[0];
-    
-    /* set the line attributes as the specified dash pattern */
-    XSetLineAttributes (global->display,trace->gc,0,LineOnOffDash,0,0);
-    XSetDashes (global->display,trace->gc,0,strg,2);
-    
-    /* check if there is a reasonable amount of increments to draw the time grid */
-    if ( ((float)xend - xlocf)/ (trace->grid_res*global->res) < MIN_GRID_RES ) {
-        for (iff=xlocf;iff< (float)xend; iff+=trace->grid_res*global->res) {
-	    /* compute the time value and draw it if it fits */
-	    time_to_string (trace, strg, x1, FALSE);
+    draw_grid (trace);
 
-	    if ( (int)iff - i >= XTextWidth (trace->text_font,strg,strlen (strg)) + 5 ) {
-	        XDrawString (global->display,trace->wind,
-			    trace->gc, (int)iff, yt, strg, strlen (strg));
-	        i = (int)iff;
-		}
-	    
-	    /* if the grid is visible, draw a vertical dashed line */
-	    if (trace->grid_vis) {
-	        XDrawLine (global->display, trace->wind,trace->gc, (int)iff,y1, (int)iff,y2);
-		}
-	    x1 += trace->grid_res;
-	    }
-	}
-    else {
-	/* grid res is useless - must increase the spacing */
-	/*	dino_warning_ack (trace, "Grid Spacing Too Small - Increase Res"); */
-	}
-    
-    /* reset the line attributes */
-    XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
-    
     /* draw the cursors if they are visible */
-    if ( trace->cursor_vis ) {
-	/* initial the y colors for drawing */
-	y1 = 25;
-	y2 = ( (int)((trace->height-trace->ystart)/trace->sighgt) - 1 ) *
-	    trace->sighgt + trace->sighgt/2 + trace->ystart + 2;
-
-	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
-
-	    /* check if cursor is on the screen */
-	    if ((csr_ptr->time > global->time) && (csr_ptr->time < end_time)) {
-
-		/* Change color */
-		XSetForeground (global->display, trace->gc,
-				trace->xcolornums[csr_ptr->color]);
-
-		/* draw the cursor */
-		x1 = csr_ptr->time * global->res - adj;
-		XDrawLine (global->display,trace->wind,trace->gc,x1,y1,x1,y2);
-		
-		/* draw the cursor value */
-		time_to_string (trace, strg, csr_ptr->time, FALSE);
- 		len = XTextWidth (trace->text_font,strg,strlen (strg));
-		XDrawString (global->display,trace->wind,
-			    trace->gc, x1-len/2, y2+10, strg, strlen (strg));
-		
-		/* if there is a previous visible cursor, draw delta line */
-		if ( csr_ptr->prev && (csr_ptr->prev->time > global->time) ) {
-
-		    x2 = csr_ptr->prev->time * global->res - adj;
-		    time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
- 		    len = XTextWidth (trace->text_font,strg,strlen (strg));
-		    
-		    /* write the delta value if it fits */
- 		    if ( x1 - x2 >= len + 6 ) {
-			/* calculate the mid pt of the segment */
-			mid = x2 + (x1 - x2)/2;
-			XDrawLine (global->display, trace->wind, trace->gc,
-				  x2, y2-5, mid-len/2-2, y2-5);
-			XDrawLine (global->display, trace->wind, trace->gc,
-				  mid+len/2+2, y2-5, x1, y2-5);
-			
-			XDrawString (global->display,trace->wind,
-				    trace->gc, mid-len/2, y2, strg, strlen (strg));
-			}
- 		    /* or just draw the delta line */
- 		    else {
- 		        XDrawLine (global->display, trace->wind,
-				  trace->gc, x2, y2-5, x1, y2-5);
-			}
-		    }
-		}
-	    }
-	}
+    if ( trace->cursor_vis ) draw_cursors (trace);
 
     /* Draw the scroll bar */
     draw_hscroll (trace);
@@ -542,7 +585,7 @@ void	update_globals ()
     int xstarttemp;
     char *t1;
 
-    if (DTPRINT) printf ("In update_globals\n");
+    if (DTPRINT_ENTRY) printf ("In update_globals\n");
 
     /* Calculate xstart from longest signal name */
     xstarttemp=XSTART_MIN;
@@ -564,7 +607,7 @@ void	update_globals ()
 void redraw_all (trace)
     TRACE		*trace;
 {
-    if (DTPRINT) printf ("In redraw_all\n");
+    if (DTPRINT_ENTRY) printf ("In redraw_all\n");
 
     /* do not unroll this loop, as it will make the refresh across windows */
     /* appear out of sync */
@@ -591,6 +634,9 @@ void	draw_hscroll (trace)
     int ymin,ymax,x1,xmin,xmax,slider_xmin,slider_xmax;
     float xscale;
     CURSOR *csr_ptr;			/* Current cursor being printed */
+    char 	nonuser_dash[2];		/* Dashed line for nonuser cursors */
+
+    nonuser_dash[0]=2;	nonuser_dash[1]=2;	/* Can't auto-init in ultrix compiler */
 
     if (!trace->loaded || (trace->end_time == trace->start_time)) return;
 
@@ -623,10 +669,20 @@ void	draw_hscroll (trace)
 		/* Change color */
 		XSetForeground (global->display, trace->gc, trace->xcolornums[csr_ptr->color]);
 
+		if (csr_ptr->type==USER) {
+		    XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
+		    }
+		else {
+		    XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0,0);
+		    XSetDashes (global->display, trace->gc, 0, nonuser_dash, 2);
+		    }
+
 		XDrawLine (global->display, XtWindow (trace->hscroll),
 			  trace->gc, x1,ymin,x1,ymax);
 		}
 	    }
+	/* Reset */
+	XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
 	}
     }
 
@@ -640,7 +696,7 @@ void	draw_vscroll (trace)
     float yscale;
     SIGNAL	*sig_ptr;
 
-    if (DTPRINT) printf ("In draw_vscroll\n");
+    if (DTPRINT_ENTRY) printf ("In draw_vscroll\n");
 
     /* initial the y colors for drawing */
     xmin = ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_x;
@@ -651,7 +707,7 @@ void	draw_vscroll (trace)
     slider_ymax = slider_ymin + ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_height;
 
     /*
-    if (DTPRINT) printf (">>X %d - %d   Y %d - %d  Sli %d - %d\n", 
+    if (DTPRINT_DRAW) printf (">>X %d - %d   Y %d - %d  Sli %d - %d\n", 
 			xmin,xmax,ymin,ymax,slider_ymin,slider_ymax);
 			*/
 

@@ -85,7 +85,7 @@ void	verilog_read_till_end (line, readfp)
 	line = new_line;
 	if (feof (readfp)) return;
 	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
-	/* if (DTPRINT) printf ("line='%s'\n",line); */
+	/* if (DTPRINT_FILE) printf ("line='%s'\n",line); */
 	line_num++;
 	}
     }
@@ -124,7 +124,7 @@ void	verilog_read_timescale (line, readfp)
 			     *line, line_num, current_file);
 	}
     if (time_scale == 0) time_scale = 1;
-    if (DTPRINT) printf ("timescale=%d\n",time_scale);
+    if (DTPRINT_FILE) printf ("timescale=%d\n",time_scale);
 
     verilog_read_till_end (line, readfp);
     }
@@ -234,7 +234,7 @@ void	verilog_process_definitions (trace)
     int		pos;
     char	*tp;
     
-    /* if (DTPRINT) print_sig_names (NULL, trace); */
+    /* if (DTPRINT_FILE) print_sig_names (NULL, trace); */
     
     /* Find the highest pos used */
     max_pos = 0;
@@ -279,7 +279,7 @@ void	verilog_process_definitions (trace)
 	}
 
     /* Print the pos array */
-    /* if (DTPRINT) verilog_print_pos (max_pos); */
+    /* if (DTPRINT_FILE) verilog_print_pos (max_pos); */
 
     /* Kill all but the first copy of the signals.  This may be changed in later releases. */
     for (pos=0; pos<=max_pos; pos++) {
@@ -296,7 +296,7 @@ void	verilog_process_definitions (trace)
     
     /* Make the busses */
     /* The pos creation is first because there may be vectors that map to single signals. */
-    read_make_busses (trace);
+    read_make_busses (trace, TRUE);
 
     /* Assign signals to the pos array **AGAIN**. */
     /* Since busses now exist, the pointers will all be different */
@@ -310,7 +310,7 @@ void	verilog_process_definitions (trace)
 	}
 
     /* Print the pos array */
-    if (DTPRINT) verilog_print_pos (max_pos);
+    if (DTPRINT_FILE) verilog_print_pos (max_pos);
     }
 
 void	verilog_enter_busses (trace, first_data, time)
@@ -324,7 +324,7 @@ void	verilog_enter_busses (trace, first_data, time)
 
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	if (sig_ptr->file_value.siglw.sttime.state) {
-	    /*if (DTPRINT) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } */
+	    /*if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } */
 
 	    /* Enter the cptr */
 	    sig_ptr->file_value.siglw.sttime.time = time;
@@ -332,7 +332,7 @@ void	verilog_enter_busses (trace, first_data, time)
 
 	    /* Zero the state and keep the value for next time */
 	    sig_ptr->file_value.siglw.number = 0;
-	    /*if (DTPRINT) { printf ("Exited: "); print_cptr (&(sig_ptr->file_value)); } */
+	    /*if (DTPRINT_FILE) { printf ("Exited: "); print_cptr (&(sig_ptr->file_value)); } */
 	    }
 	}
     }
@@ -359,7 +359,7 @@ void	verilog_read_data (trace, readfp)
 	line_num++;
 	line = new_line;
 	if (feof(readfp)) break;
-	if (DTPRINT) {
+	if (DTPRINT_FILE) {
 	    line[strlen(line)-1]= '\0';
 	    printf ("line='%s'\n",line);
 	    }
@@ -371,8 +371,8 @@ void	verilog_read_data (trace, readfp)
 	  case '#':	/* Time stamp */
 	    verilog_enter_busses (trace, first_data, time);
 	    time = (atol (line) * time_scale) / time_divisor;
-	    if (DTPRINT) printf (" %d * ( %d / %d )\n", atol(line), time_scale, time_divisor);
-	    if (DTPRINT) printf ("Time %d start %d first %d got %d\n", time, trace->start_time, first_data, got_data);
+	    if (DTPRINT_FILE) printf (" %d * ( %d / %d )\n", atol(line), time_scale, time_divisor);
+	    if (DTPRINT_FILE) printf ("Time %d start %d first %d got %d\n", time, trace->start_time, first_data, got_data);
 	    if (first_data) {
 		if (got_time) {
 		    if (got_data) first_data = FALSE;
@@ -484,7 +484,7 @@ void	verilog_read_data (trace, readfp)
 			    }
 			break;
 			}
-		    /* if (DTPRINT) print_cptr (&(sig_ptr->file_value)); */
+		    /* if (DTPRINT_FILE) print_cptr (&(sig_ptr->file_value)); */
 		    }
 		}
 	    else printf ("%%E, Unknown <identifier_code> '%s'\n", code);
@@ -522,12 +522,12 @@ void	verilog_read_data (trace, readfp)
 			*line++ = '\0';
 			
 			strcat (extend_line, value_strg);	/* tack on the original value */
-			/* if (DTPRINT) printf ("Sign extended %s to %s\n", value_strg, extend_line); */
+			/* if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", value_strg, extend_line); */
 			value_strg = extend_line;
 			}
 	
 		    /* Store the file information */
-		    /* if (DTPRINT) printf ("\tsignal '%s'=%d %s  value %s\n", code, pos, sig_ptr->signame, value_strg); */
+		    /* if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %s  value %s\n", code, pos, sig_ptr->signame, value_strg); */
 		    fil_string_to_value (sig_ptr, value_strg, &value);
 		    value.siglw.sttime.time = time;
 		    fil_add_cptr (sig_ptr, &value, !first_data);
@@ -578,11 +578,11 @@ void	verilog_process_line (trace, line, readfp)
 
 	if (scope_level < MAXSCOPES) {
 	    strcpy (scopes[scope_level], cmd);
-	    /* if (DTPRINT) printf ("added scope, %d='%s'\n", scope_level, scopes[scope_level]); */
+	    /* if (DTPRINT_FILE) printf ("added scope, %d='%s'\n", scope_level, scopes[scope_level]); */
 	    scope_level++;
 	    }
 	else {
-	    if (DTPRINT) printf ("%%E, Too many scope levels on verilog line %d\n", line_num);
+	    if (DTPRINT_FILE) printf ("%%E, Too many scope levels on verilog line %d\n", line_num);
 
 	    sprintf (message, "Too many scope levels\non line %d of %s\n",
 		     cmd, line_num, current_file);
@@ -602,7 +602,7 @@ void	verilog_process_line (trace, line, readfp)
 	verilog_read_data (trace, readfp);
 	}
     else {
-	if (DTPRINT) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, line_num);
+	if (DTPRINT_FILE) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, line_num);
 
 	sprintf (message, "Unknown command '%s'\non line %d of %s\n",
 		 cmd, line_num, current_file);
@@ -640,7 +640,7 @@ void verilog_read (trace, read_fd)
 	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
 	line_num++;
 
-	/* if (DTPRINT) printf ("line='%s'\n",line); */
+	/* if (DTPRINT_FILE) printf ("line='%s'\n",line); */
 	verilog_process_line (trace, line, readfp);
 	}
 

@@ -23,29 +23,39 @@
  *	!		Comment
  *	#		Eventual preprocessor (#INCLUDE at least)
  *
- *	click_to_edge	ON | OFF
- *	cursor		ON | OFF
- *	cursor_add	<color> <time>
- *	debug		ON | OFF
- *	file_format	DECSIM | TEMPEST | VERILOG
- *	grid		ON | OFF
- *	grid_align	Number | AUTO_ASSERTION | AUTO_DEASSERTION
- *	grid_resolution	Number | AUTO_ASSERTION | AUTO_DEASSERTION
- *	open_geometry	<width>[%]x<height>[%]+<xoffset>[%]+<yoff>[%]
- *	page_inc	4 | 2 | 1
- *	print		ON | OFF
- *	print_size	A | B | EPS
- *	rise_fall_time	Number
- *	save_enables	ON | OFF		(Not documented)
- *	shrink_geometry	<width>%x<height>%+<xoffset>%+<yoff>%
- *	signal_height	Number
- *	signal_highlight <color> <signal_name>
- *	signal_states	<signal_name> = {State, State, State}
- *	start_geometry	<width>x<height>+<xoffset>+<yoffset>
- *	time_format	%0.6lf | %0.6lg | %lg | ""
- *	time_precision	NS | US | PS
- *	time_rep	NS | US | PS | CYCLE
- *	vector_seperator "char"
+! Undocumented:
+!	debug		ON | OFF
+!	print		<number> | ON | OFF
+!
+!	! Comment
+! Config:
+!	click_to_edge	ON | OFF
+!	cursor		ON | OFF
+!	grid		ON | OFF
+!	grid_align	<number> | ASSERTION | DEASSERTION | TWOCLOCK
+!	grid_resolution	<number> | AUTO | DOUBLE
+!	page_inc	4 | 2 | 1
+!	print_size	A | B | EPSPORT | EPSLAND
+!	rise_fall_time	<number>
+!	signal_height	<number>
+!	time_format	%0.6lf | %0.6lg | "" 
+!	time_precision	US | NS | PS
+!	time_rep	<number> | US | NS | PS | CYCLE
+! File Format:
+!	file_format	DECSIM | TEMPEST | VERILOG | DECSIM_Z
+!	save_enables	ON | OFF
+!	signal_states	<signal_pattern> = {<State>, <State>...}
+!	vector_seperator "<char>"
+!       time_multiplier	<number>
+! Geometry/resources:
+!	open_geometry	<width>[%]x<height>[%]+<xoffset>[%]+<yoff>[%]
+!	shrink_geometry	<width>%x<height>%+<xoffset>%+<yoff>%
+!	start_geometry	<width>x<height>+<xoffset>+<yoffset>
+! Modification of traces:
+!	signal_delete	<signal_pattern>
+!	signal_delete_constant	<signal_pattern>
+!	cursor_add	<color> <time>
+!	signal_highlight <color> <signal_name>
  *	
  */
 
@@ -69,10 +79,11 @@
 #include "dinotrace.h"
 #include "callbacks.h"
 
-#define issigchr(ch)  (isalnum(ch) || (ch)=='%' || (ch)=='.' || (ch)=='*' ||\
-		       (ch)=='_' || (ch)=='>'|| (ch)=='<' || (ch)==':')
-#define isstatechr(ch)  (isalnum(ch) || (ch)=='%' || (ch)=='.' || \
-		       (ch)=='_' || (ch)=='/'|| (ch)=='*' || (ch)=='(' || (ch)==')')
+/* See the ascii map to have this make sense */
+#define issigchr(ch)  ( ((ch)>' ') && ((ch)!='=') && ((ch)!='\"') && ((ch)!='\'') )
+
+#define isstatechr(ch)  ( ((ch)>' ') && ((ch)!=',') && ((ch)!='=') && ((ch)!='{') && ((ch)!='}') && ((ch)!='\"') && ((ch)!='\'') )
+
 #define isstatesep(ch)  (!isstatechr(ch) && (ch)!='}' )
 
 int line_num=0;
@@ -299,7 +310,8 @@ void	free_signal_states (trace)
     trace->signalstate_head = NULL;
     }
 
-void	print_signal_states (trace)
+void	print_signal_states (w,trace)
+    Widget	w;
     TRACE	*trace;
 {
     SIGNALSTATE *sstate_ptr;
@@ -310,7 +322,7 @@ void	print_signal_states (trace)
 	printf("Signal %s:\n",sstate_ptr->signame);
 	for (i=0; i<MAXSTATENAMES; i++)
 	    if (sstate_ptr->statename[i][0])
-		printf ("\t%d=%s", i, sstate_ptr->statename[i]);
+		printf ("\t%d=%s\n", i, sstate_ptr->statename[i]);
 	sstate_ptr = sstate_ptr->next;
 	}
     printf ("\n");
@@ -353,11 +365,11 @@ void	config_parse_geometry (line, geometry)
 	else if (flags & YValue)	flags &= flags & (~ YValue);
 	}
 
-    if (DTPRINT) printf ("geometry %s = %dx%d+%d+%d   %c%c%c%c\n", line,
-			 geometry->width, geometry->height, 
-			 geometry->x, geometry->y,
-			 geometry->widthp?'%':'-', geometry->heightp?'%':'-', 
-			 geometry->xp?'%':'-', geometry->yp?'%':'-');
+    if (DTPRINT_CONFIG) printf ("geometry %s = %dx%d+%d+%d   %c%c%c%c\n", line,
+				geometry->width, geometry->height, 
+				geometry->x, geometry->y,
+				geometry->widthp?'%':'-', geometry->heightp?'%':'-', 
+				geometry->xp?'%':'-', geometry->yp?'%':'-');
     }
 
 
@@ -461,7 +473,7 @@ void	config_process_line (trace, line, readfp)
     while (*line && isspace(*line)) line++;
     upcase_string (cmd);
 
-    /* if (DTPRINT) printf ("Cmd='%s'\n",cmd); */
+    /* if (DTPRINT_CONFIG) printf ("Cmd='%s'\n",cmd); */
 
     if (!strcmp(cmd, "DEBUG")) {
 	value=DTDEBUG;
@@ -476,7 +488,9 @@ void	config_process_line (trace, line, readfp)
 	}
     else if (!strcmp(cmd, "PRINT")) {
 	value=DTPRINT;
-	line += config_read_on_off (line, &value);
+	line += config_read_int (line, &value);
+	if (toupper(line[0])=='O' && toupper(line[0])=='N') DTPRINT = -1;
+	if (toupper(line[0])=='O' && toupper(line[0])=='F') DTPRINT = 0;
 	if (DTPRINT) printf ("Config: DTPRINT=%d\n",value);
 	if (value >= 0) {
 	    DTPRINT=value;
@@ -498,7 +512,7 @@ void	config_process_line (trace, line, readfp)
     else if (!strcmp(cmd, "CURSOR")) {
 	value = trace->cursor_vis;
 	line += config_read_on_off (line, &value);
-	if (DTPRINT) printf ("Config: cursor_vis=%d\n",value);
+	if (DTPRINT_CONFIG) printf ("Config: cursor_vis=%d\n",value);
 	if (value >= 0) {
 	    trace->cursor_vis = value;
 	    }
@@ -509,7 +523,7 @@ void	config_process_line (trace, line, readfp)
     else if (!strcmp(cmd, "GRID")) {
 	value = trace->grid_vis;
 	line += config_read_on_off (line, &value);
-	if (DTPRINT) printf ("Config: grid_vis=%d\n",value);
+	if (DTPRINT_CONFIG) printf ("Config: grid_vis=%d\n",value);
 	if (value >= 0) {
 	    trace->grid_vis = value;
 	    }
@@ -520,7 +534,7 @@ void	config_process_line (trace, line, readfp)
     else if (!strcmp(cmd, "CLICK_TO_EDGE")) {
 	value = global->click_to_edge;
 	line += config_read_on_off (line, &value);
-	if (DTPRINT) printf ("Config: click_to_edge=%d\n",value);
+	if (DTPRINT_CONFIG) printf ("Config: click_to_edge=%d\n",value);
 	if (value >= 0) {
 	    global->click_to_edge = value;
 	    }
@@ -545,7 +559,13 @@ void	config_process_line (trace, line, readfp)
 	    trace->grid_res_auto = value;
 	    }
 	else {
-	    trace->grid_res_auto = GRID_AUTO_ASS;
+	    if (toupper(line[0])=='A')
+		trace->grid_res_auto = GRID_RES_AUTO;
+	    else if (toupper(line[0])=='D')
+		trace->grid_res_auto = GRID_RES_AUTO_DOUBLE;
+	    else {
+		config_error_ack (trace, "Grid_res must be >0, ASSERTION, or DOUBLE\n");
+		}
 	    }
 	}
     else if (!strcmp(cmd, "GRID_ALIGN")) {
@@ -557,14 +577,16 @@ void	config_process_line (trace, line, readfp)
 	    }
 	else {
 	    if (toupper(line[0])=='A')
-		trace->grid_align_auto = GRID_AUTO_ASS;
+		trace->grid_align_auto = GRID_ALN_AUTO_ASS;
 	    else if (toupper(line[0])=='D')
-		trace->grid_align_auto = GRID_AUTO_DEASS;
+		trace->grid_align_auto = GRID_ALN_AUTO_DEASS;
+	    else if (toupper(line[0])=='T')
+		trace->grid_align_auto = GRID_ALN_AUTO_TWOCLOCK;
 	    else {
-		config_error_ack (trace, "Grid_align must be >0, ASSERTION, or DEASSERTION\n");
+		config_error_ack (trace, "Grid_align must be >0, ASSERTION, DEASSERTION, or TWOCLOCK\n");
 		}
 	    }
-	if (DTPRINT) printf ("grid_align_auto = %d\n", trace->grid_align_auto);
+	if (DTPRINT_CONFIG) printf ("grid_align_auto = %d\n", trace->grid_align_auto);
 	}
     else if (!strcmp(cmd, "RISE_FALL_TIME")) {
 	value = trace->sigrf;
@@ -581,7 +603,7 @@ void	config_process_line (trace, line, readfp)
 	else {
 	    config_error_ack (trace, "Page_Inc must be 1, 2, or 4\n");
 	    }
-	if (DTPRINT) printf ("page_inc = %d\n", global->pageinc);
+	if (DTPRINT_CONFIG) printf ("page_inc = %d\n", global->pageinc);
 	}
     else if (!strcmp(cmd, "TIME_REP")) {
 	switch (toupper(line[0])) {
@@ -589,10 +611,13 @@ void	config_process_line (trace, line, readfp)
 	  case 'U':	trace->timerep = TIMEREP_US;	break;
 	  case 'P':	trace->timerep = TIMEREP_PS;	break;
 	  case 'C':	trace->timerep = TIMEREP_CYC;	break;
+	  case '0': case '1': case '2': case '3': case '4':
+	  case '5': case '6': case '7': case '8': case '9': case '.':
+	    trace->timerep = atof(line);	break;
 	  default:
 	    config_error_ack (trace, "Time_Rep must be PS, NS, US, or CYCLE\n");
 	    }
-	if (DTPRINT) printf ("timerep = %d\n", trace->timerep);
+	if (DTPRINT_CONFIG) printf ("timerep = %lf\n", trace->timerep);
 	}
     else if (!strcmp(cmd, "TIME_PRECISION")) {
 	switch (toupper(line[0])) {
@@ -602,12 +627,20 @@ void	config_process_line (trace, line, readfp)
 	  default:
 	    config_error_ack (trace, "Time_Precision must be PS, NS, or US\n");
 	    }
-	if (DTPRINT) printf ("time_precision = %d\n", global->time_precision);
+	if (DTPRINT_CONFIG) printf ("time_precision = %lf\n", global->time_precision);
 	}
     else if (!strcmp(cmd, "TIME_FORMAT")) {
 	line += config_read_signal (line, cmd);
 	strcpy (global->time_format, cmd);
-	if (DTPRINT) printf ("time_format = '%s'\n", global->time_format);
+	if (DTPRINT_CONFIG) printf ("time_format = '%s'\n", global->time_format);
+	}
+    else if (!strcmp(cmd, "TIME_MULTIPLIER")) {
+	value = global->tempest_time_mult;
+	line += config_read_int (line, &value);
+	if (value > 0) global->tempest_time_mult = value;
+	else {
+	    config_error_ack (trace, "Time_Mult must be > 0\n");
+	    }
 	}
     else if (!strcmp(cmd, "PRINT_SIZE")) {
 	switch (toupper(line[0])) {
@@ -644,7 +677,7 @@ void	config_process_line (trace, line, readfp)
 	  default:
 	    config_error_ack (trace, "File_Format must be DECSIM, TEMPEST or VERILOG\n");
 	    }
-	if (DTPRINT) printf ("File_format = %d\n", file_format);
+	if (DTPRINT_CONFIG) printf ("File_format = %d\n", file_format);
 	}
     else if (!strcmp(cmd, "VECTOR_SEPERATOR")) {
 	if (*line=='"') line++;
@@ -654,10 +687,10 @@ void	config_process_line (trace, line, readfp)
 	else {
 	    trace->vector_seperator = '\0';
 	    }
-	if (DTPRINT) printf ("Vector_seperator = '%c'\n", trace->vector_seperator);
+	if (DTPRINT_CONFIG) printf ("Vector_seperator = '%c'\n", trace->vector_seperator);
 	}
     else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
-	char pattern[MAXSIGLEN]="";
+	char pattern[MAXSIGLEN];
 	int color;
 	line += config_read_int (line, &color);
 	if (color < 0 || color >= MAXCOLORS) {
@@ -674,10 +707,30 @@ void	config_process_line (trace, line, readfp)
 		}
 	    }
 	}
+    else if (!strcmp(cmd, "SIGNAL_DELETE")) {
+	char pattern[MAXSIGLEN];
+	line += config_read_signal (line, pattern);
+	if (!pattern[0]) {
+	    config_error_ack (trace, "Signal_Delete signal name must not be null\n");
+	    }
+	else {
+	    sig_delete_pattern (trace, pattern);
+	    }
+	}
+    else if (!strcmp(cmd, "SIGNAL_DELETE_CONSTANT")) {
+	char pattern[MAXSIGLEN];
+	line += config_read_signal (line, pattern);
+	if (!pattern[0]) {
+	    config_error_ack (trace, "Signal_Delete_Constant signal name must not be null\n");
+	    }
+	else {
+	    sig_delete_constant_pattern (trace, pattern);
+	    }
+	}
     else if (!strcmp(cmd, "CURSOR_ADD")) {
 	int color;
 	DTime ctime;
-	char strg[MAXSIGLEN]="";
+	char strg[MAXSIGLEN];
 
 	line += config_read_int (line, &color);
 	if (color < 0 || color >= MAXCOLORS) {
@@ -687,7 +740,7 @@ void	config_process_line (trace, line, readfp)
 	else {
 	    line += config_read_signal (line, strg);
 	    ctime = string_to_time (trace, strg);
-	    cur_add (ctime, color, 0);
+	    cur_add (ctime, color, CONFIG);
 	    }
 	}
     else if (!strcmp(cmd, "START_GEOMETRY")) {
@@ -723,7 +776,7 @@ void config_read_file (trace, filename, report_notfound, report_errors)
     FILE	*readfp;
     char line[1000];
 
-    if (DTPRINT) printf("Reading config file %s\n", filename);
+    if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Reading config file %s\n", filename);
 
     config_report_errors = report_errors;
 
@@ -759,6 +812,9 @@ void config_read_defaults (trace, report_errors)
 {
     char newfilename[MAXFNAMELEN];
     char *pchar;
+
+    /* Erase old cursors */
+    cur_delete_of_type (CONFIG);
 
 #ifdef VMS
     config_read_file (trace, "DINODISK:DINOTRACE.DINO", FALSE, report_errors);

@@ -107,13 +107,15 @@ XmString string_create_with_cr (msg)
     }
     
 
-char *date_string ()
+char *date_string (time_num)
+    time_t	time_num;	/* Time to parse, or 0 for current time */
 {
     static char	date_str[50];
-    time_t	time_num;
     struct tm *timestr;
     
-    time_num=time (NULL);
+    if (!time_num) {
+	time_num = time (NULL);
+	}
     timestr = localtime (&time_num);
     strcpy (date_str, asctime (timestr));
     if (date_str[strlen (date_str)-1]=='\n')
@@ -130,7 +132,7 @@ void    unmanage_cb (w, tag, cb )
     Widget		tag;
     XmAnyCallbackStruct *cb;
 {
-    if (DTPRINT) printf ("In unmanage_cb\n");
+    if (DTPRINT_ENTRY) printf ("In unmanage_cb\n");
     
     /* unmanage the widget */
     XtUnmanageChild (tag);
@@ -141,7 +143,7 @@ void    cancel_all_events (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf ("In cancel_all_events - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cancel_all_events - trace=%d\n",trace);
     
     /* remove all events */
     remove_all_events (trace);
@@ -155,7 +157,7 @@ void    update_scrollbar (w,value,inc,min,max,size)
     Widget		w;
     int 	value, inc, min, max, size;
 {
-    if (DTPRINT) printf ("In update_scrollbar - %d %d %d %d %d\n",
+    if (DTPRINT_ENTRY) printf ("In update_scrollbar - %d %d %d %d %d\n",
 			value, inc, min, max, size);
 
     if (min >= max) {
@@ -197,7 +199,7 @@ void    remove_all_events (trace)
 {
     TRACE	*trace_ptr;
 
-    if (DTPRINT) printf ("In remove_all_events - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In remove_all_events - trace=%d\n",trace);
     
     for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	/* remove all possible events due to res options */ 
@@ -235,12 +237,12 @@ void new_time (trace)
     SIGNAL	*sig_ptr;
     
     if ( global->time > trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res) ) {
-        if (DTPRINT) printf ("At end of trace...\n");
+        if (DTPRINT_ENTRY) printf ("At end of trace...\n");
         global->time = trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res);
 	}
     
     if ( global->time < trace->start_time ) {
-        if (DTPRINT) printf ("At beginning of trace...\n");
+        if (DTPRINT_ENTRY) printf ("At beginning of trace...\n");
         global->time = trace->start_time;
 	}
 
@@ -307,7 +309,7 @@ void get_geometry ( trace )
     update_scrollbar (trace->vscroll, trace->numsigstart, 1,
 		      0, trace->numsig, trace->numsigvis); 
     
-    if (DTPRINT) printf ("In get_geometry: x=%d y=%d width=%d height=%d\n",
+    if (DTPRINT_ENTRY) printf ("In get_geometry: x=%d y=%d width=%d height=%d\n",
 			x,y,width,height);
     }
 
@@ -338,7 +340,7 @@ void  get_file_name ( trace )
 {
     int		i;
     
-    if (DTPRINT) printf ("In get_file_name trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In get_file_name trace=%d\n",trace);
     
     if (!trace->fileselect.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
@@ -397,7 +399,7 @@ void    fil_format_option_cb (w,trace,cb)
     XmSelectionBoxCallbackStruct *cb;
 {
     int 	i;
-    if (DTPRINT) printf ("In fil_format_option_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In fil_format_option_cb trace=%d\n",trace);
 
     for (i=0; i<FF_NUMFORMATS; i++) {
 	if (w == trace->fileselect.format_item[i]) {
@@ -415,7 +417,7 @@ void fil_ok_cb (w, trace, cb)
 {
     char	*tmp;
     
-    if (DTPRINT) printf ("In fil_ok_cb trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In fil_ok_cb trace=%d\n",trace);
     
     /*
      ** Unmanage the file select widget here and wait for sync so
@@ -426,13 +428,13 @@ void fil_ok_cb (w, trace, cb)
     XSync (global->display,0);
     
     tmp = extract_first_xms_segment (cb->value);
-    if (DTPRINT) printf ("filename=%s\n",tmp);
+    if (DTPRINT_FILE) printf ("filename=%s\n",tmp);
     
     strcpy (trace->filename, tmp);
     
     DFree (tmp);
     
-    if (DTPRINT) printf ("In fil_ok_cb Filename=%s\n",trace->filename);
+    if (DTPRINT_FILE) printf ("In fil_ok_cb Filename=%s\n",trace->filename);
     fil_read_cb (trace);
     }
 
@@ -442,7 +444,7 @@ void get_data_popup (trace,string,type)
     char	*string;
     int		type;
 {
-    if (DTPRINT) 
+    if (DTPRINT_ENTRY) 
 	printf ("In get_data trace=%d string=%s type=%d\n",trace,string,type);
     
     if (trace->prompt_popup == NULL) {
@@ -474,19 +476,19 @@ void    prompt_ok_cb (w, trace, cb)
     XmSelectionBoxCallbackStruct *cb;
 {
     char	*valstr;
-    DTime	time;
+    DTime	restime;
     
-    if (DTPRINT) printf ("In prompt_ok_cb type=%d\n",trace->prompt_type);
+    if (DTPRINT_ENTRY) printf ("In prompt_ok_cb type=%d\n",trace->prompt_type);
     
     /* Get value */
     valstr = extract_first_xms_segment (cb->value);
-    time = string_to_time (trace, valstr);
+    restime = string_to_time (trace, valstr);
 
     /* unmanage the popup window */
     XtUnmanageChild (trace->prompt_popup);
     
-    if (time <= 0) {
-	sprintf (message,"Value %d out of range", time);
+    if (restime <= 0) {
+	sprintf (message,"Value %d out of range", restime);
 	dino_error_ack (trace,message);
 	return;
 	}
@@ -496,13 +498,13 @@ void    prompt_ok_cb (w, trace, cb)
 	{
       case IO_GRIDRES:
 	/* get the data and store in display structure */
-	trace->grid_res = (int)time;
+	trace->grid_res = (int)restime;
 	redraw_all (trace);
 	break;
 	
       case IO_RES:
 	/* get the data and store in display structure */
-	global->res = RES_SCALE / (float)time;
+	global->res = RES_SCALE / (float)restime;
 	    
 	/* change the resolution string on display */
 	new_res (trace, TRUE);
@@ -559,39 +561,67 @@ void dino_message_ack (trace, type, msg)
     XtManageChild (trace->message);
     }
 
+SIGNAL_LW *cptr_at_time (sig_ptr, ctime)
+    /* Return the CPTR for the given time */
+    SIGNAL	*sig_ptr;
+    DTime	ctime;
+{
+    SIGNAL_LW	*cptr;
+    for (cptr = (SIGNAL_LW *)(sig_ptr->cptr);
+	 (cptr->sttime.time != EOT) && (((cptr + sig_ptr->lws)->sttime.time) <= ctime);
+	     cptr += sig_ptr->lws) ;
+    return (cptr);
+    }
+
+
 /******************************************************************************
  *
  *			Dinotrace Debugging Routines
  *
  *****************************************************************************/
 
-void DINO_NUMBER_TO_VALUE (num)
-    int		num;
+void    cptr_to_string (cptr, strg)
+    SIGNAL_LW	*cptr;
+    char	*strg;
 {
-    switch (num)
-	{
+    switch (cptr->sttime.state) {
       case STATE_1:
-	printf ("1");
+	strg[0] = '1';
+	strg[1] = '\0';
 	return;
 	
       case STATE_0:
-	printf ("0");
+	strg[0] = '0';
+	strg[1] = '\0';
 	return;
 	
       case STATE_U:
-	printf ("U");
+	strg[0] = 'U';
+	strg[1] = '\0';
 	return;
 	
       case STATE_Z:
-	printf ("Z");
+	strg[0] = 'Z';
+	strg[1] = '\0';
 	return;
 	
       case STATE_B32:
-	printf ("B32");
+	sprintf (strg, "%x", (cptr+1)->number);
+	return;
+	
+      case STATE_B64:
+	sprintf (strg, "%X_%08X", (cptr+2)->number,
+		 (cptr+1)->number);
+	return;
+	
+      case STATE_B96:
+	sprintf (strg, "%X_%08X_%08X", (cptr+3)->number,
+		 (cptr+2)->number,
+		 (cptr+1)->number);
 	return;
 	
       default:
-	printf ("UNKNOWN VALUE");
+	strg[0] = '?';
 	return;
 	}
     }
@@ -602,16 +632,16 @@ void    print_sig_names (w,trace)
 {
     SIGNAL	*sig_ptr, *back_sig_ptr;
 
-    if (DTPRINT) printf ("In print_sig_names\n");
+    if (DTPRINT_ENTRY) printf ("In print_sig_names\n");
 
     printf ("  Number of signals = %d\n", trace->numsig);
 
     /* loop thru each signal */
     back_sig_ptr = NULL;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	printf (" Sig '%s'  ty=%d inc=%d index=%d-%d btyp=%d bpos=%d bits=%d\n",
+	printf (" Sig '%s'  ty=%d inc=%d index=%d-%d tempbit %d btyp=%d bpos=%d bits=%d\n",
 		sig_ptr->signame, sig_ptr->type, sig_ptr->lws,
-		sig_ptr->msb_index, sig_ptr->lsb_index,
+		sig_ptr->msb_index ,sig_ptr->lsb_index, sig_ptr->bit_index,
 		sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->bits
 		);
 	if (sig_ptr->backward != back_sig_ptr) {
@@ -626,29 +656,10 @@ void    print_sig_names (w,trace)
 void    print_cptr (cptr)
     SIGNAL_LW	*cptr;
 {
-    DINO_NUMBER_TO_VALUE (cptr->sttime.state);
-    printf (" at time %d",cptr->sttime.time);
-	
-    switch (cptr->sttime.state) {
-      case STATE_B32:
-	printf (" with a value of %x\n", (cptr+1)->number);
-	break;
-	
-      case STATE_B64:
-	printf (" with a value of %X %08X", (cptr+2)->number,
-	       (cptr+2)->number);
-	break;
-	
-      case STATE_B96:
-	printf (" with a value of %X %08X %08X", (cptr+3)->number,
-	       (cptr+2)->number,
-	       (cptr+1)->number);
-	break;
-	
-      default:
-	printf ("\n");
-	break;
-	}
+    char strg[100];
+
+    cptr_to_string (cptr, strg);
+    printf ("%s at time %d\n",strg,cptr->sttime.time);
     }
 
 void    print_screen_traces (w,trace)
@@ -657,7 +668,6 @@ void    print_screen_traces (w,trace)
 {
     int		i,adj,num;
     SIGNAL	*sig_ptr;
-    SIGNAL_LW	*cptr;
     
     printf ("There are %d signals currently visible.\n",trace->numsigvis);
     printf ("Which signal do you wish to view [0-%d]: ",trace->numsigvis-1);
@@ -676,17 +686,23 @@ void    print_screen_traces (w,trace)
 	sig_ptr = (SIGNAL *)sig_ptr->forward;	
 	}
     
-    cptr = (SIGNAL_LW *)sig_ptr->cptr;
+    print_sig_info (sig_ptr);
+    }
+
+void    print_sig_info (sig_ptr)
+    SIGNAL	*sig_ptr;
+{
+    SIGNAL_LW	*cptr;
     
-    printf ("Signal %s starts at %d with a value of ",sig_ptr->signame,cptr->sttime.time);
-    DINO_NUMBER_TO_VALUE (cptr->sttime.state);
-    printf ("\n");
+    cptr = (SIGNAL_LW *)sig_ptr->bptr;
     
-    while ( cptr->sttime.time != 0x1FFFFFFF &&
-	  (cptr->sttime.time*global->res-adj) < trace->width - XMARGIN)
-	{
+    printf ("Signal %s starts ",sig_ptr->signame);
+    print_cptr (cptr);
+    
+    for ( ; cptr->sttime.time != EOT; cptr += sig_ptr->lws ) {
+	/*printf ("%x %x %x %x %x    ", (cptr)->number, (cptr+1)->number, (cptr+2)->number,
+		(cptr+3)->number, (cptr+4)->number);*/
 	print_cptr (cptr);
-	cptr += sig_ptr->lws;
 	}
     }
 
@@ -694,15 +710,32 @@ void    debug_signal_integrity (sig_ptr, list_name)
     SIGNAL	*sig_ptr;
     char	*list_name;
 {
+    SIGNAL_LW	*cptr;
+    DTime	last_time;
+
     if (!sig_ptr) return;
 
     if (sig_ptr->backward != NULL) {
 	printf ("%s, Backward pointer should be NULL on signal %s\n", list_name, sig_ptr->signame);
 	}
 
-    for (; sig_ptr->forward; sig_ptr=sig_ptr->forward) {
-	if (sig_ptr->forward->backward != sig_ptr) {
-	    printf ("%s, Bad backward link on signal %s\n", list_name, sig_ptr->forward);
+    for (; sig_ptr && sig_ptr->forward; sig_ptr=sig_ptr->forward) {
+	if (sig_ptr->forward && sig_ptr->forward->backward != sig_ptr) {
+	    printf ("%s, Bad backward link on signal %s\n", list_name, sig_ptr->signame);
+	    }
+
+	last_time = -1;
+	for (cptr = (SIGNAL_LW *)sig_ptr->bptr; cptr->sttime.time != EOT; cptr += sig_ptr->lws) {
+	    if ( cptr->sttime.time == last_time ) {
+		printf ("%s, Double time change at signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
+		}
+	    if ( cptr->sttime.time < last_time ) {
+		printf ("%s, Reverse time change at signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
+		}
+	    last_time = cptr->sttime.time;
+	    }
+	if (last_time != sig_ptr->trace->end_time) {
+	    printf ("%s, Doesn't end at right time, signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
 	    }
 	}
     }
@@ -715,7 +748,7 @@ void    debug_integrity_check_cb (w,trace,cb)
     debug_signal_integrity (global->delsig, "Deleted Signals");
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	debug_signal_integrity (trace->firstsig, "Trace");
+	debug_signal_integrity (trace->firstsig, trace->filename);
 	}
     }
 
@@ -828,40 +861,40 @@ DTime	posx_to_time_edge (trace,x,y)
     TRACE 	*trace;
     Position	x,y;
 {
-    DTime	time;
+    DTime	xtime;
     SIGNAL 	*sig_ptr;
     SIGNAL_LW	*cptr;
     DTime	left_time, right_time;
 
-    time = posx_to_time (trace,x);
-    if (time<0 || !global->click_to_edge) return (time);
+    xtime = posx_to_time (trace,x);
+    if (xtime<0 || !global->click_to_edge) return (xtime);
 
     /* If no signal at this position return time directly */
-    if (! (sig_ptr = posy_to_signal (trace,y))) return (time);
+    if (! (sig_ptr = posy_to_signal (trace,y))) return (xtime);
 
     /* Find time where signal changes */
-    for (cptr = (SIGNAL_LW *)(sig_ptr)->cptr;
-	 (cptr->sttime.time != EOT) && (((cptr + sig_ptr->lws)->sttime.time) < time);
+    for (cptr = (SIGNAL_LW *)(sig_ptr->cptr);
+	 (cptr->sttime.time != EOT) && (((cptr + sig_ptr->lws)->sttime.time) < xtime);
 	 cptr += sig_ptr->lws) ;
     left_time = cptr->sttime.time;
-    if (left_time == EOT) return (time);
+    if (left_time == EOT) return (xtime);
     cptr += sig_ptr->lws;
     right_time = cptr->sttime.time;
 
     /*
     if (DTPRINT) {
-	printf ("Time %d, signal %s changes %d - %d, pixels %f,%f\n", time, sig_ptr->signame, 
+	printf ("Time %d, signal %s changes %d - %d, pixels %f,%f\n", xtime, sig_ptr->signame, 
 		left_time, right_time,
-		(float)(ABS (left_time - time) * global->res),
-		(float)(ABS (right_time - time) * global->res)
+		(float)(ABS (left_time - xtime) * global->res),
+		(float)(ABS (right_time - xtime) * global->res)
 		);
 	}
     */
     
     /* See if edge is "close" on screen */
-    if ((right_time != EOT) && ( (time - left_time) > (right_time - time) ))
+    if ((right_time != EOT) && ( (xtime - left_time) > (right_time - xtime) ))
 	left_time = right_time;
-    if ( (abs (left_time - time) * global->res) > CLICKCLOSE )	return (time);
+    if ( (abs (left_time - xtime) * global->res) > CLICKCLOSE )	return (xtime);
     
     /* close enough */
     return (left_time);
@@ -905,24 +938,24 @@ CURSOR *posx_to_cursor (trace, x)
     Position	x;
 {
     CURSOR 	*csr_ptr;
-    DTime 	time;
+    DTime 	xtime;
 
     /* check if there are any cursors */
     if (!global->cursor_head) {
 	return (NULL);
 	}
     
-    time = posx_to_time (trace, x);
-    if (time<0) return (NULL);
+    xtime = posx_to_time (trace, x);
+    if (xtime<0) return (NULL);
     
     /* find the closest cursor */
     csr_ptr = global->cursor_head;
-    while ( (time > csr_ptr->time) && csr_ptr->next ) {
+    while ( (xtime > csr_ptr->time) && csr_ptr->next ) {
 	csr_ptr = csr_ptr->next;
 	}
     
     /* i is between cursors[i-1] and cursors[i] - determine which is closest */
-    if ( csr_ptr->prev && ( (csr_ptr->time - time) > (time - csr_ptr->prev->time) ) ) {
+    if ( csr_ptr->prev && ( (csr_ptr->time - xtime) > (xtime - csr_ptr->prev->time) ) ) {
 	csr_ptr = csr_ptr->prev;
 	}
 
@@ -931,20 +964,20 @@ CURSOR *posx_to_cursor (trace, x)
 
 
 #pragma inline (time_to_cursor)
-CURSOR *time_to_cursor (time)
+CURSOR *time_to_cursor (xtime)
     /* convert specific time value to the index of the nearest cursor, return NULL if none */
     /* Unlike posx_to_cursor, this will not return a "close" one */
-    DTime	time;
+    DTime	xtime;
 {
     CURSOR	*csr_ptr;
 
     /* find the closest cursor */
     csr_ptr = global->cursor_head;
-    while ( csr_ptr && (time > csr_ptr->time) ) {
+    while ( csr_ptr && (xtime > csr_ptr->time) ) {
 	csr_ptr = csr_ptr->next;
 	}
     
-    if (csr_ptr && (time == csr_ptr->time))
+    if (csr_ptr && (xtime == csr_ptr->time))
 	return (csr_ptr);
     else return (NULL);
     }
@@ -966,35 +999,18 @@ DTime string_to_time (trace, strg)
 	}
 
     /* First convert to picoseconds */
-    /* Preserve fall through order in case statement */
-    switch (trace->timerep) {
-      case TIMEREP_US:
-	f_time *= 1000;
-      case TIMEREP_NS:
-      default:
-	f_time *= 1000;
-      case TIMEREP_PS:
-	break;
-	}
+    f_time *= trace->timerep;
 
     /* Then convert to internal units and return */
-    /* Preserve fall through order in case statement */
-    switch (global->time_precision) {
-      case TIMEREP_US:
-	f_time /= 1000;
-      case TIMEREP_NS:
-      default:
-	f_time /= 1000;
-      case TIMEREP_PS:
-	break;
-	}
+    f_time /= global->time_precision;
+
     return ((DTime)f_time);
     }
 
 #pragma inline (time_to_string)
-void time_to_string (trace, strg, time, relative)
+void time_to_string (trace, strg, ctime, relative)
     /* convert specific time value into the string passed in */
-    DTime	time;
+    DTime	ctime;
     char	*strg;
     TRACE	*trace;
     Boolean	relative;	/* true = time is relative, so don't adjust */
@@ -1002,7 +1018,7 @@ void time_to_string (trace, strg, time, relative)
     double	f_time, remain;
     int		decimals;
 
-    f_time = (double)time;
+    f_time = (double)ctime;
 
     if (trace->timerep == TIMEREP_CYC) {
 	if (!relative) {
@@ -1015,35 +1031,16 @@ void time_to_string (trace, strg, time, relative)
 	}
     else {
 	/* Convert time to picoseconds, Preserve fall through order in case statement */
-	switch (global->time_precision) {
-	  case TIMEREP_US:
-	    f_time *= 1000000;
-	    decimals = 0;
-	    break;
-	  case TIMEREP_NS:
-	  default:
-	    f_time *= 1000;
-	    decimals = 3;
-	    break;
-	  case TIMEREP_PS:
-	    decimals = 6;
-	    break;
-	    }
-	
-	switch (trace->timerep) {
-	  case TIMEREP_US:
-	    f_time /= 1000000;
-	    decimals -= 0;
-	    break;
-	  case TIMEREP_NS:
-	  default:
-	    f_time /= 1000;
-	    decimals -= 3;
-	    break;
-	  case TIMEREP_PS:
-	    decimals -= 6;
-	    break;
-	    }
+	f_time *= global->time_precision;
+	f_time /= trace->timerep;
+
+	if (global->time_precision >= TIMEREP_US) decimals = 0;
+	else if (global->time_precision >= TIMEREP_NS) decimals = 3;
+	else decimals = 6;
+
+	if (trace->timerep >= TIMEREP_US) decimals -= 0;
+	else if (trace->timerep >= TIMEREP_NS) decimals -= 3;
+	else decimals -= 6;
 	}
 
     remain = f_time - floor(f_time);
@@ -1069,17 +1066,17 @@ char *time_units_to_string (timerep)
     /* find units for the given time represetation */
     TimeRep	timerep;
 {
-    switch (timerep) {
-      case TIMEREP_CYC:
-	return ("cycles");
-      case TIMEREP_PS:
-	return ("ps");
-      case TIMEREP_US:
-	return ("us");
-      case TIMEREP_NS:
-      default:
-	return ("ns");
-	}
+    /*static char	units[20];*/
+    /* Can't switch as not a integral expression. */
+    if (timerep==TIMEREP_CYC)		return ("cycles");
+    if (timerep==TIMEREP_PS)		return ("ps");
+    if (timerep==TIMEREP_US)		return ("us");
+    if (timerep==TIMEREP_NS)		return ("ns");
+
+    return ("units");
+    /*sprintf (units, "*%0.0lfps", timerep);
+      return (units);
+      */
     }
 
 #pragma inline (time_units_to_multiplier)
@@ -1087,6 +1084,8 @@ DTime time_units_to_multiplier (timerep)
     /* find units for the given time represetation */
     TimeRep	timerep;
 {
+    return (timerep);
+    /*
     switch (timerep) {
       case TIMEREP_CYC:
 	return (-1);
@@ -1098,5 +1097,6 @@ DTime time_units_to_multiplier (timerep)
       case TIMEREP_US:
 	return (1000000);
 	}
+	*/
     }
 

@@ -63,7 +63,7 @@ void free_data (trace)
 {
     TRACE	*trace_ptr;
 
-    if (DTPRINT) printf ("In free_data - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In free_data - trace=%d\n",trace);
 
     if (!trace->loaded) return;
     trace->loaded = 0;
@@ -87,7 +87,7 @@ void trace_read_cb (w,trace)
     Widget		w;
     TRACE		*trace;
 {
-    if (DTPRINT) printf ("In trace_read_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In trace_read_cb - trace=%d\n",trace);
 
     /* Clear the file format */
     trace->fileformat = FF_AUTO;
@@ -122,7 +122,7 @@ void trace_reread_cb (w,trace)
 	if (semi = strchr (trace->filename,';'))
 	    *semi = '\0';
 	
-	if (DTPRINT) printf ("In trace_reread_cb - rereading file=%s\n",trace->filename);
+	if (DTPRINT_ENTRY) printf ("In trace_reread_cb - rereading file=%s\n",trace->filename);
 	
 	/* check the date first */
 	read_fd = open (trace->filename, O_RDONLY, 0);
@@ -132,7 +132,7 @@ void trace_reread_cb (w,trace)
 	    close (read_fd);
 	    if ((newstat.st_mtime == trace->filestat.st_mtime)
 		&& (newstat.st_ctime == trace->filestat.st_ctime)) {
-		if (DTPRINT) printf ("  file has not changed.\n");
+		if (DTPRINT_FILE) printf ("  file has not changed.\n");
 		return;
 		}
 	    }
@@ -148,7 +148,7 @@ void fil_read_cb (trace)
     int		read_fd;
     FILE	*read_fp;	/* Routines are responsible for assigning this! */
 
-    if (DTPRINT) printf ("In fil_read_cb trace=%d filename=%s\n",trace,trace->filename);
+    if (DTPRINT_ENTRY) printf ("In fil_read_cb trace=%d filename=%s\n",trace,trace->filename);
     
     /* Update directory name */
     strcpy (global->directory, trace->filename);
@@ -199,7 +199,6 @@ void fil_read_cb (trace)
 	}
     if (read_fd<1) {
 	/* Similar code below! */
-	if (DTPRINT) printf ("Can't Open File %s\n", trace->filename);
 	sprintf (message,"Can't open file %s", trace->filename);
 	dino_error_ack (trace, message);
 
@@ -221,7 +220,6 @@ void fil_read_cb (trace)
 	read_fp = popen (scmd, "r");
 	if (!read_fp) {
 	    /* Similar above! */
-	    if (DTPRINT) printf ("Can't create pipe, Command %s\n", scmd);
 	    sprintf (message,"Can't create pipe with command '%s'", scmd);
 	    dino_error_ack (trace, message);
 
@@ -274,7 +272,7 @@ void fil_read_cb (trace)
     set_cursor (trace, DC_NORMAL);
     if (global->res_default) win_full_res_cb (NULL, trace, NULL);
     new_time (trace);	/* Realignes start and displays */
-    if (DTPRINT) printf ("fil_read_cb done!\n");
+    if (DTPRINT_ENTRY) printf ("fil_read_cb done!\n");
     }
 
 void help_cb (w,trace,cb)
@@ -282,7 +280,7 @@ void help_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf ("in help_cb\n");
+    if (DTPRINT_ENTRY) printf ("in help_cb\n");
 
     dino_information_ack (trace, help_message ());
     }
@@ -297,7 +295,7 @@ void help_trace_cb (w,trace,cb)
     static char	date_str[50];
     struct tm *timestr;
 
-    if (DTPRINT) printf ("in help_trace_cb\n");
+    if (DTPRINT_ENTRY) printf ("in help_trace_cb\n");
     
     if (!trace->loaded) {
 	sprintf (msg, "No trace is loaded.\n");
@@ -310,18 +308,10 @@ void help_trace_cb (w,trace,cb)
 	sprintf (msg2, "File Format: %s\n", filetypes[trace->fileformat].name);
 	strcat (msg, msg2);
 
-	timestr = localtime (&trace->filestat.st_ctime);
-	strcpy (date_str, asctime (timestr));
-	if (date_str[strlen (date_str)-1]=='\n')
-	    date_str[strlen (date_str)-1]='\0';
-	sprintf (msg2, "File Modified Date: %s\n", date_str);
+	sprintf (msg2, "File Modified Date: %s\n", date_string (trace->filestat.st_ctime));
 	strcat (msg, msg2);
 
-	timestr = localtime (&trace->filestat.st_mtime);
-	strcpy (date_str, asctime (timestr));
-	if (date_str[strlen (date_str)-1]=='\n')
-	    date_str[strlen (date_str)-1]='\0';
-	sprintf (msg2, "File Creation Date: %s\n", date_str);
+	sprintf (msg2, "File Creation Date: %s\n", date_string (trace->filestat.st_mtime));
 	strcat (msg, msg2);
 
 	sprintf (msg2, "\nTimes stored to nearest: %s\n", time_units_to_string (global->time_precision));
@@ -457,19 +447,21 @@ void	fil_add_cptr (sig_ptr, value_ptr, check)
     }
 
 
-void read_make_busses (trace)
+void read_make_busses (trace, not_tempest)
     /* Take the list of signals and make it into a list of busses */
     /* Also do the common stuff required for each signal. */
     TRACE	*trace;
+    Boolean	not_tempest;	/* Use the name of the bus to find the bit vectors */
 {
     SIGNAL	*sig_ptr;	/* ptr to current signal (lower bit number) */
     SIGNAL	*bus_sig_ptr;	/* ptr to signal which is being bussed (upper bit number) */
-    char	*bbeg;
+    char	*bbeg;		/* bus beginning */
+    char	*sep;		/* seperator position */
     int		pos;
     char	sepchar;
 
-    if (DTPRINT) printf ("In read_make_busses\n");
-    if (DTPRINT) print_sig_names (NULL, trace);
+    if (DTPRINT_ENTRY) printf ("In read_make_busses\n");
+    if (DTPRINT_FILE) print_sig_names (NULL, trace);
 
     /* Convert the signal names to the internal format */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -485,33 +477,51 @@ void read_make_busses (trace)
 
 	/* Use the seperator character to split signals into vector and base */
 	/* IE "signal_1" becomes "signal" with index=1 if the seperator is _ */
-	if (sig_ptr->bits) {
-	    sig_ptr->msb_index = sig_ptr->bits;
-	    sig_ptr->lsb_index = 0;
-	    }
-	else {
-	    sig_ptr->msb_index = -1;
-	    sig_ptr->lsb_index = -1;
-	    }
-
 	sepchar = trace->vector_seperator;
 	if (sepchar == '\0') sepchar='<';	/* Allow both '\0' and '<' for DANGER::DORMITZER */
-	bbeg = strrchr (sig_ptr->signame, sepchar);
-	if (bbeg && isdigit (*(bbeg+1))) {
-	    sig_ptr->msb_index = atoi (bbeg+1);
-	    sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits;
-	    /* Don't need to search for :'s, as the bits should already be computed */
-	    *bbeg = '\0';
+	sep = strrchr (sig_ptr->signame, sepchar);
+	bbeg = sep+1;
+	if (!sep || !isdigit (*bbeg)) {
+	    if (trace->vector_seperator == '\0') {
+		for (sep = sig_ptr->signame + strlen (sig_ptr->signame) - 1;
+		     (sep > sig_ptr->signame) && isdigit (*sep);
+		     sep --) ;
+		if (sep) sep++;
+		bbeg = sep;
+		}
 	    }
-	else if (trace->vector_seperator == '\0') {
-	    for (bbeg = sig_ptr->signame + strlen (sig_ptr->signame) - 1;
-		 (bbeg > sig_ptr->signame) && isdigit (*bbeg);
-		 bbeg --) ;
-	    bbeg++;
-	    if (isdigit (*bbeg)) {
+	
+	if (sep && isdigit (*(bbeg))) {
+	    /* Is a named bus, with <subscript> */
+	    if (not_tempest) {
 		sig_ptr->msb_index = atoi (bbeg);
 		sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits;
-		*bbeg = '\0';
+		}
+	    else {
+		sig_ptr->msb_index = atoi (bbeg) + sig_ptr->bit_index - sig_ptr->bits + 1;
+		sig_ptr->lsb_index = sig_ptr->msb_index;
+		sig_ptr->bits = 0;
+		}
+	    /* Don't need to search for :'s, as the bits should already be computed */
+	    *sep = '\0';
+	    }
+	else {
+	    if (sig_ptr->bits) {
+		/* Is a unnamed bus */
+		if (not_tempest) {
+		    sig_ptr->msb_index = sig_ptr->bits;
+		    sig_ptr->lsb_index = 0;
+		    }
+		else {
+		    sig_ptr->msb_index = sig_ptr->bit_index;
+		    sig_ptr->lsb_index = sig_ptr->bit_index;
+		    sig_ptr->bits = 0;
+		    }
+		}
+	    else {
+		/* Is a unnamed single signals */
+		sig_ptr->msb_index = -1;
+		sig_ptr->lsb_index = -1;
 		}
 	    }
 	}
@@ -530,7 +540,7 @@ void read_make_busses (trace)
     bus_sig_ptr = NULL;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	/*
-	if (DTPRINT && bus_sig_ptr) printf ("  '%s'%d/%d/%d\t'%s'%d/%d/%d\n",
+	if (DTPRINT_FILE && bus_sig_ptr) printf ("  '%s'%d/%d/%d\t'%s'%d/%d/%d\n",
 					    bus_sig_ptr->signame, bus_sig_ptr->msb_index,
 					    bus_sig_ptr->bits, bus_sig_ptr->file_pos, 
 					    sig_ptr->signame, sig_ptr->msb_index, 
@@ -553,14 +563,18 @@ void read_make_busses (trace)
 		      && ((bus_sig_ptr->lsb_index - 1) == sig_ptr->msb_index))
 		    || ((bus_sig_ptr->msb_index <= sig_ptr->lsb_index)
 			&& ((bus_sig_ptr->lsb_index + 1) == sig_ptr->msb_index)))
-		&& trace->fileformat != FF_TEMPEST
+		&& (trace->fileformat != FF_TEMPEST
+		    || (((bus_sig_ptr->file_pos) == (sig_ptr->file_pos + sig_ptr->bits + 1))
+			&& trace->vector_seperator=='<'))
 		&& (trace->fileformat != FF_VERILOG
 		    || ((bus_sig_ptr->file_pos + bus_sig_ptr->bits + 1) == sig_ptr->file_pos))
+		&& ! (sig_ptr->file_type.flag.vector_msb)
 		&& ! (sig_ptr->file_type.flag.perm_vector || bus_sig_ptr->file_type.flag.perm_vector)) {
 
 		/* Can be bussed with previous signal */
 		bus_sig_ptr->bits += sig_ptr->bits + 1;
 		bus_sig_ptr->lsb_index = sig_ptr->lsb_index;
+		if (trace->fileformat == FF_TEMPEST) bus_sig_ptr->file_pos = sig_ptr->file_pos;
 
 		/* Delete this signal */
 		sig_free (trace, sig_ptr, FALSE, FALSE);
@@ -639,7 +653,7 @@ void read_make_busses (trace)
 	sig_ptr->blocks = 1;
 	}
 
-    if (DTPRINT) print_sig_names (NULL, trace);
+    if (DTPRINT_FILE) print_sig_names (NULL, trace);
     }
 
 
@@ -681,7 +695,7 @@ void read_trace_end (trace)
 {
     SIGNAL	*sig_ptr;
 
-    if (DTPRINT) printf ("In read_trace_end\n");
+    if (DTPRINT_FILE) printf ("In read_trace_end\n");
 
     /* Modify ending cptrs to be correct */
     read_mark_cptr_end (trace);
@@ -712,14 +726,14 @@ void read_trace_end (trace)
 	break;
 	}
 
-    /* Read .dino file stuff yet again to get signal_heighlights */
-    /* Don't report errors, as they would pop up for a second time. */
-    config_read_defaults (trace, FALSE);
-
     /* Create xstring of the name (to avoid calling again and again) */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	sig_ptr->xsigname = XmStringCreateSimple (sig_ptr->signame);
 	}
+
+    /* Read .dino file stuff yet again to get signal_heighlights */
+    /* Don't report errors, as they would pop up for a second time. */
+    config_read_defaults (trace, FALSE);
 
     /* Apply the statenames */
     update_signal_states (trace);
@@ -732,19 +746,22 @@ void	update_signal_states (trace)
     TRACE	*trace;
 {
     SIGNAL	*sig_ptr;
+    SIGNAL	*twoclock_sig_ptr=NULL;
     SIGNAL_LW	*cptr;
-    int		rise1=0, fall1=0, rise2=0, fall2=0;
+    int		rise1=0, rise2=0, rise3=0;
+    int		fall1=0, fall2=0, fall3=0;
+    int		twohigh1=0, twohigh2=0, twohigh3=0;
 
-    if (DTPRINT) printf ("In update_signal_states\n");
+    if (DTPRINT_ENTRY) printf ("In update_signal_states\n");
 
     /* don't do anything if no file is loaded */
     if (!trace->loaded) return;
 
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	if (NULL != (sig_ptr->decode = find_signal_state (trace, sig_ptr->signame))) {
-	    /* if (DTPRINT) printf ("Signal %s is patterned\n",sig_ptr->signame); */
+	    /* if (DTPRINT_FILE) printf ("Signal %s is patterned\n",sig_ptr->signame); */
 	    }
-	/* else if (DTPRINT) printf ("Signal %s  no pattern\n",sig_ptr->signame); */
+	/* else if (DTPRINT_FILE) printf ("Signal %s  no pattern\n",sig_ptr->signame); */
 	}
 
     /* Determine period, rise point and fall point of first signal */
@@ -757,41 +774,79 @@ void	update_signal_states (trace)
 	cptr = sig_ptr->cptr;
 	/* Skip first one, as is not representative of period */
 	if ( cptr->sttime.time != EOT) cptr += sig_ptr->lws;
+
 	while ( cptr->sttime.time != EOT) {
 	    switch (cptr->sttime.state) {
 	      case STATE_1:
 		if (!rise1) rise1 = cptr->sttime.time;
 		else if (!rise2) rise2 = cptr->sttime.time;
+		else if (!rise3) rise3 = cptr->sttime.time;
 		break;
 	      case STATE_0:
 		if (!fall1) fall1 = cptr->sttime.time;
 		else if (!fall2) fall2 = cptr->sttime.time;
+		else if (!fall3) fall3 = cptr->sttime.time;
 		break;
 	      case STATE_B32:
 	      case STATE_B64:
 	      case STATE_B96:
 		if (!rise1) rise1 = cptr->sttime.time;
 		else if (!rise2) rise2 = cptr->sttime.time;
+		else if (!rise3) rise3 = cptr->sttime.time;
 		if (!fall1) fall1 = cptr->sttime.time;
 		else if (!fall2) fall2 = cptr->sttime.time;
+		else if (!fall3) fall3 = cptr->sttime.time;
 		break;
 		}
 	    cptr += sig_ptr->lws;
 	    }
 	
 	/* Set defaults based on changes */
-	if (trace->grid_res_auto==GRID_AUTO_ASS) {
+	switch (trace->grid_res_auto) {
+	  case GRID_RES_AUTO:
 	    if (rise1 < rise2)	trace->grid_res = rise2 - rise1;
 	    else if (fall1 < fall2) trace->grid_res = fall2 - fall1;
+	    break;
+	  case GRID_RES_AUTO_DOUBLE:
+	    if (rise1 < rise3)	trace->grid_res = rise3 - rise1;
+	    else if (fall1 < fall3) trace->grid_res = fall3 - fall1;
+	    break;
 	    }
-	if (trace->grid_align_auto==GRID_AUTO_ASS && rise1)
-	    trace->grid_align = rise1 % trace->grid_res;
-	if (trace->grid_align_auto==GRID_AUTO_DEASS && fall1)
-	    trace->grid_align = fall1 % trace->grid_res;
-	if (DTPRINT) printf ("grid autoset signal %s align=%d %d %d\n", sig_ptr->signame,
-			     trace->grid_align_auto, GRID_AUTO_DEASS, fall1);
-	if (DTPRINT) printf ("rise1=%d, fall1=%d, rise2=%d, fall2=%d, res=%d, align=%d\n",
-			     rise1, fall1, rise2, fall2, trace->grid_res, trace->grid_align);
+
+	/* Alignment */
+	switch (trace->grid_align_auto) {
+	  case GRID_ALN_AUTO_ASS:
+	    if (rise1) trace->grid_align = rise1 % trace->grid_res;
+	    break;
+	  case GRID_ALN_AUTO_DEASS:
+	    if (fall1) trace->grid_align = fall1 % trace->grid_res;
+	    break;
+	  case GRID_ALN_AUTO_TWOCLOCK:
+	    if (rise1) trace->grid_align = rise1 % trace->grid_res;
+
+	    /* Twoclock logic */
+	    twoclock_sig_ptr = sig_ptr->forward;
+	    if (twoclock_sig_ptr) {
+		cptr = cptr_at_time (twoclock_sig_ptr, rise1);
+		twohigh1 = (cptr && cptr->sttime.time!=EOT && cptr->sttime.state!=STATE_0);
+		cptr = cptr_at_time (twoclock_sig_ptr, rise2);
+		twohigh2 = (cptr && cptr->sttime.time!=EOT && cptr->sttime.state!=STATE_0);
+		cptr = cptr_at_time (twoclock_sig_ptr, rise3);
+		twohigh3 = (cptr && cptr->sttime.time!=EOT && cptr->sttime.state!=STATE_0);
+		}
+
+	    if (rise1 && twohigh1) trace->grid_align = rise1 % trace->grid_res;
+	    else if (rise2 && twohigh2) trace->grid_align = rise2 % trace->grid_res;
+	    else if (rise3 && twohigh3) trace->grid_align = rise3 % trace->grid_res;
+	    break;
+	    }
+
+	if (DTPRINT_FILE) printf ("grid autoset signal %s two %s align=%d %d\n", sig_ptr->signame,
+				  twoclock_sig_ptr ? twoclock_sig_ptr->signame : "*NONE*",
+				  trace->grid_align_auto, trace->grid_res_auto);
+	if (DTPRINT_FILE) printf ("grid rises=%d,%d,%d, falls=%d,%d,%d, twohigh=%d,%d,%d res=%d, align=%d\n",
+				  rise1,rise2,rise3, fall1,fall2,fall3, twohigh1,twohigh2,twohigh3,
+				  trace->grid_res, trace->grid_align);
 	}
 
     /* Update global information */
@@ -957,6 +1012,7 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
     char	*header_start, *header_ptr;
     int		header_length, header_lines=0;
     Boolean	got_start=FALSE, hit_start=FALSE, in_comment=FALSE;
+    int		base_chars_left=0;
 
     char	*t;
     Boolean	chango_format=FALSE;
@@ -997,16 +1053,24 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	  case ' ':
 	  case '\t':
 	    break;
+	  case '#':
+	    if (!in_comment) base_chars_left = 2;
+	    break;
 	  default:	/* starting digit */
 	    if (!in_comment) {
 		hit_start = TRUE;
 		}
 	    break;
 	    }
-	*header_ptr++ = ch;
+	if (!base_chars_left) {
+	    *header_ptr++ = ch;
+	    }
+	else {
+	    base_chars_left--;
+	    }
 	/* Get more space if needed */
 	if (header_ptr - header_start > header_length) {
-	    int header_size;
+	    long header_size;
 
 	    header_length += FIL_SIZE_INC;
 	    header_size = header_ptr - header_start;
@@ -1017,7 +1081,7 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 
     if ((header_ptr > header_start) && (*(header_ptr-1)=='\n')) header_ptr--;
     *header_ptr = '\0';
-    if (DTPRINT) printf ("Header = '%s'\n", header_start);
+    if (DTPRINT_FILE) printf ("Header = '%s'\n", header_start);
 
     /***** Find number of signals and where they begin and end */
     /* Find beginning of this line (start before null and newline) */
@@ -1056,9 +1120,9 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 	chango_format = TRUE;
 	}
 
-    if (DTPRINT) printf ("Line:%s\nHeader has %d lines, Signals run from char %d to %d. %s format\n", 
-			 data_begin_ptr, header_lines, sig_start_pos, sig_end_pos,
-			 chango_format?"Chango":"DECSIM");
+    if (DTPRINT_FILE) printf ("Line:%s\nHeader has %d lines, Signals run from char %d to %d. %s format\n", 
+			      data_begin_ptr, header_lines, sig_start_pos, sig_end_pos,
+			      chango_format?"Chango":"DECSIM");
 
     if (sig_start_pos == sig_end_pos) {
 	dino_error_ack (trace,"No data in trace file");
@@ -1074,7 +1138,7 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 
     /* Make the busses */
     /* Any lines that were all spaces will be pulled off.  This will strip off the time section of the lines */
-    read_make_busses (trace);
+    read_make_busses (trace, TRUE);
 
     /* Loop to read trace data and reformat */
     first_data = TRUE;
@@ -1122,7 +1186,7 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 		value.siglw.sttime.time = time_stamp;
 
 		/*
-		if (DTPRINT) printf ("time %d sig %s state %d\n", time_stamp, sig_ptr->signame, 
+		if (DTPRINT_FILE) printf ("time %d sig %s state %d\n", time_stamp, sig_ptr->signame, 
 				     value.siglw.sttime.state);
 				     */
 		fil_add_cptr (sig_ptr, &value, !first_data);

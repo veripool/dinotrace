@@ -59,7 +59,7 @@ void    ps_dialog (w,trace,cb)
     XmAnyCallbackStruct	*cb;
     
 {
-    if (DTPRINT) printf ("In print_screen - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In print_screen - trace=%d\n",trace);
     
     if (!trace->prntscr.customize)
 	{
@@ -240,7 +240,7 @@ void    ps_numpag_cb (w,trace,cb)
     int		max;
     DTime	pagetime;
     
-    if (DTPRINT) printf ("In ps_numpag_cb - trace=%d value passed=%d\n",trace,cb->value);
+    if (DTPRINT_ENTRY) printf ("In ps_numpag_cb - trace=%d value passed=%d\n",trace,cb->value);
     
     /* calculate ns per page */
     pagetime = (int)((trace->width - global->xstart)/global->res);
@@ -270,7 +270,7 @@ void    ps_print_req_cb (w,trace,cb)
 {
     Widget	clicked;
     
-    if (DTPRINT) printf ("In ps_print_req_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In ps_print_req_cb - trace=%d\n",trace);
     
     XtSetArg (arglist[0], XmNmenuHistory, &clicked);
     XtGetValues (trace->prntscr.size_option, arglist, 1);
@@ -313,15 +313,15 @@ void    ps_print_internal (trace)
     DTime	printtime;	/* Time to start on */
     char	pagenum[20];
     
-    if (DTPRINT) printf ("In ps_print_internal - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In ps_print_internal - trace=%d\n",trace);
     
     if (trace->printname) {
 	/* Open the file */
-	if (DTPRINT) printf ("Filename=%s\n", trace->printname);
+	if (DTPRINT_ENTRY) printf ("Filename=%s\n", trace->printname);
 	psfile = fopen (trace->printname,"w");
 	}
     else {
-	if (DTPRINT) printf ("Null filename\n");
+	if (DTPRINT_ENTRY) printf ("Null filename\n");
 	psfile = NULL;
 	}
 
@@ -365,7 +365,7 @@ void    ps_print_internal (trace)
     fprintf (psfile, "%%%%Title: %s\n", trace->printname);
     fprintf (psfile, "%%%%Creator: %s %sPostscript\n", DTVERSION,
 	     encapsulated ? "Encapsulated ":"");
-    fprintf (psfile, "%%%%CreationDate: %s\n", date_string());
+    fprintf (psfile, "%%%%CreationDate: %s\n", date_string(0));
     fprintf (psfile, "%%%%Pages: %d\n", encapsulated ? 0 : horiz_pages * vert_pages );
     /* Took page size, subtracted 50 to loose title information */
     if (encapsulated) {
@@ -381,6 +381,28 @@ void    ps_print_internal (trace)
     
     /* Grab units */
     timeunits = time_units_to_string (trace->timerep);
+
+    /* output the page scaling and rf time */
+    fprintf (psfile,"\n%d %d %d %d %d %d PAGESCALE\n",
+	     trace->height, trace->width, global->xstart, trace->sigrf,
+	     (int) ( ( (global->print_size==PRINTSIZE_B) ? 11.0 :  8.5) * 72.0),
+	     (int) ( ( (global->print_size==PRINTSIZE_B) ? 16.8 : 10.8) * 72.0)
+	     );
+	
+    /* output signal name width scalling */
+    fprintf (psfile,"/sigwidth 0 def\nstroke /Times-Roman findfont 8 scalefont setfont\n");
+    /* Signal to start on */
+    if (vert_pages > 1) {
+	sig_ptr = trace->firstsig;
+	}
+    else {
+	sig_ptr = trace->dispsig;
+	}
+    for (numprt = 0; sig_ptr && ( numprt<trace->numsigvis || (vert_pages>1));
+	 sig_ptr = sig_ptr->forward, numprt++) {
+	fprintf (psfile,"(%s) SIGMARGIN\n", sig_ptr->signame);
+	}
+    fprintf (psfile,"XSCALESET\n\n");
 
     /* print out each page */
     for (horiz_page=0; horiz_page<horiz_pages; horiz_page++) {
@@ -402,6 +424,7 @@ void    ps_print_internal (trace)
 	    }
 
 	for (vert_page=0; vert_page<vert_pages; vert_page++) {
+	    fprintf (psfile,"%% Beginning of page %d - %d\n", horiz_page, vert_page);
 
 	    if (vert_page > 0) {
 		/* move pointer forward to next signal set */
@@ -423,13 +446,6 @@ void    ps_print_internal (trace)
 		else			sprintf (pagenum, "Page %d-%d", horiz_page+1, vert_page+1);
 		}
 	    
-	    /* output the page scaling and rf time */
-	    fprintf (psfile,"%d %d %d %d %d PAGESCALE\n",
-		     trace->height, trace->width, trace->sigrf,
-		     (int) ( ( (global->print_size==PRINTSIZE_B) ? 11.0 :  8.5) * 72.0),
-		     (int) ( ( (global->print_size==PRINTSIZE_B) ? 17.0 : 11.0) * 72.0)
-		     );
-	
 	    /* output the page header macro */
 	    fprintf (psfile, "(%d-%d %s) (%d %s/page) (%s) (%s) (%s) (%s) (%s) %s\n",
 		     printtime,			/* start time */
@@ -437,7 +453,7 @@ void    ps_print_internal (trace)
 		     timeunits,
 		     time_per_page,			/* resolution */
 		     timeunits,
-		     date_string(),			/* time & date */
+		     date_string(0),			/* time & date */
 		     global->printnote,		/* filenote */
 		     trace->filename,		/* filename */
 		     pagenum,				/* page number */
@@ -472,7 +488,7 @@ void    ps_reset (w,trace,cb)
     XmAnyCallbackStruct	*cb;
 {
     char 		*pchar;
-    if (DTPRINT) printf ("In ps_reset - trace=%d",trace);
+    if (DTPRINT_ENTRY) printf ("In ps_reset - trace=%d",trace);
     
     /* Init print name */
 #ifdef VMS
@@ -500,12 +516,12 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
     unsigned int value;
     CURSOR *csr_ptr;			/* Current cursor being printed */
     
-    if (DTPRINT) printf ("In ps_draw - filename=%s, printtime=%d sig=%s\n",trace->filename, printtime, sig_ptr->signame);
+    if (DTPRINT_ENTRY) printf ("In ps_draw - filename=%s, printtime=%d sig=%s\n",trace->filename, printtime, sig_ptr->signame);
     
     xend = trace->width - XMARGIN;
     adj = printtime * global->res - global->xstart;
     
-    if (DTPRINT) printf ("global->res=%f adj=%d\n",global->res,adj);
+    if (DTPRINT_PRINT) printf ("global->res=%f adj=%d\n",global->res,adj);
     
     /* Loop and draw each signal individually */
     for (; sig_ptr && sig_ptr!=sig_end_ptr; sig_ptr = sig_ptr->forward) {
@@ -745,7 +761,7 @@ void ps_drawsig (trace, psfile, sig_ptr, sig_end_ptr)
     int		c=0,ymdpt;
     int		x1,y1;
     
-    if (DTPRINT) printf ("In ps_drawsig - filename=%s\n",trace->filename);
+    if (DTPRINT_ENTRY) printf ("In ps_drawsig - filename=%s\n",trace->filename);
     
     /* don't draw anything if there is no file is loaded */
     if (!trace->loaded) return;
@@ -754,15 +770,15 @@ void ps_drawsig (trace, psfile, sig_ptr, sig_end_ptr)
     for (; sig_ptr && sig_ptr!=sig_end_ptr; sig_ptr = sig_ptr->forward) {
 
 	/* calculate the location to start drawing the signal name */
-	x1 = global->xstart - 105;
+	x1 = global->xstart;
 	/* printf ("x1=%d, xstart=%d, %s\n",x1,global->xstart, sig_ptr->signame); */
 	
 	/* calculate the y location to draw the signal name and draw it */
 	y1 = trace->height - trace->ystart - c * trace->sighgt - SIG_SPACE;
 	ymdpt = y1 - (int)(trace->sighgt/2) + SIG_SPACE;
 	
-	fprintf (psfile,"%d XADJ %d YADJ 3 sub MT (%s) RIGHTSHOW\n",
-		 x1, ymdpt, sig_ptr->signame);
+	fprintf (psfile,"sigwidth %d YADJ 3 sub MT (%s) RIGHTSHOW\n",
+		 ymdpt, sig_ptr->signame);
 	c++;
 	}
     }

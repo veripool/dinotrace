@@ -38,7 +38,7 @@ void    cur_remove (csr_ptr)
 {
     CURSOR	*next_csr_ptr, *prev_csr_ptr;
     
-    if (DTPRINT) printf ("In cur_remove\n");
+    if (DTPRINT_ENTRY) printf ("In cur_remove\n");
     
     /* redirect the next pointer */
     prev_csr_ptr = csr_ptr->prev;
@@ -58,20 +58,20 @@ void    cur_remove (csr_ptr)
 	}
     }
 
-void cur_add (ctime, color, search)
+void cur_add (ctime, color, type)
     DTime	ctime;
     ColorNum	color;
-    int		search;
+    CursorType	type;
 {
     CURSOR *new_csr_ptr;
     CURSOR *prev_csr_ptr, *csr_ptr;
     
-    if (DTPRINT) printf ("In cur_add - time=%d\n",ctime);
+    if (DTPRINT_ENTRY) printf ("In cur_add - time=%d\n",ctime);
     
     new_csr_ptr = (CURSOR *)XtMalloc (sizeof (CURSOR));
     new_csr_ptr->time = ctime;
     new_csr_ptr->color = color;
-    new_csr_ptr->search = search;
+    new_csr_ptr->type = type;
 
     prev_csr_ptr = NULL;
     for (csr_ptr = global->cursor_head;
@@ -79,18 +79,45 @@ void cur_add (ctime, color, search)
 	 csr_ptr = csr_ptr->next) {
 	prev_csr_ptr = csr_ptr;
 	}
-
-    /* Insert into first position? */
-    if (!prev_csr_ptr) {
-	global->cursor_head = new_csr_ptr;
+    
+    /* Existing one?, and new one is user */
+    if (csr_ptr && csr_ptr->time == new_csr_ptr->time && new_csr_ptr->type==USER) {
+	/* Put new data in place of old one */
+	csr_ptr->time = ctime;
+	csr_ptr->color = color;
+	csr_ptr->type = type;
+	/* Don't need new structure */
+	DFree (new_csr_ptr);
 	}
     else {
-	prev_csr_ptr->next = new_csr_ptr;
-	}
+	/* Insert into first position? */
+	if (!prev_csr_ptr) {
+	    global->cursor_head = new_csr_ptr;
+	    }
+	else {
+	    prev_csr_ptr->next = new_csr_ptr;
+	    }
 
-    new_csr_ptr->next = csr_ptr;
-    new_csr_ptr->prev = prev_csr_ptr;
-    if (csr_ptr) csr_ptr->prev = new_csr_ptr;
+	new_csr_ptr->next = csr_ptr;
+	new_csr_ptr->prev = prev_csr_ptr;
+	if (csr_ptr) csr_ptr->prev = new_csr_ptr;
+	}
+    }
+
+
+void cur_delete_of_type (type)
+    CursorType	type;
+{
+    CURSOR	*csr_ptr,*new_csr_ptr;
+
+    for (csr_ptr = global->cursor_head; csr_ptr; ) {
+	new_csr_ptr = csr_ptr;
+	csr_ptr = csr_ptr->next;
+	if (new_csr_ptr->type==type) {
+	    cur_remove (new_csr_ptr);
+	    DFree (new_csr_ptr);
+	    }
+	}
     }
 
 /****************************** MENU OPTIONS ******************************/
@@ -102,7 +129,7 @@ void    cur_add_cb (w, trace, cb)
 {
     int i;
 
-    if (DTPRINT) printf ("In cur_add_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cur_add_cb - trace=%d\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -126,7 +153,7 @@ void    cur_mov_cb (w, trace, cb)
     XmAnyCallbackStruct	*cb;
 {
     
-    if (DTPRINT) printf ("In cur_mov_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cur_mov_cb - trace=%d\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -142,7 +169,7 @@ void    cur_del_cb (w, trace, cb)
     XmAnyCallbackStruct	*cb;
 {
     
-    if (DTPRINT) printf ("In cur_del_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cur_del_cb - trace=%d\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -159,7 +186,7 @@ void    cur_clr_cb (w, trace, cb)
 {
     CURSOR	*csr_ptr;
     
-    if (DTPRINT) printf ("In cur_clr_cb.\n");
+    if (DTPRINT_ENTRY) printf ("In cur_clr_cb.\n");
     
     /* clear the cursor array to zero */
     while ( global->cursor_head ) {
@@ -182,7 +209,7 @@ void    cur_highlight_cb (w,trace,cb)
 {
     int i;
 
-    if (DTPRINT) printf ("In cur_highlight_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In cur_highlight_cb - trace=%d\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
@@ -209,14 +236,14 @@ void    cur_add_ev (w, trace, ev)
 {
     DTime	time;
     
-    if (DTPRINT) printf ("In add cursor - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (DTPRINT_ENTRY) printf ("In add cursor - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
     
     /* convert x value to a time value */
     time = posx_to_time_edge (trace, ev->x, ev->y);
     if (time<0) return;
     
     /* make the cursor */
-    cur_add (time, global->highlight_color, 0);
+    cur_add (time, global->highlight_color, USER);
     
     /* redraw the screen with new cursors */
     redraw_all (trace);
@@ -235,13 +262,13 @@ void    cur_move_ev (w, trace, ev)
     XMotionEvent *em;
     XButtonEvent *eb;
     
-    if (DTPRINT) printf ("In cursor_mov\n");
+    if (DTPRINT_ENTRY) printf ("In cursor_mov\n");
     
     csr_ptr = posx_to_cursor (trace, ev->x);
     if (!csr_ptr) return;
 
     /* csr_ptr is the cursor to be moved - calculate starting x */
-    last_x = (csr_ptr->time - global->time)* global->res + global->xstart;
+    last_x = TIME_TO_XPOS (csr_ptr->time);
     
     /* not sure why this has to be done but it must be done */
     XUngrabPointer (XtDisplay (trace->work),CurrentTime);
@@ -283,11 +310,9 @@ void    cur_move_ev (w, trace, ev)
 	    }
 	
 	/* if window was exposed, must redraw it */
+	if (event.type == Expose) win_expose_cb (0,trace);
 	/* if window was resized, must redraw it */
-	if (event.type == Expose ||
-	    event.type == ConfigureNotify) {
-	    win_expose_cb (0,trace);
-	    }
+	if (event.type == ConfigureNotify) win_resize_cb (0,trace);
 	
 	/* button released - calculate cursor position and leave the loop */
 	if (event.type == ButtonRelease) {
@@ -307,7 +332,7 @@ void    cur_move_ev (w, trace, ev)
     
     /* remove, change time, and add back the cursor */
     cur_remove (csr_ptr);
-    cur_add (time, csr_ptr->color, 0);
+    cur_add (time, csr_ptr->color, USER);
     XtFree ((char *)csr_ptr);
     
     /* redraw the screen with new cursor position */
@@ -321,7 +346,7 @@ void    cur_delete_ev (w, trace, ev)
 {
     CURSOR	*csr_ptr;
     
-    if (DTPRINT) printf ("In cur_delete_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (DTPRINT_ENTRY) printf ("In cur_delete_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
     
     csr_ptr = posx_to_cursor (trace, ev->x);
     if (!csr_ptr) return;
@@ -341,7 +366,7 @@ void    cur_highlight_ev (w, trace, ev)
 {
     CURSOR	*csr_ptr;
     
-    if (DTPRINT) printf ("In cur_highlight_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (DTPRINT_ENTRY) printf ("In cur_highlight_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
     
     csr_ptr = posx_to_cursor (trace, ev->x);
     if (!csr_ptr) return;

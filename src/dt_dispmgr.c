@@ -112,7 +112,7 @@ void trace_open_cb (w,trace,cb)
     Position new_x,new_y,new_width,new_height;
     TRACE	*trace_new;
 
-    if (DTPRINT) printf ("In trace_open - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In trace_open - trace=%d\n",trace);
 
     /* Get orignal sizes */
     XtSetArg (arglist[0], XmNheight,&height);
@@ -120,7 +120,7 @@ void trace_open_cb (w,trace,cb)
     XtSetArg (arglist[2], XmNx, &x);
     XtSetArg (arglist[3], XmNy, &y);
     XtGetValues (trace->toplevel, arglist, 4);
-    if (DTPRINT) printf ("Old size: %dx%d+%d+%d\n", width, height, x, y);
+    if (DTPRINT_DISPLAY) printf ("Old size: %dx%d+%d+%d\n", width, height, x, y);
 
     /* Shrink this window */
     new_x = x; new_y = y; new_width=width; new_height=height;
@@ -128,7 +128,7 @@ void trace_open_cb (w,trace,cb)
     if (global->shrink_geometry.yp) 	new_y = y + (( height * global->shrink_geometry.y ) / 100);
     if (global->shrink_geometry.widthp) new_width = ( width * global->shrink_geometry.width ) / 100;
     if (global->shrink_geometry.heightp) new_height = ( height * global->shrink_geometry.height ) / 100;
-    if (DTPRINT) printf ("Shrink size: %dx%d+%d+%d\n", new_width, new_height, new_x, new_y);
+    if (DTPRINT_DISPLAY) printf ("Shrink size: %dx%d+%d+%d\n", new_width, new_height, new_x, new_y);
     XtSetArg (arglist[0], XmNheight, new_height);
     XtSetArg (arglist[1], XmNwidth, new_width);
     XtSetArg (arglist[2], XmNx, new_x);
@@ -145,7 +145,7 @@ void trace_open_cb (w,trace,cb)
     else	new_width = global->open_geometry.width;
     if (global->open_geometry.heightp)	new_height = ( height * global->open_geometry.height ) / 100;
     else	new_height = global->open_geometry.height;
-    if (DTPRINT) printf ("New size: %dx%d+%d+%d\n", new_width, new_height, new_x, new_y);
+    if (DTPRINT_DISPLAY) printf ("New size: %dx%d+%d+%d\n", new_width, new_height, new_x, new_y);
     trace_new = create_trace (new_width, new_height, new_x, new_y);
 
     /* Ask for a file in the new window */
@@ -160,7 +160,7 @@ void trace_close_cb (w,trace,cb)
 {
     TRACE	*trace_ptr;
 
-    if (DTPRINT) printf ("In trace_close - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In trace_close - trace=%d\n",trace);
 
     /* clear the screen */
     XClearWindow (global->display, trace->wind);
@@ -193,7 +193,7 @@ void trace_clear_cb (w,trace,cb)
     TRACE	*trace_ptr;
     TRACE	*trace_next;
 
-    if (DTPRINT) printf ("In clear_trace - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In clear_trace - trace=%d\n",trace);
 
     /* nail all traces except for this window's */
     for (trace_ptr = global->trace_head; trace_ptr; ) {
@@ -212,8 +212,6 @@ void trace_clear_cb (w,trace,cb)
 
     /* change the name on title bar back to the trace */
     change_title (trace);
-
-    init_globals();
     }
 
 void trace_exit_cb (w,trace,cb)
@@ -223,7 +221,7 @@ void trace_exit_cb (w,trace,cb)
 {
     TRACE		*trace_next;
 
-    if (DTPRINT) printf ("In trace_exit_cb - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In trace_exit_cb - trace=%d\n",trace);
 
     for (trace = global->trace_head; trace; ) {
 	trace_next = trace->next_trace;
@@ -240,8 +238,9 @@ void trace_exit_cb (w,trace,cb)
 void init_globals ()
 {
     int i;
+    char *pchar;
 
-    if (DTPRINT) printf ("in init_globals\n");
+    if (DTPRINT_ENTRY) printf ("in init_globals\n");
 
     global->delsig = NULL;
     global->selected_sig = NULL;
@@ -249,6 +248,7 @@ void init_globals ()
     global->xstart = 200;
     global->time = 0;
     global->time_precision = TIMEREP_NS;
+    global->tempest_time_mult = 2;
     global->click_to_edge = 1;
     global->start_geometry.width = 800;
     global->start_geometry.height = 600; 
@@ -270,6 +270,22 @@ void init_globals ()
     global->goto_color = -1;
     global->res_default = TRUE;
 
+    /* Annotate stuff */
+    global->anno_poppedup = FALSE;
+    for (i=0; i<=MAX_SRCH; i++) {
+	global->anno_ena_signal[i] = (i!=0);
+	global->anno_ena_cursor[i] = (i!=0);
+	}
+#ifdef VMS
+    strcpy (global->anno_filename, "sys$login:dinotrace.danno");
+#else
+    global->anno_filename[0] = '\0';
+    if (NULL != (pchar = getenv ("HOME"))) strcpy (global->anno_filename, pchar);
+    if (global->anno_filename[0]) strcat (global->anno_filename, "/");
+    strcat (global->anno_filename, "dinotrace.danno");
+#endif
+
+    /* Search stuff */
     for (i=0; i<MAX_SRCH; i++) {
 	/* Colors */
 	global->color_names[i] = NULL;
@@ -317,7 +333,7 @@ void create_globals (argc, argv, sync)
 	}
 
     XSynchronize (global->display, sync);
-    if (DTPRINT) printf ("in create_globals, syncronization is %d\n", sync);
+    if (DTPRINT_ENTRY) printf ("in create_globals, syncronization is %d\n", sync);
 
     /*
      * Editor's Note: Thanks go to Sally C. Barry, former employee of DEC,
@@ -422,7 +438,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtGetValues (trace->main, arglist, 3);
 
     for (i=1; i<=9; i++) {
-	if (DTPRINT) printf ("%d = '%s'\n", i, global->color_names[i] ? global->color_names[i]:"NULL");
+	if (DTPRINT_DISPLAY) printf ("%d = '%s'\n", i, global->color_names[i] ? global->color_names[i]:"NULL");
 	if ( (global->color_names[i] != NULL)	
 	    && (XAllocNamedColor (global->display, cmap, global->color_names[i], &xcolor, &xcolor2)))
 	    trace->xcolornums[i] = xcolor.pixel;
@@ -436,7 +452,7 @@ TRACE *create_trace (xs,ys,xp,yp)
 	if (xcolor.green < 58590) 
 	    xcolor.green += xcolor.green * 0.07;
 	else xcolor.green -= xcolor.green * 0.07;
-	if (DTPRINT) printf (" = %x, %x, %x \n", xcolor.red, xcolor.green, xcolor.blue);
+	if (DTPRINT_DISPLAY) printf (" = %x, %x, %x \n", xcolor.red, xcolor.green, xcolor.blue);
 	if (XAllocColor (global->display, cmap, &xcolor))
 	    trace->barcolornum = xcolor.pixel;
 	}
@@ -472,6 +488,17 @@ TRACE *create_trace (xs,ys,xp,yp)
 			XtAddCallback (trace->menu.pdentrybutton[pd], XmNactivateCallback, callback, trace); \
 			    XtManageChild (trace->menu.pdentrybutton[pd])
 
+    /*** create a pulldownmenu entry which is a sub menu, with accelerators ***/
+#define	dt_menu_entry_accel(title,accel,accel_string,callback) \
+    pd++; \
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (title) ); \
+	    XtSetArg (arglist[1], XmNacceleratorText, XmStringCreateSimple (accel_string) ); \
+	    XtSetArg (arglist[2], XmNaccelerator, accel ); \
+		trace->menu.pdentrybutton[pd] = XmCreatePushButtonGadget \
+		    (trace->menu.pdmenu[pde], "", arglist, 3); \
+			XtAddCallback (trace->menu.pdentrybutton[pd], XmNactivateCallback, callback, trace); \
+			    XtManageChild (trace->menu.pdentrybutton[pd])
+				
     /*** create a pulldownmenu entry which is a sub menu ***/
 #define	dt_menu_subtitle(title,key) \
     pd++; \
@@ -511,7 +538,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     dt_menu_entry	("Read...",	'R',	trace_read_cb);
     dt_menu_entry	("ReRead",	'e',	trace_reread_cb);
     dt_menu_entry	("ReRead All",	'A',	trace_reread_all_cb);
-    dt_menu_entry	("Open",	'O',	trace_open_cb);
+    dt_menu_entry	("Open...",	'O',	trace_open_cb);
     dt_menu_entry	("Close",	'C',	trace_close_cb);
     trace->menu_close = trace->menu.pdentrybutton[pd];
     dt_menu_entry	("Clear",	'l',	trace_clear_cb);
@@ -559,6 +586,8 @@ TRACE *create_trace (xs,ys,xp,yp)
     dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
 
     dt_menu_title ("Value", 'V');
+    dt_menu_entry_accel	("Annotate", 	"<Key>F2:", "F2", val_annotate_do_cb);
+    dt_menu_entry	("Annotate...",	'n', 	val_annotate_cb);
     dt_menu_entry	("Examine",	'E',	val_examine_cb);
     dt_menu_entry	("Search...",	'S',	val_search_cb);
     dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
@@ -572,6 +601,7 @@ TRACE *create_trace (xs,ys,xp,yp)
 	dt_menu_title ("Debug", 'D');
 	dt_menu_entry	("Print Signal Names", 'N', print_sig_names);
 	dt_menu_entry	("Print Signal Info (Screen Only)", 'I', print_screen_traces);
+	dt_menu_entry	("Print Signal States", 't', print_signal_states);
 	dt_menu_entry	("Integrity Check", 'I', debug_integrity_check_cb);
 	dt_menu_entry	("Toggle Print", 'P', debug_toggle_print_cb);
 	dt_menu_entry	("Increase DebugTemp", '+', debug_increase_debugtemp_cb);
@@ -719,9 +749,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     trace->work = XmCreateDrawingArea (trace->command.command,"work", arglist, 6);
 
     XtAddCallback (trace->work, XmNexposeCallback, win_expose_cb, trace);
-/*
-    XtAddCallback (trace->work, XmNresizeCallback, win_expose_cb, trace);
-*/
+    XtAddCallback (trace->work, XmNresizeCallback, win_resize_cb, trace);
     XtManageChild (trace->work);
     
     XtManageChild (trace->main);
@@ -739,6 +767,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     trace->value.search = NULL;
     trace->prntscr.customize = NULL;
     trace->prompt_popup = NULL;
+    trace->annotate.dialog = NULL;
     trace->fileselect.dialog = NULL;
     trace->filename[0] = '\0';
     trace->loaded = 0;
