@@ -86,6 +86,7 @@ void draw_grid (trace)
     /* set the line attributes as the specified dash pattern */
     XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0, 0);
     XSetDashes (global->display, trace->gc, 0, primary_dash, 2);
+    XSetFont (global->display, trace->gc, global->time_font->fid);
     
     /* check if there is a reasonable amount of increments to draw the time grid */
     if ( (xendf - xlocf)/ (trace->grid_res*global->res) < MIN_GRID_RES ) {
@@ -93,7 +94,7 @@ void draw_grid (trace)
 	    if (xlocf > 0) {
 		/* compute the time value and draw it if it fits */
 		time_to_string (trace, strg, xtime, FALSE);
-		if ( (int)xlocf - x_last_time >= XTextWidth (trace->text_font,strg,strlen (strg)) + 5 ) {
+		if ( (int)xlocf - x_last_time >= XTextWidth (global->time_font,strg,strlen (strg)) + 5 ) {
 		    XDrawString (global->display,trace->wind,
 				 trace->gc, (int)xlocf, yt, strg, strlen (strg));
 		    x_last_time = (int)xlocf;
@@ -130,6 +131,8 @@ void draw_cursors (trace)
 
     nonuser_dash[0]=2;	nonuser_dash[1]=2;	/* Can't auto-init in ultrix compiler */
 
+    XSetFont (global->display, trace->gc, global->time_font->fid);
+
     end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
 
     /* initial the y colors for drawing */
@@ -158,7 +161,7 @@ void draw_cursors (trace)
 	    
 	    /* draw the cursor value */
 	    time_to_string (trace, strg, csr_ptr->time, FALSE);
-	    len = XTextWidth (trace->text_font,strg,strlen (strg));
+	    len = XTextWidth (global->time_font,strg,strlen (strg));
 	    XDrawString (global->display,trace->wind,
 			 trace->gc, x1-len/2, y2+10, strg, strlen (strg));
 	    
@@ -167,7 +170,7 @@ void draw_cursors (trace)
 		
 		x2 = TIME_TO_XPOS (csr_ptr->prev->time);
 		time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
-		len = XTextWidth (trace->text_font,strg,strlen (strg));
+		len = XTextWidth (global->time_font,strg,strlen (strg));
 		
 		/* write the delta value if it fits */
 		XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
@@ -277,10 +280,10 @@ void draw_trace (trace)
     /* check for all signals being deleted */
     if (trace->dispsig == NULL) return;
     
-    question_width = XTextWidth (trace->text_font,"?",1);
+    question_width = XTextWidth (global->value_font,"?",1);
 
     /* calculate the font y location */
-    yfntloc = trace->text_font->max_bounds.ascent + trace->text_font->max_bounds.descent;
+    yfntloc = global->value_font->max_bounds.ascent + global->value_font->max_bounds.descent;
     yfntloc = (trace->sighgt - yfntloc - SIG_SPACE)/2;
     
     xend = trace->width - XMARGIN;
@@ -305,6 +308,7 @@ void draw_trace (trace)
 	    }
 	
 	/* Grab the color we want */
+	XSetFont (global->display, trace->gc, global->signal_font->fid);
 	XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
 
 	/*
@@ -315,7 +319,7 @@ void draw_trace (trace)
 	*/
 
 	/* calculate the location to draw the signal name and draw it */
-	x1 = global->xstart - XTextWidth (trace->text_font,sig_ptr->signame,
+	x1 = global->xstart - XTextWidth (global->signal_font,sig_ptr->signame,
 				       strlen (sig_ptr->signame)) - 10;
 	y1 = trace->ystart + (c+1) * trace->sighgt - SIG_SPACE - yfntloc;
 	XDrawString (global->display, trace->wind, trace->gc, x1, y1,
@@ -325,6 +329,8 @@ void draw_trace (trace)
 	XDrawString (global->display, trace->wind, trace->gc, x1, y1,
 		    temp_strg, strlen (temp_strg) );
 	*/
+
+	XSetFont (global->display, trace->gc, global->value_font->fid);
 
 	/* Calculate line position */
 	y1 = trace->ystart + c * trace->sighgt + SIG_SPACE;
@@ -434,7 +440,7 @@ void draw_trace (trace)
 		    (value < sig_ptr->decode->numstates) &&
 		    (sig_ptr->decode->statename[value][0] != '\0')) {
 		    strcpy (strg, sig_ptr->decode->statename[value]);
-		    len = XTextWidth (trace->text_font,strg,strlen (strg));
+		    len = XTextWidth (global->value_font,strg,strlen (strg));
 		    if ( xloc-Pts[cnt].x < len + 2 ) {
 			/* doesn't fit, try number */
 			goto value_rep;
@@ -442,7 +448,7 @@ void draw_trace (trace)
 		    }
 		else {
 		  value_rep:	    if (trace->busrep == HBUS)
-		      sprintf (strg,"%X", value);
+		      sprintf (strg,"%x", value);
 		  else if (trace->busrep == OBUS)
 		      sprintf (strg,"%o", value);
 		    }
@@ -464,7 +470,7 @@ void draw_trace (trace)
 		if ( xloc > xend ) xloc = xend;
 
 		if (trace->busrep == HBUS)
-		    sprintf (strg,"%X %08X",*((unsigned int *)cptr+2),
+		    sprintf (strg,"%x %08x",*((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
 		    sprintf (strg,"%o %o",*((unsigned int *)cptr+2),
@@ -488,7 +494,7 @@ void draw_trace (trace)
 		if ( xloc > xend ) xloc = xend;
 
 		if (trace->busrep == HBUS)
-		    sprintf (strg,"%X %08X %08X",*((unsigned int *)cptr+3),
+		    sprintf (strg,"%x %08x %08x",*((unsigned int *)cptr+3),
 			    *((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
@@ -517,7 +523,7 @@ void draw_trace (trace)
 
 		/* calculate positional parameters */
 
-		len = XTextWidth (trace->text_font,strg,strlen (strg));
+		len = XTextWidth (global->value_font,strg,strlen (strg));
 		
 		if (xloc-Pts[cnt].x-2 < len) {
 		    /* Value won't fit, try question mark */
@@ -609,8 +615,8 @@ void	update_globals ()
 		t1=sig_ptr->signame;
 		if (strncmp (t1, "%NET.",5)==0) t1+=5;
 		/* if (DTPRINT) printf ("Signal = '%s'  xstart=%d\n",t1,xstarttemp); */
-		if (xstarttemp < XTextWidth (trace->text_font,t1,strlen (t1)))
-		    xstarttemp = XTextWidth (trace->text_font,t1,strlen (t1));
+		if (xstarttemp < XTextWidth (global->signal_font,t1,strlen (t1)))
+		    xstarttemp = XTextWidth (global->signal_font,t1,strlen (t1));
 		}
 	    }
 	}

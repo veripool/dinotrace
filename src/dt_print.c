@@ -604,7 +604,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		    }
 		else {
 		    if (trace->busrep == HBUS)
-			sprintf (strg,"%X", value);
+			sprintf (strg,"%x", value);
 		    else if (trace->busrep == OBUS)
 			sprintf (strg,"%o", value);
 		    }
@@ -614,7 +614,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		
 	      case STATE_B64: if ( xloc > xend ) xloc = xend;
 		if (trace->busrep == HBUS)
-		    sprintf (strg,"%X %08X",*((unsigned int *)cptr+2),
+		    sprintf (strg,"%x %08x",*((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
 		    sprintf (strg,"%o %o",*((unsigned int *)cptr+2),
@@ -625,7 +625,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		
 	      case STATE_B96: if ( xloc > xend ) xloc = xend;
 		if (trace->busrep == HBUS)
-		    sprintf (strg,"%X %08X %08X",*((unsigned int *)cptr+3),
+		    sprintf (strg,"%x %08x %08x",*((unsigned int *)cptr+3),
 			    *((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
@@ -678,7 +678,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	    {
 	    /* compute the time value and draw it if it fits */
 	    time_to_string (trace, strg, x1, FALSE);
-	    if ( (int)iff - i >= XTextWidth (trace->text_font,strg,strlen (strg)) + 5 )
+	    if ( (int)iff - i >= XTextWidth (global->time_font,strg,strlen (strg)) + 5 )
 		{
 		fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n",
 			(int)iff,yt-10,strg);
@@ -724,7 +724,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		
 		/* draw the cursor value */
 		time_to_string (trace, strg, csr_ptr->time, FALSE);
- 		len = XTextWidth (trace->text_font,strg,strlen (strg));
+ 		len = XTextWidth (global->time_font,strg,strlen (strg));
 		fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n",
 			x1-len/2,y2-8,strg);
 		
@@ -733,7 +733,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 
 		    x2 = csr_ptr->prev->time * global->res - adj;
 		    time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
- 		    len = XTextWidth (trace->text_font,strg,strlen (strg));
+ 		    len = XTextWidth (global->time_font,strg,strlen (strg));
 		    
 		    /* write the delta value if it fits */
  		    if ( x1 - x2 >= len + 6 )
