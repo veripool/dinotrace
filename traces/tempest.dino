@@ -1,4 +1,4 @@
 # This file is tempest, change formats before reading it
 file_format tempest
 vector_separator "<"
-hierarchy_separator "-"
+hierarchy_separator ">"
