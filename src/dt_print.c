@@ -709,6 +709,7 @@ void ps_draw_cursors (trace, psfile, printtime)
 	y1 = trace->height - 25 - 10;
 	y2 = trace->height - ( (int)((trace->height-trace->ystart)/trace->sighgt)-1) *
 	    trace->sighgt - trace->sighgt/2 - trace->ystart - 2;
+	xend = trace->width - XMARGIN;
 
 	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 
@@ -792,8 +793,8 @@ void ps_draw_grid (trace, psfile, printtime, grid_ptr)
     fprintf (psfile,"stroke\n[%d YTRN %d YTRN] 0 setdash\n",SIG_SPACE/2, trace->sighgt - SIG_SPACE/2);
     
     /* Start to left of right edge */
-    xtime = global->time;
-    end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
+    xtime = printtime;
+    end_time = printtime + (( trace->width - XMARGIN - global->xstart ) / global->res);
 
     /* Move starting point to the right to hit where a grid line is aligned */
     xtime = ((xtime / grid_ptr->period) * grid_ptr->period) + (grid_ptr->alignment % grid_ptr->period);
