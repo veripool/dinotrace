@@ -75,7 +75,7 @@
 
 void win_expose_cb (
     Widget	w,
-    Trace	*trace)
+    Trace_t	*trace)
 {
     if (DTPRINT_ENTRY) printf ("In win_expose_cb - trace=%p\n",trace);
     /* special, call draw directly so screen doesn't flicker */
@@ -84,7 +84,7 @@ void win_expose_cb (
 
 void win_resize_cb (
     Widget	w,
-    Trace	*trace)
+    Trace_t	*trace)
 {
     if (DTPRINT_ENTRY) printf ("In win_resize_cb - trace=%p\n",trace);
     draw_needupd_sig_start ();
@@ -93,7 +93,7 @@ void win_resize_cb (
 
 void win_refresh_cb (
     Widget	w,
-    Trace	*trace)
+    Trace_t	*trace)
 {
     if (DTPRINT_ENTRY) printf ("In win_refresh_cb - trace=%p\n",trace);
     draw_all_needed ();
@@ -104,7 +104,7 @@ void win_refresh_cb (
 void hscroll_unitinc_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In hscroll_unitinc - trace=%p  old_time=%d",trace,global->time);
     global->time += grid_primary_period (trace);
     if (DTPRINT_ENTRY) printf (" new time=%d\n",global->time);
@@ -115,7 +115,7 @@ void hscroll_unitinc_cb (
 void hscroll_unitdec_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In hscroll_unitdec - trace=%p  old_time=%d",trace,global->time);
     global->time -= grid_primary_period (trace);
     new_time (trace);
@@ -124,7 +124,7 @@ void hscroll_unitdec_cb (
 void hscroll_pageinc_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In hscroll_pageinc - trace=%p  old_time=%d",trace,global->time);
 
     switch ( global->pageinc ) {
@@ -147,7 +147,7 @@ void hscroll_pageinc_cb (
 void hscroll_pagedec_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In hscroll_pagedec - trace=%p  old_time=%d pageinc=%d",trace,global->time,global->pageinc);
 
     switch ( global->pageinc ) {
@@ -170,7 +170,7 @@ void hscroll_pagedec_cb (
 void hscroll_drag_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     int inc;
 
     XtSetArg (arglist[0], XmNvalue, &inc);
@@ -184,7 +184,7 @@ void hscroll_drag_cb (
 void win_begin_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_begin_cb trace=%p\n",trace);
     global->time = trace->start_time;
     new_time (trace);
@@ -193,7 +193,7 @@ void win_begin_cb (
 void win_end_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_end_cb trace=%p\n",trace);
     global->time = trace->end_time - TIME_WIDTH (trace);
     new_time (trace);
@@ -202,7 +202,7 @@ void win_end_cb (
 void win_namescroll_change_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     int inc;
 
     if (DTPRINT_ENTRY) printf ("In win_namescroll_change trace=%p\n",trace);
@@ -255,35 +255,35 @@ void vscroll_new (
 void vscroll_unitinc_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     vscroll_new (trace, 1);
 }
 
 void vscroll_unitdec_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     vscroll_new (trace, -1);
 }
 
 void vscroll_pageinc_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     vscroll_new (trace, trace->numsigvis);
 }
 
 void vscroll_pagedec_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     vscroll_new (trace, -(trace->numsigvis));
 }
 
 void vscroll_drag_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     int		inc;
 
     if (DTPRINT_ENTRY) printf ("In vscroll_drag trace=%p\n",trace);
@@ -302,14 +302,14 @@ void vscroll_drag_cb (
 void win_chg_res_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_chg_res_cb - trace=%p\n",trace);
     get_data_popup (trace,"Resolution",IO_RES);
 }
 
 
 void new_res (
-    Trace	*trace,
+    Trace_t	*trace,
     float	res_new)	/* Desired res, pass global->res to not change */
 {
     char	string[MAXTIMELEN+30], timestrg[MAXTIMELEN];
@@ -340,7 +340,7 @@ void new_res (
 void win_inc_res_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_inc_res_cb - trace=%p\n",trace);
 
     /* increase the resolution by 10% */
@@ -350,7 +350,7 @@ void win_inc_res_cb (
 void win_dec_res_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_dec_res_cb - trace=%p\n",trace);
 
     /* decrease the resolution by 10% */
@@ -360,12 +360,12 @@ void win_dec_res_cb (
 void win_full_res_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     win_full_res (trace);
 }
 
 void win_full_res (
-    Trace *trace)
+    Trace_t *trace)
 {
     if (DTPRINT_ENTRY) printf ("In win_full_res_cb - trace=%p\n",trace);
 
@@ -389,7 +389,7 @@ void win_full_res (
 void win_zoom_res_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In win_zoom_res_cb - trace=%p\n",trace);
 
     /* process all subsequent button presses as res_zoom clicks */
@@ -401,7 +401,7 @@ void win_zoom_res_cb (
 
 void res_zoom_click_ev (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XButtonPressedEvent	*ev)
 {
     DTime_t		time,tmp;
@@ -450,7 +450,7 @@ void    win_goto_cb (
     Widget	w)
 {
     int		i;
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     
     if (DTPRINT_ENTRY) printf ("In win_goto_cb - trace=%p\n",trace);
     
@@ -577,7 +577,7 @@ void    win_goto_cb (
 
 void    win_goto_option_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmSelectionBoxCallbackStruct *cb)	/* OR     XButtonPressedEvent	*ev; */
     /* Puts the color in the option menu, since Xm does not copy colors on selection */
     /* Also used as an event callback for exposures */
@@ -618,7 +618,7 @@ void    win_goto_option_cb (
 
 void    win_goto_ok_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     char	*strg;
@@ -668,7 +668,7 @@ void    win_goto_ok_cb (
 
 void    win_goto_cancel_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In win_goto_cancel_cb - trace=%p\n",trace);

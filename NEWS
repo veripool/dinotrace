@@ -19,6 +19,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****	Worked around a LessTif core dump when print menu appears.
 
+****	Speedup when rereading large files with lots of deleted signals.
+
 
 * Changes in Dinotrace 9.0f  9/29/1999
 

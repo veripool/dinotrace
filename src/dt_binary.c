@@ -117,7 +117,7 @@ int	EXTRACT_2STATE (
 
 #pragma inline (read_4state_to_value)
 static void	read_4state_to_value (
-    const Signal	*sig_ptr,
+    const Signal_t	*sig_ptr,
     const char	*buf,
     Value_t	*value_ptr)
 {
@@ -184,7 +184,7 @@ static void	read_4state_to_value (
 
 #pragma inline (read_2state_to_value)
 static void	read_2state_to_value (
-    const Signal *sig_ptr,
+    const Signal_t *sig_ptr,
     const char	*buf,
     Value_t	*value_ptr)
 {
@@ -232,7 +232,7 @@ static void	read_2state_to_value (
 #pragma inline (fil_decsim_binary_add_cptr)
 static void	fil_decsim_binary_add_cptr (
     /* Add a cptr corresponding to the decsim value for this signal */
-    Signal	*sig_ptr,
+    Signal_t	*sig_ptr,
     const char	*buf,
     DTime_t	time,
     Boolean_t	nocheck)		/* don't compare against previous data */
@@ -490,7 +490,7 @@ void decsim_read_binary (
 #pragma inline (fil_tempest_binary_add_cptr)
 static void	fil_tempest_binary_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
-    Signal	*sig_ptr,
+    Signal_t	*sig_ptr,
     const uint_t *buf,
     DTime_t	time,
     Boolean_t	nocheck)		/* don't compare against previous data */
@@ -657,7 +657,7 @@ void tempest_read (
 	     ** Initialize all pointers and other stuff in the signal
 	     ** description block
 	     */
-	    sig_ptr = DNewCalloc (Signal);
+	    sig_ptr = DNewCalloc (Signal_t);
 	    sig_ptr->trace = trace;
 	    sig_ptr->dfile = &(trace->dfile);
 	    sig_ptr->radix = global->radixs[0];

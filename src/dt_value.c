@@ -522,8 +522,8 @@ Boolean_t  val_equal (
 
 void	val_update_search ()
 {
-    Trace	*trace;
-    Signal	*sig_ptr;
+    Trace_t	*trace;
+    Signal_t	*sig_ptr;
     Value_t	*cptr;
     int		cursorize;
     register int i;
@@ -697,8 +697,8 @@ void	val_radix_init ()
 
 void	val_states_update ()
 {
-    Trace	*trace;
-    Signal	*sig_ptr;
+    Trace_t	*trace;
+    Signal_t	*sig_ptr;
 
     if (DTPRINT_ENTRY) printf ("In val_states_update\n");
 
@@ -717,7 +717,7 @@ void	val_states_update ()
 void    val_examine_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     
     if (DTPRINT_ENTRY) printf ("In val_examine_cb - trace=%p\n",trace);
     
@@ -730,7 +730,7 @@ void    val_examine_cb (
 void    val_highlight_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In val_highlight_cb - trace=%p\n",trace);
     
     /* Grab color number from the menu button pointer */
@@ -747,8 +747,8 @@ void    val_highlight_cb (
 
 char *val_examine_string (
     /* Return string with examine information in it */
-    Trace	*trace,
-    Signal	*sig_ptr,
+    Trace_t	*trace,
+    Signal_t	*sig_ptr,
     DTime_t	time)
 {
     Value_t	*cptr;
@@ -863,7 +863,7 @@ char *val_examine_string (
 }
 	
 static void    val_examine_popdown (
-    Trace	*trace)
+    Trace_t	*trace)
 {
     if (trace->examine.popup) {
 	XtPopdown (trace->examine.popup);
@@ -882,11 +882,11 @@ static void    val_examine_popdown (
 
 static void    val_examine_popup (
     /* Create the popup menu for val_examine, based on cursor position x,y */
-    Trace	*trace,
+    Trace_t	*trace,
     XButtonPressedEvent	*ev)
 {
     DTime_t	time;
-    Signal	*sig_ptr;
+    Signal_t	*sig_ptr;
     char	*strg = "No information here";
     XmString	xs;
     int		x,y;	/* Must allow signed */
@@ -974,7 +974,7 @@ static void    val_examine_popup (
 	
 void    val_examine_ev (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XButtonPressedEvent	*ev)
 {
     XEvent	event;
@@ -1046,7 +1046,7 @@ void    val_examine_popup_act (
     String		params,
     Cardinal		*num_params)
 {
-    Trace	*trace;		/* Display information */
+    Trace_t	*trace;		/* Display information */
     int		prev_cursor;
     
     if (ev->type != ButtonPress) return;
@@ -1065,7 +1065,7 @@ void    val_examine_popup_act (
 }
 
 static void    val_search_widget_update (
-    Trace	*trace)
+    Trace_t	*trace)
 {
     VSearchNum_t search_pos;
     char	strg[MAXVALUELEN];
@@ -1094,7 +1094,7 @@ static void    val_search_widget_update (
 void    val_search_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     int		i;
     
     if (DTPRINT_ENTRY) printf ("In val_search_cb - trace=%p\n",trace);
@@ -1213,7 +1213,7 @@ void    val_search_cb (
 			 (XtCallbackProc)val_search_ok_cb, trace,
 			 (XtCallbackProc)val_search_apply_cb, trace,
 			 NULL,NULL,
-			 (XtCallbackProc)unmanage_cb, (Trace*)trace->value.dialog);
+			 (XtCallbackProc)unmanage_cb, (Trace_t*)trace->value.dialog);
     }
     
     /* Copy settings to local area to allow cancel to work */
@@ -1225,7 +1225,7 @@ void    val_search_cb (
 
 void    val_search_ok_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     char	*strg;
@@ -1272,7 +1272,7 @@ void    val_search_ok_cb (
 
 void    val_search_apply_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     if (DTPRINT_ENTRY) printf ("In val_search_apply_cb - trace=%p\n",trace);
@@ -1283,11 +1283,11 @@ void    val_search_apply_cb (
 
 void    val_highlight_ev (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XButtonPressedEvent	*ev)
 {
     DTime_t	time;
-    Signal	*sig_ptr;
+    Signal_t	*sig_ptr;
     Value_t	*cptr;
     
     if (DTPRINT_ENTRY) printf ("In val_highlight_ev - trace=%p\n",trace);
@@ -1329,7 +1329,7 @@ void    val_highlight_ev (
 void    val_annotate_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     int i;
 
     if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%p\n",trace);
@@ -1456,7 +1456,7 @@ void    val_annotate_cb (
 			 (XtCallbackProc)val_annotate_ok_cb, trace,
 			 (XtCallbackProc)val_annotate_apply_cb, trace,
 			 NULL,NULL,
-			 (XtCallbackProc)unmanage_cb, (Trace*)trace->annotate.dialog);
+			 (XtCallbackProc)unmanage_cb, (Trace_t*)trace->annotate.dialog);
     }
     
     /* reset file name */
@@ -1487,7 +1487,7 @@ void    val_annotate_cb (
 
 void    val_annotate_ok_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct *cb)
 {
     char	*strg;
@@ -1526,7 +1526,7 @@ void    val_annotate_ok_cb (
 
 void    val_annotate_apply_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In sig_search_apply_cb - trace=%p\n",trace);
@@ -1550,12 +1550,12 @@ static void	val_print_quoted (
 
 void    val_annotate_do_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct	*cb)
 {
     int		i;
-    Signal	*sig_ptr;
-    Trace	*trace_loop;
+    Signal_t	*sig_ptr;
+    Trace_t	*trace_loop;
     Value_t	*cptr;
     FILE	*dump_fp;
     DCursor_t 	*csr_ptr;		/* Current cursor being printed */

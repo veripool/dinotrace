@@ -112,7 +112,7 @@ XtResource resources[] = {
 
 void debug_event_cb (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XmDrawingAreaCallbackStruct	*cb)
 {
     if (trace==NULL) trace = widget_to_trace(w);
@@ -169,7 +169,7 @@ int  last_set_cursor ()
 void set_cursor (
     int		cursor_num)		/* Entry in xcursors to display */
 {
-    Trace	*trace;			/* Display information */
+    Trace_t	*trace;			/* Display information */
     if (DTPRINT_ENTRY) printf ("in set_cursor(%d)\n", cursor_num);
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->wind) {
@@ -182,7 +182,7 @@ void set_cursor (
 /* Make the close menu options on all of the menus be active */
 static void dm_set_menu_closes ()
 {
-    Trace	*trace;
+    Trace_t	*trace;
     int		sensitive;
 
     sensitive = (global->trace_head && global->trace_head->next_trace)?TRUE:FALSE;
@@ -194,12 +194,12 @@ static void dm_set_menu_closes ()
 }
 
 /* Split the current trace, return new trace */
-Trace *trace_create_split_window (
-    Trace	*trace)
+Trace_t *trace_create_split_window (
+    Trace_t	*trace)
 {
     Position x,y,width,height;
     Position new_x,new_y,new_width,new_height;
-    Trace	*trace_new;
+    Trace_t	*trace_new;
 
     if (DTPRINT_ENTRY) printf ("In trace_open_split_window - trace=%p\n",trace);
 
@@ -243,8 +243,8 @@ Trace *trace_create_split_window (
 void trace_open_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
-    Trace	*trace_new;
+    Trace_t *trace = widget_to_trace(w);
+    Trace_t	*trace_new;
 
     trace_new = trace_create_split_window (trace);
 
@@ -254,9 +254,9 @@ void trace_open_cb (
 }
 
 void trace_close (
-    Trace	*trace)
+    Trace_t	*trace)
 {
-    Trace	*trace_ptr;
+    Trace_t	*trace_ptr;
 
     if (DTPRINT_ENTRY) printf ("In trace_close - trace=%p\n",trace);
 
@@ -289,16 +289,16 @@ void trace_close (
 void trace_close_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     trace_close (trace);
 }
 
 void trace_clear_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
-    Trace	*trace_ptr;
-    Trace	*trace_next;
+    Trace_t *trace = widget_to_trace(w);
+    Trace_t	*trace_ptr;
+    Trace_t	*trace_next;
 
     if (DTPRINT_ENTRY) printf ("In clear_trace - trace=%p\n",trace);
 
@@ -324,8 +324,8 @@ void trace_clear_cb (
 void trace_exit_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
-    Trace		*trace_next;
+    Trace_t *trace = widget_to_trace(w);
+    Trace_t		*trace_next;
 
     if (DTPRINT_ENTRY) printf ("In trace_exit_cb - trace=%p\n",trace);
 
@@ -521,14 +521,14 @@ void create_globals (
     config_global_defaults ();
 }
 
-Trace *malloc_trace (void)
+Trace_t *malloc_trace (void)
     /* Allocate a trace structure and return it */
     /* This should NOT do any windowing initialization */
 {
-    Trace	*trace;
+    Trace_t	*trace;
     
     /*** alloc space for trace to display state block ***/
-    trace = DNewCalloc (Trace);
+    trace = DNewCalloc (Trace_t);
     trace->next_trace = global->trace_head;
     global->trace_head = trace;
     if (global->deleted_trace_head) global->deleted_trace_head->next_trace = global->trace_head;
@@ -541,7 +541,7 @@ Trace *malloc_trace (void)
     
 
 static void dm_menu_title (
-    Trace *trace,
+    Trace_t *trace,
     char *title,	
     char key		/* Or '\0' for none */
     )
@@ -559,7 +559,7 @@ static void dm_menu_title (
 }
 	
 static void dm_menu_entry (
-    Trace *trace,
+    Trace_t *trace,
     char *title,	
     char key,		/* Or '\0' for none */
     char *accel,	/* Accelerator, or NULL */
@@ -581,7 +581,7 @@ static void dm_menu_entry (
 }
 
 static void dm_menu_separator (
-    Trace *trace
+    Trace_t *trace
     )
     /*** create a separator menu entry under the top bar ***/
 {
@@ -590,7 +590,7 @@ static void dm_menu_separator (
     DManageChild (trace->menu.pdsep[trace->menu.pdmsep], trace, MC_NOKEYS);
 }
 
-static void dm_menu_subtitle (Trace *trace,
+static void dm_menu_subtitle (Trace_t *trace,
 		       char *title,	
 		       char key			/* Or '\0' for none */
 		       )
@@ -608,7 +608,7 @@ static void dm_menu_subtitle (Trace *trace,
 }
 				
 static void dm_menu_subentry (
-    Trace *trace,
+    Trace_t *trace,
     char *title,	
     char key,		/* Or '\0' for none */
     char *accel,	/* Accelerator, or NULL */
@@ -630,7 +630,7 @@ static void dm_menu_subentry (
 }
 
 static void dm_menu_subentry_colors (
-    Trace *trace,
+    Trace_t *trace,
     char *cur_accel,	/* Accelerator, or NULL */
     char *cur_accel_string,	/* Accelerator string, or NULL */
     char *next_accel,	/* Accelerator, or NULL */
@@ -656,7 +656,7 @@ static void dm_menu_subentry_colors (
 
 
 static void dm_menu_subentry_radixs (
-    Trace *trace,
+    Trace_t *trace,
     void (*callback)()
     )
 {
@@ -685,7 +685,7 @@ static void dm_menu_subentry_radixs (
 *  but that crashes if a font isn't found.
 */
 static XFontStruct *grab_font (
-    Trace	*trace,
+    Trace_t	*trace,
     char	*font_name)		/* Name of the font */
 {
     int	num;
@@ -705,7 +705,7 @@ static XFontStruct *grab_font (
 /* Manage a dinotrace widget */
 /* Insure that the user data is setup correctly to point to a trace */
 /* Optionally install standard keymap defines */
-void DManageChild (Widget w, Trace *trace, MCKeys_t keys)
+void DManageChild (Widget w, Trace_t *trace, MCKeys_t keys)
 {
     XtSetArg (arglist[0], XmNuserData, trace);
     XtSetValues (w, arglist, 1);
@@ -715,7 +715,7 @@ void DManageChild (Widget w, Trace *trace, MCKeys_t keys)
 }
 
 /* Create a trace display and link it into the global information */
-Trace *create_trace (
+Trace_t *create_trace (
     int		xs,
     int		ys,
     int		xp,
@@ -724,7 +724,7 @@ Trace *create_trace (
     /*    int		x1,x2;
 	  unsigned int junk; */
     int		i;
-    Trace	*trace;
+    Trace_t	*trace;
     int		argc_copy;
     char	**argv_copy;
     XColor	xcolor,xcolor2;

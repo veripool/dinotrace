@@ -80,9 +80,9 @@ char dinodoc[] = "Unavailable";
 
 void free_data (
     /* Free trace information, also used when deleting preserved structure */
-    Trace	*trace)
+    Trace_t	*trace)
 {
-    Trace	*trace_ptr;
+    Trace_t	*trace_ptr;
 
     if (DTPRINT_ENTRY) printf ("In free_data - trace=%p\n",trace);
 
@@ -103,7 +103,7 @@ void free_data (
 
 void trace_read_cb (
     Widget		w,
-    Trace		*trace)
+    Trace_t		*trace)
 {
     int		i;
 
@@ -177,7 +177,7 @@ void trace_read_cb (
 
 void trace_reread_all_cb (
     Widget		w,
-    Trace		*trace)
+    Trace_t		*trace)
 {
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
@@ -188,7 +188,7 @@ void trace_reread_all_cb (
 
 void trace_reread_cb (
     Widget		w,
-    Trace		*trace)
+    Trace_t		*trace)
 {
     char *semi;
     int		read_fd;
@@ -222,7 +222,7 @@ void trace_reread_cb (
 }
 
 void fil_read (
-    Trace	*trace)
+    Trace_t	*trace)
 {
     int		read_fd;
     FILE	*read_fp;	/* Routines are responsible for assigning this! */
@@ -388,7 +388,7 @@ void fil_read (
 }
 
 void  fil_select_set_pattern (
-    Trace	*trace,
+    Trace_t	*trace,
     Widget	dialog,
     char	*pattern)
     /* Set the file requester pattern information (called in 2 places) */
@@ -411,7 +411,7 @@ void  fil_select_set_pattern (
 
 void    fil_format_option_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     int 	i;
@@ -428,7 +428,7 @@ void    fil_format_option_cb (
 
 void fil_ok_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmFileSelectionBoxCallbackStruct *cb)
 {
     char	*tmp;
@@ -460,7 +460,7 @@ void fil_ok_cb (
 void help_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("in help_cb\n");
     dino_information_ack (trace, help_message ());
 }
@@ -468,7 +468,7 @@ void help_cb (
 void help_trace_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     static char msg[2000];
     static char msg2[1000];
 
@@ -500,7 +500,7 @@ void help_trace_cb (
 void help_doc_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
 
     if (DTPRINT_ENTRY) printf ("in help_doc_cb\n");
 
@@ -537,7 +537,7 @@ void help_doc_cb (
 #pragma inline (fil_add_cptr)
 /* WARNING, INLINED CODE IN CALLBACKS.H */
 void	fil_add_cptr (
-    Signal	*sig_ptr,
+    Signal_t	*sig_ptr,
     Value_t	*value_ptr,
     Boolean_t	nocheck)		/* compare against previous data */
 {
@@ -602,11 +602,11 @@ void	fil_add_cptr (
 void fil_make_busses (
     /* Take the list of signals and make it into a list of busses */
     /* Also do the common stuff required for each signal. */
-    Trace	*trace,
+    Trace_t	*trace,
     Boolean_t	not_tempest)	/* Use the name of the bus to find the bit vectors */
 {
-    Signal	*sig_ptr;	/* ptr to current signal (lower bit number) */
-    Signal	*bus_sig_ptr;	/* ptr to signal which is being bussed (upper bit number) */
+    Signal_t	*sig_ptr;	/* ptr to current signal (lower bit number) */
+    Signal_t	*bus_sig_ptr;	/* ptr to signal which is being bussed (upper bit number) */
     char	*bbeg;		/* bus beginning */
     char	*sep;		/* separator position */
     int		pos;
@@ -845,9 +845,9 @@ void fil_make_busses (
 
 
 static void fil_mark_cptr_end (
-    Trace	*trace)
+    Trace_t	*trace)
 {
-    Signal	*sig_ptr, *sig_next_ptr;
+    Signal_t	*sig_ptr, *sig_next_ptr;
     Value_t	value;
     Boolean_t	msg=FALSE;
 
@@ -887,9 +887,9 @@ static void fil_mark_cptr_end (
 
 void fil_trace_end (
     /* Perform stuff at end of trace - common across all reading routines */
-    Trace	*trace)
+    Trace_t	*trace)
 {
-    Signal	*sig_ptr;
+    Signal_t	*sig_ptr;
 
     if (DTPRINT_FILE) printf ("In fil_trace_end\n");
 

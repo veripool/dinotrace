@@ -353,7 +353,7 @@ void    unmanage_cb (
 void    cancel_all_events_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cancel_all_events - trace=%p\n",trace);
     
     /* remove all events */
@@ -402,7 +402,7 @@ void 	add_event (
     int		type,
     void	(*callback)())
 {
-    Trace	*trace;
+    Trace_t	*trace;
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	XtAddEventHandler (trace->work, type, TRUE,
@@ -414,7 +414,7 @@ static void    remove_event (
     int		type,
     void	(*callback)())
 {
-    Trace	*trace;
+    Trace_t	*trace;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	XtRemoveEventHandler (trace->work, type, TRUE,
 			      (XtEventHandler)callback, trace);
@@ -423,7 +423,7 @@ static void    remove_event (
 
 
 void    remove_all_events (
-    Trace	*trace)
+    Trace_t	*trace)
 {
     if (DTPRINT_ENTRY) printf ("In remove_all_events - trace=%p\n",trace);
     
@@ -455,7 +455,7 @@ void    remove_all_events (
 }
 
 ColorNum_t submenu_to_color (
-    Trace	*trace,		/* Display information */
+    Trace_t	*trace,		/* Display information */
     Widget	w,
     int		base)		/* Loaded when the menu was loaded */
 {
@@ -496,10 +496,10 @@ int option_to_number (
 }
 
 /* Find the trace for this widget; widget must be created with DManageChild */
-Trace	*widget_to_trace (
+Trace_t	*widget_to_trace (
     Widget	w)
 {
-    Trace	*trace;		/* Display information */
+    Trace_t	*trace;		/* Display information */
     
     XtSetArg (arglist[0], XmNuserData, &trace);
     XtGetValues (w, arglist, 1);
@@ -510,9 +510,9 @@ Trace	*widget_to_trace (
 
 /* Adjust starting times on signals to new point */
 static void new_time_sigs (
-    Signal	*sig_first_ptr)
+    Signal_t	*sig_first_ptr)
 {
-    Signal	*sig_ptr;	
+    Signal_t	*sig_ptr;	
 
     for (sig_ptr = sig_first_ptr; sig_ptr; sig_ptr = sig_ptr->forward) {
 	Value_t	*cptr = sig_ptr->cptr;
@@ -542,7 +542,7 @@ static void new_time_sigs (
 }
 
 void new_time (
-    Trace 	*trace)
+    Trace_t 	*trace)
 {
     if ( global->time > (trace->end_time - TIME_WIDTH (trace)) ) {
         if (DTPRINT_ENTRY) printf ("At end of trace...\n");
@@ -565,7 +565,7 @@ void new_time (
 
 /* Get window size, calculate what fits on the screen and update scroll bars */
 void get_geometry (
-    Trace	*trace)
+    Trace_t	*trace)
 {
     int		x,y;
     uint_t	width,height,dret,depth;
@@ -640,7 +640,7 @@ void get_geometry (
 }
 
 void get_data_popup (
-    Trace	*trace,
+    Trace_t	*trace,
     char	*string,
     int		type)
 {
@@ -672,7 +672,7 @@ void get_data_popup (
 
 void    prompt_ok_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
     char	*valstr;
@@ -707,7 +707,7 @@ void    prompt_ok_cb (
 
 
 void dino_message_ack (
-    Trace	*trace,
+    Trace_t	*trace,
     int		type,	/* See dino_warning_ack macros, 1=warning */
     char	*msg)
 {
@@ -756,16 +756,16 @@ void	ok_apply_cancel (
     Widget form,		/* Form to add widgets under */
     Widget above,		/* Widget above this one */
     XtCallbackProc ok_cb,	/* Callbacks to activate on each button */
-    Trace *ok_trace,		 
+    Trace_t *ok_trace,		 
     XtCallbackProc apply_cb,
-    Trace *apply_trace,		 
+    Trace_t *apply_trace,		 
     XtCallbackProc defaults_cb,
-    Trace *defaults_trace,		 
+    Trace_t *defaults_trace,		 
     XtCallbackProc cancel_cb,
-    Trace *cancel_trace		/* Often widget to unmanage */
+    Trace_t *cancel_trace		/* Often widget to unmanage */
     )
 {
-    Trace *trace = ok_trace;
+    Trace_t *trace = ok_trace;
 
     /* Create Separator */
     XtSetArg (arglist[0], XmNtopAttachment, XmATTACH_WIDGET );
@@ -852,7 +852,7 @@ void    print_cptr (
 }
 
 void    print_sig_info_internal (
-    Signal	*sig_ptr,
+    Signal_t	*sig_ptr,
     Value_t	*cptr,
     DTime_t	end_time)
 {
@@ -872,7 +872,7 @@ void    print_sig_info_internal (
 }
 
 void    print_sig_info (
-    Signal	*sig_ptr)
+    Signal_t	*sig_ptr)
 {
     print_sig_info_internal (sig_ptr, sig_ptr->bptr, 0);
 }
@@ -880,9 +880,9 @@ void    print_sig_info (
 void    debug_print_screen_traces_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     uint_t	i,num;
-    Signal	*sig_ptr;
+    Signal_t	*sig_ptr;
     
     printf ("There are up to %d signals currently visible.\n",trace->numsigvis);
     printf ("Which signal do you wish to view [0-%d]: ",trace->numsigvis-1);
@@ -892,17 +892,17 @@ void    debug_print_screen_traces_cb (
 	return;
     }
     
-    sig_ptr = (Signal *)trace->dispsig;
+    sig_ptr = (Signal_t *)trace->dispsig;
     for (i=0; i<num; i++) {
-	sig_ptr = (Signal *)sig_ptr->forward;	
+	sig_ptr = (Signal_t *)sig_ptr->forward;	
     }
     
     print_sig_info_internal (sig_ptr, sig_ptr->cptr, global->time + TIME_WIDTH (trace));
 }
 
 void    debug_signal_integrity (
-    Trace	*trace,
-    Signal	*sig_ptr,
+    Trace_t	*trace,
+    Signal_t	*sig_ptr,
     char	*list_name,
     Boolean_t	del)
 {
@@ -999,7 +999,7 @@ void    debug_signal_integrity (
 void    debug_integrity_check_cb (
     Widget	w)
 {
-    Trace *trace;
+    Trace_t *trace;
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	debug_signal_integrity (trace, trace->firstsig, trace->dfile.filename, 
 				(trace==global->deleted_trace_head));
@@ -1025,7 +1025,7 @@ void    debug_decrease_debugtemp_cb (
 
 
 void change_title (
-    Trace	*trace)
+    Trace_t	*trace)
 {
     char title[300],icontitle[300],*pchar;
     
@@ -1069,7 +1069,7 @@ void change_title (
 #pragma inline (posx_to_time)
 DTime_t	posx_to_time (
     /* convert x value to a time value, return -1 if invalid click */
-    Trace 	*trace,
+    Trace_t 	*trace,
     Position 	x)
 {
     /* check if button has been clicked on trace portion of screen */
@@ -1083,7 +1083,7 @@ DTime_t	posx_to_time (
 Value_t *value_at_time (
     /* Return the value for the given time */
     /* Must be on the screen! */
-    Signal	*sig_ptr,
+    Signal_t	*sig_ptr,
     DTime_t	ctime)
 {
     Value_t	*cptr;
@@ -1099,12 +1099,12 @@ Value_t *value_at_time (
 DTime_t	posx_to_time_edge (
     /* convert x value to a time value, return -1 if invalid click */
     /* allow clicking to a edge if it is enabled */
-    Trace 	*trace,
+    Trace_t 	*trace,
     Position	x,
     Position	y)
 {
     DTime_t	xtime;
-    Signal 	*sig_ptr;
+    Signal_t 	*sig_ptr;
     Value_t	*cptr;
     DTime_t	left_time, right_time;
 
@@ -1144,12 +1144,12 @@ DTime_t	posx_to_time_edge (
 
 
 #pragma inline (posy_to_signal)
-Signal	*posy_to_signal (
+Signal_t	*posy_to_signal (
     /* convert y value to a signal pointer, return NULL if invalid click */
-    Trace	*trace,
+    Trace_t	*trace,
     Position 	y)
 {
-    Signal	*sig_ptr;
+    Signal_t	*sig_ptr;
     int num,i,max_y;
 
     /* return if there is no file */
@@ -1176,7 +1176,7 @@ Signal	*posy_to_signal (
 #pragma inline (posx_to_cursor)
 DCursor_t *posx_to_cursor (
     /* convert x value to the index of the nearest cursor, return NULL if invalid click */
-    Trace	*trace,
+    Trace_t	*trace,
     Position	x)
 {
     DCursor_t 	*csr_ptr;
@@ -1207,7 +1207,7 @@ DCursor_t *posx_to_cursor (
 
 Grid_t *posx_to_grid (
     /* convert x value to the index of the nearest grid, return NULL if invalid click */
-    Trace	*trace,
+    Trace_t	*trace,
     Position	x,
     DTime_t	*time_ptr)
 {
@@ -1264,7 +1264,7 @@ DCursor_t *time_to_cursor (
 
 /* Convert time to nearest cycle number. */
 double time_to_cyc_num (DTime_t time) {
-    Trace *trace;
+    Trace_t *trace;
     double f_time;
 
     trace = global->trace_head;
@@ -1279,7 +1279,7 @@ double time_to_cyc_num (DTime_t time) {
 
 /* Convert time to a cycle number. */
 DTime_t cyc_num_to_time (double cyc_num) {
-  Trace *trace;
+  Trace_t *trace;
 
   trace = global->trace_head;
 
@@ -1291,7 +1291,7 @@ DTime_t cyc_num_to_time (double cyc_num) {
 #pragma inline (string_to_time)
 DTime_t string_to_time (
     /* convert integer to time value */
-    Trace	*trace,
+    Trace_t	*trace,
     char	*strg)
 {
     double	f_time;
@@ -1316,7 +1316,7 @@ DTime_t string_to_time (
 #pragma inline (time_to_string)
 void time_to_string (
     /* convert specific time value into the string passed in */
-    Trace	*trace,
+    Trace_t	*trace,
     char	*strg,
     DTime_t	ctime,
     Boolean_t	relative)	/* true = time is relative, so don't adjust */

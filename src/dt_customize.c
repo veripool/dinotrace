@@ -91,7 +91,7 @@ static char *cus_write_text[CUSWRITEM_MAX]
 
 void cus_dialog_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct *cb)
 {
     char		title[MAXFNAMELEN + 15];
@@ -224,7 +224,7 @@ void cus_dialog_cb (
 			 (XtCallbackProc)cus_ok_cb, trace,
 			 (XtCallbackProc)cus_apply_cb, trace,
 			 NULL, NULL,
-			 (XtCallbackProc)unmanage_cb, (Trace*)trace->custom.dialog);
+			 (XtCallbackProc)unmanage_cb, (Trace_t*)trace->custom.dialog);
     }
 
     /* Update with current custom values */
@@ -266,7 +266,7 @@ void cus_dialog_cb (
 
 void cus_reread_cb (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("in cus_reread_cb trace=%p\n",trace);
@@ -279,7 +279,7 @@ void cus_reread_cb (
 
 void	cus_restore_cb (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("in cus_restore_cb trace=%p\n",trace);
@@ -294,7 +294,7 @@ void	cus_restore_cb (
 
 void	cus_ok_cb (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XmAnyCallbackStruct	*cb)
 {
     int hgt;
@@ -340,7 +340,7 @@ void	cus_ok_cb (
 
 void	cus_apply_cb (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In cus_apply_cb - trace=%p\n",trace);
@@ -356,7 +356,7 @@ void	cus_apply_cb (
 
 void cus_read_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmFileSelectionBoxCallbackStruct *cb)
 {
     int		cfg_num;
@@ -435,7 +435,7 @@ void cus_read_cb (
 
 void cus_read_ok_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmFileSelectionBoxCallbackStruct *cb)
 {
     char	*tmp;
@@ -470,7 +470,7 @@ void cus_read_ok_cb (
 void cus_write_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     int		item_num;
     
     if (DTPRINT_ENTRY) printf ("In cus_write_cb trace=%p\n",trace);
@@ -580,7 +580,7 @@ void cus_write_cb (
 
 void cus_write_ok_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmFileSelectionBoxCallbackStruct *cb)
 {
     char	*tmp;

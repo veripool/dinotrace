@@ -75,13 +75,13 @@
 /**********************************************************************/
 
 extern void	grid_customize_ok_cb(), grid_customize_apply_cb(), grid_customize_reset_cb(), grid_customize_sensitives_cb(), grid_customize_option_cb();
-extern void	grid_customize_align_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	grid_customize_align_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
 
 
 /****************************** UTILITIES ******************************/
 
 DTime_t	grid_primary_period (
-    const Trace	*trace)
+    const Trace_t	*trace)
 {
     int		grid_num;
     const Grid_t	*grid_ptr;
@@ -203,7 +203,7 @@ static void	grid_calc_auto (
 }
 
 void	grid_calc_autos (
-    Trace		*trace)
+    Trace_t		*trace)
 {
     int		grid_num;
 
@@ -218,7 +218,7 @@ void	grid_calc_autos (
 
 char *grid_examine_string (
     /* Return string with examine information in it */
-    Trace	*trace,
+    Trace_t	*trace,
     Grid_t	*grid_ptr,
     DTime_t	time)
 {
@@ -251,7 +251,7 @@ char *grid_examine_string (
 /****************************** MENU OPTIONS ******************************/
 
 static void    grid_align_choose (
-    Trace	*trace,
+    Trace_t	*trace,
     Grid_t	*grid_ptr)
 {
     DTime_t	time;
@@ -335,7 +335,7 @@ static void    grid_align_choose (
 
 void grid_customize_align_cb (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XmAnyCallbackStruct	*cb)
 {
     int			grid_num;
@@ -368,7 +368,7 @@ void grid_customize_align_cb (
 void grid_reset_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     int		grid_num;
     Grid_t	*grid_ptr;
 
@@ -406,7 +406,7 @@ void grid_reset_cb (
 
 void    grid_customize_sensitives_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct *cb)
 {
     int		grid_num;
@@ -429,7 +429,7 @@ void    grid_customize_sensitives_cb (
 
 void    grid_customize_widget_update_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct *cb)
 {
     int		grid_num;
@@ -475,7 +475,7 @@ void    grid_customize_widget_update_cb (
 void    grid_customize_cb (
     Widget	w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     int		grid_num;
     int		y=10, xb=0, ymax=0;
     char	strg[30];
@@ -641,7 +641,7 @@ void    grid_customize_cb (
 			 (XtCallbackProc)grid_customize_ok_cb, trace,
 			 (XtCallbackProc)grid_customize_apply_cb, trace,
 			 (XtCallbackProc)grid_customize_reset_cb, trace,
-			 (XtCallbackProc)unmanage_cb, (Trace*)trace->gridscus.dialog);
+			 (XtCallbackProc)unmanage_cb, (Trace_t*)trace->gridscus.dialog);
     }
     
     /* Copy settings to local area to allow cancel to work */
@@ -653,7 +653,7 @@ void    grid_customize_cb (
 
 void    grid_customize_option_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct *cb)	/* OR     XButtonPressedEvent	*ev; */
     /* Puts the color in the option menu, since Xm does not copy colors on selection */
     /* Also used as an event callback for exposures */
@@ -689,7 +689,7 @@ void    grid_customize_option_cb (
 
 void    grid_customize_ok_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct *cb)
 {
     int			grid_num;
@@ -718,7 +718,7 @@ void    grid_customize_ok_cb (
 
 void    grid_customize_apply_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct *cb)
 {
     if (DTPRINT_ENTRY) printf ("In grid_customize_apply_cb - trace=%p\n",trace);
@@ -729,7 +729,7 @@ void    grid_customize_apply_cb (
 
 void    grid_customize_reset_cb (
     Widget	w,
-    Trace	*trace,
+    Trace_t	*trace,
     XmAnyCallbackStruct *cb)
 {
     if (DTPRINT_ENTRY) printf ("In grid_customize_resize_cb - trace=%p\n",trace);

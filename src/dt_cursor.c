@@ -278,7 +278,7 @@ void cur_write (FILE *writefp, char *c)
 }
 
 DTime_t cur_time_first (
-    const Trace 	*trace)
+    const Trace_t 	*trace)
     /* Return time of the first cursor, or BOT if none */
 {
     DCursor_t	*csr_ptr;
@@ -293,7 +293,7 @@ DTime_t cur_time_first (
 }
 
 DTime_t cur_time_last (
-    const Trace 	*trace)
+    const Trace_t 	*trace)
     /* Return time of the last cursor, or EOT if none */
 {
     DCursor_t	*csr_ptr;
@@ -382,7 +382,7 @@ void cur_highlight (
 
 char *cur_examine_string (
     /* Return string with examine information in it */
-    Trace	*trace,
+    Trace_t	*trace,
     DCursor_t	*csr_ptr)
 {
     static char	strg[2000];
@@ -426,7 +426,7 @@ static void    cur_add_internal (
     CursorType_t	type
     )
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cur_add_internal - trace=%p\n",trace);
 
     global->selected_curtype = type;
@@ -456,7 +456,7 @@ void    cur_add_simview_cb (
 void    cur_mov_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
 
     if (DTPRINT_ENTRY) printf ("In cur_mov_cb - trace=%p\n",trace);
 
@@ -469,7 +469,7 @@ void    cur_mov_cb (
 void    cur_del_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
 
     if (DTPRINT_ENTRY) printf ("In cur_del_cb - trace=%p\n",trace);
 
@@ -482,7 +482,7 @@ void    cur_del_cb (
 void    cur_clr_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     DCursor_t	*csr_ptr, *next;
 
     if (DTPRINT_ENTRY) printf ("In cur_clr_cb.\n");
@@ -503,7 +503,7 @@ void    cur_clr_cb (
 void    cur_highlight_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cur_highlight_cb - trace=%p\n",trace);
 
     /* Grab color number from the menu button pointer */
@@ -518,7 +518,7 @@ void    cur_highlight_cb (
 void    cur_step_fwd_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cur_step_fwd_cb.\n");
     cur_step (grid_primary_period (trace));
 }
@@ -526,7 +526,7 @@ void    cur_step_fwd_cb (
 void    cur_step_back_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cur_step_back_cb.\n");
     cur_step ( - grid_primary_period (trace));
 }
@@ -535,7 +535,7 @@ void    cur_step_back_cb (
 
 void    cur_add_ev (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XButtonPressedEvent	*ev)
 {
     DTime_t	time;
@@ -555,7 +555,7 @@ void    cur_add_ev (
 
 void    cur_move_ev (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XButtonPressedEvent	*ev)
 {
     DTime_t	time;
@@ -654,7 +654,7 @@ void    cur_move_ev (
 
 void    cur_delete_ev (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XButtonPressedEvent	*ev)
 {
     DCursor_t	*csr_ptr;
@@ -673,7 +673,7 @@ void    cur_delete_ev (
 
 void    cur_highlight_ev (
     Widget		w,
-    Trace		*trace,
+    Trace_t		*trace,
     XButtonPressedEvent	*ev)
 {
     DCursor_t	*csr_ptr;

@@ -69,14 +69,14 @@
 
 #define OVERLAPSPACE 2		/* Number of pixels within which two signal transitions are visualized as one */
 
-static void draw_trace_signame (Trace *trace, const Signal *sig_ptr, Position y);
-static void draw_hscroll (Trace *trace);
-static void draw_vscroll (Trace *trace);
+static void draw_trace_signame (Trace_t *trace, const Signal_t *sig_ptr, Position y);
+static void draw_hscroll (Trace_t *trace);
+static void draw_vscroll (Trace_t *trace);
 
 XtExposeProc draw_orig_scroll_expose=NULL;	/* Original function for scroll exposure */
 
 static void draw_string_fit (
-    Trace	*trace,
+    Trace_t	*trace,
     Boolean_t	*textoccupied,
     Position	x,
     Position	y,
@@ -113,7 +113,7 @@ static void draw_string_fit (
 }
     
 static void draw_grid_line (
-    Trace	*trace,
+    Trace_t	*trace,
     Boolean_t	*textoccupied,
     const Grid_t *grid_ptr,		/* Grid information */
     DTime_t	xtime,
@@ -145,7 +145,7 @@ static void draw_grid_line (
 }
 
 static void draw_grid (
-    Trace	*trace,
+    Trace_t	*trace,
     Boolean_t	*textoccupied,
     const Grid_t *grid_ptr)		/* Grid information */
 {         
@@ -188,7 +188,7 @@ static void draw_grid (
     case PA_EDGE:
     {
 	Value_t *cptr;
-	Signal *sig_ptr = grid_ptr->signal_synced;
+	Signal_t *sig_ptr = grid_ptr->signal_synced;
 	if (sig_ptr) {
 	    /* Put cursor at every appropriate transition */
 	    for (cptr = sig_ptr->cptr; (CPTR_TIME(cptr) != EOT && CPTR_TIME(cptr) < end_time);
@@ -238,7 +238,7 @@ static void draw_grid (
 }
 
 static void draw_grids (
-    Trace	*trace)
+    Trace_t	*trace)
 {           
     Boolean_t	textoccupied[MAXSCREENWIDTH];
     int	grid_num;
@@ -254,7 +254,7 @@ static void draw_grids (
 
 
 static void draw_cursors (
-    Trace	*trace)
+    Trace_t	*trace)
 {         
     int		len,end_time;
     int		last_drawn_xright;
@@ -375,7 +375,7 @@ static void draw_cursors (
        XSetForeground (global->display, trace->gc, col);}}
 
 static void draw_trace (
-    Trace	*trace)
+    Trace_t	*trace)
 {         
     int cnt=0, cntd=0;
     int ymdpt;		/* Y Midpoint of signal, where Z line is */
@@ -388,7 +388,7 @@ static void draw_trace (
     XSegment segsd[MAXCNT+100];		/* Array of line segments to plot */
     char strg[MAXVALUELEN];		/* String value to print out */
     const Value_t *cptr,*nptr;		/* Current value pointer and next value pointer */
-    const Signal *sig_ptr;		/* Current signal being printed */
+    const Signal_t *sig_ptr;		/* Current signal being printed */
     int star_width;			/* Width of '*' character */
     int colornum_last = -1;
     int colornum_sig;
@@ -651,8 +651,8 @@ static void draw_trace (
 
 
 static void draw_trace_signame (
-    Trace *trace,
-    const Signal *sig_ptr,
+    Trace_t *trace,
+    const Signal_t *sig_ptr,
     Position y)
 {	
     Position x1;
@@ -682,8 +682,8 @@ void	draw_update_sigstart ()
     /* Update the starting coodinate of the signals. */
     /* Don't call directly, instead use draw_update_sig_start() it will log a request for the update */
 {
-    Trace *trace;
-    Signal *sig_ptr;
+    Trace_t *trace;
+    Signal_t *sig_ptr;
     Dimension widest_hier;
     Dimension widest_base;
     Dimension xstart_sig, xstart_base;
@@ -703,7 +703,7 @@ void	draw_update_sigstart ()
     widest_hier = 0;
     widest_base = 0;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	for (sig_ptr = (Signal *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	for (sig_ptr = (Signal_t *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    basename = sig_basename (trace, sig_ptr);
  	    /* if (DTPRINT) printf ("Signal = '%s'  xstart=%d\n",t1,widest_sig); */
 	    widest_hier = MAX(widest_hier, (strlen (sig_ptr->signame) - strlen(basename)));
@@ -725,7 +725,7 @@ void	draw_update_sigstart ()
 
 void draw_perform ()
 {
-    Trace		*trace;
+    Trace_t		*trace;
     int bgdcolor;
 
     if (DTPRINT_ENTRY) printf ("In draw_perform %d %d\n", global->redraw_needed, global->trace_head->redraw_needed);
@@ -805,7 +805,7 @@ void draw_update ()
 #define BUFFERED_PIXMAP 0
 
 static void draw_hscroll (
-    Trace *trace)
+    Trace_t *trace)
     /* Draw on the horizontal scroll bar - needs guts of the ScrollBarWidget */
 {
     int ymin,ymax,x1,xmin,xmax,slider_xmin,slider_xmax;
@@ -882,13 +882,13 @@ static void draw_hscroll (
 }
 
 static void draw_vscroll (
-    Trace *trace)
+    Trace_t *trace)
     /* Draw on the vertical scroll bar - needs guts of the ScrollBarWidget */
 {
     int ymin,ymax,y1,xmin,xmax,slider_ymin,slider_ymax;
     uint_t signum;
     float yscale;
-    Signal	*sig_ptr;
+    Signal_t	*sig_ptr;
     Pixmap pixmap;
     ColorNum_t color;
 
@@ -958,7 +958,7 @@ static void draw_vscroll (
 
 void hscroll_expose_cb (Widget w, XEvent *event, Region region)
 {
-    Trace *trace;
+    Trace_t *trace;
     /* Draw the scroll bar normally */
     (draw_orig_scroll_expose) (w, event, region);
     /* See if it's a special widget of ours */

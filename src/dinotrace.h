@@ -296,8 +296,6 @@ extern Arg		arglist[20];
 extern Widget		dmanage_last;	/* Last DManageChild()'d widget */
 
 /* Define some types that are needed before defined */
-typedef struct st_trace Trace;	/* Historical */
-typedef struct st_signal Signal;	/* Historical */
 typedef struct st_trace Trace_t;
 typedef struct st_dfile DFile_t;
 typedef struct st_signal Signal_t;

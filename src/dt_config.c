@@ -135,7 +135,7 @@ static Boolean_t config_reading_socket;
  */
 
 void	config_error_ack (
-    Trace	*trace,
+    Trace_t	*trace,
     char	*message)
 {
     char	newmessage[1000];
@@ -170,7 +170,7 @@ static void config_get_line (
 }
 
 static int config_read_string (
-    Trace *trace,
+    Trace_t *trace,
     char *line,
     char *out)
 {
@@ -219,7 +219,7 @@ static int config_read_string (
 }
 
 static int config_read_value (
-    Trace *trace,
+    Trace_t *trace,
     char *line,
     char *out)
 {
@@ -270,7 +270,7 @@ static int config_read_value (
 }
 
 static int config_read_pattern (
-    Trace	*trace,
+    Trace_t	*trace,
     char *line,
     char *pattern)
 {
@@ -349,7 +349,7 @@ static int config_read_int (
 **********************************************************************/
 
 SignalState_t	*signalstate_find (
-    const Trace	*trace,
+    const Trace_t	*trace,
     const char *name)
 {
     register SignalState_t *sig;
@@ -363,7 +363,7 @@ SignalState_t	*signalstate_find (
 }
 
 static void	signalstate_add (
-    Trace	*trace,
+    Trace_t	*trace,
     SignalState_t *info)
 {
     SignalState_t *new;
@@ -491,7 +491,7 @@ static void	config_geometry_string (
 **********************************************************************/
 
 static int	config_read_on_off (
-    Trace	*trace,
+    Trace_t	*trace,
     char *line,
     int *out)
     /* Read boolean flag line, return <= 0 and print msg if bad */
@@ -515,7 +515,7 @@ static int	config_read_on_off (
 }
 
 static int	config_read_color (
-    Trace	*trace,
+    Trace_t	*trace,
     char 	*line,
     ColorNum_t	*color,
     Boolean_t	warn)
@@ -559,7 +559,7 @@ static int	config_read_color (
 }
 
 int	config_read_grid (
-    Trace	*trace,
+    Trace_t	*trace,
     char 	*line,
     Grid_t	**grid_pptr)
     /* Read grid number name from line, return < 0 and print msg if bad */
@@ -583,7 +583,7 @@ int	config_read_grid (
 }
 
 int	config_read_time (
-    Trace	*trace,
+    Trace_t	*trace,
     char 	*line,
     DTime_t	*dtime)
 {
@@ -605,7 +605,7 @@ int	config_read_time (
 **********************************************************************/
 
 static int config_process_state (
-    Trace	*trace,
+    Trace_t	*trace,
     char 	*line,
     SignalState_t *sstate_ptr)
 {
@@ -639,7 +639,7 @@ static int config_process_state (
 **********************************************************************/
 
 static void	config_process_line_internal (
-    Trace	*trace,
+    Trace_t	*trace,
     char	*line,
     Boolean_t	format_only,
     Boolean_t	eof)		/* Final call of process_line with EOF */
@@ -1212,7 +1212,7 @@ static void	config_process_line_internal (
 #define config_process_line(trace, line, fmt)	config_process_line_internal(trace, line, fmt, FALSE)
 
 /* EOF */
-static void	config_process_eof (Trace *trace)
+static void	config_process_eof (Trace_t *trace)
 {
     char	line[3];
     line[0]='\0';	/* MIPS: no automatic aggregate initialization */
@@ -1226,7 +1226,7 @@ static void	config_process_eof (Trace *trace)
  **********************************************************************/
 
 void config_read_file (
-    Trace	*trace,
+    Trace_t	*trace,
     char	*filename,	/* Specific filename of CONFIG file */
     Boolean_t	report_notfound,
     Boolean_t	format_only)
@@ -1319,7 +1319,7 @@ void config_read_socket (
 /**********************************************************************
 **********************************************************************/
 
-void config_update_filenames (Trace *trace)
+void config_update_filenames (Trace_t *trace)
 {
     char *pchar;
 
@@ -1345,12 +1345,12 @@ void config_update_filenames (Trace *trace)
 }
 
 void config_read_defaults (
-    Trace	*trace,
+    Trace_t	*trace,
     Boolean_t	format_only)
 {
     int		cfg_num;
-    Signal	*new_dispsig;
-    Signal	*sig_ptr;
+    Signal_t	*new_dispsig;
+    Signal_t	*sig_ptr;
 
     if (DTPRINT_ENTRY) printf ("In config_read_defaults\n");
 
@@ -1393,17 +1393,17 @@ void config_read_defaults (
 **********************************************************************/
 
 void config_write_file (
-    Trace	*trace,
+    Trace_t	*trace,
     char	*filename)	/* Specific filename of CONFIG file */
 {
     FILE	*writefp;
-    Signal	*sig_ptr;
+    Signal_t	*sig_ptr;
     int		grid_num;
     Grid_t	*grid_ptr;
     int		i;
     char	strg[MAXSIGLEN];
     char	*c;	/* Comment or null */
-    Trace	*trace_top = trace;
+    Trace_t	*trace_top = trace;
     
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Writing config file %s\n", filename);
     
@@ -1576,7 +1576,7 @@ void config_write_file (
 **********************************************************************/
 
 void config_trace_defaults (
-    Trace	*trace)
+    Trace_t	*trace)
 {
     trace->dfile.hierarchy_separator = '.';
     trace->dfile.vector_separator = '[';

@@ -78,9 +78,9 @@
 
 
 static void print_signame_scrolled (
-    Trace	*trace,
+    Trace_t	*trace,
     FILE	*psfile,
-    Signal	*sig_ptr)
+    Signal_t	*sig_ptr)
 /* Print signame scrolled to right point */
 {
     char *basename;
@@ -117,7 +117,7 @@ static void print_signame_scrolled (
 }
 
 void    print_reset (
-    Trace *trace)
+    Trace_t *trace)
 {
     char 		*pchar;
     if (DTPRINT_ENTRY) printf ("In print_reset - trace=%p",trace);
@@ -134,7 +134,7 @@ void    print_reset (
 }
 
 static void print_draw_grid (
-    Trace	*trace,
+    Trace_t	*trace,
     FILE	*psfile,
     DTime_t	printtime,	/* Time to start on */
     Grid_t	*grid_ptr,		/* Grid information */
@@ -172,7 +172,7 @@ static void print_draw_grid (
     case PA_EDGE:
     {
 	Value_t *cptr;
-	Signal *sig_ptr = grid_ptr->signal_synced;
+	Signal_t *sig_ptr = grid_ptr->signal_synced;
 	if (sig_ptr) {
 	    /* Put cursor at every appropriate transition */
 	    for (cptr = sig_ptr->cptr; (CPTR_TIME(cptr) != EOT && CPTR_TIME(cptr) < end_time);
@@ -219,7 +219,7 @@ static void print_draw_grid (
 }
 
 static void print_draw_grids (
-    Trace	*trace,
+    Trace_t	*trace,
     FILE	*psfile,
     DTime_t	printtime)
 {           
@@ -251,10 +251,10 @@ static void print_draw_grids (
 
 
 static void print_draw_val (
-    Trace	*trace,
+    Trace_t	*trace,
     FILE	*psfile,
-    Signal	*sig_ptr,	/* Vertical signal to start on */
-    Signal	*sig_end_ptr,	/* Last signal to print */
+    Signal_t	*sig_ptr,	/* Vertical signal to start on */
+    Signal_t	*sig_end_ptr,	/* Last signal to print */
     DTime_t	printtime)	/* Time to start on */
 {
     int ymdpt,xend;
@@ -433,10 +433,10 @@ static void print_draw_val (
 
 
 static void print_draw_sig (
-    Trace	*trace,
+    Trace_t	*trace,
     FILE	*psfile,
-    Signal	*sig_ptr,	/* Vertical signal to start on */
-    Signal	*sig_end_ptr)	/* Last signal to print */
+    Signal_t	*sig_ptr,	/* Vertical signal to start on */
+    Signal_t	*sig_end_ptr)	/* Last signal to print */
 {
     int		numprt=0;
     
@@ -466,7 +466,7 @@ static void print_draw_sig (
 }
 
 static void print_draw_cursors (
-    Trace	*trace,
+    Trace_t	*trace,
     FILE	*psfile,
     DTime_t	printtime)	/* Time to start on */
 {
@@ -516,7 +516,7 @@ static void print_draw_cursors (
     }
 }
 
-void    print_internal (Trace *trace)
+void    print_internal (Trace_t *trace)
 {
     FILE	*psfile=NULL;
     int		sigs_per_page;
@@ -526,7 +526,7 @@ void    print_internal (Trace *trace)
     int		horiz_page, vert_page;
     char	*timeunits;
     int		encapsulated;
-    Signal	*sig_ptr, *sig_end_ptr=NULL;
+    Signal_t	*sig_ptr, *sig_end_ptr=NULL;
     uint_t	numprt;
     DTime_t	printtime;	/* Time current page starts on */
     char	pagenum[20];
@@ -719,7 +719,7 @@ void    print_range_sensitives_cb (
     int		opt;
     int		active;
     char	strg[MAXTIMELEN];
-    Trace	*trace;
+    Trace_t	*trace;
 
     if (DTPRINT_ENTRY) printf ("In print_range_sensitives_cb\n");
 
@@ -759,7 +759,7 @@ void    print_range_sensitives_cb (
 
 
 static void    print_range_create (
-    Trace		*trace,
+    Trace_t		*trace,
     RangeWidgets_t	*range_ptr,
     Widget		above,		/* Upper widget for form attachment */
     char		*descrip,	/* Description of selection */
@@ -858,7 +858,7 @@ DTime_t	print_range_value (
 void    print_dialog_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In print_screen - trace=%p\n",trace);
     
     if (!trace->print.dialog) {
@@ -969,7 +969,7 @@ void    print_dialog_cb (
 			 (XtCallbackProc)print_req_cb, trace,
 			 NULL, NULL,
 			 (XtCallbackProc)print_reset_cb, trace,
-			 (XtCallbackProc)unmanage_cb, (Trace*)trace->print.dialog);
+			 (XtCallbackProc)unmanage_cb, (Trace_t*)trace->print.dialog);
 	}
 
     /* reset page size */
@@ -1013,7 +1013,7 @@ void    print_dialog_cb (
 void    print_reset_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     print_reset (trace);
     XtUnmanageChild (trace->print.dialog);
     print_dialog_cb (w);
@@ -1022,7 +1022,7 @@ void    print_reset_cb (
 void    print_direct_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     if (!trace->print.dialog) {
 	print_dialog_cb (w);
     } else {
@@ -1033,7 +1033,7 @@ void    print_direct_cb (
 void    print_req_cb (
     Widget		w)
 {
-    Trace *trace = widget_to_trace(w);
+    Trace_t *trace = widget_to_trace(w);
     Widget	clicked;
     
     if (DTPRINT_ENTRY) printf ("In print_req_cb - trace=%p\n",trace);
