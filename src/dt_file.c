@@ -353,6 +353,8 @@ void	fil_string_to_value (sig_ptr, value_strg, value_ptr)
 	switch ( *value_strg ) {
 	  case '0': state = STATE_0; break;
 	  case '1': state = STATE_1; break;
+	  case '?':
+	  case '?':
 	  case 'X':
 	  case 'x':
 	  case 'U':
@@ -372,6 +374,8 @@ void	fil_string_to_value (sig_ptr, value_strg, value_ptr)
 	cp = value_strg;
 	for (bitcnt=0; bitcnt <= sig_ptr->bits; bitcnt++, cp++) {
 	    switch (*cp) {
+	      case '?':
+	      case '?':
 	      case 'X':
 	      case 'x':
 	      case 'u':
