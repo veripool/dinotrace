@@ -735,8 +735,8 @@ void tempest_read (
 	last_time = time;
 	if (first_data && have_phase) {
 	    int phase = data[1] & 1;
-	    if (DTPRINT_FILE) printf ("Initial phase detected: %d\n", phase);
 	    if (phase) time += MAX(1,global->tempest_time_mult/2);
+	    if (DTPRINT_FILE) printf ("Initial phase detected: %d  Adjust 1|%d\n", phase, global->tempest_time_mult/2);
 	}
 	
 #if 0
