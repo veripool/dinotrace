@@ -1083,12 +1083,17 @@ void config_read_defaults (trace, report_errors)
     if (!global->suppress_config) {
 #ifdef VMS
 	config_read_file (trace, "DINODISK:DINOTRACE.DINO", FALSE, report_errors);
+	config_read_file (trace, "DINOCONFIG:", FALSE, report_errors);
 	config_read_file (trace, "SYS$LOGIN:DINOTRACE.DINO", FALSE, report_errors);
 #else
 	newfilename[0] = '\0';
 	if (NULL != (pchar = getenv ("DINODISK"))) strcpy (newfilename, pchar);
 	if (newfilename[0]) strcat (newfilename, "/");
 	strcat (newfilename, "dinotrace.dino");
+	config_read_file (trace, newfilename, FALSE, report_errors);
+	
+	newfilename[0] = '\0';
+	if (NULL != (pchar = getenv ("DINOCONFIG"))) strcpy (newfilename, pchar);
 	config_read_file (trace, newfilename, FALSE, report_errors);
 	
 	newfilename[0] = '\0';

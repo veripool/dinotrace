@@ -249,8 +249,9 @@ A complete Dinotrace kit is available on:\n\
      CADSYS::CORE$KITS:DINOTRACE*.*\n\
  or     CAD::CORE$KITS:DINOTRACE*.*\n\
 \n\
-For configuration information, Dinotrace reads:\n\
+For configuration information, Dinotrace reads in order:\n\
      %sdinotrace.dino\n\
+     %s\n\
      %sdinotrace.dino\n\
      %sdinotrace.dino\n\
      %sCURRENT_TRACE_NAME.dino\n",
@@ -277,12 +278,14 @@ For configuration information, Dinotrace reads:\n\
 #ifdef VMS
 	     "DINODISK:",
 	     "DINODISK:",
+	     "DINOCONFIG:",
 	     "SYS$LOGIN:",
 	     "[current.trace.directory]",
 	     "[current.trace.directory]"
 #else
 	     "$DINODISK/",
 	     "$DINODISK/",
+	     "$DINOCONFIG",
 	     "~/",
 	     "/current/trace/directory/",
 	     "/current/trace/directory/"
