@@ -514,7 +514,7 @@ void decsim_read_binary (trace, read_fd)
 
 			fil_decsim_binary_to_value (sig_ptr, buf, &value);
 			value.siglw.sttime.time = time;
-			fil_add_cptr (sig_ptr, &value, !first_data);
+			fil_add_cptr (sig_ptr, &value, first_data);
 
 			/* Compute next different lw */
 			if (((sig_ptr->file_end_pos + 1) >> 5) > next_different_lw_pos) {
@@ -734,7 +734,7 @@ void tempest_read (trace, read_fd)
 	    /*if (DTPRINT_FILE) printf ("SIg %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
 		    value.number[0]);*/
 	    value.siglw.sttime.time = time;
-	    fil_add_cptr (sig_ptr, &value, !first_data);
+	    fil_add_cptr (sig_ptr, &value, first_data);
 	    }
 
 	first_data = FALSE;

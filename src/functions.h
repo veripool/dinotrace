@@ -92,12 +92,12 @@
  }
 
 /* Also identical commented function in dt_file if this isn't defined */
-#define	fil_add_cptr(sig_ptr, value_ptr, check) \
+#define	fil_add_cptr(sig_ptr, value_ptr, nocheck) \
 {\
     SIGNAL_LW	*cptr;\
     long diff;\
     cptr = ((SIGNAL *)(sig_ptr))->cptr - ((SIGNAL *)(sig_ptr))->lws;\
-    if ( !(check)\
+    if ( !(nocheck)\
 	|| ( cptr->sttime.state != ((VALUE *)(value_ptr))->siglw.sttime.state )\
 	|| ( cptr[1].number != ((VALUE *)(value_ptr))->number[0] )\
 	|| ( cptr[2].number != ((VALUE *)(value_ptr))->number[1] )\

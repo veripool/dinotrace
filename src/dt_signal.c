@@ -1805,13 +1805,13 @@ void sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr)
 		    new_value.siglw.sttime.state,
 		    (first_last_data?", LAST_DATA": ""));
 	    }*/
-	fil_add_cptr (new_sig_ptr, &new_value, !first_last_data);
+	fil_add_cptr (new_sig_ptr, &new_value, first_last_data);
 	first_last_data=FALSE;
 	}
 
     /* Add ending data & EOT marker */
     new_value.siglw.sttime.time = EOT;
-    fil_add_cptr (new_sig_ptr, &new_value, FALSE);
+    fil_add_cptr (new_sig_ptr, &new_value, TRUE);
     new_sig_ptr->cptr = new_sig_ptr->bptr;
 
     add_signal_to_queue (trace, new_sig_ptr, base_sig_ptr);

@@ -338,21 +338,28 @@ void help_trace_cb (w,trace,cb)
     dino_information_ack (trace, msg);
     }
 
-#pragma inline (fil_string_to_value)
-void	fil_string_to_value (sig_ptr, value_strg, value_ptr)
+#pragma inline (fil_string_add_cptr)
+void	fil_string_add_cptr (sig_ptr, value_strg, time, nocheck)
     /* Returns state and value corresponding to the text at value_strg */
+    /* WARNING: Similar verilog_string_to_value in dt_verilog for speed reasons */
     SIGNAL	*sig_ptr;
     char	*value_strg;
-    VALUE	*value_ptr;
+    DTime	time;
+    Boolean	nocheck;		/* don't compare against previous data */
 {
     register unsigned int state;
-    char	*cp;
-    int		len, bitcnt;
+    register char	*cp;
+    register int	len, bitcnt;
+    VALUE	value;
 
     /* zero the value */
-    value_ptr->siglw.number = value_ptr->number[0] = value_ptr->number[1] = value_ptr->number[2] = value_ptr->number[3] = 0;
+    /* We do NOT need to set value.siglw.number, as is set later */
+    /* I set it anyways to get it into the cache */
+    value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
+    state = STATE_U;
 
     if (sig_ptr->bits == 0) {
+	/* This branch not used for verilog, only Decsim */
 	/* scalar signal */  
 	switch ( *value_strg ) {
 	  case '0': state = STATE_0; break;
@@ -375,6 +382,7 @@ void	fil_string_to_value (sig_ptr, value_strg, value_ptr)
 	/* determine the state of the bus */
 	state = STATE_0;
 	cp = value_strg;
+	len = sig_ptr->bits;
 	for (bitcnt=0; bitcnt <= sig_ptr->bits; bitcnt++, cp++) {
 	    switch (*cp) {
 	      case '?':
@@ -394,34 +402,37 @@ void	fil_string_to_value (sig_ptr, value_strg, value_ptr)
 		}
 	    }
 	if (state != STATE_U && state != STATE_Z) {
-	    /* compute the value - need to fix for 64 and 96 */
+	    /* compute the value */
+	    /* Note '0'->0 and '1'->1 by just ANDing with 1 */
 	    state = sig_ptr->type;
 	    cp = value_strg;
-	    len = sig_ptr->bits;
 	    for (bitcnt=96; bitcnt <= (MIN (127,len)); bitcnt++)
-		value_ptr->number[3] = (value_ptr->number[3]<<1) + ((*cp++ == '1')?1:0);
+		value.number[3] = (value.number[3]<<1) + (*cp++ & 1);
 	    
 	    for (bitcnt=64; bitcnt <= (MIN (95,len)); bitcnt++)
-		value_ptr->number[2] = (value_ptr->number[2]<<1) + ((*cp++ == '1')?1:0);
+		value.number[2] = (value.number[2]<<1) + (*cp++ & 1);
 	    
 	    for (bitcnt=32; bitcnt <= (MIN (63,len)); bitcnt++)
-		value_ptr->number[1] = (value_ptr->number[1]<<1) + ((*cp++ == '1')?1:0);
+		value.number[1] = (value.number[1]<<1) + (*cp++ & 1);
 
 	    for (bitcnt=0; bitcnt <= (MIN (31,len)); bitcnt++)
-		value_ptr->number[0] = (value_ptr->number[0]<<1) + ((*cp++ == '1')?1:0);
+		value.number[0] = (value.number[0]<<1) + (*cp++ & 1);
 	    }
 	}
 
-    value_ptr->siglw.sttime.state = state;
+    /* if (DTPRINT_FILE) printf ("time %d sig %s state %d\n", time, sig_ptr->signame,  state); */
+    value.siglw.sttime.state = state;
+    value.siglw.sttime.time = time;
+    fil_add_cptr (sig_ptr, &value, nocheck);
     }
 
 #if !defined (fil_add_cptr)
 #pragma inline (fil_add_cptr)
 /* WARNING, INLINED CODE IN CALLBACKS.H */
-void	fil_add_cptr (sig_ptr, value_ptr, check)
+void	fil_add_cptr (sig_ptr, value_ptr, nocheck)
     SIGNAL	*sig_ptr;
     VALUE	*value_ptr;
-    int		check;		/* compare against previous data */
+    Boolean	nocheck;		/* compare against previous data */
 {
     long	diff;
     SIGNAL_LW	*cptr;
@@ -437,7 +448,7 @@ void	fil_add_cptr (sig_ptr, value_ptr, check)
 
     /* Comparing all 4 LW's works because we keep the unused LWs zeroed */
     cptr = sig_ptr->cptr - sig_ptr->lws;
-    if ( !check
+    if ( nocheck
 	|| ( cptr->sttime.state != value_ptr->siglw.sttime.state )
 	|| ( cptr[1].number != value_ptr->number[0] )
 	|| ( cptr[2].number != value_ptr->number[1] )
@@ -709,7 +720,7 @@ void read_mark_cptr_end (trace)
 	    if (cptr->sttime.time != trace->end_time) {
 		cptr_to_value (cptr, &value);
 		value.siglw.sttime.time = trace->end_time;
-		fil_add_cptr (sig_ptr, &value, FALSE);
+		fil_add_cptr (sig_ptr, &value, TRUE);
 		}
 	    }
 	else {
@@ -781,7 +792,7 @@ void read_trace_end (trace)
 
 /****************************** DECSIM ASCII ******************************/
 
-#define FIL_SIZE_INC	200	/* Characters to increase length by */
+#define FIL_SIZE_INC	1024	/* Characters to increase length by */
 
 void fgets_dynamic (line_pptr, length_ptr, readfp)
     /* fgets a line, with dynamically allocated line storage */
@@ -1112,14 +1123,7 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 
 	    /* save information on each signal */
 	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-		fil_string_to_value (sig_ptr, line_in + sig_ptr->file_pos, &value);
-		value.siglw.sttime.time = time_stamp;
-
-		/*
-		if (DTPRINT_FILE) printf ("time %d sig %s state %d\n", time_stamp, sig_ptr->signame, 
-				     value.siglw.sttime.state);
-				     */
-		fil_add_cptr (sig_ptr, &value, !first_data);
+		fil_string_add_cptr (sig_ptr, line_in + sig_ptr->file_pos, time_stamp, first_data);
 		}
 
 	    first_data = FALSE;
