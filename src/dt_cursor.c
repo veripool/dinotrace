@@ -128,20 +128,13 @@ void    cur_add_cb (w, trace, cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    int i;
-
     if (DTPRINT_ENTRY) printf ("In cur_add_cb - trace=%d\n",trace);
     
     /* remove any previous events */
     remove_all_events (trace);
     
     /* Grab color number from the menu button pointer */
-    global->highlight_color = 0;
-    for (i=1; i<=MAX_SRCH; i++) {
-	if (w == trace->menu.pdsubbutton[i + trace->menu.cur_add_pds]) {
-	    global->highlight_color = i;
-	    }
-	}
+    global->highlight_color = submenu_to_color (trace, w, trace->menu.cur_add_pds);
 
     /* process all subsequent button presses as cursor adds */
     set_cursor (trace, DC_CUR_ADD);
@@ -216,12 +209,7 @@ void    cur_highlight_cb (w,trace,cb)
     remove_all_events (trace);
      
     /* Grab color number from the menu button pointer */
-    global->highlight_color = 0;
-    for (i=1; i<=MAX_SRCH; i++) {
-	if (w == trace->menu.pdsubbutton[i + trace->menu.cur_highlight_pds]) {
-	    global->highlight_color = i;
-	    }
-	}
+    global->highlight_color = submenu_to_color (trace, w, trace->menu.cur_highlight_pds);
 
     /* process all subsequent button presses as signal deletions */ 
     set_cursor (trace, DC_CUR_HIGHLIGHT);
@@ -238,6 +226,7 @@ void    cur_add_ev (w, trace, ev)
     DTime	time;
     
     if (DTPRINT_ENTRY) printf ("In add cursor - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (ev->type != ButtonPress || ev->button!=1) return;
     
     /* convert x value to a time value */
     time = posx_to_time_edge (trace, ev->x, ev->y);
@@ -264,6 +253,7 @@ void    cur_move_ev (w, trace, ev)
     XButtonEvent *eb;
     
     if (DTPRINT_ENTRY) printf ("In cursor_mov\n");
+    if (ev->type != ButtonPress || ev->button!=1) return;
     
     csr_ptr = posx_to_cursor (trace, ev->x);
     if (!csr_ptr) return;
@@ -348,6 +338,7 @@ void    cur_delete_ev (w, trace, ev)
     CURSOR	*csr_ptr;
     
     if (DTPRINT_ENTRY) printf ("In cur_delete_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (ev->type != ButtonPress || ev->button!=1) return;
     
     csr_ptr = posx_to_cursor (trace, ev->x);
     if (!csr_ptr) return;
@@ -368,6 +359,7 @@ void    cur_highlight_ev (w, trace, ev)
     CURSOR	*csr_ptr;
     
     if (DTPRINT_ENTRY) printf ("In cur_highlight_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (ev->type != ButtonPress || ev->button!=1) return;
     
     csr_ptr = posx_to_cursor (trace, ev->x);
     if (!csr_ptr) return;

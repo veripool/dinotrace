@@ -87,6 +87,7 @@ void grid_align_ev (w, trace, ev)
     DTime		time;
 
     if (DTPRINT_ENTRY) printf ("In grid_align_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (ev->type != ButtonPress || ev->button!=1) return;
 
     /* convert x value to a new grid_align (time) value */
     time = posx_to_time_edge (trace, ev->x, ev->y);
