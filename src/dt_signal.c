@@ -271,19 +271,26 @@ char *sig_basename (
     return (basename);
 }
 
-/* Returns Signal or NULL if not found */
-Signal_t *sig_find_signame (
-    const Trace_t	*trace,
-    const char	*signame)
+/* Returns Signal or NULL if not found, starting at specified signal */
+static Signal_t* sig_find_signame_start (
+    Signal_t*	start_sig_ptr,
+    const char*	signame)
 {
-    Signal_t	*sig_ptr;
-    
-    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+    Signal_t*	sig_ptr;
+    for (sig_ptr = start_sig_ptr; sig_ptr; sig_ptr = sig_ptr->forward) {
 	if (!strcmp (sig_ptr->signame, signame)) return (sig_ptr);
     }
     return (NULL);
 }
 
+
+/* Returns Signal or NULL if not found */
+Signal_t* sig_find_signame (
+    const Trace_t*	trace,
+    const char*	signame)
+{
+    return sig_find_signame_start(trace->firstsig, signame);
+}
 
 /* Returns Signal or NULL if not found */
 Signal_t *sig_wildmat_signame (
@@ -2364,6 +2371,16 @@ static void sig_modify_en_signal (
     }
 }
 
+static Boolean_t sig_wordcmp(const char* str, const char* word) {
+    // Return true if this signal ends in the specified pattern
+    while (*word) {
+	if (!*str || *word != *str) return FALSE;
+	word++; str++;
+    }
+    // Next character must end a word
+    return (!*str || (!isalnum(*str) && *str!='_'));
+}
+
 void sig_modify_enables (
     Trace_t	*trace)
 {
@@ -2375,12 +2392,12 @@ void sig_modify_enables (
     for (sig_ptr = trace->firstsig; sig_ptr; ) {
 	for (tp=sig_ptr->signame; *tp; tp++) {
 	    if (tp[0]=='_' && tp[1]=='_'
-		&& ( ( tp[2]=='e' && tp[3]=='n')
-		    || (tp[2]=='E' && tp[3]=='N')
-		    || ( tp[2]=='i' && tp[3]=='n' && tp[4]=='e' && tp[5]=='n')
-		    || ( tp[2]=='I' && tp[3]=='N' && tp[4]=='E' && tp[5]=='N')
-		    || ( tp[2]=='c' && tp[3]=='o' && tp[4]=='s')
-		    || ( tp[2]=='C' && tp[3]=='O' && tp[4]=='S') ))
+		&& (sig_wordcmp(tp+2, "en")
+		    || sig_wordcmp(tp+2, "EN")
+		    || sig_wordcmp(tp+2, "inen")
+		    || sig_wordcmp(tp+2, "INEN")
+		    || sig_wordcmp(tp+2, "cos")
+		    || sig_wordcmp(tp+2, "COS")))
 		break;
 	}
 	if (*tp) {
@@ -2407,9 +2424,13 @@ void sig_modify_enables (
 				nonenablename + (tp - sig_ptr->signame) + 6);
 	    }
 	    
-	    base_sig_ptr = sig_find_signame (trace, nonenablename);
-
 	    en_sig_ptr = sig_ptr;
+
+	    /* Start search right before this signal, in case there are duplicate signames */
+	    base_sig_ptr = en_sig_ptr;
+	    if (base_sig_ptr->backward) base_sig_ptr=base_sig_ptr->backward;
+	    base_sig_ptr = sig_find_signame_start (base_sig_ptr, nonenablename);
+	    if (!base_sig_ptr) base_sig_ptr = sig_find_signame (trace, nonenablename);
 
 	    /* Point to next signal, as we will be deleting several, */
 	    /* make sure we don't point at one being deleted */
