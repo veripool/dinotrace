@@ -12,4 +12,5 @@ $! will run on the version of VMS that you linked with.
 $!
 $!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 $ @[.src]make.com p1 p2 p3 p4 p5 p6 p7 p8
+$ copy [.src]dinotrace.exe [.]dinotrace.exe
 $!

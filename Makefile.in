@@ -28,6 +28,33 @@
 # Boston, MA 02111-1307, USA.
 # 
 #****************************************************************************/
+#
+# make all	to compile and build Dinotrace.
+# make install	to install it.
+# make TAGS	to update tags tables.
+#
+# make clean  or  make mostlyclean
+#      Delete all files from the current directory that are normally
+#      created by building the program.	 Don't delete the files that
+#      record the configuration.  Also preserve files that could be made
+#      by building, but normally aren't because the distribution comes
+#      with them.
+#
+# make distclean
+#      Delete all files from the current directory that are created by
+#      configuring or building the program.  If you have unpacked the
+#      source and built the program without creating any other files,
+#      `make distclean' should leave only the files that were in the
+#      distribution.
+# 
+# make maintainer-clean
+#      Delete everything from the current directory that can be
+#      reconstructed with this Makefile.  This typically includes
+#      everything deleted by distclean, plus more: C source files
+#      produced by Bison, tags tables, info files, and so on.
+#
+# make extraclean
+#      Still more severe - delete backup and autosave files, too.
 
 #### Start of system configuration section. ####
 
@@ -62,9 +89,9 @@ SUBDIRS = src
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
 # Files to distribute.
-DISTFILES = AUTHORS COPYING ChangeLog ChangeLog.1 INSTALL \
+DISTFILES = COPYING ChangeLog ChangeLog.1 INSTALL FAQ \
 	Makefile.in NEWS README TODO \
-	install.texi \
+	install.texi faq.texi \
 	src/Makefile.in src/*.h src/*.c src/*.pl
 
 all: dinotrace_exe info
@@ -75,7 +102,7 @@ dinotrace_exe dinotrace:
 	echo making dinotrace in src ; \
 	  (cd src && $(MAKE) ../dinotrace) ; \
 
-info: dinotrace.info INSTALL
+info: dinotrace.info INSTALL FAQ
 
 # Use --no-split to avoid creating filenames > 14 chars.
 dinotrace.info: dinotrace.texi
@@ -83,6 +110,10 @@ dinotrace.info: dinotrace.texi
 
 INSTALL: install.texi
 	$(MAKEINFO) -I$(srcdir) $(srcdir)/install.texi --output=$@ \
+	--no-headers --no-validate
+
+FAQ: faq.texi
+	$(MAKEINFO) -I$(srcdir) $(srcdir)/faq.texi --output=$@ \
 	--no-headers --no-validate
 
 dvi: dinotrace.dvi
@@ -156,7 +187,7 @@ configure: configure.in
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
 	@echo "rebuilding the deleted files requires makeinfo."
-	rm -f *.info* INSTALL configure
+	rm -f *.info* INSTALL FAQ configure
 
 clean mostlyclean distclean maintainer-clean::
 	for dir in $(SUBDIRS); do \

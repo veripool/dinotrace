@@ -1,112 +1,111 @@
+\input texinfo @c -*-texinfo-*-
+@c %**start of header
+@stfilename install.info
+@settitle Dinotrace Installation
+@c %**end of header
+
 @c This file is included by autoconf.texi and is used to produce
 @c the INSTALL file.
 
-Installing Dinotrace
+@node Dinotrace Installation, Obtaining Distribution
+@section Dinotrace Installation
 
-@section Version Information
 $Id$
 
-	Dinotrace directory, from the TAR or save set distribution:
+This file describes how to install Dinotrace on your local system.
+After obtaining and installing on your particular system, see the
+Dinotrace manual for configuration options.
 
-		dinotrace_vv.exe	(VMS VAX Executable)
-		dinotrace_va.exe	(VMS Alpha Executable)
-		dinotrace_um		(Ultrix MIPS Executable)
-		dinotrace_oa		(OSF Alpha Executable)
-		dinotrace.dino		(Customization file)
-		dinotrace.txt		(This file)
-		errors_csr.tra		(Example output of Trace_csr in ASCII)
-		errors_csr_bin.tra	(Example output of Trace_csr in Binary)
-		errors_ssm.tra		(Example output of Trace_ssm in ASCII)
-		trace_csr.ind		(Example creating ASCII decsim traces)
-		trace_csr_bin.ind	(Example creating Binary decsim traces)
-		trace_ssm.ind		(Example creating ASCII decsim traces)
-		[.OBJ_VV]		(Directory with VMS VAX object files)
-		[.OBJ_VA]		(Directory with VMS AXP object files)
+@menu
+* Obtaining Distribution::      Where to get Dinotrace
+* Supported Systems::           Who to run Dinotrace on
+* Unix Installation::           How to install on Unix based systems.
+* VMS Installation::            How to install on VMS based systems.
+@end menu
 
-	If you are using Verilog and Emacs, you will also want verilog-mode.el
-	and dinotrace.el.  See CAD::CORE$KITS:0README.TXT for more information.
+@node Obtaining Distribution, Supported Systems, Dinotrace Installation
+@section Obtaining Distribution
 
-    VMS:
+@enumerate
+@item
+The latest version of Dinotrace is available at 
+@url{http://www.ultranet.com/~wsnyder/dinotrace}.
+Download the latest package from that site, and decompress.
+@samp{gunzip dinotrace_version.tar.gz ; tar xvf dinotrace_version.tar}
 
-	Do a directory of the release area to determine which version is the
-	latest, and use that filename below.
-		dir CAD::CORE$KITS:
-		
-	Copy the dinotrace save set from the release directory, and restore:
-		copy CAD::CORE$KITS:DINOTRACE_version.SAV []
-		backup DINOTRACE_version.SAV/save_set [...]
+@item
+Dinotrace requires the Motif Widget set.  If your system doesn't include
+Motif, a public domain version, LessTif, is available at
+@url{ftp://ftp.lesstif.org}.
 
-	Create a logical to point to Dinotrace, and make a symbol.  To do
-	this, put in your group's login.com:
+@item
+For best results, you should have perl installed on the system.
+This will enable the documentation to be included in the executable.
+Perl is available from @url{http://www.perl.org}
 
-	    $!
-	    $! Dinotrace
-	    $ define/group/nolog DINODISK somedisk$:[DINOTRACE]
-	    $ arch_bin_v == "_VV"
-	    $ if f$getsyi("NODE_HWTYPE") .eqs. "ALPH" then arch_bin_v == "_VA"
-	    $ Dinotraceexe :== "$dinodisk:dinotrace''arch_bin_v'"
-	    $ Dinotrace :== "spawn/nowait/nolog/input=nl:/output=nl: \
-	    	dinotraceexe"
+@item
+This kit includes a optional interface for GNU Emacs.  For this package,
+get at least GNU Emacs 19.35, and preferably GNU Emacs 20.2 from
+@url{ftp://prep.ai.mit.edu}.  You will also want the most recent verilog-mode
+from @url{http://www.surefirev.com}.
+@end enumerate
 
-	If starting up Dinotrace results in a error similar to:
-		%DCL-W-ACTIMAGE, error activating image CMA$TIS_SHR
-		-CLI-E-IMAGEFNF, image file not found DSA0:[SYS0.SYSCOMMON.]...
-	then you must link using your system's own libraries.  To do this, type:
-		$ @link_dt
-	This will create a dinotrace_v*.exe file that can be used on your
-	system.
+@node Supported Systems, Unix Installation, Obtaining Distribution
+@section Supported Systems
 
-	Edit the dinotrace.dino file to suit your group's preferences.
+This version of Dinotrace has been built and tested on:
 
-    Ultrix/OSF:
+@enumerate
+@item sparc-sun-solaris2.5.1
+@item sparc-sun-sunos-WPSFIX
+@end enumerate
 
-	Do a directory of the release area to determine which version is the
-	latest, and use that filename below.
-		dls 'CAD::CORE$KITS:'
-		
-	Copy the Dinotrace save set from the release directory, and untar:
+Previous versions of Dinotrace were once built, and probably will
+still build on:
 
-		dcp -i 'CAD::CORE$KITS:dinotrace_version.tar' .
-		tar xf dinotrace_version.tar
+@enumerate
+@item alpha-dec-osf3
+@item alpha-dec-vms
+(see the special section on VMS installation.)
+@item vax-dec-vms
+(see the special section on VMS installation.)
+@item mips-dec-ultrix
+@end enumerate
 
-	For Unix (bash shell), put dinotrace in the executable search path,
-	and the following in .bashrc:
+@node Unix Installation, Basic Installation, Supported Systems
+@section Unix Installation
 
-		#!
-		#! Dinotrace
-		alias dinotrace="/thepath/dinotrace $* &"
-		DINODISK="/thepath"
-		export DINODISK
+Dinotrace uses the GNU @code{autoconf} program.
 
-	Edit the dinotrace.dino file to suit your group's preferences.
+@menu
+* Basic Installation::          
+* Compilers and Options::       
+* Multiple Architectures::      
+* Installation Names::          
+* System Type::                 
+* Operation Controls::          
+@end menu
 
-
-@node Basic Installation
-@section Basic Installation
+@node Basic Installation, Compilers and Options, Unix Installation
+@subsection Basic Installation
 
 The @code{configure} shell script attempts to guess correct values for
 various system-dependent variables used during compilation.  It uses
-those values to create a @file{Makefile} in each directory of the
-package.  It also creates @file{config.h} containing system-dependent
+those values to create a @file{Makefile} in each directory of Dinotrace.
+It also creates @file{config.h} containing system-dependent
 definitions.  Finally, it creates a shell script @file{config.status}
 that you can run in the future to recreate the current configuration, a
 file @file{config.cache} that saves the results of its tests to speed up
 reconfiguring, and a file @file{config.log} containing compiler output
 (useful mainly for debugging @code{configure}).
 
-If you need to do unusual things to compile the package, please try to
-figure out how @code{configure} could check whether to do them, and mail
-diffs or instructions to wsnyder@@ultranet.com so they can be considered
-for the next release.  If at some point @file{config.cache} contains
-results you don't want to keep, you may remove or edit it.
-
 @noindent
-The simplest way to compile this package is:
+The simplest way to compile Dinotrace is:
 
 @enumerate
 @item
 @code{cd} to the directory containing this INSTALL notice.
-@samp{./configure} to configure the package for your system.  If you're
+@samp{./configure} to configure Dinotrace for your system.  If you're
 using @code{csh} on an old version of System V, you might need to type
 @samp{sh ./configure} instead to prevent @code{csh} from trying to
 execute @code{configure} itself.
@@ -115,9 +114,9 @@ Running @code{configure} takes awhile.  While running, it prints some
 messages telling which features it is checking for.
 
 @item
-Type @samp{make} to compile the package.  This program requires X11
+Type @samp{make} to compile Dinotrace.  This program requires X11
 with the Motif Widget set.  If Motif didn't come with your system, a public
-domain version, LessTif, is available at ftp.lesstif.org .
+domain version, LessTif, is available at @url{ftp://ftp.lesstif.org}.
 
 @item
 Try out the executable with @samp{src/dinotrace}.
@@ -129,15 +128,16 @@ documentation.
 @item
 You can remove the program binaries and object files from the source code
 directory by typing @samp{make clean}.  To also remove the files that
-@code{configure} created (so you can compile the package for a different
-kind of computer), type @samp{make distclean}.  There is also a
-@samp{make maintainer-clean} target, but that is intended mainly for the
-package's developers.  If you use it, you may have to get all sorts of
-other programs in order to regenerate files that came with the distribution.
+@code{configure} created (so you can compile Dinotrace for a different
+kind of computer), type @samp{make distclean}.
+
+@item
+Finally, see the Dinotrace manual for configuring Dinotrace for your site.
+
 @end enumerate
 
-@node Compilers and Options
-@section Compilers and Options
+@node Compilers and Options, Multiple Architectures, Basic Installation
+@subsection Compilers and Options
 
 Some systems require unusual options for compilation or linking that
 the @code{configure} script does not know about.  You can give
@@ -154,10 +154,10 @@ Or on systems that have the @code{env} program, you can do it like this:
 env CPPFLAGS=-I/usr/local/include LDFLAGS=-s ./configure
 @end example
 
-@node Multiple Architectures
-@section Compiling For Multiple Architectures
+@node Multiple Architectures, Installation Names, Compilers and Options
+@subsection Compiling For Multiple Architectures
 
-You can compile the package for more than one kind of computer at the
+You can compile Dinotrace for more than one kind of computer at the
 same time, by placing the object files for each architecture in their
 own directory.  To do this, you must use a version of @code{make} that
 supports the @code{VPATH} variable, such as GNU @code{make}.  @code{cd}
@@ -167,22 +167,22 @@ checks for the source code in the directory that @code{configure} is in
 and in @file{..}.
 
 If you have to use a @code{make} that does not supports the @code{VPATH}
-variable, you have to compile the package for one architecture at a time
-in the source code directory.  After you have installed the package for
+variable, you have to compile Dinotrace for one architecture at a time
+in the source code directory.  After you have installed Dinotrace for
 one architecture, use @samp{make distclean} before reconfiguring for
 another architecture.
 
-@node Installation Names
-@section Installation Names
+@node Installation Names, System Type, Multiple Architectures
+@subsection Installation Names
 
-By default, @samp{make install} will install the package's files in
+By default, @samp{make install} will install Dinotrace's files in
 @file{/usr/local/bin}, @file{/usr/local/man}, etc.  You can specify an
 installation prefix other than @file{/usr/local} by giving
 @code{configure} the option @samp{--prefix=@var{path}}.
 
 You can specify separate installation prefixes for architecture-specific
 files and architecture-independent files.  If you give @code{configure}
-the option @samp{--exec-prefix=@var{path}}, the package will use
+the option @samp{--exec-prefix=@var{path}}, Dinotrace will use
 @var{path} as the prefix for installing programs and libraries.
 Documentation and other data files will still use the regular prefix.
 
@@ -191,31 +191,16 @@ like @samp{--bindir=@var{path}} to specify different values for
 particular kinds of files.  Run @samp{configure --help} for a list of
 the directories you can set and what kinds of files go in them.
 
-If the package supports it, you can cause programs to be installed with
+If Dinotrace supports it, you can cause programs to be installed with
 an extra prefix or suffix on their names by giving @code{configure} the
 option @samp{--program-prefix=@var{PREFIX}} or
 @samp{--program-suffix=@var{SUFFIX}}.
 
-@node Optional Features
-@section Optional Features
-
-Some packages pay attention to @samp{--enable-@var{feature}} options to
-@code{configure}, where @var{feature} indicates an optional part of the
-package.  They may also pay attention to @samp{--with-@var{package}}
-options, where @var{package} is something like @samp{gnu-as} or @samp{x}
-(for the X Window System).  The @file{README} should mention any
-@samp{--enable-} and @samp{--with-} options that the package recognizes.
-
-For packages that use the X Window System, @code{configure} can usually
-find the X include and library files automatically, but if it doesn't,
-you can use the @code{configure} options @samp{--x-includes=@var{dir}}
-and @samp{--x-libraries=@var{dir}} to specify their locations.
-
-@node System Type
-@section Specifying the System Type
+@node System Type, Operation Controls, Installation Names
+@subsection Specifying the System Type
 
 There may be some features @code{configure} can not figure out
-automatically, but needs to determine by the type of host the package
+automatically, but needs to determine by the type of host Dinotrace
 will run on.  Usually @code{configure} can figure that out, but if it
 prints a message saying it can not guess the host type, give it the
 @samp{--host=@var{type}} option.  @var{type} can either be a short name
@@ -226,23 +211,9 @@ fields:
 @end example
 @noindent
 See the file @file{config.sub} for the possible values of each field.
-If @file{config.sub} isn't included in this package, then this package
-doesn't need to know the host type.
 
-@node Sharing Defaults
-@section Sharing Defaults
-
-If you want to set default values for @code{configure} scripts to share,
-you can create a site shell script called @file{config.site} that gives
-default values for variables like @code{CC}, @code{cache_file}, and
-@code{prefix}.  @code{configure} looks for
-@file{@var{prefix}/share/config.site} if it exists, then
-@file{@var{prefix}/etc/config.site} if it exists.  Or, you can set
-the @code{CONFIG_SITE} environment variable to the location of the site
-script.  A warning: not all @code{configure} scripts look for a site script.
-
-@node Operation Controls
-@section Operation Controls
+@node Operation Controls, VMS Installation, System Type
+@subsection Operation Controls
 
 @code{configure} recognizes the following options to control how it
 operates.
@@ -264,13 +235,57 @@ To suppress all normal output, redirect it to @file{/dev/null}
 (any error messages will still be shown).
 
 @item --srcdir=@var{dir}
-Look for the package's source code in directory @var{dir}.  Usually
+Look for Dinotrace's source code in directory @var{dir}.  Usually
 @code{configure} can determine that directory automatically.
 
-@item --version
-Print the version of Autoconf used to generate the @code{configure}
-script, and exit.
 @end table
 
 @noindent
 @code{configure} also accepts some other, not widely useful, options.
+
+
+@node VMS Installation,  , Operation Controls
+@section VMS Installation
+
+The @code{configure} program does not support Dinotrace, thus several
+command files are supplied to build Dinotrace.
+
+@enumerate
+@item
+Change to the download directory of dinotrace.
+@example
+$ set default wheredownloaded
+@end example
+
+@item
+Build Dinotrace with the make.com file.
+@example
+$ @@make.com
+@end example
+
+@item
+If all was successful, you should be able to invoke the Dinotrace executable.
+@example
+$ run dinotrace.exe
+@end example
+
+@item
+Create a logical to point to Dinotrace, and make a symbol to invoke
+Dinotrace into the background.  To do this, put in your group's login.com:
+(Substituting in the appropriate directory for somedisk$.)
+
+@example
+$!
+$! Dinotrace
+$ define/group/nolog DINODISK somedisk$:[DINOTRACE]
+$ arch_bin_v == "_VV"
+$ if f$getsyi("NODE_HWTYPE") .eqs. "ALPH" then arch_bin_v == "_VA"
+$ Dinotraceexe :== "$dinodisk:dinotrace''arch_bin_v'"
+$ Dinotrace :== "spawn/nowait/nolog/input=nl:/output=nl: dinotraceexe"
+@end example
+
+@item
+Finally, see the Dinotrace manual for configuring Dinotrace for your site.
+
+@end enumerate
+

@@ -2,6 +2,92 @@ SUGGESTIONS
 $Id$
 -----------------------------------------------------------------------------
 
+------------------------------------------------------------
+real
+analog
+ascii/hex/dec/binary
+2s complement, 1s complement
+.dinotrace directory (?? -- last files; edit dinotrace_recent.dino
+lessTif tearoff menus
+whole groups of hiearchys can be moved
+window menu
+1/2/3/4 recent files
+vector expand/collapse
+per-signal heights	-- fallback to default (if 0)
+find a change on a signal
+signal action popup
+
+perl programs
+	vtags
+	vtrace
+	error finder and cursor placer
+
+*value truncation (not ?)
+Colors: green:1/rise blue:0/fall red:x gold:z aqua:vector cyan:real
+CSS: z signals that aren't _c12 with a verilog module
+cursor and grid examine?  --- Return object which can be any of them?
+
+ESC->	cancel... map all to the same
+	move resets into customizers
+
+xcel:
+	how multi windows/file:
+		filename.xls:1	filename.xls:2
+
+	how mouse buttons
+		left select, second click unselect; shift slect another, ctrl select range
+			holding and movement keeps selecting, drag moves or copies
+		middle pan
+		right menu
+
+	commenting cells
+
+	drag-and-drop
+
+**add --version
+check fixed length structures
+------------------------------------------------------------
+**DINOTRACE mail folder ***
+
+types (per signal ... need in value structure too for val search?):
+	ascii
+	hex (unsign/2comp/1comp)
+	dec (unsign/2comp/1comp)
+	binary (unsign/2comp/1comp)
+	real
+	analog 
+*truncation on fewer characters
+.dinotrace directory (?? -- last files; edit dinotrace_recent.dino
+lessTif tearoff menus
+whole groups of hiearchys can be moved
+window menu
+1/2/3/4 recent files
+vector expand/collapse
+per-signal heights	-- fallback to default (if 0)
+find a change on a signal
+signal action popup
+comments on cursors, signals, grids, show when examining
+
+Colors: green:1/rise blue:0/fall red:x gold:z aqua:vector cyan:real
+CSS: z signals that aren't _c12 with a verilog module
+cursor and grid examine?  --- Return object which can be any of them?
+vtags: use new type so don't have overload problem
+
+xcel:
+	how multi windows/file:
+		filename.xls:1	filename.xls:2
+
+	how mouse buttons
+		left select, second click unselect; shift slect another, ctrl select range
+			holding and movement keeps selecting, drag moves or copies
+		middle pan
+		right menu
+
+	commenting cells
+
+	drag-and-drop
+
+
 ***CHECK part of contrib:
 
 Display:
@@ -25,10 +111,6 @@ Diff:
 Signal Selection:
 
 	Allow hiearchy browsing.  Remap -> to ., then use . for hiearchy.
-
-Keybindings:
-
-	Bind cursor keys to something useful.  [Paul Wasson]
 
 Time:	
 
