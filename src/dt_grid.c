@@ -29,6 +29,8 @@ static char rcsid[] = "$Id$";
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
 #include <Xm/Xm.h>
+#include <Xm/Label.h>
+#include <Xm/LabelP.h>
 #include <Xm/RowColumn.h>
 #include <Xm/PushB.h>
 #include <Xm/PushBG.h>
@@ -36,7 +38,6 @@ static char rcsid[] = "$Id$";
 #include <Xm/ToggleB.h>
 #include <Xm/SelectioB.h>
 #include <Xm/Text.h>
-#include <Xm/Label.h>
 #include <Xm/BulletinB.h>
 
 #include "dinotrace.h"
