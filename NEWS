@@ -7,7 +7,7 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-* Changes in Dinotrace 9.0e  9/1999
+* Changes in Dinotrace 9.0e  9/29/1999
 
 ****	Fixed a bug which would resize the screen incorrectly.
 
