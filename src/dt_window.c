@@ -71,6 +71,9 @@
 #include "functions.h"
 
 
+static void win_note_ok_cb (Widget w, Trace_t* trace, XmSelectionBoxCallbackStruct* cb);
+static void win_note_cancel_cb (Widget w, Trace_t* trace, XmAnyCallbackStruct* cb);
+
 /****************************** CALLBACKS ******************************/
 
 void win_expose_cb (
@@ -444,6 +447,115 @@ void res_zoom_click_ev (
     remove_all_events (trace);
 }
 
+/****************************** NOTES ******************************/
+
+void    win_note (
+    Trace_t*	trace,
+    const char* text1,
+    const char* text2,
+    const char* notetext,
+    Boolean_t	forcursor)
+{
+    char* notestr;
+
+    if (DTPRINT_ENTRY) printf ("in win_note\n");
+
+    trace->note.forcursor = forcursor;
+
+    if (!trace->note.dialog) {
+	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Note Change") );
+	XtSetArg (arglist[2], XmNverticalSpacing, 10);
+	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
+	trace->note.dialog = XmCreateFormDialog (trace->work,"note",arglist,4);
+	
+	/* Create label widget for notetext widget */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Note") );
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNleftOffset, 5);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[4], XmNtopOffset, 5);
+	trace->note.notelabel = XmCreateLabel (trace->note.dialog,"",arglist,5);
+	DManageChild (trace->note.notelabel, trace, MC_NOKEYS);
+	
+	/* Create the print note text widget */
+	XtSetArg (arglist[0], XmNrows, 1);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNleftOffset, 5);
+	XtSetArg (arglist[3], XmNcolumns, 30);
+	XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[5], XmNtopOffset, 0);
+	XtSetArg (arglist[6], XmNtopWidget, trace->note.notelabel);
+	XtSetArg (arglist[7], XmNresizeHeight, FALSE);
+	XtSetArg (arglist[8], XmNeditMode, XmSINGLE_LINE_EDIT);
+	trace->note.notetext = XmCreateText (trace->note.dialog,"notetext",arglist,9);
+	DAddCallback (trace->note.notetext, XmNactivateCallback, win_note_ok_cb, trace);
+	DManageChild (trace->note.notetext, trace, MC_NOKEYS);
+	
+	/* Ok/apply/cancel */
+	ok_apply_cancel (&trace->note.okapply, trace->note.dialog,
+			 dmanage_last,
+			 (XtCallbackProc)win_note_ok_cb, trace,
+			 NULL, NULL,
+			 NULL, NULL,
+			 (XtCallbackProc)win_note_cancel_cb, trace);
+    }
+    
+
+    /* right units */
+    if (!text1) text1="";
+    if (!text2) text2="";
+    if (!notetext) notetext="";
+    notestr = (char*)XtMalloc(100+strlen(text1)+strlen(text2));
+    strcpy(notestr,text1);
+    strcat(notestr,text2);
+    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ((char*)notestr));
+    XtSetValues (trace->note.notelabel, arglist, 1);
+
+    /* Update with current search values */
+    XmTextSetString (trace->note.notetext, (char*)notetext);
+    XtSetValues (trace->note.notetext, arglist, 1);
+
+    /* manage the dialog on the screen */
+    DManageChild (trace->note.dialog, trace, MC_NOKEYS);
+    XSync (global->display,0);
+}
+
+void    win_note_ok_cb (
+    Widget	w,
+    Trace_t	*trace,
+    XmSelectionBoxCallbackStruct *cb)
+{
+    char	*note = NULL;
+
+    if (DTPRINT_ENTRY) printf ("In win_note_ok_cb - trace=%p\n",trace);
+
+    /* Get value */
+    note = XmTextGetString (trace->note.notetext);
+    DFree (global->select_note);
+    if (!note[0]) note = NULL;
+
+    if (trace->note.forcursor) {
+	cur_note (global->selected_cursor, note);
+    } else {
+	sig_note (global->selected_sig, note);
+    }
+
+    /* unmanage the popup window */
+    XtUnmanageChild (trace->note.dialog);
+}
+
+void    win_note_cancel_cb (
+    Widget	w,
+    Trace_t	*trace,
+    XmAnyCallbackStruct	*cb)
+{
+    if (DTPRINT_ENTRY) printf ("In win_note_cancel_cb - trace=%p\n",trace);
+    
+    /* unmanage the popup on the screen */
+    XtUnmanageChild (trace->note.dialog);
+}
+
 /****************************** GOTO ******************************/
 
 void    win_goto_cb (
@@ -678,6 +790,8 @@ void    win_goto_cancel_cb (
 			  (XtEventHandler)win_goto_option_cb, trace);
     XtUnmanageChild (trace->gotos.dialog);
 }
+
+/**********************************************************************/
 
 void    debug_toggle_print_cb (
     Widget	w)

@@ -728,6 +728,14 @@ void    sig_delete_selected (
 }
 
 
+void    sig_note (
+    Signal_t* sig_ptr,
+    const char *note)
+{
+    sig_ptr->note = strdup (note);
+    /*draw_all_needed (); not visible, so don't bother*/
+}
+
 void    sig_note_selected (
     const char *note)
 {
@@ -738,7 +746,7 @@ void    sig_note_selected (
 
     for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
 	sig_ptr = siglst_ptr->signal;
-	sig_ptr->note = strdup (note);
+	sig_note (sig_ptr,note);
     }
     /*draw_all_needed (); not visible, so don't bother*/
 }
@@ -1034,6 +1042,18 @@ void    sig_highlight_keep_cb (
     
     sig_wildmat_select_color (trace, 0);
     sig_delete_selected (TRUE, TRUE);
+}
+
+void    sig_note_cb (
+    Widget	w)
+{
+    Trace_t *trace = widget_to_trace(w);
+    if (DTPRINT_ENTRY) printf ("In sig_note_cb %p\n",trace);
+    
+    /* process all subsequent button presses as signal deletions */ 
+    remove_all_events (trace);
+    set_cursor (DC_SIG_NOTE);
+    add_event (ButtonPressMask, sig_note_ev);
 }
 
 void    sig_search_cb (
@@ -1388,6 +1408,24 @@ void    sig_waveform_ev (
     sig_ptr->waveform = global->selected_waveform;
 
     draw_all_needed ();
+}
+
+void    sig_note_ev (
+    Widget	w,
+    Trace_t	*trace,
+    XButtonPressedEvent	*ev)
+{
+    Signal_t	*sig_ptr;
+    
+    if (DTPRINT_ENTRY) printf ("In sig_note_ev - trace=%p\n",trace);
+    if (ev->type != ButtonPress || ev->button!=1) return;
+    
+    sig_ptr = posy_to_signal (trace, ev->y);
+    if (!sig_ptr) return;
+    
+    /* Get the note */
+    global->selected_sig = sig_ptr;
+    win_note(trace, "Note for ",sig_ptr->signame, sig_ptr->note, FALSE);
 }
 
 /****************************** SELECT OPTIONS ******************************/

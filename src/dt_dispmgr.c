@@ -850,6 +850,7 @@ Trace_t *create_trace (
     dm_menu_subentry_colors (trace, 		NULL, NULL, NULL, NULL,	cur_highlight_cb);
     dm_menu_entry (trace, 	"Move",		'M',	NULL, NULL,	cur_mov_cb);
     dm_menu_entry (trace, 	"Delete",	'D',	NULL, NULL,	cur_del_cb);
+    dm_menu_entry (trace, 	"Note",		'N',	NULL, NULL,	cur_note_cb);
     dm_menu_entry (trace, 	"Step Forward",	'F',	"!Shift<Key>greater:", ">",	cur_step_fwd_cb);
     dm_menu_entry (trace, 	"Step Backward",'B',	"!Shift<Key>less:", "<",	cur_step_back_cb);
     dm_menu_entry (trace, 	"Clear", 	'C',	NULL, NULL,	cur_clr_cb);
@@ -863,6 +864,7 @@ Trace_t *create_trace (
     dm_menu_entry (trace, 	"Move",		'M',	NULL, NULL,	sig_mov_cb);
     dm_menu_entry (trace, 	"Copy",		'C',	NULL, NULL,	sig_copy_cb);
     dm_menu_entry (trace, 	"Delete",	'D',	NULL, NULL,	sig_del_cb);
+    dm_menu_entry (trace, 	"Note",		'N',	NULL, NULL,	sig_note_cb);
     dm_menu_subtitle (trace, 	"Radix",	'R');
     trace->menu.sig_radix_pds = trace->menu.pds+1;
     dm_menu_subentry_radixs (trace, sig_radix_cb);

@@ -822,6 +822,7 @@ files.
 * Cursor Highlight::            
 * Cursor Move::                 
 * Cursor Delete::               
+* Cursor Note::                 
 * Cursor Step Forward::         
 * Cursor Step Backward::        
 * Cursor Clear::                
@@ -860,7 +861,7 @@ the cursor is at the new time desired.  Moving a cursor that was created
 with @dmenu{Signal Search} will make that cursor permanent; the cursor
 will not go away if the search is changed.
 
-@node Cursor Delete, Cursor Step Forward, Cursor Move, Cursor Menu
+@node Cursor Delete, Cursor Note, Cursor Move, Cursor Menu
 @subsection Cursor Delete
 @cindex Cursor Delete
 @cindex Deleting, Cursors
@@ -870,7 +871,15 @@ will delete those cursors.  To delete cursors that were created by
 @dmenu{Value Search} (those with dotted lines), turn off the second
 button on the @dmenu{Value Search} requester.
 
-@node Cursor Step Forward, Cursor Step Backward, Cursor Delete, Cursor Menu
+@node Cursor Note, Cursor Step Forward, Cursor Delete, Cursor Menu
+@subsection Cursor Note
+@cindex Cursor Note
+@cindex Notes, Cursors
+
+Selecting @dmenu{Cursor Note} then clicking @kbd{@key{MB1}} on a cursor
+will pop up a dialog box to change the note attached to that cursor.
+
+@node Cursor Step Forward, Cursor Step Backward, Cursor Note, Cursor Menu
 @subsection Cursor Step Forward
 @cindex Cursor Step Foward
 @cindex Moving, Cursors by Grid
@@ -915,6 +924,7 @@ Selecting @dmenu{Cursor Cancel}, or pressing @kbd{@key{esc}} will stop
 * Signal Move::                 
 * Signal Copy::                 
 * Signal Delete::               
+* Signal Note::                 
 * Signal Radix::                
 * Signal Waveform::             
 * Signal Search...::            
@@ -967,7 +977,7 @@ signals that were originally from that trace.  See @ref{signal_copy} for
 the equivalent configuration file command.
 
 
-@node Signal Delete, Signal Radix, Signal Copy, Signal Menu
+@node Signal Delete, Signal Note, Signal Copy, Signal Menu
 @subsection Signal Delete
 @cindex Signal Delete
 @cindex Deleting, Signals
@@ -977,7 +987,15 @@ deletes those signals.  @dmenu{Signal Select} may be used to recover the
 deleted signals.  See @ref{signal_delete} for the equivalent configuration
 file command.
 
-@node Signal Radix, Signal Waveform, Signal Delete, Signal Menu
+@node Signal Note, Signal Radix, Signal Delete, Signal Menu
+@subsection Signal Note
+@cindex Signal Note
+@cindex Notes, Signals
+
+Selecting @dmenu{Signal Note} then clicking @kbd{@key{MB1}} on a signal
+will pop up a dialog box to change the note attached to that signal.
+
+@node Signal Radix, Signal Waveform, Signal Note, Signal Menu
 @subsection Signal Radix
 @cindex Signal Radix
 @cindex Radix, Signals

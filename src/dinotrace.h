@@ -148,10 +148,12 @@
 #define DC_SIG_DELETE	4	/* XC_hand1		Signal Delete */
 #define DC_SIG_HIGHLIGHT 10	/* XC_spraycan		Signal Highlight */
 #define DC_SIG_RADIX	13	/* XC_dotbox		Signal Radix */
+#define DC_SIG_NOTE	13	/* XC_dotbox		Signal Note */
 #define DC_CUR_ADD	5	/* XC_center_ptr	Cursor Add (and Cursor Add SimView) */
 #define DC_CUR_MOVE	6	/* XC_sb_h_double_arrow	Cursor Move (drag) */
 #define DC_CUR_DELETE	7	/* XC_X_cursor		Cursor Delete */
 #define DC_CUR_HIGHLIGHT 10	/* XC_spraycan		Cursor Highlight */
+#define DC_CUR_NOTE	13	/* XC_dotbox		Signal Note */
 #define DC_ZOOM_1	8	/* XC_left_side		Zoom point 1 */
 #define DC_ZOOM_2	9	/* XC_right_side	Zoom point 2 */
 #define DC_VAL_EXAM	11	/* XC_question_arrow	Value Examine */
@@ -320,7 +322,7 @@ typedef struct {
 } OkApplyWidgets_t;
 
 #define MENU_PDE_MAX 13
-#define MENU_PDM_MAX 79
+#define MENU_PDM_MAX 81
 #define MENU_PDS_MAX (8+(MAX_SRCH+2)*5+RADIX_MAX_MENU)
 #define MENU_PDMSEP_MAX 12
 typedef struct {
@@ -479,6 +481,14 @@ typedef struct {
     Widget notelabel;
     OkApplyWidgets_t okapply;
 } GotoWidgets_t;
+
+typedef struct {
+    Widget dialog;
+    Widget notetext;
+    Widget notelabel;
+    OkApplyWidgets_t okapply;
+    Boolean_t forcursor;
+} NoteWidgets_t;
 
 typedef struct {
     Widget label1;
@@ -749,6 +759,7 @@ struct st_trace {
     SignalWidgets_t	signal;
     ExamineWidgets_t	examine;
     GotoWidgets_t	gotos;
+    NoteWidgets_t	note;
     ValueWidgets_t	value;
     GridsWidgets_t	gridscus;
     SelectWidgets_t	select;
@@ -808,9 +819,11 @@ typedef struct {
     Signal_t		*selected_sig;		/* Selected signal to move or add */
     Trace_t		*selected_trace; 	/* Selected signal's trace */
     Radix_t		*selected_radix;	/* Selected radix to change to */
+    DCursor_t		*selected_cursor;	/* Selected radix to change to */
     Waveform_t		selected_waveform;	/* Selected analog/digital to change to */
     CursorType_t	selected_curtype;	/* Selected cursor type */
     SignalList_t	*select_head;	/* Pointer to selected signal list head */
+    const char*		select_note;	/* Current note */
 
     DCursor_t		*cursor_head;	/* Pointer to first cursor */
 

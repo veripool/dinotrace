@@ -61,6 +61,8 @@
 
 #include <assert.h>
 
+static void cur_note_ev (Widget w, Trace_t* trace, XButtonPressedEvent*	ev);
+
 /****************************** UTILITIES ******************************/
 
 void    cur_free (
@@ -228,6 +230,15 @@ void cur_move (
 	/* Pass this event to SimView. */
 	simview_cur_move (new_csr_ptr->simview_id, time_to_cyc_num(new_time));
     }
+}
+
+
+void    cur_note (
+    DCursor_t*		csr_ptr,
+    const char*		note)
+{
+    DFree(csr_ptr->note);
+    csr_ptr->note = strdup(note);
 }
 
 
@@ -535,6 +546,19 @@ void    cur_step_back_cb (
     cur_step ( - grid_primary_period (trace));
 }
 
+void    cur_note_cb (
+    Widget		w)
+{
+    Trace_t *trace = widget_to_trace(w);
+
+    if (DTPRINT_ENTRY) printf ("In cur_note_cb - trace=%p\n",trace);
+
+    /* process all subsequent button presses as cursor moves */
+    remove_all_events (trace);
+    set_cursor (DC_CUR_NOTE);
+    add_event (ButtonPressMask, cur_note_ev);
+}
+
 /****************************** EVENTS ******************************/
 
 void    cur_add_ev (
@@ -692,6 +716,24 @@ void    cur_highlight_ev (
     cur_highlight (csr_ptr, global->highlight_color);
 
     draw_all_needed ();
+}
+
+void    cur_note_ev (
+    Widget		w,
+    Trace_t		*trace,
+    XButtonPressedEvent	*ev)
+{
+    DCursor_t	*csr_ptr;
+
+    if (DTPRINT_ENTRY) printf ("In cur_note_ev - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
+    if (ev->type != ButtonPress || ev->button!=1) return;
+
+    csr_ptr = posx_to_cursor (trace, ev->x);
+    if (!csr_ptr) return;
+
+    /* change cursor note */
+    global->selected_cursor = csr_ptr;
+    win_note(trace, "Note for Cursor", "", csr_ptr->note, TRUE);
 }
 
 /**********************************************************************/

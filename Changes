@@ -2,9 +2,11 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 	
-* Dinotrace 9.1*****
+* Dinotrace 9.2*****
 
 **      NEWS file is now renamed Changes.
+
+**	Added signal note and cursor note menu items.  [Shane Coffman]
 
 ****	Save cursor notes in Customize save files.  [Thomas Dmukauskas]
 
