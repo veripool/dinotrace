@@ -638,6 +638,7 @@ struct st_signal {
     Value_t		*bptr;		/* begin of time data ptr */
     Value_t		*cptr;		/* current time data ptr */
 
+    uint_t		signame_hash;	/* Hash of name (for dt_signal only) */
     struct st_signal	*copyof;	/* Link to signal this is copy of (or NULL) */
     DFile_t		*dfile;		/* File signal belongs to (originally) */
     Trace_t		*trace;		/* Trace signal belongs to (originally) */

@@ -1871,16 +1871,35 @@ void sig_cross_preserve (
     trace->numsigstart = 0;
 }
 
+static void sig_hash_assign (
+    /* Assign signal names a hash value for faster lookup */
+    Trace_t	*trace
+    )
+{
+    Signal_t *sig_ptr;
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	uint_t hash = 0;
+	char *tp = sig_ptr->signame;
+	while (*tp) hash = (hash*33) + *tp++;
+	sig_ptr->signame_hash = hash;
+    }
+}
+
 static void sig_cross_sigmatch (
     /* Look through each signal in the old list, attempt to match with
        signal from the new_trace.  When found create new_trace_sig link to/from old & new signal */
-    Trace	*new_trace,
-    Signal	*old_sig_ptr)
+    Trace_t	*new_trace,
+    Trace_t	*old_trace)
 {
-    register Signal	*new_sig_ptr;		/* New signal now searching on */
-    register Signal	*start_sig_ptr;		/* Signal search began with */
-    register char	*old_signame;		/* Searching for this signame */
-    register int	old_bits;		/* Searching for this # bits */
+    Signal_t	*new_sig_ptr;		/* New signal now searching on */
+    Signal_t	*start_sig_ptr;		/* Signal search began with */
+    char	*old_signame;		/* Searching for this signame */
+    uint_t	old_hash;		/* Searching for this hash */
+    Signal_t	*old_sig_ptr = old_trace->firstsig;
+
+    /* Speed up name comparison by hashing names */
+    sig_hash_assign (new_trace);
+    sig_hash_assign (old_trace);
 
     /* Beginning */
     new_sig_ptr = start_sig_ptr = new_trace->firstsig;
@@ -1888,11 +1907,11 @@ static void sig_cross_sigmatch (
 
     /* First search */
     old_signame = old_sig_ptr->signame;
-    old_bits = old_sig_ptr->bits;
+    old_hash = old_sig_ptr->signame_hash;
 
     while (1) {
-	printf ("Compare %s == %s\n", old_sig_ptr->signame, new_sig_ptr->signame);
-	if (new_sig_ptr->bits == old_bits	/* Redundant, but speeds strcmp */
+	/*printf ("Compare %s == %s\n", old_sig_ptr->signame, new_sig_ptr->signame);*/
+	if (new_sig_ptr->signame_hash == old_hash	/* Redundant, but speeds strcmp */
 	    && !strcmp (new_sig_ptr->signame, old_signame)) {
 	    /* Match */
 	    old_sig_ptr->new_trace_sig = new_sig_ptr;
@@ -1909,7 +1928,7 @@ nextsig:
 
 	    if (!old_sig_ptr) return;
 	    old_signame = old_sig_ptr->signame;
-	    old_bits = old_sig_ptr->bits;
+	    old_hash = old_sig_ptr->signame_hash;
 	    start_sig_ptr = new_sig_ptr;
 	}
 
@@ -1945,10 +1964,10 @@ void sig_cross_restore (
 	/* Preserve colors, etc */
 
 	/* Establish links */
-	sig_cross_sigmatch (trace, global->deleted_trace_head->firstsig);
-	sig_cross_sigmatch (trace, global->preserved_trace->firstsig);
+	sig_cross_sigmatch (trace, global->deleted_trace_head);
+	sig_cross_sigmatch (trace, global->preserved_trace);
 	for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
-	    sig_cross_sigmatch (trace, trace_ptr->firstsig);
+	    sig_cross_sigmatch (trace, trace_ptr);
 	}
 	if (DTPRINT_PRESERVE) printf ("Preserve: Match done\n");
 
