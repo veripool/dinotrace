@@ -191,7 +191,7 @@ configure: configure.in
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
 	@echo "rebuilding the deleted files requires makeinfo."
-	rm -f *.info* $(INFOS) configure
+	rm -f *.info* $(INFOS) configure bin/*
 
 clean mostlyclean distclean maintainer-clean maintainer-copy::
 	for dir in $(SUBDIRS); do \
