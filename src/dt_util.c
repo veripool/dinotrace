@@ -660,7 +660,7 @@ void    cptr_to_string (cptr, strg)
 	return;
 	
       case STATE_B32:
-	sprintf (strg, "%x", (cptr+1)->number);
+	sprintf (strg, "%X", (cptr+1)->number);
 	return;
 	
       case STATE_B64:
