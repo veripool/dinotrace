@@ -139,7 +139,7 @@ static char *verilog_gettok ()
 	  printf ("Buf %p %d  Txt %p %d rem %d\n", buf_ptr, buf_length, verilog_text, buf_valid, chrs);*/
 	    
 	/* Skip any additional spaces */
-	while (VERILOG_ISSPACE(*verilog_text) && verilog_text < (buf_ptr + buf_valid)) {
+	while (verilog_text < (buf_ptr + buf_valid) && VERILOG_ISSPACE(*verilog_text)) {
 	    if (*verilog_text == '\n') verilog_line_num++;
 	    verilog_text++;
 	}
@@ -656,6 +656,7 @@ static void	verilog_process_definitions (
 	if (pos_sig_ptr) {
 	    for (sig_ptr = pos_sig_ptr->verilog_next; sig_ptr; sig_ptr=next_sig_ptr) {
 		next_sig_ptr = sig_ptr->verilog_next;
+		sig_ptr->verilog_next = NULL;		/* Zero in prep of make_busses */
 		if (sig_ptr->file_pos == pos_sig_ptr->file_pos) {	/* Else is a > 128bit breakup copy */
 		    /* Delete this signal */
 		    if (global->save_duplicates
@@ -663,10 +664,9 @@ static void	verilog_process_definitions (
 			sig_ptr->copyof = pos_sig_ptr;
 			/*printf ("Dup %s\t  %s\n", pos_sig_ptr->signame, sig_ptr->signame);*/
 		    } else {
-			sig_free (trace, sig_ptr, FALSE, FALSE);
+			sig_free (trace, sig_ptr, FALSE, FALSE); sig_ptr=NULL;
 		    }
 		}
-		sig_ptr->verilog_next = NULL;		/* Zero in prep of make_busses */
 	    }
 	    pos_sig_ptr->verilog_next = NULL;		/* Zero in prep of make_busses */
 	    signal_by_code[pos] = NULL;			/* Zero in prep of make_busses */

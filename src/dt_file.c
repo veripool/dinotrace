@@ -211,7 +211,8 @@ void trace_reread (
 	    if ((newstat.st_mtime == trace->dfile.filestat.st_mtime)
 		&& (newstat.st_ctime == trace->dfile.filestat.st_ctime)) {
 		if (DTPRINT_FILE) printf ("  file has not changed.\n");
-		return;
+		if (DTDEBUG) printf ("  file has not changed, but rereading anyways.\n");
+		else return;
 	    }
 	}
 
@@ -728,7 +729,7 @@ static void fil_mark_cptr_end (
 		    printf ("%%W, No data for signal %s\n\tAdditional messages suppressed\n", sig_ptr->signame);
 		    msg = TRUE;
 		}
-		sig_free (trace, sig_ptr, FALSE, FALSE);
+		sig_free (trace, sig_ptr, FALSE, FALSE); sig_ptr=NULL;
 		continue;
 	    }
 

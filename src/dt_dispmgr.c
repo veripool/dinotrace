@@ -338,7 +338,7 @@ void trace_exit_cb (
     DFree (global);
 
     /* all done */
-    exit (1);
+    exit (0);
 }
 
 void init_globals (void)
@@ -490,6 +490,8 @@ void create_globals (
 
     global->display = XtOpenDisplay (global->appcontext, NULL, NULL, "Dinotrace",
 				    NULL, 0, &argc_copy, argv_copy);
+
+    DFree(argv_copy);
 
     if (global->display==NULL) {
 	display_name[0] = '\0';
@@ -745,6 +747,8 @@ Trace_t *create_trace (
 	(NULL, "Dinotrace", applicationShellWidgetClass,
 	 global->display, arglist, 3);
     /* printf ("&& && trace %d, top=%d\n", trace, trace->toplevel); */
+
+    DFree(argv_copy);
 
     change_title (trace);
 
