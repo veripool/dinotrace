@@ -792,6 +792,7 @@ void	update_signal_states (trace)
 	    }
 	
 	/* Set defaults based on changes */
+	trace->grid_type = trace->grid_res_auto;
 	switch (trace->grid_res_auto) {
 	  case GRID_RES_AUTO:
 	    if (rise1 < rise2)	trace->grid_res = rise2 - rise1;
@@ -831,7 +832,9 @@ void	update_signal_states (trace)
 
 	    if (twohigh1 && twohigh2 && twohigh3) {
 		/* Clocks are symmetric, override twohigh */
-		trace->grid_res_auto = GRID_RES_AUTO;
+		trace->grid_type = GRID_RES_AUTO;
+		trace->grid_res /= 2;
+		if (trace->grid_res < 1) trace->grid_res = 1;
 		}
 	    break;
 	    }

@@ -389,7 +389,7 @@ void    val_examine_ev (w, trace, ev)
     XMotionEvent *em;
     int		update_pending = FALSE;
     
-    if (DTPRINT_ENTRY) printf ("In val_examine_ev\n");
+    if (DTPRINT_ENTRY) printf ("In val_examine_ev, button=%d state=%d\n", ev->button, ev->state);
     
     /* not sure why this has to be done but it must be done */
     XUngrabPointer (XtDisplay (trace->work),CurrentTime);
