@@ -142,7 +142,7 @@ install: all info installdirs install-info
 	done
 	@echo ""
 	@echo "*** Lisp files not installed, you may want to"
-	@echo "*** cd lisp ; make"
+	@echo "*** cd lisp ; make install"
 
 # Don't cd, to avoid breaking install-sh references.
 install-info: info installdirs
