@@ -81,12 +81,14 @@ void cur_add (ctime, color, type)
 	prev_csr_ptr = csr_ptr;
 	}
     
-    /* Existing one?, and new one is user */
-    if (csr_ptr && csr_ptr->time == new_csr_ptr->time && new_csr_ptr->type==USER) {
-	/* Put new data in place of old one */
-	csr_ptr->time = ctime;
-	csr_ptr->color = color;
-	csr_ptr->type = type;
+    if (csr_ptr && csr_ptr->time == new_csr_ptr->time) {
+	if ((new_csr_ptr->type == USER) || (csr_ptr->type != USER)) {
+	    /* Auto over auto or user over user is OK */
+	    csr_ptr->time = ctime;
+	    csr_ptr->color = color;
+	    csr_ptr->type = type;
+	    }
+	/* else Don't go over existing user one */
 	/* Don't need new structure */
 	DFree (new_csr_ptr);
 	}
@@ -98,7 +100,7 @@ void cur_add (ctime, color, type)
 	else {
 	    prev_csr_ptr->next = new_csr_ptr;
 	    }
-
+	
 	new_csr_ptr->next = csr_ptr;
 	new_csr_ptr->prev = prev_csr_ptr;
 	if (csr_ptr) csr_ptr->prev = new_csr_ptr;
