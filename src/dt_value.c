@@ -309,7 +309,7 @@ void    val_examine_popup (trace, x, y, ev)
 	    strcat (strg, strg2);
 	    if ( (sig_ptr->decode != NULL) 
 		&& (cptr->sttime.state == STATE_B32)
-		&& (value[0] < MAXSTATENAMES)
+		&& (value[0] < sig_ptr->decode->numstates)
                 && (sig_ptr->decode->statename[value[0]][0] != '\0') ) {
 		sprintf (strg2, " = %s\n", sig_ptr->decode->statename[value[0]] );
 		strcat (strg, strg2);
@@ -380,6 +380,34 @@ void    val_examine_popup (trace, x, y, ev)
 	}
     }
 	
+void    val_examine_unpopup_act (w)
+    /* callback or action! */
+    Widget		w;
+{
+    TRACE	*trace;		/* Display information */
+    
+    if (DTPRINT_ENTRY) printf ("In val_examine_unpopup_act\n");
+    
+    if (!(trace = widget_to_trace (w))) return;
+
+    /* unmanage popup */
+    if (trace->examine.popup) {
+	XtUnmanageChild (trace->examine.popup);
+	XtUnmanageChild (trace->examine.label);
+	trace->examine.popup = NULL;
+	}
+    /* redraw the screen as popup may have mangled widgets */
+    /*redraw_all (trace);*/
+    }
+
+char *events[40] = {"","", "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelease", "MotionNotify",
+			"EnterNotify", "LeaveNotify", "FocusIn", "FocusOut", "KeymapNotify", "Expose", "GraphicsExpose",
+			"NoExpose", "VisibilityNotify", "CreateNotify", "DestroyNotify", "UnmapNotify", "MapNotify",
+			"MapRequest", "ReparentNotify", "ConfigureNotify", "ConfigureRequest", "GravityNotify",
+			"ResizeRequest", "CirculateNotify", "CirculateRequest", "PropertyNotify", "SelectionClear",
+			"SelectionRequest", "SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
+			"LASTEvent"};
+
 void    val_examine_ev (w, trace, ev)
     Widget		w;
     TRACE		*trace;
@@ -390,10 +418,12 @@ void    val_examine_ev (w, trace, ev)
     int		update_pending = FALSE;
     
     if (DTPRINT_ENTRY) printf ("In val_examine_ev, button=%d state=%d\n", ev->button, ev->state);
+    if (ev->type != ButtonPress) return;	/* Used for both button 1 & 2. */
     
     /* not sure why this has to be done but it must be done */
+    XSync (global->display);
     XUngrabPointer (XtDisplay (trace->work),CurrentTime);
-    
+
     /* select the events the widget will respond to */
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonReleaseMask|PointerMotionMask|StructureNotifyMask|ExposureMask);
@@ -404,7 +434,7 @@ void    val_examine_ev (w, trace, ev)
     /* loop and service events until button is released */
     while ( 1 ) {
 	/* wait for next event */
-	XNextEvent (XtDisplay (trace->work),&event);
+	XNextEvent (global->display, &event);
 	
 	/* Mark an update as needed */
 	if (event.type == MotionNotify) {
@@ -417,7 +447,8 @@ void    val_examine_ev (w, trace, ev)
 	if (event.type == ConfigureNotify) win_resize_cb (0,trace);
 	
 	/* button released - calculate cursor position and leave the loop */
-	if (event.type == ButtonRelease) {
+	if (event.type == ButtonRelease || event.type == ButtonPress) {
+	    /* ButtonPress in case user is freaking out, some strange X behavior caused the ButtonRelease to be lost */
 	    break;
 	    }
 
@@ -430,19 +461,40 @@ void    val_examine_ev (w, trace, ev)
 	    }
 	}
     
-    /* unmanage popup */
-    if (trace->examine.popup) {
-	XtUnmanageChild (trace->examine.popup);
-	XtUnmanageChild (trace->examine.label);
-	trace->examine.popup = NULL;
-	}
-
     /* reset the events the widget will respond to */
+    XSync (global->display);
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonPressMask|StructureNotifyMask|ExposureMask);
     
-    /* redraw the screen as popup may have mangled widgets */
-    redraw_all (trace);
+    /* unmanage popup */
+    val_examine_unpopup_act (trace->work);
+    }
+
+void    val_examine_popup_act (w, ev, params, num_params)
+    Widget		w;
+    XButtonPressedEvent	*ev;
+    String		params;
+    Cardinal		*num_params;
+{
+    XEvent	event;
+    XMotionEvent *em;
+    int		update_pending = FALSE;
+    TRACE	*trace;		/* Display information */
+    int		prev_cursor;
+    
+    if (ev->type != ButtonPress) return;
+
+    if (DTPRINT_ENTRY) printf ("In val_examine_popup_ev, button=%d state=%d\n", ev->button, ev->state);
+
+    if (!(trace = widget_to_trace (w))) return;
+
+    /* Create */
+    prev_cursor = last_set_cursor ();
+    set_cursor (trace, DC_VAL_EXAM);
+
+    val_examine_ev (w, trace, ev);
+
+    set_cursor (trace, prev_cursor);
     }
 
 void    val_search_cb (w,trace,cb)
@@ -792,10 +844,15 @@ void    val_annotate_do_cb (w,trace,cb)
     
     if (! global->anno_poppedup) {
 	val_annotate_cb (w,trace,cb);
-	return;
+	/*val_annotate_ok_cb (w,trace,cb); <- ask first*/
 	}
 
     if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%d  file=%s\n",trace,global->anno_filename);
+
+    /* Socket connection */
+#ifndef VMS
+    socket_create ();
+#endif
 
     if (! (dump_fp=fopen (global->anno_filename, "w"))) {
 	sprintf (message,"Bad Filename: %s\n", global->anno_filename);
@@ -803,6 +860,15 @@ void    val_annotate_do_cb (w,trace,cb)
 	return;
 	}
 	
+    /* Socket info */
+    if (!global->anno_socket[0] || strchr (global->anno_socket, '*') ) {
+	fprintf (dump_fp, "(setq dinotrace-socket-name nil)\n");
+	}
+    else {
+	fprintf (dump_fp, "(setq dinotrace-socket-name \"%s\")\n\n",
+		 global->anno_socket);
+	}
+
     /* Trace info */
     fprintf (dump_fp, "(setq dinotrace-traces '(\n");
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
