@@ -199,6 +199,7 @@ static void    val_str_lw (
     char *strg,
     char sep,
     Boolean_t middle,	/* 2nd, 3rd, etc value on this line */
+    int width,
     uint_t lw,
     uint_t enlw
     )
@@ -210,9 +211,14 @@ static void    val_str_lw (
 	*strg++ = sep;
     }
     if (!middle) {
-	/* Skip leading 0's */
-	for (; bit>0; bit--) {
-	    if ((lw|enlw) & (1L<<bit)) break;
+	if (width) {
+	    /* Start at appropriate bit */
+	    bit = ((width-1) & 31);
+	} else {
+	    /* Skip leading 0's */
+	    for (; bit>0; bit--) {
+		if ((lw|enlw) & (1L<<bit)) break;
+	    }
 	}
     } 
 
@@ -253,6 +259,7 @@ void    val_to_string (
     const Radix_t *radix_ptr,
     char *strg,
     const Value_t *value_ptr,
+    int width,				/* or 0 to drop leading 0s */
     Boolean_t compressed)		/* Drawing on screen; keep small & tidy */
     /* Convert a string to a value */
     /* Understand 'h 'b and other similar tags */
@@ -298,14 +305,16 @@ void    val_to_string (
 	    if (value_ptr->siglw.stbits.state == STATE_B128
 		|| value_ptr->siglw.stbits.state == STATE_F128) {
 		if (value_ptr->number[3]) {
-		    val_str_lw (radix_ptr, strg, sep, middle, value_ptr->number[3],
+		    val_str_lw (radix_ptr, strg, sep, middle, width,
+				value_ptr->number[3],
 				((value_ptr->siglw.stbits.state == STATE_F128)
 				 ?value_ptr->number[7]:0));
 		    strg += strlen (strg);
 		    middle = TRUE;
 		}
 		if (value_ptr->number[3] || value_ptr->number[2]) {
-		    val_str_lw (radix_ptr, strg, sep, middle, value_ptr->number[2],
+		    val_str_lw (radix_ptr, strg, sep, middle, width,
+				value_ptr->number[2],
 				((value_ptr->siglw.stbits.state == STATE_F128)
 				 ?value_ptr->number[6]:0));
 		    strg += strlen (strg);
@@ -313,7 +322,8 @@ void    val_to_string (
 		}
 		if (value_ptr->number[3] || value_ptr->number[2]
 		    || value_ptr->number[1]) {
-		    val_str_lw (radix_ptr, strg, sep, middle, value_ptr->number[1],
+		    val_str_lw (radix_ptr, strg, sep, middle, width,
+				value_ptr->number[1],
 				((value_ptr->siglw.stbits.state == STATE_F128)
 				 ?value_ptr->number[5]:0));
 		    strg += strlen (strg);
@@ -327,7 +337,8 @@ void    val_to_string (
 	    if (value_ptr->siglw.stbits.state == STATE_F32) {
 		enlw = value_ptr->number[1];
 	    }
-	    val_str_lw (radix_ptr, strg, sep, middle, value_ptr->number[0], enlw);
+	    val_str_lw (radix_ptr, strg, sep, middle, width,
+			value_ptr->number[0], enlw);
 	}
 	strg += strlen (strg);
 	break;
@@ -842,13 +853,13 @@ char *val_examine_string (
     }
     
     strcat (strg, "= ");
-    val_to_string (sig_ptr->radix, strg2, cptr, FALSE);
+    val_to_string (sig_ptr->radix, strg2, cptr, sig_ptr->bits, FALSE);
     strcat (strg, strg2);
     strcat (strg, "\n");
     if (sig_ptr->radix->type != global->radixs[0]->type) {
 	strcat (strg, "= ");
 	strcat (strg, DEFAULT_RADIX_PREFIX);
-	val_to_string (global->radixs[0], strg2, cptr, FALSE);
+	val_to_string (global->radixs[0], strg2, cptr, sig_ptr->bits, FALSE);
 	strcat (strg, strg2);
 	strcat (strg, "\n");
     }
@@ -864,7 +875,7 @@ char *val_examine_string (
 	/* Show decode */
 	sprintf (strg2, "[%d:0] = ", sig_ptr->msb_index);
 	strcat (strg, strg2);
-	val_to_string (sig_ptr->radix, strg2, &shifted, FALSE);
+	val_to_string (sig_ptr->radix, strg2, &shifted, sig_ptr->bits + sig_ptr->lsb_index, FALSE);
 	strcat (strg, strg2);
 	strcat (strg, "\n");
     }
@@ -1179,7 +1190,7 @@ static void    val_search_widget_update (
 	XtSetValues (trace->value.cursor[search_pos], arglist, 1);
 
 	/* Update with current search values */
-	val_to_string (vs_ptr->radix, strg, &vs_ptr->value, FALSE);
+	val_to_string (vs_ptr->radix, strg, &vs_ptr->value, 0, FALSE);
 	XmTextSetString (trace->value.text[search_pos], strg);
 
 	/* Update with current signal values */
@@ -1340,7 +1351,7 @@ void    val_search_ok_cb (
 	vs_ptr->cursor = (XmToggleButtonGetState (trace->value.cursor[i])) ? i+1 : 0;
 	
 	/* Update with current search values */
-	val_to_string (vs_ptr->radix, origstrg, &vs_ptr->value, FALSE);
+	val_to_string (vs_ptr->radix, origstrg, &vs_ptr->value, 0, FALSE);
 	strg = XmTextGetString (trace->value.text[i]);
 	if (strcmp (origstrg, strg)) {
 	    /* Only update if it has changed, so that a search for a pattern */
@@ -1354,7 +1365,7 @@ void    val_search_ok_cb (
 
 	if (DTPRINT_SEARCH) {
 	    char strg2[MAXVALUELEN];
-	    val_to_string (global->radixs[0], strg2, &vs_ptr->value, FALSE);
+	    val_to_string (global->radixs[0], strg2, &vs_ptr->value, 0, FALSE);
 	    printf ("Search %d) %d  %s  '%s' -> '%s'\n", i, vs_ptr->color,
 		    vs_ptr->radix->name, strg, strg2);
 	}
@@ -1722,7 +1733,7 @@ void    val_annotate_do_cb (
     for (i=1; i<=MAX_SRCH; i++) {
 	ValSearch_t *vs_ptr = &global->val_srch[i-1];
 	if (vs_ptr->color) {
-	    val_to_string (vs_ptr->radix, strg, &vs_ptr->value, FALSE);
+	    val_to_string (vs_ptr->radix, strg, &vs_ptr->value, 0, FALSE);
 	    fprintf (dump_fp, "\t[\"");
 	    val_print_quoted (dump_fp, strg);
 	    fprintf (dump_fp, "\"\t%d\t\"%s\"]\n", i, colornum_to_name(i));
@@ -1790,7 +1801,7 @@ void    val_annotate_do_cb (
 			cptr = CPTR_PREV(cptr);
 		    }
 
-		    val_to_string (sig_ptr->radix, strg, cptr, FALSE);
+		    val_to_string (sig_ptr->radix, strg, cptr, sig_ptr->bits, FALSE);
 		    
 		    /* First value must have `, last must have ', commas in middle */
 		    fprintf (dump_fp, "\"");

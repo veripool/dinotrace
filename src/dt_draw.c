@@ -613,6 +613,7 @@ static void draw_signal (
 	    && (sig_ptr->waveform == WAVEFORM_DIGITAL)
 	    && cptr->siglw.stbits.state != STATE_U
 	    && cptr->siglw.stbits.state != STATE_Z
+	    && (star_width < (xright-xleft-2))  /* if less definately no space for value */
 	    ) {
 	    uint_t num0 = 0;
 	    if (cptr->siglw.stbits.state == STATE_0) num0 = 0;
@@ -635,11 +636,11 @@ static void draw_signal (
 	    if (cptr->siglw.stbits.state != STATE_0
 		&& cptr->siglw.stbits.state != STATE_1) {
 		
-		val_to_string (sig_ptr->radix, strg, cptr, TRUE);
+		val_to_string (sig_ptr->radix, strg, cptr, sig_ptr->bits, TRUE);
 		
 	      state_plot:
-		/* calculate positional parameters */
-		if (star_width < (xright-xleft-2)) {  /* if less definately no space for value */
+		{
+		    /* calculate positional parameters */
 		    int charlen = MIN ((xright-xleft-2) / star_width, strlen(strg));
 		    char *plotstrg;
 		    while (1) {
@@ -647,12 +648,12 @@ static void draw_signal (
 			if (plotstrg > strg) *plotstrg = '*';
 			len = XTextWidth (global->value_font,plotstrg,charlen);
 			if (len < (xright-xleft-2)) {
-				/* Fits */
+			    /* Fits */
 			    break;
 			}
 			charlen--;
 		    }
-		    
+
 		    /* write the bus value if it fits */
 		    if (charlen>0) {
 			int mid = xleft + (int)( (xright-xleft)/2 );

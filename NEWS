@@ -7,6 +7,11 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.1i  ****
+
+***	Display values with appropriate leading 0s. [Dan McMahill]
+
+
 * Changes in Dinotrace 9.1h  08/30/2002
 
 ***	Save_duplicates is now on by default.

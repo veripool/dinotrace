@@ -399,7 +399,7 @@ static void print_draw_val (
 		else num0 = cptr->number[0];
 		/* Below evaluation left to right important to prevent error */
 		if (cptr->siglw.stbits.state != STATE_0) {
-		    val_to_string (sig_ptr->radix, strg, cptr, TRUE);
+		    val_to_string (sig_ptr->radix, strg, cptr, sig_ptr->bits, TRUE);
 		    vname = strg;
 		}
 		if ((cptr->siglw.stbits.state == STATE_B32
