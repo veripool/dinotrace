@@ -776,7 +776,7 @@ struct st_trace {
 /* SimView use information. */
 typedef struct {
     char *		application_name_with_args;
-    boolean_t 		handshake;  /* TRUE/FALSE.  TRUE means Dinotrace only communicates changes, */
+    Boolean_t 		handshake;  /* TRUE/FALSE.  TRUE means Dinotrace only communicates changes, */
     /*                 without altering cursors.  SimView replies will alter them. */
 } SimViewInfo_t;
 
