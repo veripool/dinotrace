@@ -599,6 +599,7 @@ void tempest_read (
     uint_t	*data;
     uint_t	*data_xor;
     Boolean_t	first_data;
+    Boolean_t	have_phase = FALSE;
     uint_t	i,j;
     uint_t	pad_len;
     uint_t	time, last_time=EOT;
@@ -696,6 +697,15 @@ void tempest_read (
 		sig_ptr->signame[j] = chardata[j];
 	    sig_ptr->signame[sigChars] = '\0';
 	    
+	    /* Detect phase signal -- not completely reliable */
+	    /* This prevents a bug when a trace starts on phase b */
+	    if (sig_ptr->file_pos == 63
+		&& (0==strcmp ("Phase", chardata+sigChars-5)
+		    || 0==strcmp ("phase", chardata+sigChars-5))) {
+		if (DTPRINT_FILE) printf ("Have Phase indication\n");
+		have_phase = TRUE;
+	    }
+
 	    last_sig_ptr = sig_ptr;
 	}
     
@@ -754,19 +764,25 @@ void tempest_read (
 #endif
 	}
 
-	/*
-	if (DTPRINT_FILE) {
-	    printf ("read: time=%d  status %d data=%08x %08x\n", data[0], 
-		    status, data[0], data[1]);
-		    }*/
-	
 	/** Extract the phase - this will be used as a 'time' value and
 	 ** is multiplied by 100 to make the trace easier to read
 	 */
 
 	time = data[0] * global->tempest_time_mult;
-	if (time == last_time) time++;
+	if (time == last_time) time+= MAX(1,global->tempest_time_mult/2);
 	last_time = time;
+	if (first_data && have_phase) {
+	    int phase = data[1] & 1;
+	    printf ("Initial phase detected: %d\n", phase);
+	    if (phase) time += MAX(1,global->tempest_time_mult/2);
+	}
+	
+#if 0
+	if (DTPRINT_FILE) {
+	    printf ("read: time=%d  status %d data=%08x [time %d] %08x\n", time, 
+		    status, data[0], data[0], data[1]);
+	}
+#endif
 	
 	/*
 	 ** If this is the first row, save the starting and initial
@@ -777,7 +793,7 @@ void tempest_read (
 	else trace->end_time = time;
 	    
 	/* Fortunately, Tempest and Decsim have identical binary packed formats. */
-	/* Perhaps it's because both were written by SEG CAD. */
+	/* Perhaps it's because both were written by Digital's SEG CAD. */
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    fil_tempest_binary_add_cptr (sig_ptr, data, time, first_data);
 	}

@@ -582,6 +582,25 @@ int	config_read_grid (
     return (outlen);
 }
 
+int	config_read_time (
+    Trace	*trace,
+    char 	*line,
+    DTime_t	*dtime)
+{
+    int 	outlen;
+    int		grid_num;
+    char cmd[MAXSIGLEN];
+
+    outlen = config_read_string (trace, line, cmd);
+    if (!isdigit(cmd[0])) {
+	sprintf (message, "Expected time\n", MAXGRIDS);
+	*dtime = 0;
+    }
+    *dtime = string_to_time (trace, cmd);
+
+    return (outlen);
+}
+
 /**********************************************************************
 *	config_process_states
 **********************************************************************/
@@ -803,7 +822,7 @@ static void	config_process_line_internal (
 	      case '`':	trace->dfile.vectorend_separator = '\''; break;
 	      case '(':	trace->dfile.vectorend_separator = ')'; break;
 	      case '[':	trace->dfile.vectorend_separator = ']'; break;
-	    case '{':	trace->dfile.vectorend_separator = '}'; break;
+	      case '{':	trace->dfile.vectorend_separator = '}'; break;
 	      case '<':	trace->dfile.vectorend_separator = '>'; break;
 	      default:  trace->dfile.vectorend_separator = trace->dfile.vector_separator; break;	/* a wild guess SIG$20:1$? */
 	    }
@@ -860,14 +879,10 @@ static void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "GRID_RESOLUTION")) {
 	    line += config_read_grid (trace, line, &grid_ptr);
-	    line += config_read_int (line, &value);
-	    if (isalpha(line[0])) { line += config_read_string (trace, line, pattern); }
+	    line += config_read_time (trace, line, &value);
 	    if (grid_ptr) {
-		if (value >= 1) {
-		    grid_ptr->period = value;
-		    grid_ptr->period_auto = PA_USER;
-		}
-		else {
+		if (isalpha(line[0])) {
+		    line += config_read_string (trace, line, pattern);
 		    if (toupper(pattern[0])=='A')
 			grid_ptr->period_auto = PA_AUTO;
 		    else if (toupper(pattern[0])=='E')
@@ -876,28 +891,30 @@ static void	config_process_line_internal (
 			config_error_ack (trace, "Grid_res must be >0, AUTO or EDGE\n");
 		    }
 		}
+		else {
+		    grid_ptr->period = value;
+		    grid_ptr->period_auto = PA_USER;
+		}
 	    }
 	}
 	else if (!strcmp(cmd, "GRID_ALIGN")) {
 	    line += config_read_grid (trace, line, &grid_ptr);
-	    line += config_read_int (line, &value);
-	    if (isalpha(line[0])) { line += config_read_string (trace, line, pattern); }
-	    if (grid_ptr) {
-		if (value >= 1) {
-		    grid_ptr->alignment = value;
-		    grid_ptr->align_auto = AA_USER;
-		}
+	    line += config_read_time (trace, line, &value);
+	    if (isalpha(line[0])) {
+		line += config_read_string (trace, line, pattern);
+		if (toupper(pattern[0])=='A')
+		    grid_ptr->align_auto = AA_ASS;
+		else if (toupper(pattern[0])=='D')
+		    grid_ptr->align_auto = AA_DEASS;
+		else if (toupper(pattern[0])=='B')
+		    grid_ptr->align_auto = AA_BOTH;
 		else {
-		    if (toupper(pattern[0])=='A')
-			grid_ptr->align_auto = AA_ASS;
-		    else if (toupper(pattern[0])=='D')
-			grid_ptr->align_auto = AA_DEASS;
-		    else if (toupper(pattern[0])=='B')
-			grid_ptr->align_auto = AA_BOTH;
-		    else {
-			config_error_ack (trace, "Grid_align must be >0, ASSERTION, or DEASSERTION, or BOTH\n");
-		    }
+		    config_error_ack (trace, "Grid_align must be >0, ASSERTION, or DEASSERTION, or BOTH\n");
 		}
+	    }
+	    else {
+		grid_ptr->alignment = value;
+		grid_ptr->align_auto = AA_USER;
 	    }
 	}
 	else if (!strcmp(cmd, "GRID_TYPE")) {
@@ -1322,8 +1339,6 @@ void config_update_filenames (Trace *trace)
     /* Same file as trace, but .dino extension */
     if (trace->dfile.filename != '\0') {
 	strcpy (global->config_filename[4], trace->dfile.filename);
-	if ((pchar=strrchr(global->config_filename[4],'.')) != NULL )
-	    *pchar = '\0';
 	if ((pchar=strrchr(global->config_filename[4],'.')) != NULL )
 	    *pchar = '\0';
 	strcat (global->config_filename[4], ".dino");

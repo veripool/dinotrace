@@ -7,7 +7,24 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.0g  1/17/2000
+
+**	Configuration file commands that require times now take times
+	with respect to the time_rep value.  Thus if the times are displayed
+	in nanoseconds, the config file values are in ns.  This affects
+	grid_resolution and grid_align.  Time_goto, resolution and cursor_add
+	were already correct.
+
+****	Fixed tempest files which start with phase b. [Steve Hoover]
+
+****	Worked around a LessTif core dump when print menu appears.
+
+
 * Changes in Dinotrace 9.0f  9/29/1999
+
+****	Allowed ' character in signals.  [Dominik Strasser]
+
+****	Fixed a bug with vpd reading of vector length with #:#  [Dominik Strasser]
 
 ****	Fixed a bug which errored on "$timescale 10 ns"  (Space before units.)
 

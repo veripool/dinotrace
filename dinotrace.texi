@@ -20,7 +20,7 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set VERSION 9.0e
+@set VERSION 9.0g
 @set UPDATED September 1999
 @set ID @value{VERSION}
 @c All functions use these for searching ease
@@ -2398,6 +2398,25 @@ with the lines:
 vector_separator "<"
 hierarchy_separator ">"
 @end example
+
+Some CPU groups use a timestamp that is a integer that increases every
+other cycle.  The half cycle is a phase.  Dinotrace can either count
+phases, which is the default, or cycles.  Since Dinotrace times are
+integers, the trick is to change the time resolution so that fractional
+values can be displayed:
+
+@example
+time_multiplier 500
+time_precision ps
+time_rep ns
+@end example
+
+To detect traces that start on phase B, the second signal in the trace,
+right after the cycle_count, must be "phase", which toggles zero/one
+every phase.  If this signal is not present, it is assumed the trace
+starts on phase A.  (If incorrect - it starts on phase B and there is no
+phase signal, the first phase in the entire trace will seem to be
+stretched one cycle.)
 
 To save disk space you may wish to store files as gziped.  This
 will result in about a 50 times space savings, and Dinotrace will

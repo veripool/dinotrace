@@ -381,6 +381,7 @@ typedef struct {
     Widget sizeel;
     Widget text;
     Widget label;
+    Widget sizelabel;
     Widget notetext;
     Widget notelabel;
     Widget pagelabel;

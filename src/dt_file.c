@@ -740,7 +740,9 @@ void fil_make_busses (
 		/*	& not a tempest trace (because the bit ordering is backwards, <31:0> would look line 0:31 */
 		&& ((trace->dfile.fileformat != FF_TEMPEST)
 		    || (((bus_sig_ptr->file_pos) == (sig_ptr->file_pos + sig_ptr->bits))
-			&& trace->dfile.vector_separator=='<'))
+			&& (trace->dfile.vector_separator=='<'
+			    || trace->dfile.vector_separator=='('
+			    )))
 		&& ((trace->dfile.fileformat != FF_VERILOG && trace->dfile.fileformat != FF_VERILOG_VPD)
 		    || ((bus_sig_ptr->file_pos + bus_sig_ptr->bits) == sig_ptr->file_pos))
 		&& ! (sig_ptr->file_type.flag.vector_msb)

@@ -867,7 +867,7 @@ void    print_dialog_cb (
 	XtSetArg (arglist[2], XmNverticalSpacing, 10);
 	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
 	trace->print.dialog = XmCreateFormDialog (trace->work, "print",arglist,3);
-	
+
 	/* create label widget for text widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Name") );
 	XtSetArg (arglist[1], XmNx, 10);
@@ -881,7 +881,7 @@ void    print_dialog_cb (
 	XtSetArg (arglist[1], XmNcolumns, 30);
 	XtSetArg (arglist[2], XmNx, 10);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNtopWidget, trace->print.label);
+	XtSetArg (arglist[4], XmNtopWidget, dmanage_last);
 	XtSetArg (arglist[5], XmNtopOffset, 0);
 	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
@@ -894,7 +894,7 @@ void    print_dialog_cb (
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopOffset, 10);
-	XtSetArg (arglist[4], XmNtopWidget, trace->print.text);
+	XtSetArg (arglist[4], XmNtopWidget, dmanage_last);
 	trace->print.label = XmCreateLabel (trace->print.dialog,"",arglist,5);
 	DManageChild (trace->print.label, trace, MC_NOKEYS);
 	
@@ -903,14 +903,23 @@ void    print_dialog_cb (
 	XtSetArg (arglist[1], XmNcolumns, 30);
 	XtSetArg (arglist[2], XmNx, 10);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNtopWidget, trace->print.label);
+	XtSetArg (arglist[4], XmNtopWidget, dmanage_last);
 	XtSetArg (arglist[5], XmNtopOffset, 0);
 	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
 	trace->print.notetext = XmCreateText (trace->print.dialog,"notetext",arglist,8);
 	DAddCallback (trace->print.notetext, XmNactivateCallback, print_req_cb, trace);
 	DManageChild (trace->print.notetext, trace, MC_NOKEYS);
-	
+
+	/* Radio label (lessTIF bug if put as part of radio) */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Page Size") );
+	XtSetArg (arglist[1], XmNx, 10);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, dmanage_last);
+	XtSetArg (arglist[4], XmNtopOffset, 10);
+	trace->print.sizelabel = XmCreateLabel (trace->print.dialog,"sml",arglist,5);
+	DManageChild (trace->print.sizelabel, trace, MC_NOKEYS);
+
 	/* Create radio box for page size */
 	trace->print.size_menu = XmCreatePulldownMenu (trace->print.dialog,"size",arglist,0);
 	
@@ -931,25 +940,23 @@ void    print_dialog_cb (
 	DManageChild (trace->print.sizeel, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNx, 10);
-	XtSetArg (arglist[1], XmNlabelString, XmStringCreateSimple ("Layout"));
-	XtSetArg (arglist[2], XmNsubMenuId, trace->print.size_menu);
-	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNtopOffset, 10);
-	XtSetArg (arglist[5], XmNtopWidget, trace->print.notetext);
-	trace->print.size_option = XmCreateOptionMenu (trace->print.dialog,"sizeo",arglist,6);
+	XtSetArg (arglist[1], XmNsubMenuId, trace->print.size_menu);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_OPPOSITE_WIDGET );
+	XtSetArg (arglist[3], XmNtopWidget, trace->print.sizelabel);
+	XtSetArg (arglist[4], XmNtopOffset, 20);
+	trace->print.size_option = XmCreateOptionMenu (trace->print.dialog,"sizeo",arglist,5);
 	DManageChild (trace->print.size_option, trace, MC_NOKEYS);
 
 	/* Create all_signals button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include off-screen signals"));
-	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNshadowThickness, 1);
-	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNtopOffset, 10);
-	XtSetArg (arglist[5], XmNtopWidget, trace->print.size_option);
+	XtSetArg (arglist[0], XmNx, 10);
+	XtSetArg (arglist[1], XmNshadowThickness, 1);
+	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[3], XmNtopOffset, 10);
+	XtSetArg (arglist[4], XmNtopWidget, dmanage_last);
+	XtSetArg (arglist[5], XmNlabelString, XmStringCreateSimple ("Include off-screen signals"));
 	trace->print.all_signals = XmCreateToggleButton (trace->print.dialog,
 							   "all_signals",arglist,6);
 	DManageChild (trace->print.all_signals, trace, MC_NOKEYS);
-
 	print_range_create (trace, &(trace->print.begin_range),
 			 trace->print.all_signals, "Begin Printing at:", 0);
 
@@ -964,7 +971,7 @@ void    print_dialog_cb (
 			 (XtCallbackProc)print_reset_cb, trace,
 			 (XtCallbackProc)unmanage_cb, (Trace*)trace->print.dialog);
 	}
-    
+
     /* reset page size */
     switch (global->print_size) {
       default:
@@ -998,7 +1005,7 @@ void    print_dialog_cb (
     /* if a file has been read in, make printscreen buttons active */
     XtSetArg (arglist[0],XmNsensitive, (trace->loaded)?TRUE:FALSE);
     XtSetValues (trace->print.okapply.ok,arglist,1);
-    
+
     /* manage the popup on the screen */
     DManageChild (trace->print.dialog, trace, MC_NOKEYS);
 }

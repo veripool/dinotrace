@@ -258,6 +258,7 @@ static void	verilog_process_var (
     int		msb = 0, lsb = 0;
     Signal	*new_sig_ptr;
     char	signame[10000];
+    char	basename[10000];
     int		t, len;
     char	code[10];
 
@@ -289,17 +290,21 @@ static void	verilog_process_var (
     }
       
     /* Signal name begins with the present scope */
-    signame[0] = '\0';
+    basename[0] = '\0';
     for (t=0; t<scope_level; t++) {
-	strcat (signame, scopes[t]);
-	strcat (signame, ".");
+	strcat (basename, scopes[t]);
+	strcat (basename, ".");
     }
     
     /* Read <reference> */
     cmd = verilog_gettok();
+    strcpy (signame, basename);
     strcat (signame, cmd);
     cmd = verilog_gettok();
-    if (*cmd != '$' && strcmp(cmd, "[-1]")) strcat (signame, cmd);
+    if (*cmd != '$' && strcmp(cmd, "[-1]")) {
+	strcpy (signame, basename);
+	strcat (signame, cmd);
+    }
     
     /* Allocate new signal structure */
     new_sig_ptr = DNewCalloc (Signal);
