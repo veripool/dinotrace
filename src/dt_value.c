@@ -68,8 +68,11 @@
 #include <Xm/RowColumnP.h>
 #include <Xm/Label.h>
 #include <Xm/LabelP.h>
+#include <Xm/MenuShellP.h>
 
 #include "functions.h"
+
+#include "/usr/local/kits/lesstif-0.85/lib/Xm/MenuShell.c"
 
 char *val_state_name[] = { "STATE_0", "STATE_1", "STATE_U", "STATE_Z",
 			   "STATE_B32", "STATE_F32", "STATE_B128", "STATE_F128"};
@@ -81,6 +84,7 @@ uint_t val_bit (
     int bit)
     /* Return bit value, understanding 4-state, may be 0/1/U/Z */
 {
+    if (bit<0) return(0);
     switch (value_ptr->siglw.stbits.state) {
     case STATE_0:
 	return (0);
@@ -114,6 +118,59 @@ uint_t val_bit (
     default:
 	return (2);/*X*/
     }
+}
+
+char	val_str_digit_ascii (
+    const Value_t *value_ptr,
+    int lsb)
+{
+    uint_t val = 0;
+    uint_t bit;
+    int bitnum;
+    
+    for (bitnum=lsb+7; bitnum>=lsb; bitnum--) {
+	bit = val_bit (value_ptr, bitnum);
+	if (bit>1) return ('X');
+	val = val<<1 | bit;
+    }
+    val &= 0xff;
+    if (val==0) return (' ');
+    if (!isprint(val)) return ('?');
+    return (val);
+}
+
+void	val_str_ascii (
+    char *strg,
+    const Value_t *value_ptr,
+    Boolean_t compressed)		/* Drawing on screen; keep small & tidy */
+{
+    Boolean_t keepspace = FALSE;
+    char *cp = strg;
+    switch (value_ptr->siglw.stbits.state) {
+    case STATE_U:
+	*cp++ = 'x';
+	break;
+    case STATE_Z:
+	*cp++ = 'z';
+	break;
+    case STATE_0:
+	break;
+    default: {
+	int bitnum;
+	char c;
+	if (!compressed) *cp++ = '\"';
+	for (bitnum = 128-8; bitnum >= 0; bitnum-= 8) {
+	    c = val_str_digit_ascii (value_ptr, bitnum);
+	    if (c!=' ' || keepspace) {
+		*cp++ = c;
+		keepspace = FALSE;
+	    }
+	}
+	while (cp>strg && *(cp-1) == ' ') cp--;
+	if (!compressed) *cp++ = '\"';
+	}
+    }
+    *cp++ = '\0';
 }
 
 char	val_str_digit (
@@ -150,7 +207,7 @@ void    val_str_lw (
 
     /* Separate if needed */
     if (middle) {
-	if (radix_ptr->type != RADIX_ASCII) *strg++ = sep;
+	*strg++ = sep;
     }
     if (!middle) {
 	/* Skip leading 0's */
@@ -188,15 +245,6 @@ void    val_str_lw (
 	*strg++ = '\0';
 	break;
     }
-    case RADIX_ASCII: {
-#define VALLWCHAR(v) if (v) *strg++ = (isprint(v&0xff) ? (v&0xff) : '?')
-	VALLWCHAR((lw & 0xff000000L)>>24);
-	VALLWCHAR((lw & 0x00ff0000L)>>16);
-	VALLWCHAR((lw & 0x0000ff00L)>>8);
-	VALLWCHAR((lw & 0x000000ffL)>>0);
-	*strg++ = '\0';
-	break;
-    }
     default: strcat (strg, "bad radix");
     }
 }
@@ -214,12 +262,17 @@ void    val_to_string (
     char sep = compressed ? ' ' : '_';
     if (radix_ptr==NULL) {strcpy (strg,"nullradix_ptr"); return;}
     
+    if (radix_ptr->type == RADIX_ASCII) {
+	val_str_ascii (strg, value_ptr, compressed);
+	return;
+    }
+
     switch (value_ptr->siglw.stbits.state) {
     case STATE_0:
-	if (radix_ptr->type != RADIX_ASCII) *strg++ = '0';
+	*strg++ = '0';
 	break;
     case STATE_1:
-	if (radix_ptr->type != RADIX_ASCII) *strg++ = '1';
+	*strg++ = '1';
 	break;
     case STATE_U:
 	*strg++ = 'x';
@@ -273,7 +326,6 @@ void    val_to_string (
 	    val_str_lw (radix_ptr, strg, sep, middle, value_ptr->number[0], enlw);
 	}
 	strg += strlen (strg);
-	if (!compressed && radix_ptr->type == RADIX_ASCII) *strg++ = '\"';
 	break;
     }
     default:
@@ -355,13 +407,17 @@ void    string_to_value (
 	*radix_pptr = global->radixs[RADIX_HEX_UN];  break;
     }
 
-    if ((*cp == 'z' || *cp == 'Z') && cp[1]=='\0') {
-	value_ptr->siglw.stbits.state = STATE_Z;
-	return;
-    }
-    if ((*cp == 'u' || *cp == 'U' || *cp == 'x' || *cp == 'X') && cp[1]=='\0') {
-	value_ptr->siglw.stbits.state = STATE_U;
-	return;
+    if ((*radix_pptr)->type != RADIX_ASCII
+	|| (cp == strg)) {
+        /*Value literals: Not in a string, or unquoted:*/
+	if ((*cp == 'z' || *cp == 'Z') && cp[1]=='\0') {
+	    value_ptr->siglw.stbits.state = STATE_Z;
+	    return;
+	}
+	if ((*cp == 'u' || *cp == 'U' || *cp == 'x' || *cp == 'X') && cp[1]=='\0') {
+	    value_ptr->siglw.stbits.state = STATE_U;
+	    return;
+	}
     }
 
     if ((*radix_pptr)->type == RADIX_REAL) {
@@ -808,22 +864,56 @@ void    val_examine_popdown (
     Trace	*trace)
 {
     if (trace->examine.popup) {
+//	XButtonPressedEvent evst, *ev=&evst;
+//	(xmMenuShellClassRec.menu_shell.popdownDone) (trace->examine.popup, (XEvent*) ev, NULL, 0);
+
 	if (XtIsManaged(trace->examine.popup)) {
 	    XtUnmanageChild (trace->examine.label);
-	    XtUnmanageChild (trace->examine.rowcol);
+	    XtUnmanageChild (trace->examine.workrc);
 	    XtUnmanageChild (trace->examine.popup);
 	}
 	/* We'll regenerate, as the text gets hosed elsewise */
 	XtDestroyWidget (trace->examine.label);
-	XtDestroyWidget (trace->examine.rowcol);
+	XtDestroyWidget (trace->examine.workrc);
 	XtDestroyWidget (trace->examine.popup);
 	trace->examine.popup = NULL;
     }
 }
 
+Widget
+xxCreatePopupMenu(Widget parent, char *name,
+		  Arg *arglist, Cardinal argcount,
+    XButtonPressedEvent	*ev)
+{
+    /* popup menus have the their rowColumnType set to XmMENU_POPUP */
+
+    Widget w, ms;
+    Arg myArgList[1];
+    Arg shell_args[99];
+    int shell_ac;
+
+    shell_ac = 0;
+    XtSetArg(shell_args[shell_ac], XmNx, ev->x_root); shell_ac++;
+    XtSetArg(shell_args[shell_ac], XmNy, ev->y_root); shell_ac++;
+    XtSetArg(shell_args[shell_ac], XmNallowShellResize, True); shell_ac++;
+
+    ms = XtCreatePopupShell(name,
+			    xmMenuShellWidgetClass,
+			    parent, shell_args, shell_ac);
+
+    return ms;
+
+    XtSetArg(myArgList[0], XmNrowColumnType, XmMENU_POPUP);
+    w = XtCreateWidget(name,
+		       xmRowColumnWidgetClass,
+		       ms,
+		       myArgList, 1);
+
+    return w;
+}
 
 void    val_examine_popup (
-    /* Create the popup menu for val_examine, radixd on cursor position x,y */
+    /* Create the popup menu for val_examine, based on cursor position x,y */
     Trace	*trace,
     XButtonPressedEvent	*ev)
 {
@@ -862,28 +952,49 @@ void    val_examine_popup (
     /* First, a override for the shell */
     /* It's probably tempting to use XmCreatePopupMenu. */
     /* Don't.  It was that way, but the keyboard grab proved problematic */
+    /* Don't manage this guy, he's just a container */
     XtSetArg (arglist[0], XmNallowShellResize, TRUE);
     XtSetArg (arglist[1], XmNx, ev->x_root);
     XtSetArg (arglist[2], XmNy, ev->y_root);
+//    XtSetArg (arglist[3], XmNactions, ev->y_root);
+//    trace->examine.popup = XtCreatePopupShell
+//	("examinepopup", overrideShellWidgetClass, trace->main, arglist, 3);
+//    trace->examine.popup = XmCreatePopupMenu
+//	(trace->main, "expop", arglist, 3);
+//    trace->examine.popup = xxCreatePopupMenu
+//	(trace->main, "expop", arglist, 3, ev);
     trace->examine.popup = XtCreatePopupShell
-	("examinepopup", overrideShellWidgetClass, trace->main, arglist, 3);
+	("popup_examine", xmMenuShellWidgetClass, trace->main, arglist, 3);
+
+    /* Row column for menu shell */
+#if 0
+    XtSetArg (arglist[0], XmNrowColumnType, XmMENU_POPUP);
+    XtSetArg (arglist[1], XmNborderWidth, 1);
+    trace->examine.poprc = XtCreateWidget("poprc",
+					  xmRowColumnWidgetClass,
+					  trace->examine.popup,
+					  arglist, 2);
+    trace->examine.poprc = XmCreateRowColumn (trace->examine.popup,"poprc",arglist,2);
+#endif
 
     /* Row column for a nice border */
     XtSetArg (arglist[0], XmNrowColumnType, XmMENU_POPUP);
+//    XtSetArg (arglist[0], XmNrowColumnType, XmWORK_AREA);
     XtSetArg (arglist[1], XmNborderWidth, 1);
     XtSetArg (arglist[2], XmNentryAlignment, XmALIGNMENT_CENTER);
-    trace->examine.rowcol = XmCreateRowColumn (trace->examine.popup,"rc",arglist,3);
+    trace->examine.workrc = XmCreateRowColumn (trace->examine.popup,"workrc",arglist,3);
 
     /* Finally the label */
     xs = string_create_with_cr (strg);
     XtSetArg (arglist[0], XmNlabelString, xs);
-    trace->examine.label = XmCreateLabel (trace->examine.rowcol, "popuplabel",arglist,1);
+    trace->examine.label = XmCreateLabel (trace->examine.workrc, "popuplabel",arglist,1);
     DManageChild (trace->examine.label, trace, MC_GLOBALKEYS);
     XmStringFree (xs);
 
     /* Putem up */
-    DManageChild (trace->examine.rowcol, trace, MC_GLOBALKEYS);
-    DManageChild (trace->examine.popup, trace, MC_GLOBALKEYS);
+    DManageChild (trace->examine.workrc, trace, MC_GLOBALKEYS);
+//    DManageChild (trace->examine.poprc, trace, MC_GLOBALKEYS);
+//    DManageChild (trace->examine.popup, trace, MC_GLOBALKEYS);
 
     /* Make sure we find out when button gets released */
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->examine.popup),
@@ -892,7 +1003,7 @@ void    val_examine_popup (
     /* We definately shouldn't have to force exposure of the popup. */
     /* However, the reality is lessTif doesn't seem to draw the text unless we do */
     /* This is a unknown bug in lessTif; it works fine on the true Motif */
-    (xmRowColumnClassRec.core_class.expose) (trace->examine.rowcol, (XEvent*) ev, NULL);
+    (xmRowColumnClassRec.core_class.expose) (trace->examine.workrc, (XEvent*) ev, NULL);
     (xmLabelClassRec.core_class.expose) (trace->examine.label, (XEvent*) ev, NULL);
 }
 	
@@ -1151,8 +1262,9 @@ void    val_search_ok_cb (
     Trace	*trace,
     XmSelectionBoxCallbackStruct *cb)
 {
-    char		*strg;
-    int			i;
+    char	*strg;
+    int		i;
+    char	origstrg[MAXVALUELEN];
 
     if (DTPRINT_ENTRY) printf ("In val_search_ok_cb - trace=%p\n",trace);
 
@@ -1166,8 +1278,13 @@ void    val_search_ok_cb (
 	vs_ptr->cursor = (XmToggleButtonGetState (trace->value.cursor[i])) ? i+1 : 0;
 	
 	/* Update with current search values */
+	val_to_string (vs_ptr->radix, origstrg, &vs_ptr->value, FALSE);
 	strg = XmTextGetString (trace->value.text[i]);
-	string_to_value (&vs_ptr->radix, strg, &vs_ptr->value);
+	if (strcmp (origstrg, strg)) {
+	    /* Only update if it has changed, so that a search for a pattern */
+	    /* of X & U's won't disappear when rendered as a simple "X" string */
+	    string_to_value (&vs_ptr->radix, strg, &vs_ptr->value);
+	}
 
 	/* Update with current search values */
 	strg = XmTextGetString (trace->value.signal[i]);
@@ -1206,7 +1323,6 @@ void    val_highlight_ev (
     DTime	time;
     Signal	*sig_ptr;
     Value_t	*cptr;
-    VSearchNum	search_pos;
     
     if (DTPRINT_ENTRY) printf ("In val_highlight_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
@@ -1219,14 +1335,15 @@ void    val_highlight_ev (
     
     /* Change the color */
     if (global->highlight_color > 0) {
-	search_pos = global->highlight_color - 1;
-	val_copy (&global->val_srch[search_pos].value, cptr);
-	strcpy (global->val_srch[search_pos].signal, sig_ptr->signame);
-	if (!global->val_srch[search_pos].color
-	    && !global->val_srch[search_pos].cursor ) {
+	ValSearch_t *vs_ptr = &global->val_srch[global->highlight_color - 1];
+
+	val_copy (&vs_ptr->value, cptr);
+	vs_ptr->radix = sig_ptr->radix;
+	strcpy (vs_ptr->signal, sig_ptr->signame);
+	if (!vs_ptr->color && !vs_ptr->cursor ) {
 	    /* presume user really wants color if neither is on */
-	    global->val_srch[search_pos].color = search_pos + 1;
-	    global->val_srch[search_pos].cursor = search_pos + 1;
+	    vs_ptr->color = global->highlight_color;
+	    vs_ptr->cursor = global->highlight_color;
 	}
     }
 
@@ -1452,6 +1569,19 @@ void    val_annotate_apply_cb (
     val_annotate_cb (trace->main);
 }
 
+void	val_print_quoted (
+    FILE *fp,
+    char *strg)
+{
+    char *cp;
+    for (cp=strg; *cp; cp++) {
+	if (*cp == '"') {
+	    fputc ('\\', fp);
+	}
+	fputc (*cp, fp);
+    }
+}
+
 void    val_annotate_do_cb (
     Widget	w,
     Trace	*trace,
@@ -1530,8 +1660,9 @@ void    val_annotate_do_cb (
 	ValSearch_t *vs_ptr = &global->val_srch[i-1];
 	if (vs_ptr->color) {
 	    val_to_string (vs_ptr->radix, strg, &vs_ptr->value, FALSE);
-	    fprintf (dump_fp, "\t[\"%s\"\t%d\t\"%s\"]\n", strg,
-		     i, colornum_to_name(i));
+	    fprintf (dump_fp, "\t[\"");
+	    val_print_quoted (dump_fp, strg);
+	    fprintf (dump_fp, "\"\t%d\t\"%s\"]\n", i, colornum_to_name(i));
 	}
     }
     fprintf (dump_fp, "\t))\n");
@@ -1597,14 +1728,12 @@ void    val_annotate_do_cb (
 		    val_to_string (sig_ptr->radix, strg, cptr, FALSE);
 		    
 		    /* First value must have `, last must have ', commas in middle */
-		    if (csr_num==1 && csr_num==csr_num_incl)
-			fprintf (dump_fp, "\"`%s'\"\t", strg);
-		    else if (csr_num==1)
-			fprintf (dump_fp, "\"`%s\"\t", strg);
-		    else if (csr_num==csr_num_incl)
-			fprintf (dump_fp, "\",%s'\"\t", strg);
-		    else
-			fprintf (dump_fp, "\",%s\"\t", strg);
+		    fprintf (dump_fp, "\"");
+		    if (csr_num==1) fprintf (dump_fp, "`");
+		    else  fprintf (dump_fp, ",");
+		    val_print_quoted (dump_fp, strg);
+		    if (csr_num==csr_num_incl) fprintf (dump_fp, "'");
+		    fprintf (dump_fp, "\"\t");
 		}
 	    }
 	    fprintf (dump_fp, "))\n");
