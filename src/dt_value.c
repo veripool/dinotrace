@@ -20,8 +20,9 @@
 
 
 #include <stdio.h>
-/*#include <descrip.h> - removed for Ultrix support... */
 #include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
@@ -46,21 +47,21 @@ void    value_to_string (trace, strg, cptr)
 {
     if (cptr[2]) {
 	if (trace->busrep == HBUS)
-	    sprintf(strg,"%X %08X %08X", cptr[2], cptr[1], cptr[0]);
+	    sprintf (strg,"%X %08X %08X", cptr[2], cptr[1], cptr[0]);
 	else if (trace->busrep == OBUS)
-	    sprintf(strg,"%o %o %o", cptr[2], cptr[1], cptr[0]);
+	    sprintf (strg,"%o %o %o", cptr[2], cptr[1], cptr[0]);
 	}
     else if (cptr[1]) {
 	if (trace->busrep == HBUS)
-	    sprintf(strg,"%X %08X", cptr[1], cptr[0]);
+	    sprintf (strg,"%X %08X", cptr[1], cptr[0]);
 	else if (trace->busrep == OBUS)
-	    sprintf(strg,"%o %o", cptr[1], cptr[0]);
+	    sprintf (strg,"%o %o", cptr[1], cptr[0]);
 	}
     else {
 	if (trace->busrep == HBUS)
-	    sprintf(strg,"%X", cptr[0]);
+	    sprintf (strg,"%X", cptr[0]);
 	else if (trace->busrep == OBUS)
-	    sprintf(strg,"%o", cptr[0]);
+	    sprintf (strg,"%o", cptr[0]);
 	}
     }
 
@@ -106,7 +107,7 @@ void	val_update_search ()
     register int i;
     CURSOR	*csr_ptr,*new_csr_ptr;
 
-    if (DTPRINT) printf("In val_update_search\n");
+    if (DTPRINT) printf ("In val_update_search\n");
 
     /* Mark all cursors that are a result of a search as old (-1) */
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
@@ -168,7 +169,7 @@ void	val_update_search ()
 		    } /* switch */
 
 		if (cursorize) {
-		    if (NULL != (csr_ptr = time_to_cursor(cptr->sttime.time))) {
+		    if (NULL != (csr_ptr = time_to_cursor (cptr->sttime.time))) {
 			if (csr_ptr->search == -1) {
 			    /* mark the old cursor as new so won't be deleted */
 			    csr_ptr->search = cursorize;
@@ -176,7 +177,7 @@ void	val_update_search ()
 			}
 		    else {
 			/* Make new cursor at this location */
-			csr_ptr = (CURSOR *)XtMalloc(sizeof(CURSOR));
+			csr_ptr = (CURSOR *)XtMalloc (sizeof (CURSOR));
 			csr_ptr->time = cptr->sttime.time;
 			csr_ptr->color = cursorize;
 			csr_ptr->search = cursorize;
@@ -206,16 +207,16 @@ void	val_update_search ()
 
 /****************************** MENU OPTIONS ******************************/
 
-void    val_examine_cb(w, trace, cb)
+void    val_examine_cb (w, trace, cb)
     Widget		w;
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
     
-    if (DTPRINT) printf("In val_examine_cb - trace=%d\n",trace);
+    if (DTPRINT) printf ("In val_examine_cb - trace=%d\n",trace);
     
     /* remove any previous events */
-    remove_all_events(trace);
+    remove_all_events (trace);
     
     /* process all subsequent button presses as cursor moves */
     set_cursor (trace, DC_VAL_EXAM);
@@ -251,9 +252,9 @@ void    val_examine_popup (trace, x, y, ev)
     
     if (time && sig_ptr) {
 	/* Get information */
-	cptr = (SIGNAL_LW *)(sig_ptr)->cptr;
-	
-	for (; (cptr->sttime.time != EOT) && (((cptr + sig_ptr->lws)->sttime.time) < time); cptr += sig_ptr->lws) ;
+	for (cptr = (SIGNAL_LW *)(sig_ptr)->cptr;
+	     (cptr->sttime.time != EOT) && (((cptr + sig_ptr->lws)->sttime.time) < time);
+	     cptr += sig_ptr->lws) ;
 	
 	strcpy (strg, sig_ptr->signame);
 	
@@ -379,11 +380,11 @@ void    val_examine_popup (trace, x, y, ev)
         /* Create */
         if (DTPRINT) printf ("\ttime = %d, signal = %s\n", time, sig_ptr->signame);
 
-	XtSetArg(arglist[0], XmNentryAlignment, XmALIGNMENT_BEGINNING);
+	XtSetArg (arglist[0], XmNentryAlignment, XmALIGNMENT_BEGINNING);
 	trace->examine.popup = XmCreatePopupMenu (trace->main, "examinepopup", arglist, 1);
 
 	xs = string_create_with_cr (strg);
-	XtSetArg(arglist[0], XmNlabelString, xs);
+	XtSetArg (arglist[0], XmNlabelString, xs);
 	trace->examine.label = XmCreateLabel (trace->examine.popup,"popuplabel",arglist,1);
 	XtManageChild (trace->examine.label);
 	XmStringFree (xs);
@@ -393,7 +394,7 @@ void    val_examine_popup (trace, x, y, ev)
 	}
     }
 	
-void    val_examine_ev(w, trace, ev)
+void    val_examine_ev (w, trace, ev)
     Widget		w;
     TRACE		*trace;
     XButtonPressedEvent	*ev;
@@ -402,13 +403,13 @@ void    val_examine_ev(w, trace, ev)
     XMotionEvent *em;
     int		update_pending = FALSE;
     
-    if (DTPRINT) printf("In val_examine_ev\n");
+    if (DTPRINT) printf ("In val_examine_ev\n");
     
     /* not sure why this has to be done but it must be done */
-    XUngrabPointer(XtDisplay(trace->work),CurrentTime);
+    XUngrabPointer (XtDisplay (trace->work),CurrentTime);
     
     /* select the events the widget will respond to */
-    XSelectInput(XtDisplay(trace->work),XtWindow(trace->work),
+    XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonReleaseMask|PointerMotionMask|StructureNotifyMask|ExposureMask);
     
     /* Create */
@@ -417,7 +418,7 @@ void    val_examine_ev(w, trace, ev)
     /* loop and service events until button is released */
     while ( 1 ) {
 	/* wait for next event */
-	XNextEvent(XtDisplay(trace->work),&event);
+	XNextEvent (XtDisplay (trace->work),&event);
 	
 	/* Mark an update as needed */
 	if (event.type == MotionNotify) {
@@ -452,14 +453,14 @@ void    val_examine_ev(w, trace, ev)
 	}
 
     /* reset the events the widget will respond to */
-    XSelectInput(XtDisplay(trace->work),XtWindow(trace->work),
+    XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonPressMask|StructureNotifyMask|ExposureMask);
     
     /* redraw the screen as popup may have mangled widgets */
     redraw_all (trace);
     }
 
-void    val_search_cb(w,trace,cb)
+void    val_search_cb (w,trace,cb)
     Widget		w;
     TRACE	*trace;
     XmSelectionBoxCallbackStruct *cb;
@@ -468,76 +469,76 @@ void    val_search_cb(w,trace,cb)
     int		y=10;
     char	strg[40];
     
-    if (DTPRINT) printf("In val_search_cb - trace=%d\n",trace);
+    if (DTPRINT) printf ("In val_search_cb - trace=%d\n",trace);
     
     if (!trace->value.search) {
-	XtSetArg(arglist[0], XmNdefaultPosition, TRUE);
-	XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple ("Value Search Requester") );
-	XtSetArg(arglist[2], XmNwidth, 500);
-	XtSetArg(arglist[3], XmNheight, 400);
-	trace->value.search = XmCreateBulletinBoardDialog(trace->work,"search",arglist,4);
+	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Value Search Requester") );
+	XtSetArg (arglist[2], XmNwidth, 500);
+	XtSetArg (arglist[3], XmNheight, 400);
+	trace->value.search = XmCreateBulletinBoardDialog (trace->work,"search",arglist,4);
 	
-	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Color"));
-	XtSetArg(arglist[1], XmNx, 5);
-	XtSetArg(arglist[2], XmNy, y);
-	trace->value.label1 = XmCreateLabel(trace->value.search,"label1",arglist,3);
-	XtManageChild(trace->value.label1);
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Color"));
+	XtSetArg (arglist[1], XmNx, 5);
+	XtSetArg (arglist[2], XmNy, y);
+	trace->value.label1 = XmCreateLabel (trace->value.search,"label1",arglist,3);
+	XtManageChild (trace->value.label1);
 	
-	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Place"));
-	XtSetArg(arglist[1], XmNx, 60);
-	XtSetArg(arglist[2], XmNy, y);
-	trace->value.label2 = XmCreateLabel(trace->value.search,"label2",arglist,3);
-	XtManageChild(trace->value.label2);
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Place"));
+	XtSetArg (arglist[1], XmNx, 60);
+	XtSetArg (arglist[2], XmNy, y);
+	trace->value.label2 = XmCreateLabel (trace->value.search,"label2",arglist,3);
+	XtManageChild (trace->value.label2);
 	
 	y += 15;
-	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Value"));
-	XtSetArg(arglist[1], XmNx, 5);
-	XtSetArg(arglist[2], XmNy, y);
-	trace->value.label4 = XmCreateLabel(trace->value.search,"label4",arglist,3);
-	XtManageChild(trace->value.label4);
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Value"));
+	XtSetArg (arglist[1], XmNx, 5);
+	XtSetArg (arglist[2], XmNy, y);
+	trace->value.label4 = XmCreateLabel (trace->value.search,"label4",arglist,3);
+	XtManageChild (trace->value.label4);
 	
-	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Cursor"));
-	XtSetArg(arglist[1], XmNx, 60);
-	XtSetArg(arglist[2], XmNy, y);
-	trace->value.label5 = XmCreateLabel(trace->value.search,"label5",arglist,3);
-	XtManageChild(trace->value.label5);
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cursor"));
+	XtSetArg (arglist[1], XmNx, 60);
+	XtSetArg (arglist[2], XmNy, y);
+	trace->value.label5 = XmCreateLabel (trace->value.search,"label5",arglist,3);
+	XtManageChild (trace->value.label5);
 	
-	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple
 		 ( (trace->busrep == HBUS)? "Search value in HEX":"Search value in OCTAL" ) );
-	XtSetArg(arglist[1], XmNx, 140);
-	XtSetArg(arglist[2], XmNy, y);
-	trace->value.label3 = XmCreateLabel(trace->value.search,"label3",arglist,3);
-	XtManageChild(trace->value.label3);
+	XtSetArg (arglist[1], XmNx, 140);
+	XtSetArg (arglist[2], XmNy, y);
+	trace->value.label3 = XmCreateLabel (trace->value.search,"label3",arglist,3);
+	XtManageChild (trace->value.label3);
 	
 	y += 25;
 
 	for (i=0; i<MAX_SRCH; i++) {
 	    /* enable button */
-	    XtSetArg(arglist[0], XmNx, 15);
-	    XtSetArg(arglist[1], XmNy, y);
-	    XtSetArg(arglist[2], XmNselectColor, trace->xcolornums[i+1]);
-	    XtSetArg(arglist[3], XmNlabelString, XmStringCreateSimple (""));
-	    trace->value.enable[i] = XmCreateToggleButton(trace->value.search,"togglen",arglist,4);
-	    XtManageChild(trace->value.enable[i]);
+	    XtSetArg (arglist[0], XmNx, 15);
+	    XtSetArg (arglist[1], XmNy, y);
+	    XtSetArg (arglist[2], XmNselectColor, trace->xcolornums[i+1]);
+	    XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple (""));
+	    trace->value.enable[i] = XmCreateToggleButton (trace->value.search,"togglen",arglist,4);
+	    XtManageChild (trace->value.enable[i]);
 
 	    /* enable button */
-	    XtSetArg(arglist[0], XmNx, 70);
-	    XtSetArg(arglist[1], XmNy, y);
-	    XtSetArg(arglist[2], XmNselectColor, trace->xcolornums[i+1]);
-	    XtSetArg(arglist[3], XmNlabelString, XmStringCreateSimple (""));
-	    trace->value.cursor[i] = XmCreateToggleButton(trace->value.search,"cursorn",arglist,4);
-	    XtManageChild(trace->value.cursor[i]);
+	    XtSetArg (arglist[0], XmNx, 70);
+	    XtSetArg (arglist[1], XmNy, y);
+	    XtSetArg (arglist[2], XmNselectColor, trace->xcolornums[i+1]);
+	    XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple (""));
+	    trace->value.cursor[i] = XmCreateToggleButton (trace->value.search,"cursorn",arglist,4);
+	    XtManageChild (trace->value.cursor[i]);
 
 	    /* create the file name text widget */
-	    XtSetArg(arglist[0], XmNrows, 1);
-	    XtSetArg(arglist[1], XmNcolumns, 30);
-	    XtSetArg(arglist[2], XmNx, 120);
-	    XtSetArg(arglist[3], XmNy, y);
-	    XtSetArg(arglist[4], XmNresizeHeight, FALSE);
-	    XtSetArg(arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
-	    trace->value.text[i] = XmCreateText(trace->value.search,"textn",arglist,6);
-	    XtAddCallback(trace->value.text[i], XmNactivateCallback, val_search_ok_cb, trace);
-	    XtManageChild(trace->value.text[i]);
+	    XtSetArg (arglist[0], XmNrows, 1);
+	    XtSetArg (arglist[1], XmNcolumns, 30);
+	    XtSetArg (arglist[2], XmNx, 120);
+	    XtSetArg (arglist[3], XmNy, y);
+	    XtSetArg (arglist[4], XmNresizeHeight, FALSE);
+	    XtSetArg (arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
+	    trace->value.text[i] = XmCreateText (trace->value.search,"textn",arglist,6);
+	    XtAddCallback (trace->value.text[i], XmNactivateCallback, val_search_ok_cb, trace);
+	    XtManageChild (trace->value.text[i]);
 	    
 	    y += 40;
 	    }
@@ -545,28 +546,28 @@ void    val_search_cb(w,trace,cb)
 	y+= 15;
 
 	/* Create OK button */
-	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(" OK ") );
-	XtSetArg(arglist[1], XmNx, 10);
-	XtSetArg(arglist[2], XmNy, y);
-	trace->value.ok = XmCreatePushButton(trace->value.search,"ok",arglist,3);
-	XtAddCallback(trace->value.ok, XmNactivateCallback, val_search_ok_cb, trace);
-	XtManageChild(trace->value.ok);
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
+	XtSetArg (arglist[1], XmNx, 10);
+	XtSetArg (arglist[2], XmNy, y);
+	trace->value.ok = XmCreatePushButton (trace->value.search,"ok",arglist,3);
+	XtAddCallback (trace->value.ok, XmNactivateCallback, val_search_ok_cb, trace);
+	XtManageChild (trace->value.ok);
 	
 	/* create apply button */
-	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Apply") );
-	XtSetArg(arglist[1], XmNx, 70);
-	XtSetArg(arglist[2], XmNy, y);
-	trace->value.apply = XmCreatePushButton(trace->value.search,"apply",arglist,3);
-	XtAddCallback(trace->value.apply, XmNactivateCallback, val_search_apply_cb, trace);
-	XtManageChild(trace->value.apply);
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Apply") );
+	XtSetArg (arglist[1], XmNx, 70);
+	XtSetArg (arglist[2], XmNy, y);
+	trace->value.apply = XmCreatePushButton (trace->value.search,"apply",arglist,3);
+	XtAddCallback (trace->value.apply, XmNactivateCallback, val_search_apply_cb, trace);
+	XtManageChild (trace->value.apply);
 	
 	/* create cancel button */
-	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Cancel") );
-	XtSetArg(arglist[1], XmNx, 140);
-	XtSetArg(arglist[2], XmNy, y);
-	trace->value.cancel = XmCreatePushButton(trace->value.search,"cancel",arglist,3);
-	XtAddCallback(trace->value.cancel, XmNactivateCallback, val_search_cancel_cb, trace);
-	XtManageChild(trace->value.cancel);
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
+	XtSetArg (arglist[1], XmNx, 140);
+	XtSetArg (arglist[2], XmNy, y);
+	trace->value.cancel = XmCreatePushButton (trace->value.search,"cancel",arglist,3);
+	XtAddCallback (trace->value.cancel, XmNactivateCallback, unmanage_cb, trace->value.search);
+	XtManageChild (trace->value.cancel);
 	}
     
     /* Copy settings to local area to allow cancel to work */
@@ -585,10 +586,10 @@ void    val_search_cb(w,trace,cb)
 	}
 
     /* manage the popup on the screen */
-    XtManageChild(trace->value.search);
+    XtManageChild (trace->value.search);
     }
 
-void    val_search_ok_cb(w,trace,cb)
+void    val_search_ok_cb (w,trace,cb)
     Widget				w;
     TRACE			*trace;
     XmSelectionBoxCallbackStruct *cb;
@@ -596,7 +597,7 @@ void    val_search_ok_cb(w,trace,cb)
     char		*strg;
     int			i;
 
-    if (DTPRINT) printf("In val_search_ok_cb - trace=%d\n",trace);
+    if (DTPRINT) printf ("In val_search_ok_cb - trace=%d\n",trace);
 
     for (i=0; i<MAX_SRCH; i++) {
 	/* Update with current search enables */
@@ -620,7 +621,7 @@ void    val_search_ok_cb(w,trace,cb)
 	    }
 	}
     
-    XtUnmanageChild(trace->value.search);
+    XtUnmanageChild (trace->value.search);
 
     val_update_search ();
 
@@ -628,25 +629,13 @@ void    val_search_ok_cb(w,trace,cb)
     redraw_all (trace);
     }
 
-void    val_search_apply_cb(w,trace,cb)
+void    val_search_apply_cb (w,trace,cb)
     Widget				w;
     TRACE			*trace;
     XmSelectionBoxCallbackStruct *cb;
 {
-    if (DTPRINT) printf("In val_search_apply_cb - trace=%d\n",trace);
+    if (DTPRINT) printf ("In val_search_apply_cb - trace=%d\n",trace);
 
     val_search_ok_cb (w,trace,cb);
     val_search_cb (w,trace,cb);
     }
-
-void    val_search_cancel_cb(w,trace,cb)
-    Widget			w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
-{
-    if (DTPRINT) printf("In val_search_cancel_cb - trace=%d\n",trace);
-    
-    /* unmanage the popup on the screen */
-    XtUnmanageChild(trace->value.search);
-    }
-

@@ -21,6 +21,8 @@
  *
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
@@ -30,39 +32,37 @@
 
 
 
-void grid_res_cb( w, trace, cb)
-    Widget			w;
+void grid_res_cb (w, trace, cb)
+    Widget		w;
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-
-    if (DTPRINT) printf("In grid_res_cb - trace=%d\n",trace);
+    if (DTPRINT) printf ("In grid_res_cb - trace=%d\n",trace);
 
     /* input the grid resolution from the user */
-    get_data_popup(trace,"Grid Res",IO_GRIDRES);
+    get_data_popup (trace,"Grid Res",IO_GRIDRES);
 }
 
-void grid_align_cb(w, trace, cb)
-    Widget			w;
+void grid_align_cb (w, trace, cb)
+    Widget		w;
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-
-    if (DTPRINT) printf("In grid_align_cb - trace=%d\n",trace);
+    if (DTPRINT) printf ("In grid_align_cb - trace=%d\n",trace);
 
     /* remove any previous events */
-    remove_all_events(trace);
+    remove_all_events (trace);
 
     /* process all subsequent button presses as grid aligns */
     add_event (ButtonPressMask, grid_align_ev);
     }
 
-void grid_reset_cb(w, trace, cb)
-    Widget			w;
+void grid_reset_cb (w, trace, cb)
+    Widget		w;
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf("In grid_reset_cb - trace=%d\n",trace);
+    if (DTPRINT) printf ("In grid_reset_cb - trace=%d\n",trace);
 
     /* reset the alignment back to zero and resolution to 100 */
     trace->grid_align = 0;
@@ -71,23 +71,23 @@ void grid_reset_cb(w, trace, cb)
     update_signal_states (trace);
 
     /* cancel the button actions */
-    remove_all_events(trace);
+    remove_all_events (trace);
 
     /* redraw the screen */
     redraw_all (trace);
     }
 
-void grid_align_ev(w, trace, ev)
-    Widget			w;
+void grid_align_ev (w, trace, ev)
+    Widget		w;
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    int		time;
+    DTime		time;
 
-    if (DTPRINT) printf("In grid_align_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    if (DTPRINT) printf ("In grid_align_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
 
     /* convert x value to a new grid_align (time) value */
-    time = posx_to_time (trace, ev->x);
+    time = posx_to_time_edge (trace, ev->x, ev->y);
     if (time<0) return;
 
     trace->grid_align = time;
@@ -95,5 +95,3 @@ void grid_align_ev(w, trace, ev)
     /* redraw the screen with new cursors */
     redraw_all (trace);
     }
-
-

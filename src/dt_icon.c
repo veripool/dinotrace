@@ -21,13 +21,15 @@
  *
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
 
 #include "dinotrace.h"
 
-Pixmap    make_icon(display, root, data, width, height) 
+Pixmap    make_icon (display, root, data, width, height) 
     Display		*display;
     Drawable		root;
     short		*data;
@@ -39,13 +41,13 @@ Pixmap    make_icon(display, root, data, width, height)
     Pixmap		pid;
     
     /* create the pixmap */
-    pid = XCreatePixmap(display, root, width, height,
-                        (unsigned int) DefaultDepth(display, 0));
+    pid = XCreatePixmap (display, root, width, height,
+                        (unsigned int) DefaultDepth (display, 0));
     
     /* create a gc */
-    gcv.foreground = BlackPixel(display, 0);
-    gcv.background = WhitePixel(display, 0);
-    pgc = XCreateGC(display, pid, GCForeground | GCBackground, &gcv);
+    gcv.foreground = BlackPixel (display, 0);
+    gcv.background = WhitePixel (display, 0);
+    pgc = XCreateGC (display, pid, GCForeground | GCBackground, &gcv);
     
     /* create the ximage structure */
     ximage.height = height;
@@ -61,11 +63,11 @@ Pixmap    make_icon(display, root, data, width, height)
     ximage.depth = 1;
     
     /* put image into the pixmap */
-    XPutImage(display, pid, pgc, &ximage, 0, 0, 0, 0, width, height);
+    XPutImage (display, pid, pgc, &ximage, 0, 0, 0, 0, width, height);
     
     /* free gc */
-    XFreeGC(display, pgc);
+    XFreeGC (display, pgc);
     
-    return(pid);
+    return (pid);
     }
 

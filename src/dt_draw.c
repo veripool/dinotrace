@@ -25,6 +25,8 @@
  *     WPS	15-Feb-93	V5.2 print number if state doesn't fit
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
@@ -34,8 +36,8 @@
 #include "dinotrace.h"
 #include "callbacks.h"
 
-extern void draw_hscroll(),
-    draw_vscroll();
+extern void draw_hscroll (),
+    draw_vscroll ();
 
 /*
  *
@@ -94,7 +96,7 @@ extern void draw_hscroll(),
  */                          
 
 
-void draw(trace)                                 
+void draw (trace)                                 
     TRACE	*trace;                        
 {         
     int c=0,i,cnt,adj,ymdpt,yt,xloc,xend,du,len,mid,yfntloc;
@@ -112,7 +114,7 @@ void draw(trace)
     /* char temp_strg[20]; */
     int end_time;
     
-    if (DTPRINT) printf("In draw - filename=%s\n",trace->filename);
+    if (DTPRINT) printf ("In draw - filename=%s\n",trace->filename);
     
     /* don't draw anything if no file is loaded */
     if (!trace->loaded) return;
@@ -127,7 +129,7 @@ void draw(trace)
     adj = global->time * global->res - global->xstart;
     end_time = ( xend + adj ) / global->res;
     
-    if (DTPRINT) printf("global->res=%f adj=%d time=%d-%d\n",global->res,adj,
+    if (DTPRINT) printf ("global->res=%f adj=%d time=%d-%d\n",global->res,adj,
 			     global->time, end_time);
     
     /* Loop and draw each signal individually */
@@ -145,15 +147,15 @@ void draw(trace)
 	*/
 
 	/* calculate the location to draw the signal name and draw it */
-	x1 = global->xstart - XTextWidth(trace->text_font,sig_ptr->signame,
-				       strlen(sig_ptr->signame)) - 10;
+	x1 = global->xstart - XTextWidth (trace->text_font,sig_ptr->signame,
+				       strlen (sig_ptr->signame)) - 10;
 	y1 = trace->ystart + (c+1) * trace->sighgt - SIG_SPACE - yfntloc;
-	XDrawString(global->display, trace->wind, trace->gc, x1, y1,
-		    sig_ptr->signame, strlen(sig_ptr->signame) );
+	XDrawString (global->display, trace->wind, trace->gc, x1, y1,
+		    sig_ptr->signame, strlen (sig_ptr->signame) );
 
 	/*
-	XDrawString(global->display, trace->wind, trace->gc, x1, y1,
-		    temp_strg, strlen(temp_strg) );
+	XDrawString (global->display, trace->wind, trace->gc, x1, y1,
+		    temp_strg, strlen (temp_strg) );
 	*/
 
 	/* Calculate line position */
@@ -166,7 +168,7 @@ void draw(trace)
 	
 	/* Compute starting points for signal */
 	Pts[cnt].x = global->xstart - trace->sigrf;
-	switch( cptr->sttime.state ) {
+	switch ( cptr->sttime.state ) {
 	  case STATE_0: Pts[cnt].y = y2; break;
 	  case STATE_1: Pts[cnt].y = y1; break;
 	  case STATE_U: Pts[cnt].y = ymdpt; break;
@@ -174,7 +176,7 @@ void draw(trace)
 	  case STATE_B32: Pts[cnt].y = ymdpt; break;
 	  case STATE_B64: Pts[cnt].y = ymdpt; break;
 	  case STATE_B96: Pts[cnt].y = ymdpt; break;
-	  default: printf("Error: State=%d\n",cptr->sttime.state); break;
+	  default: printf ("Error: State=%d\n",cptr->sttime.state); break;
 	    }
 	
 	/* Loop as long as the time and end of trace are in current screen */
@@ -190,7 +192,7 @@ void draw(trace)
 	    xloc = nptr->sttime.time * global->res - adj;
 	    
 	    /* Determine what the state of the signal is and build transition */
-	    switch( cptr->sttime.state ) {
+	    switch ( cptr->sttime.state ) {
 	      case STATE_0:
 		if ( xloc > xend ) xloc = xend;
 		Pts[cnt+1].x = Pts[cnt].x+trace->sigrf; Pts[cnt+1].y = y2;
@@ -244,14 +246,14 @@ void draw(trace)
 	      case STATE_B32:
 		if ( xloc > xend ) xloc = xend;
 		
-		value = *((unsigned int *)cptr+1);
+		value = * ((unsigned int *)cptr+1);
 		
 		/* Below evaluation left to right important to prevent error */
 		if ( (sig_ptr->decode != NULL) &&
 		    (value<MAXSTATENAMES) &&
 		    (sig_ptr->decode->statename[value][0] != '\0')) {
 		    strcpy (strg, sig_ptr->decode->statename[value]);
-		    len = XTextWidth(trace->text_font,strg,strlen(strg));
+		    len = XTextWidth (trace->text_font,strg,strlen (strg));
 		    if ( xloc-Pts[cnt].x < len + 2 ) {
 			/* doesn't fit, try number */
 			goto value_rep;
@@ -259,9 +261,9 @@ void draw(trace)
 		    }
 		else {
 		  value_rep:	    if (trace->busrep == HBUS)
-		      sprintf(strg,"%X", value);
+		      sprintf (strg,"%X", value);
 		  else if (trace->busrep == OBUS)
-		      sprintf(strg,"%o", value);
+		      sprintf (strg,"%o", value);
 		    }
 		
 		srch_this_color = 0;
@@ -280,10 +282,10 @@ void draw(trace)
 		if ( xloc > xend ) xloc = xend;
 
 		if (trace->busrep == HBUS)
-		    sprintf(strg,"%X %08X",*((unsigned int *)cptr+2),
+		    sprintf (strg,"%X %08X",*((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
-		    sprintf(strg,"%o %o",*((unsigned int *)cptr+2),
+		    sprintf (strg,"%o %o",*((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		
 		srch_this_color = 0;
@@ -303,11 +305,11 @@ void draw(trace)
 		if ( xloc > xend ) xloc = xend;
 
 		if (trace->busrep == HBUS)
-		    sprintf(strg,"%X %08X %08X",*((unsigned int *)cptr+3),
+		    sprintf (strg,"%X %08X %08X",*((unsigned int *)cptr+3),
 			    *((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		else if (trace->busrep == OBUS)
-		    sprintf(strg,"%o %o %o",*((unsigned int *)cptr+3),
+		    sprintf (strg,"%o %o %o",*((unsigned int *)cptr+3),
 			    *((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+1));
 		
@@ -330,7 +332,7 @@ void draw(trace)
 	      state_plot:
 
 		/* calculate positional parameters */
-		len = XTextWidth(trace->text_font,strg,strlen(strg));
+		len = XTextWidth (trace->text_font,strg,strlen (strg));
 		
 		/* write the bus value if it fits */
 		if ( xloc-Pts[cnt].x >= len + 2 ) {
@@ -338,13 +340,13 @@ void draw(trace)
 		    if (srch_this_color) {
 			/* Grab the color we want */
 			XSetForeground (global->display, trace->gc, trace->xcolornums[srch_this_color]);
-			XDrawString(XtDisplay(trace->toplevel), XtWindow( trace->work),
-				    trace->gc, mid-len/2, y2-yfntloc, strg, strlen(strg) );
+			XDrawString (XtDisplay (trace->toplevel), XtWindow ( trace->work),
+				    trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
 			XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
 			}
 		    else {
-			XDrawString(XtDisplay(trace->toplevel), XtWindow( trace->work),
-				    trace->gc, mid-len/2, y2-yfntloc, strg, strlen(strg) );
+			XDrawString (XtDisplay (trace->toplevel), XtWindow ( trace->work),
+				    trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
 			}
 		    }
 
@@ -362,7 +364,7 @@ void draw(trace)
 		break;
 		
 	      default:
-		printf("Error: State=%d\n",cptr->sttime.state); break;
+		printf ("Error: State=%d\n",cptr->sttime.state); break;
 		} /* end switch */
 	    
 	    cnt += 2;
@@ -371,7 +373,7 @@ void draw(trace)
         cnt++;
 	
 	/* draw the lines */
-	XDrawLines(global->display, trace->wind, trace->gc, Pts, cnt, CoordModeOrigin);
+	XDrawLines (global->display, trace->wind, trace->gc, Pts, cnt, CoordModeOrigin);
 
 	} /* end of FOR */
     
@@ -399,35 +401,35 @@ void draw(trace)
     strg[1] = trace->sighgt - strg[0];
     
     /* set the line attributes as the specified dash pattern */
-    XSetLineAttributes(global->display,trace->gc,0,LineOnOffDash,0,0);
-    XSetDashes(global->display,trace->gc,0,strg,2);
+    XSetLineAttributes (global->display,trace->gc,0,LineOnOffDash,0,0);
+    XSetDashes (global->display,trace->gc,0,strg,2);
     
     /* check if there is a reasonable amount of increments to draw the time grid */
-    if ( ((float)xend - xlocf)/(trace->grid_res*global->res) < MIN_GRID_RES ) {
-        for (iff=xlocf;iff<(float)xend; iff+=trace->grid_res*global->res) {
+    if ( ((float)xend - xlocf)/ (trace->grid_res*global->res) < MIN_GRID_RES ) {
+        for (iff=xlocf;iff< (float)xend; iff+=trace->grid_res*global->res) {
 	    /* compute the time value and draw it if it fits */
 	    time_to_string (trace, strg, x1, FALSE);
 
-	    if ( (int)iff - i >= XTextWidth(trace->text_font,strg,strlen(strg)) + 5 ) {
-	        XDrawString(global->display,trace->wind,
-			    trace->gc, (int)iff, yt, strg, strlen(strg));
+	    if ( (int)iff - i >= XTextWidth (trace->text_font,strg,strlen (strg)) + 5 ) {
+	        XDrawString (global->display,trace->wind,
+			    trace->gc, (int)iff, yt, strg, strlen (strg));
 	        i = (int)iff;
 		}
 	    
 	    /* if the grid is visible, draw a vertical dashed line */
 	    if (trace->grid_vis) {
-	        XDrawLine(global->display, trace->wind,trace->gc,(int)iff,y1,(int)iff,y2);
+	        XDrawLine (global->display, trace->wind,trace->gc, (int)iff,y1, (int)iff,y2);
 		}
 	    x1 += trace->grid_res;
 	    }
 	}
     else {
 	/* grid res is useless - must increase the spacing */
-	/*	dino_warning_ack(trace, "Grid Spacing Too Small - Increase Res"); */
+	/*	dino_warning_ack (trace, "Grid Spacing Too Small - Increase Res"); */
 	}
     
     /* reset the line attributes */
-    XSetLineAttributes(global->display,trace->gc,0,LineSolid,0,0);
+    XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
     
     /* draw the cursors if they are visible */
     if ( trace->cursor_vis ) {
@@ -447,36 +449,36 @@ void draw(trace)
 
 		/* draw the cursor */
 		x1 = csr_ptr->time * global->res - adj;
-		XDrawLine(global->display,trace->wind,trace->gc,x1,y1,x1,y2);
+		XDrawLine (global->display,trace->wind,trace->gc,x1,y1,x1,y2);
 		
 		/* draw the cursor value */
 		time_to_string (trace, strg, csr_ptr->time, FALSE);
- 		len = XTextWidth(trace->text_font,strg,strlen(strg));
-		XDrawString(global->display,trace->wind,
-			    trace->gc, x1-len/2, y2+10, strg, strlen(strg));
+ 		len = XTextWidth (trace->text_font,strg,strlen (strg));
+		XDrawString (global->display,trace->wind,
+			    trace->gc, x1-len/2, y2+10, strg, strlen (strg));
 		
 		/* if there is a previous visible cursor, draw delta line */
 		if ( csr_ptr->prev && (csr_ptr->prev->time > global->time) ) {
 
 		    x2 = csr_ptr->prev->time * global->res - adj;
 		    time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
- 		    len = XTextWidth(trace->text_font,strg,strlen(strg));
+ 		    len = XTextWidth (trace->text_font,strg,strlen (strg));
 		    
 		    /* write the delta value if it fits */
  		    if ( x1 - x2 >= len + 6 ) {
 			/* calculate the mid pt of the segment */
 			mid = x2 + (x1 - x2)/2;
-			XDrawLine(global->display, trace->wind, trace->gc,
+			XDrawLine (global->display, trace->wind, trace->gc,
 				  x2, y2-5, mid-len/2-2, y2-5);
-			XDrawLine(global->display, trace->wind, trace->gc,
+			XDrawLine (global->display, trace->wind, trace->gc,
 				  mid+len/2+2, y2-5, x1, y2-5);
 			
-			XDrawString(global->display,trace->wind,
-				    trace->gc, mid-len/2, y2, strg, strlen(strg));
+			XDrawString (global->display,trace->wind,
+				    trace->gc, mid-len/2, y2, strg, strlen (strg));
 			}
  		    /* or just draw the delta line */
  		    else {
- 		        XDrawLine(global->display, trace->wind,
+ 		        XDrawLine (global->display, trace->wind,
 				  trace->gc, x2, y2-5, x1, y2-5);
 			}
 		    }
@@ -507,9 +509,9 @@ void	update_globals ()
 	    for (sig_ptr = (SIGNAL *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 		t1=sig_ptr->signame;
 		if (strncmp (t1, "%NET.",5)==0) t1+=5;
-		/* if (DTPRINT) printf("Signal = '%s'  xstart=%d\n",t1,xstarttemp); */
-		if (xstarttemp < XTextWidth(trace->text_font,t1,strlen(t1)))
-		    xstarttemp = XTextWidth(trace->text_font,t1,strlen(t1));
+		/* if (DTPRINT) printf ("Signal = '%s'  xstart=%d\n",t1,xstarttemp); */
+		if (xstarttemp < XTextWidth (trace->text_font,t1,strlen (t1)))
+		    xstarttemp = XTextWidth (trace->text_font,t1,strlen (t1));
 		}
 	    }
 	}
@@ -520,7 +522,7 @@ void	update_globals ()
 void redraw_all (trace)
     TRACE		*trace;
 {
-    if (DTPRINT) printf("In new_grid - trace=%d\n",trace);
+    if (DTPRINT) printf ("In new_grid - trace=%d\n",trace);
 
     /* do not unroll this loop, as it will make the refresh across windows */
     /* appear out of sync */
@@ -564,9 +566,9 @@ void	draw_hscroll (trace)
     /* Blank area to either side of slider */
     XSetForeground (global->display, trace->gc,
 		    ((XmScrollBarRec *)trace->hscroll)->scrollBar.trough_color );
-    XFillRectangle(global->display, XtWindow (trace->hscroll), trace->gc,
+    XFillRectangle (global->display, XtWindow (trace->hscroll), trace->gc,
 		   xmin, ymin, slider_xmin - xmin, ymax-ymin);
-    XFillRectangle(global->display, XtWindow (trace->hscroll), trace->gc,
+    XFillRectangle (global->display, XtWindow (trace->hscroll), trace->gc,
 		   slider_xmax, ymin, xmax - slider_xmax , ymax-ymin);
 
     if ( trace->cursor_vis ) {
@@ -579,7 +581,7 @@ void	draw_hscroll (trace)
 		/* Change color */
 		XSetForeground (global->display, trace->gc, trace->xcolornums[csr_ptr->color]);
 
-		XDrawLine(global->display, XtWindow (trace->hscroll),
+		XDrawLine (global->display, XtWindow (trace->hscroll),
 			  trace->gc, x1,ymin,x1,ymax);
 		}
 	    }
@@ -596,7 +598,7 @@ void	draw_vscroll (trace)
     float yscale;
     SIGNAL	*sig_ptr;
 
-    if (DTPRINT) printf("In draw_vscroll\n");
+    if (DTPRINT) printf ("In draw_vscroll\n");
 
     /* initial the y colors for drawing */
     xmin = ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_x;
@@ -607,16 +609,16 @@ void	draw_vscroll (trace)
     slider_ymax = slider_ymin + ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_height;
 
     /*
-    if (DTPRINT) printf(">>X %d - %d   Y %d - %d  Sli %d - %d\n", 
+    if (DTPRINT) printf (">>X %d - %d   Y %d - %d  Sli %d - %d\n", 
 			xmin,xmax,ymin,ymax,slider_ymin,slider_ymax);
 			*/
 
     /* Blank area to either side of slider */
     XSetForeground (global->display, trace->gc,
 		    ((XmScrollBarRec *)trace->vscroll)->scrollBar.trough_color );
-    XFillRectangle(global->display, XtWindow (trace->vscroll), trace->gc,
+    XFillRectangle (global->display, XtWindow (trace->vscroll), trace->gc,
 		   xmin, ymin, xmax - xmin, slider_ymin - ymin);
-    XFillRectangle(global->display, XtWindow (trace->vscroll), trace->gc,
+    XFillRectangle (global->display, XtWindow (trace->vscroll), trace->gc,
 		   xmin, slider_ymax, xmax - xmin, ymax - slider_ymax);
 
     if (!trace->loaded || (trace->numsigvis >= trace->numsig) || !trace->numsig) return;
@@ -638,7 +640,7 @@ void	draw_vscroll (trace)
 		}
 	    /* Change color */
 	    XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
-	    XDrawLine(global->display, XtWindow (trace->vscroll),
+	    XDrawLine (global->display, XtWindow (trace->vscroll),
 		      trace->gc, xmin,y1,xmax,y1);
 	    }
 	}

@@ -43,6 +43,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifdef VMS
 #include <file.h>
@@ -302,6 +304,50 @@ void	print_signal_states (trace)
     printf ("\n");
     }
 
+void	config_parse_geometry (line, geometry)
+    char	*line;
+    GEOMETRY	*geometry;
+    /* Like XParseGeometry, but handles percentages */
+{
+    int		flags, x, y, wid, hei;
+    char	noper_line[100];
+    char	*tp;
+
+    /* Copy line into a temp, remove the percentage symbols, and parse it */
+    strcpy (noper_line, line);
+    while (tp=strchr (noper_line, '%')) strcpy (tp, tp+1);
+
+    flags = XParseGeometry (noper_line, &x, &y, &wid, &hei);
+    if (flags & WidthValue)	geometry->width = wid;
+    if (flags & HeightValue)	geometry->height = hei;
+    if (flags & XValue)		geometry->x = x;
+    if (flags & YValue)		geometry->y = y;
+
+    /* Now figure out what the percentage symbols apply to */
+    geometry->xp = geometry->yp = geometry->heightp = geometry->widthp = FALSE;
+    for (tp = line; *tp; ) {
+	while (*tp && !isdigit(*tp)) tp++;
+	while (isdigit(*tp)) tp++;
+	if (*tp=='%') {
+	    if (flags & WidthValue)	geometry->widthp = TRUE;
+	    else if (flags & HeightValue) geometry->heightp = TRUE;
+	    else if (flags & XValue)	geometry->xp = TRUE;
+	    else if (flags & YValue)	geometry->yp = TRUE;
+	    }
+	if (flags & WidthValue) 	flags &= flags & (~ WidthValue);
+	else if (flags & HeightValue)	flags &= flags & (~ HeightValue);
+	else if (flags & XValue)	flags &= flags & (~ XValue);
+	else if (flags & YValue)	flags &= flags & (~ YValue);
+	}
+
+    if (DTPRINT) printf ("geometry %s = %dx%d+%d+%d   %c%c%c%c\n", line,
+			 geometry->width, geometry->height, 
+			 geometry->x, geometry->y,
+			 geometry->widthp?'%':'-', geometry->heightp?'%':'-', 
+			 geometry->xp?'%':'-', geometry->yp?'%':'-');
+    }
+
+
 /**********************************************************************
 *	config_process_states
 **********************************************************************/
@@ -393,7 +439,7 @@ void	config_process_line (trace, line, readfp)
     if (!strcmp(cmd, "DEBUG")) {
 	value=DTDEBUG;
 	line += config_read_on_off (line, &value);
-	if (DTDEBUG) printf ("Config: DTDEBUG=%d\n",value);
+	if (DTPRINT) printf ("Config: DTDEBUG=%d\n",value);
 	if (value >= 0) {
 	    DTDEBUG=value;
 	    }
@@ -442,13 +488,25 @@ void	config_process_line (trace, line, readfp)
 	    dino_error_ack(trace,message);
 	    }
 	}
+    else if (!strcmp(cmd, "CLICK_TO_EDGE")) {
+	value = global->click_to_edge;
+	line += config_read_on_off (line, &value);
+	if (DTPRINT) printf ("Config: click_to_edge=%d\n",value);
+	if (value >= 0) {
+	    global->click_to_edge = value;
+	    }
+	else {
+	    sprintf (message, "Click_to_edge must be set ON or OFF\non line %d of %s\n",
+		     line_num, current_file);
+	    dino_error_ack(trace,message);
+	    }
+	}
     else if (!strcmp(cmd, "SIGNAL_HEIGHT")) {
 	value = trace->sighgt;
 	line += config_read_int (line, &value);
 	if (value >= 15 && value <= 50)
 	    trace->sighgt = value;
 	else {
-	    if (DTPRINT) printf ("%%E, Signal_height must be 15-50 on config line %d\n", line_num);
 	    sprintf (message, "Signal_height must be 15-50\non line %d of %s\n",
 		     line_num, current_file);
 	    dino_error_ack(trace,message);
@@ -478,7 +536,6 @@ void	config_process_line (trace, line, readfp)
 	    else if (toupper(line[0])=='D')
 		trace->grid_align_auto = GRID_AUTO_DEASS;
 	    else {
-		if (DTPRINT) printf ("%%E, Grid_align must be >0, ASSERTION, or DEASSERTION on config line %d\n", line_num);
 		sprintf (message, "Grid_align must be >0, ASSERTION, or DEASSERTION\non line %d of %s\n",
 			 line_num, current_file);
 		dino_error_ack(trace,message);
@@ -498,27 +555,40 @@ void	config_process_line (trace, line, readfp)
 	if (value == 1 || value == 2 || value == 4)
 	    trace->pageinc = value;
 	else {
-	    if (DTPRINT) printf ("%%E, Page_Inc must be 1, 2, or 4 on config line %d\n", line_num);
 	    sprintf (message, "Page_Inc must be 1, 2, or 4\non line %d of %s\n",
 		     line_num, current_file);
 	    dino_error_ack(trace,message);
 	    }
 	}
     else if (!strcmp(cmd, "TIME_REP")) {
-	value = trace->timerep;
 	switch (toupper(line[0])) {
-	  case 'N':
-	    trace->timerep = TIMEREP_NS;
-	    break;
-	  case 'C':
-	    trace->timerep = TIMEREP_CYC;
-	    break;
+	  case 'N':	trace->timerep = TIMEREP_NS;	break;
+	  case 'U':	trace->timerep = TIMEREP_US;	break;
+	  case 'P':	trace->timerep = TIMEREP_PS;	break;
+	  case 'C':	trace->timerep = TIMEREP_CYC;	break;
 	  default:
-	    sprintf (message, "timerep must be NS or CYCLE\non line %d of %s\n",
+	    sprintf (message, "Time_Rep must be PS, NS, US, or CYCLE\non line %d of %s\n",
 		     line_num, current_file);
 	    dino_error_ack(trace,message);
 	    }
 	if (DTPRINT) printf ("timerep = %d\n", trace->timerep);
+	}
+    else if (!strcmp(cmd, "TIME_PRECISION")) {
+	switch (toupper(line[0])) {
+	  case 'N':	global->time_precision = TIMEREP_NS;	break;
+	  case 'U':	global->time_precision = TIMEREP_US;	break;
+	  case 'P':	global->time_precision = TIMEREP_PS;	break;
+	  default:
+	    sprintf (message, "Time_Precision must be PS, NS, or US\non line %d of %s\n",
+		     line_num, current_file);
+	    dino_error_ack(trace,message);
+	    }
+	if (DTPRINT) printf ("time_precision = %d\n", global->time_precision);
+	}
+    else if (!strcmp(cmd, "TIME_FORMAT")) {
+	line += config_read_signal (line, cmd);
+	strcpy (global->time_format, cmd);
+	if (DTPRINT) printf ("time_format = '%s'\n", global->time_format);
 	}
     else if (!strcmp(cmd, "PRINT_SIZE")) {
 	switch (toupper(line[0])) {
@@ -535,9 +605,13 @@ void	config_process_line (trace, line, readfp)
 	    }
 	}
     else if (!strcmp(cmd, "FILE_FORMAT")) {
+	char *tp;
+	for (tp = line; *tp && *tp!='Z' && *tp!='z'; tp++) ;
 	switch (toupper(line[0])) {
 	  case 'D':
-	    file_format = FF_DECSIM;
+	    if (toupper (*tp) == 'Z')
+		file_format = FF_DECSIM;
+	    else file_format = FF_DECSIM_Z;
 	    break;
 	  case 'T':
 	    file_format = FF_TEMPEST;
@@ -546,7 +620,6 @@ void	config_process_line (trace, line, readfp)
 	    file_format = FF_VERILOG;
 	    break;
 	  default:
-	    if (DTPRINT) printf ("%%E, File_Format must be DECSIM, TEMPEST, or VERILOG on config line %d\n", line_num);
 	    sprintf (message, "File_Format must be DECSIM, TEMPEST or VERILOG\non line %d of %s\n",
 		     line_num, current_file);
 	    dino_error_ack(trace,message);
@@ -563,11 +636,22 @@ void	config_process_line (trace, line, readfp)
 	    }
 	if (DTPRINT) printf ("Vector_seperator = '%c'\n", trace->vector_seperator);
 	}
+    else if (!strcmp(cmd, "START_GEOMETRY")) {
+	if (*line=='"') line++;
+	config_parse_geometry (line, &(global->start_geometry));
+	}
+    else if (!strcmp(cmd, "OPEN_GEOMETRY")) {
+	if (*line=='"') line++;
+	config_parse_geometry (line, &(global->open_geometry));
+	}
+    else if (!strcmp(cmd, "SHRINK_GEOMETRY")) {
+	if (*line=='"') line++;
+	config_parse_geometry (line, &(global->shrink_geometry));
+	}
     else if (!strcmp(cmd, "SIGNAL_STATES")) {
 	config_process_states (trace, line, readfp);
 	}
     else {
-	if (DTPRINT) printf ("%%E, Unknown command '%s' on config line %d\n", cmd, line_num);
 	sprintf (message, "Unknown command '%s'\non line %d of %s\n",
 		 cmd, line_num, current_file);
 	dino_error_ack(trace,message);
@@ -618,7 +702,7 @@ void config_read_file(trace, filename, report_error)
 void config_read_defaults(trace)
     TRACE	*trace;
 {
-    char newfilename[200];
+    char newfilename[MAXFNAMELEN];
     char *pchar;
 
 #ifdef VMS
@@ -668,7 +752,7 @@ void config_read_defaults(trace)
 void config_restore_defaults(trace)
     TRACE	*trace;
 {
-    if ( trace->signalstate_head != NULL)
+    if (trace->signalstate_head != NULL)
 	free_signal_states (trace);
     
     trace->sighgt = 20;	/* was 25 */
@@ -679,7 +763,7 @@ void config_restore_defaults(trace)
     trace->numpag = 1;
     trace->sigrf = SIG_RF;
     trace->pageinc = FPAGE;
-    trace->timerep = TIMEREP_NS;
+    trace->timerep = global->time_precision;
     trace->vector_seperator = '<';
 
     update_signal_states (trace);

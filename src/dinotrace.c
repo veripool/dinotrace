@@ -27,67 +27,103 @@
  */
 
 
-#include <X11/Xlib.h>
-#include <Xm/Xm.h>
 #include <stdio.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <X11/Xlib.h>
+#include <Xm/Xm.h>
+#include <X11/Xutil.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
 #include "compile_date.h"
 
-int		DTDEBUG=FALSE,		/* Debugging mode */
+Boolean		DTDEBUG=FALSE,		/* Debugging mode */
 		DTPRINT=FALSE;		/* Information printing mode */
 int		file_format=FF_DECSIM;	/* Type of trace to support */
 char		message[100];		/* generic string for messages */
 XGCValues	xgcv;
 Arg		arglist[20];
 GLOBAL		*global;
+/* filetypes must be in the same order that the FF_* defines are */
+struct st_filetypes filetypes[8] = {
+    { 0, "Auto",		"?", "*.*" },
+    { 1, "DECSIM",		"TRA", "*.tra" },
+#ifdef VMS
+    { 0, "DECSIM Compressed",	"TRA.Z", "*_tra.Z" },
+#else
+    { 1, "DECSIM Compressed",	"TRA.Z", "*.tra.Z" },
+#endif
+    { 1, "Tempest CCLI",	"BT", "*.bt" },
+    { 1, "Verilog",		"DMP", "*.dmp" },
+    { 0, "DECSIM Binary",	"TRA", "*.tra" },
+    { 0, "DECSIM Ascii",	"TRA", "*.tra" },
+    };
 
-int    main(argc, argv)
+int    main (argc, argv)
     unsigned int	argc;
     char		**argv;
 {
-    int i,x_siz=800,y_siz=600,x_pos=100,y_pos=100,res=250;
-    char *start_filename = NULL;
-    TRACE *trace;
+    int		i;
+    char	*start_filename = NULL;
+    TRACE	*trace;
     
+    /* Create global structure */
+    global = (GLOBAL *)XtMalloc ( sizeof (GLOBAL) );
+    global->trace_head = NULL;
+    global->directory[0] = '\0';
+    global->res = RES_SCALE/ (float)(250);
+    init_globals ();
+
+    /* Parse parameters */
     for (i=1; i<argc; i++)  {
-        if ( !strcmp(argv[i], "-debug") ) {
+        if ( !strcmp (argv[i], "-debug") ) {
             DTDEBUG = TRUE;
 	    }
-        else if ( !strcmp(argv[i], "-print") ) {
+        else if ( !strcmp (argv[i], "-print") ) {
             DTPRINT = TRUE;
 	    }
-        else if ( !strcmp(argv[i], "-tempest") ) {
+        else if ( !strcmp (argv[i], "-tempest") ) {
             file_format = FF_TEMPEST;
 	    }
-        else if ( !strcmp(argv[i], "-decsim") ) {
+        else if ( !strcmp (argv[i], "-decsim") ) {
             file_format = FF_DECSIM;
 	    }
-        else if ( !strcmp(argv[i], "-verilog") ) {
+        else if ( !strcmp (argv[i], "-verilog") ) {
             file_format = FF_VERILOG;
 	    }
-        else if ( !strcmp(argv[i], "-siz") ) {
-            sscanf(argv[++i],"%d",&x_siz);
-            sscanf(argv[++i],"%d",&y_siz);
+        else if ( !strcmp (argv[i], "-decsim_z") ) {
+            file_format = FF_DECSIM_Z;
 	    }
-        else if ( !strcmp(argv[i], "-pos") ) {
-            sscanf(argv[++i],"%d",&x_pos);
-            sscanf(argv[++i],"%d",&y_pos);
+        else if ( !strcmp (argv[i], "-geometry") ) {
+	    config_parse_geometry (argv[++i], & (global->start_geometry));
 	    }
-        else if ( !strcmp(argv[i], "-res") ) {
-            sscanf(argv[++i],"%d",&res);
+        else if ( !strcmp (argv[i], "-siz") ) {
+            sscanf (argv[++i],"%d", & (global->start_geometry.width) );
+            sscanf (argv[++i],"%d", & (global->start_geometry.height) );
 	    }
-        else if ( argv[i][0]!='-' && argc==(i+1)) {
+        else if ( !strcmp (argv[i], "-pos") ) {
+            sscanf (argv[++i],"%d", & (global->start_geometry.x) );
+            sscanf (argv[++i],"%d", & (global->start_geometry.y) );
+	    }
+        else if ( !strcmp (argv[i], "-res") ) {
+	    float res;
+
+            sscanf (argv[++i],"%d",&res);
+	    global->res = RES_SCALE/ (float)res;
+	    global->res_default = FALSE;
+	    }
+        else if ( argv[i][0]!='-' && argc== (i+1)) {
 	    start_filename = argv[i];
 	    }
         else {
-            printf("Invalid %s Option: %s\n", DTVERSION, argv[i]);
-            printf("DINOTRACE\t[-debug] [-print] [-tempest] [-screen #] [-size #,#]\n");
-            printf("\t\t[-pos #,#] [-res #]   file_name\n");
-            printf("\n%s\n", help_message());
-            exit(-1);
+            printf ("Invalid %s Option: %s\n", DTVERSION, argv[i]);
+            printf ("DINOTRACE\t[-debug] [-print] [-tempest] [-screen #] [-size #,#]\n");
+            printf ("\t\t[-pos #,#] [-res #]   file_name\n");
+            printf ("\n%s\n", help_message ());
+            exit (-1);
 	    }
 	}
     
@@ -96,7 +132,7 @@ int    main(argc, argv)
     if ((sizeof (SIGNAL_LW) != sizeof (unsigned int))
 	|| (sizeof (VALUE) != 4*sizeof (unsigned int))) {
 	printf ("%%E, Internal structure portability problem %d!=%d!=%d/4.\n",
-		sizeof (SIGNAL_LW), sizeof (unsigned int), sizeof(VALUE));
+		sizeof (SIGNAL_LW), sizeof (unsigned int), sizeof (VALUE));
 	}
 
     /* FAILS on MIPS Ultrix, so don't rely on this:
@@ -108,14 +144,22 @@ int    main(argc, argv)
 #endif
 
     /* create global information */
-    create_globals (0, argv, res);
+    create_globals (0, argv);
+
+    /* Load config options (such as file_format) */
+    /* Create a temporary trace structure for this, as config will want to write to the trace structure */
+    trace = malloc_trace ();
+    config_read_defaults (trace);
+    XtFree (trace);
+    global->trace_head = NULL;
 
     /* create the main dialog window */
-    trace = create_trace (x_siz,y_siz,x_pos,y_pos);
+    trace = create_trace (global->start_geometry.width, global->start_geometry.height, 
+			  global->start_geometry.x, global->start_geometry.y);
     
     /* expiration check */
 #ifdef EXPIRATION
-    if ((COMPILE_DATE + (EXPIRATION)) < time(NULL)) {
+    if ((COMPILE_DATE + (EXPIRATION)) < time (NULL)) {
 	XSync (global->display,0);
 	dino_information_ack (trace, "This version of DinoTrace has expired.\n\
 Please install a newer version.\n\
@@ -123,21 +167,18 @@ See the Help menu for more information.");
 	}
 #endif
 
-    /* Load config options (such as file_format) */
-    config_read_defaults (trace);
-
     /* Load up the file on the command line, if any */
     if (start_filename != NULL) {
 	XSync (global->display,0);
 	strcpy (trace->filename, start_filename);
-	cb_fil_read (trace);
+	fil_read_cb (trace);
 	}
 
     /* loop forever */
-    XtAppMainLoop(global->appcontext);
+    XtAppMainLoop (global->appcontext);
     }
 
-char	*help_message()
+char	*help_message ()
     {
     static char msg[2000];
 

@@ -3,18 +3,26 @@
 !
 !	! Comment
 !	page_inc	4 | 2 | 1
-!	print_size	A | B
 !	rise_fall_time	Number
 !	signal_height	Number
 !	grid		ON | OFF
-!	grid_align	Number | ASSERTION | DEASSERTION
 !	grid_resolution	Number | AUTO
-!	time_rep	NS | CYCLE
-!	file_format	DECSIM | TEMPEST
+!	grid_align	Number | ASSERTION | DEASSERTION
+!	time_rep	US | NS | PS | CYCLE
+!	time_format	%0.6lf | %0.6lg | "" 
+!	time_precision	US | NS | PS
+!	file_format	DECSIM | TEMPEST | VERILOG | DECSIM_Z
 !	cursor		ON | OFF
-!	debug		ON | OFF
+!	click_to_edge	ON | OFF
+!	print_size	A | B
 !	vector_seperator "<char>"
+!	start_geometry	<width>x<height>+<xoffset>+<yoffset>
+!	open_geometry	<width>[%]x<height>[%]+<xoffset>[%]+<yoff>[%]
+!	shrink_geometry	<width>%x<height>%+<xoffset>%+<yoff>%
 !	signal_states	Signal_Name = {State, State, State}
+!
+! A dinotrace.dino file in your home directory, in the trace
+! directory, or with the same name as the trace will override this file.
 !
 
 grid on
@@ -26,7 +34,21 @@ signal_height 20
 page_inc 1
 rise_fall_time 2
 vector_seperator "<"
+time_precision NS
 !file_format DECSIM	!<- Overrides command line if not commented out
+
+! Default, one above the other
+shrink_geometry 100%x50%+0%+0%
+open_geometry 100%x50%+0%+50%
+!
+! Open one on top of the other
+!shrink_geometry 100%x100%+0%+0%
+!open_geometry 100%x100%+0%+0%
+!
+! Open one aside the other
+!shrink_geometry 50%x100%+0%+0%
+!open_geometry 50%x100%+50%+0%
+
 !
 ! EV4 Cycle requests
 signal_states *cpucreq*<2:0> = {

@@ -1,7 +1,8 @@
 
 char dinopost[] = "%\n\
-% DinoTrace Version 6.3 Postscript\n\
-% Last Modified 8/9/93 by Wilson Snyder, RICKS::SNYDER\n\
+%\n\
+% DinoTrace Version 6.5 Postscript\n\
+% Last Modified 12/2/93 by Wilson Snyder, RICKS::SNYDER\n\
 %\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
@@ -34,17 +35,26 @@ char dinopost[] = "%\n\
   1 setlinecap 1 setlinejoin 1 setlinewidth	% set line char\n\
 \n\
   20 20 MT 20 string cvs true charpath stroke	% draw logo\n\
-  650 20 MT (Page ) true charpath		% draw PAGE\n\
+  PG_WID 180 sub 20 MT (Page ) true charpath	% draw PAGE\n\
   3 string cvs true charpath stroke		% draw page number\n\
 \n\
   /Times-Roman findfont 10 scalefont setfont    % choose normal font\n\
   1 setlinecap 1 setlinejoin 1 setlinewidth     % set line char\n\
 \n\
-  250 40 MT (File: ) show 100 string cvs show\n\
-  250 30 MT (Date: ) show 25 string cvs show\n\
-  250 20 MT (Digital Equipment Corporation Confidential) show\n\
-  530 30 MT (Resolution: ) show 10 string cvs show ( ns/page) show\n\
-  530 20 MT (Time: ) show 25 string cvs show\n\
+  /TPOS \n\
+	250	\n\
+	1000 PG_WID lt {	% B-Size page?\n\
+		50 add\n\
+		} if\n\
+	def		% Define position for file info\n\
+\n\
+  TPOS 40 MT (File: ) show 150 string cvs show\n\
+  TPOS 30 MT (Note: ) show 150 string cvs show\n\
+  TPOS 20 MT (Date: ) show 25 string cvs show\n\
+  %TPOS 10 MT (Digital Equipment Corporation Confidential) show\n\
+  TPOS 150 add 20 MT (DEC Confidential) show\n\
+  PG_WID 300 sub 30 MT (Resolution: ) show 25 string cvs show\n\
+  PG_WID 300 sub 20 MT (Time: ) show 25 string cvs show\n\
   stroke /Times-Roman findfont 8 scalefont setfont\n\
   } def\n\
 \n\

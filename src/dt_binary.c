@@ -24,6 +24,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #ifdef VMS
 #include <file.h>
@@ -54,7 +56,7 @@
 #define EXTRACT_4STATE(buf,pos)	(((*((unsigned long *)(((unsigned long)(buf)) + ((pos)>>3)))) >> ((pos) & 7)) & 3)
 
 #ifdef NEVER
-int	EXTRACT_2STATE(buf,pos)
+int	EXTRACT_2STATE (buf,pos)
      unsigned int pos;
      unsigned long *buf;
 {
@@ -100,7 +102,7 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
     register int bitcnt, bit_pos;
 
     /* Preset the state to be based upon first bit (to speed things up) */
-    switch (EXTRACT_4STATE(buf, sig_ptr->file_pos)) {
+    switch (EXTRACT_4STATE (buf, sig_ptr->file_pos)) {
       case 0:
       case 1:	state = STATE_0;	break;	/* Value */
       case 2:	state = STATE_Z;	break;
@@ -109,8 +111,8 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
 
     /* Extract the values, HIGH 32 BITS */
     bit_pos = sig_ptr->file_pos;
-    for (bitcnt=64; bitcnt <= (MIN(95, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
-	switch (EXTRACT_4STATE(buf, bit_pos)) {
+    for (bitcnt=64; bitcnt <= (MIN (95, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
+	switch (EXTRACT_4STATE (buf, bit_pos)) {
 	  case 0:
 	    if (state!=STATE_0) 
 		state = STATE_U;
@@ -128,8 +130,8 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
 	}
 
     /* Extract the values MID 32 BITS */
-    for (bitcnt=32; bitcnt <= (MIN(63, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
-	switch (EXTRACT_4STATE(buf, bit_pos)) {
+    for (bitcnt=32; bitcnt <= (MIN (63, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
+	switch (EXTRACT_4STATE (buf, bit_pos)) {
 	  case 0:
 	    if (state!=STATE_0) 
 		state = STATE_U;
@@ -147,8 +149,8 @@ int	read_4state_to_value (sig_ptr, buf, value_ptr)
 	}
 
     /* Extract the values LOW 32 BITS */
-    for (bitcnt=0; bitcnt <= (MIN(31, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
-	switch (EXTRACT_4STATE(buf, bit_pos)) {
+    for (bitcnt=0; bitcnt <= (MIN (31, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
+	switch (EXTRACT_4STATE (buf, bit_pos)) {
 	  case 0:
 	    if (state!=STATE_0) 
 		state = STATE_U;
@@ -193,18 +195,18 @@ int	read_2state_to_value (sig_ptr, buf, value_ptr)
 
     /* Extract the values, HIGH 32 BITS */
     bit_pos = sig_ptr->file_pos;
-    for (bitcnt=64; bitcnt <= (MIN(95, sig_ptr->bits)); bitcnt++, bit_pos++) {
-	value_ptr->number[2] = (value_ptr->number[2]<<1) + (EXTRACT_2STATE(buf, bit_pos));
+    for (bitcnt=64; bitcnt <= (MIN (95, sig_ptr->bits)); bitcnt++, bit_pos++) {
+	value_ptr->number[2] = (value_ptr->number[2]<<1) + (EXTRACT_2STATE (buf, bit_pos));
 	}
 
     /* Extract the values MID 32 BITS */
-    for (bitcnt=32; bitcnt <= (MIN(63, sig_ptr->bits)); bitcnt++, bit_pos++) {
-	value_ptr->number[1] = (value_ptr->number[1]<<1) + (EXTRACT_2STATE(buf, bit_pos));
+    for (bitcnt=32; bitcnt <= (MIN (63, sig_ptr->bits)); bitcnt++, bit_pos++) {
+	value_ptr->number[1] = (value_ptr->number[1]<<1) + (EXTRACT_2STATE (buf, bit_pos));
 	}
 
     /* Extract the values LOW 32 BITS */
-    for (bitcnt=0; bitcnt <= (MIN(31, sig_ptr->bits)); bitcnt++, bit_pos++) {
-	value_ptr->number[0] = (value_ptr->number[0]<<1) + (EXTRACT_2STATE(buf, bit_pos));
+    for (bitcnt=0; bitcnt <= (MIN (31, sig_ptr->bits)); bitcnt++, bit_pos++) {
+	value_ptr->number[0] = (value_ptr->number[0]<<1) + (EXTRACT_2STATE (buf, bit_pos));
 	}
 
     return (sig_ptr->type);
@@ -227,23 +229,23 @@ void	fil_decsim_binary_to_value (sig_ptr, buf, value_ptr)
     if (sig_ptr->bits == 0) {
 	/* Single bit signal */
 	if (sig_ptr->file_type.flag.four_state == 0)
-	    state = EXTRACT_2STATE(buf, sig_ptr->file_pos)?STATE_1:STATE_0;
+	    state = EXTRACT_2STATE (buf, sig_ptr->file_pos)?STATE_1:STATE_0;
 	else {
 	    /*
 	    if (DTDEBUG &&
-		(EXTRACT_4STATE(buf, sig_ptr->file_pos) !=
-		 ((EXTRACT_2STATE(buf, sig_ptr->file_pos+1) * 2) +
-		  EXTRACT_2STATE(buf, sig_ptr->file_pos))))
+		(EXTRACT_4STATE (buf, sig_ptr->file_pos) !=
+		 ((EXTRACT_2STATE (buf, sig_ptr->file_pos+1) * 2) +
+		  EXTRACT_2STATE (buf, sig_ptr->file_pos))))
 		printf ("Mismatch@%d %s: %d!=%d,%d,%d\n",
 			sig_ptr->file_pos,
 			sig_ptr->signame,
-			EXTRACT_4STATE(buf, sig_ptr->file_pos),
-			EXTRACT_2STATE(buf, sig_ptr->file_pos + 1),
-			EXTRACT_2STATE(buf, sig_ptr->file_pos),
-			EXTRACT_2STATE(buf, sig_ptr->file_pos - 1));
+			EXTRACT_4STATE (buf, sig_ptr->file_pos),
+			EXTRACT_2STATE (buf, sig_ptr->file_pos + 1),
+			EXTRACT_2STATE (buf, sig_ptr->file_pos),
+			EXTRACT_2STATE (buf, sig_ptr->file_pos - 1));
 			*/
 
-	    switch (EXTRACT_4STATE(buf, sig_ptr->file_pos)) {
+	    switch (EXTRACT_4STATE (buf, sig_ptr->file_pos)) {
 	      case 0: state = STATE_0; break;
 	      case 1: state = STATE_1; break;
 	      case 2: state = STATE_Z; break;
@@ -335,10 +337,10 @@ void	fil_tempest_binary_to_value (sig_ptr, buf, value_ptr)
     value_ptr->siglw.sttime.state = state;
     }
 
-void decsim_read_binary(trace)
+void decsim_read_binary (trace, read_fd)
     TRACE	*trace;
+    int		read_fd;
 {
-    int		in_fd;
     static struct bintrarec *buf, *last_buf;
     static struct bintrarec bufa;
     static struct bintrarec bufb;
@@ -349,20 +351,9 @@ void decsim_read_binary(trace)
     SIGNAL	*sig_ptr,*last_sig_ptr;
     VALUE	value;
     int		max_lw_pos=0;		/* Maximum position in buf that has trace data */
+    DTime	time_divisor;
 
-#ifndef VMS
-    /* The reads below rely on varible RMS records - Ultrix has no such thing */
-    if (DTPRINT) printf ("Binary traces are disabled under Ultrix.\n");
-    decsim_read_ascii (trace);
-    return;
-    /*NOTREACHED*/
-#endif
-
-    in_fd = open (trace->filename, O_RDONLY, 0);
-    if (in_fd<1) {
-	decsim_read_ascii (trace);
-	return;
-	}
+    time_divisor = time_units_to_multiplier (global->time_precision);
 
     /* Signal description data */
     last_sig_ptr = NULL;
@@ -372,7 +363,7 @@ void decsim_read_binary(trace)
     buf = &bufa;
     last_buf = &bufb;
 
-    for(;;) {
+    for (;;) {
 	/* Alternate between buffers so that we have the data from the last time slice */
 	if (last_buf == &bufb) {
 	    buf = &bufb;
@@ -383,53 +374,50 @@ void decsim_read_binary(trace)
 	    last_buf = &bufb;
 	    }
 
-	if (read( in_fd, buf, sizeof (struct bintrarec)) == 0) {
+	if (read (read_fd, buf, sizeof (struct bintrarec)) == 0) {
 	    break;
 	    }
 
-	switch( buf->tra$b_class) {
+	switch (buf->tra$b_class) {
 	    /***** CLASS: Header *****/
 	  case tra$k_mhr:
-	    switch( buf->tra$b_type) {
+	    switch (buf->tra$b_type) {
 	      case tra$k_mmh:
 	      case tra$k_mdr:
 		break;
 	      default:
-		if (DTPRINT) printf( "Unknown header type %d\n", buf->tra$b_type);
+		if (DTPRINT) printf ( "Unknown header type %d\n", buf->tra$b_type);
 		}
 	    break;
 
 	    /***** CLASS: Signal *****/
 	  case tra$k_sir:
-	    switch( buf->tra$b_type) {
+	    switch (buf->tra$b_type) {
 		/**** TYPE: Begin Of Signal Section ****/
 	      case tra$k_nns:
 		break;
 
 		/**** TYPE: End Of Signal Section ****/
 	      case tra$k_nss:
-		read_make_busses(trace);
+		read_make_busses (trace);
 		break;
 
 		/**** TYPE: Unknown ****/
 	      default:
-		if (DTPRINT) printf( "Unknown section identifier type %d\n", buf->tra$b_type);
+		if (DTPRINT) printf ("Unknown section identifier type %d\n", buf->tra$b_type);
 		}
 	    break;
 
 	    /***** CLASS: Data records *****/
 	  case tra$k_dr:
-	    switch( buf->tra$b_type) {
+	    switch (buf->tra$b_type) {
 
 		/**** TYPE: Node format data ****/
 	      case tra$k_nfd:
-		sig_ptr = (SIGNAL *)XtMalloc(sizeof(SIGNAL));
+		sig_ptr = (SIGNAL *)XtMalloc (sizeof (SIGNAL));
 		memset (sig_ptr, 0, sizeof (SIGNAL));
 		sig_ptr->trace = trace;
 		sig_ptr->file_pos = buf->TRA$L_BITPOS;
-		sig_ptr->bits = 0;	/* = buf->TRA$W_BITLEN; */
-		sig_ptr->lsb_index = 0;
-		sig_ptr->msb_index = 0;
 		/* if (DTPRINT) printf ("Reading signal format data, ptr=%d\n", sig_ptr); */
 
 		sig_ptr->file_type.flags = 0;
@@ -437,7 +425,7 @@ void decsim_read_binary(trace)
 
 		/* Save the maximum position in the trace */
 		if ((sig_ptr->file_pos >> 5) > max_lw_pos) {
-		    max_lw_pos =( (sig_ptr->file_pos + (sig_ptr->file_type.flag.four_state ? 2:1)
+		    max_lw_pos = ( (sig_ptr->file_pos + (sig_ptr->file_type.flag.four_state ? 2:1)
 			       * sig_ptr->bits ) >> 5) + 1 /* so over estimate */;
 		    }
 
@@ -452,7 +440,7 @@ void decsim_read_binary(trace)
 		/* if (DTPRINT) printf ("Reading signal name data, ptr=%d\n", sig_ptr); */
 		len = buf->TRA$W_NODNAMLEN;
 		sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
-		strncpy(sig_ptr->signame, buf->TRA$T_NODNAMSTR, (size_t) len);
+		strncpy (sig_ptr->signame, buf->TRA$T_NODNAMSTR, (size_t) len);
 		sig_ptr->signame[len] = '\0';
 		
 		last_sig_ptr = sig_ptr;
@@ -460,8 +448,8 @@ void decsim_read_binary(trace)
 
 		/**** TYPE: Node state data ****/
 	      case tra$k_nsr:
-		time = ((buf->TRA$L_TIME_LO>>1)&0x3FFFFFFF)/1000 +
-		    ((buf->TRA$L_TIME_HI)&0x3FFFFFFF) * (0x40000000 / 1000);
+		time = ((buf->TRA$L_TIME_LO>>1)&0x3FFFFFFF) / time_divisor +
+		    ((buf->TRA$L_TIME_HI)&0x3FFFFFFF) * (0x40000000 / time_divisor);
 
 		/* save start/ end time */
 		if (first_data) {
@@ -471,12 +459,10 @@ void decsim_read_binary(trace)
 
 		/* Compute first LW that has a different value in it */
 		next_different_lw_pos = trace->firstsig->file_pos >> 5;	/* Grab first pos in LWs */
-		if (!first_data) {
-		    while ( next_different_lw_pos <= max_lw_pos
-			   && ( ((long *)buf)[next_different_lw_pos]
-			       == ((long *)last_buf)[next_different_lw_pos] )) {
-			next_different_lw_pos++;
-			}
+		while ( next_different_lw_pos <= max_lw_pos
+		       && ( ((long *)buf)[next_different_lw_pos]
+			   == ((long *)last_buf)[next_different_lw_pos] )) {
+		    next_different_lw_pos++;
 		    }
 		/*
 		printf ("ST %d-%d %c%c%c%c%c: ", next_different_lw_pos, max_lw_pos,
@@ -490,7 +476,7 @@ void decsim_read_binary(trace)
 
 		/* save data for each signal */
 		for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-		    if ( next_different_lw_pos <= (sig_ptr->file_end_pos >> 5)) {
+		    if (( next_different_lw_pos <= (sig_ptr->file_end_pos >> 5)) || first_data) {
 			/* A bit in this signal's range has changed.  Decode the value.
 			   This signal itself may not have changed though, since there could
 			   be 31 of 32 signals in this LW that were not changed.  */
@@ -527,7 +513,7 @@ void decsim_read_binary(trace)
 
 		/**** TYPE: Unknown ****/
 	      default:
-		if (DTDEBUG) printf( "Unknown data record type %d\n", buf->tra$b_type);
+		if (DTDEBUG) printf ("Unknown data record type %d\n", buf->tra$b_type);
 		}
 	    break;
 
@@ -537,9 +523,8 @@ void decsim_read_binary(trace)
 
 	    /**** CLASS: Unknown ****/
 	  default:
-	    if (DTPRINT) printf( "Unknown record class %d, assuming ASCII\n", buf->tra$b_class);
-	    close (in_fd);
-	    decsim_read_ascii (trace);
+	    if (DTPRINT) printf ("Unknown record class %d, assuming ASCII\n", buf->tra$b_class);
+	    decsim_read_ascii (trace, read_fd, NULL);
 	    return;
 	    }
 	}
@@ -555,15 +540,14 @@ void decsim_read_binary(trace)
 	*/
 
     read_trace_end (trace);
-
-    close(in_fd);
     }
 
 
-void tempest_read(trace)
+void tempest_read (trace, read_fd)
     TRACE	*trace;
+    int		read_fd;
 {
-    int		f_ptr,status;
+    int		status;
     int		numBytes,numRows,numBitsRow,numBitsRowPad;
     int		sigChars,sigFlags,sigOffset,sigWidth;
     char		chardata[256];
@@ -576,35 +560,23 @@ void tempest_read(trace)
     VALUE	value;
 
     /*
-     ** Open the binary file file for reading
-     */
-    if (DTPRINT) printf("Opening File %s\n", trace->filename);
-    f_ptr = open(trace->filename,O_RDONLY,0);
-    if ( f_ptr == -1 ) {
-	if (DTPRINT) printf("Can't Open File %s\n", trace->filename);
-	sprintf(message,"Can't open file %s",trace->filename);
-	dino_error_ack(trace, message);
-	return;
-	}
-
-    /*
      ** Read the file identification block
      */
-    status = read(f_ptr, chardata, 4);
+    status = read (read_fd, chardata, 4);
     chardata[4]='\0';
-    if ( !status || strncmp(chardata,"BT0",3) ) {
-	if (DTPRINT) printf("Bad File Format (=%s)\n", chardata);
-	dino_error_ack(trace,"Bad File Format");
+    if (!status || strncmp (chardata,"BT0",3) ) {
+	if (DTPRINT) printf ("Bad File Format (=%s)\n", chardata);
+	dino_error_ack (trace,"Bad File Format");
 	return;
 	}
-    status = read(f_ptr, &numBytes, 4);
-    status = read(f_ptr, &trace->numsig, 4);
-    status = read(f_ptr, &numRows, 4);
-    status = read(f_ptr, &numBitsRow, 4);
-    status = read(f_ptr, &numBitsRowPad, 4);
+    status = read (read_fd, &numBytes, 4);
+    status = read (read_fd, &trace->numsig, 4);
+    status = read (read_fd, &numRows, 4);
+    status = read (read_fd, &numBitsRow, 4);
+    status = read (read_fd, &numBitsRowPad, 4);
 
     if (DTPRINT) {
-	printf("File Sig=%s Bytes=%d Signals=%d Rows=%d Bits/Row=%d Bits/Row(pad)=%d\n",
+	printf ("File Sig=%s Bytes=%d Signals=%d Rows=%d Bits/Row=%d Bits/Row(pad)=%d\n",
 	       chardata,numBytes,trace->numsig,numRows,numBitsRow,numBitsRowPad);
 	}
 
@@ -614,16 +586,16 @@ void tempest_read(trace)
      ** for the trace data, current trace location, etc.
      */
     trace->firstsig=NULL;
-    for(i=0;i<trace->numsig;i++) {
-	status = read(f_ptr, &sigFlags, 4);
-	status = read(f_ptr, &sigOffset, 4);
-	status = read(f_ptr, &sigWidth, 4);
-	status = read(f_ptr, &sigChars, 4);
-	status = read(f_ptr, chardata, sigChars);
+    for (i=0;i<trace->numsig;i++) {
+	status = read (read_fd, &sigFlags, 4);
+	status = read (read_fd, &sigOffset, 4);
+	status = read (read_fd, &sigWidth, 4);
+	status = read (read_fd, &sigChars, 4);
+	status = read (read_fd, chardata, sigChars);
 	chardata[sigChars] = '\0';
 	
 	if (DTPRINT) {
-	    printf("sigFlags=%x sigOffset=%d sigWidth=%d sigChars=%d sigName=%s\n",
+	    printf ("sigFlags=%x sigOffset=%d sigWidth=%d sigChars=%d sigName=%s\n",
 		   sigFlags,sigOffset,sigWidth,sigChars,chardata);
 	    }
 	
@@ -631,7 +603,8 @@ void tempest_read(trace)
 	 ** Initialize all pointers and other stuff in the signal
 	 ** description block
 	 */
-	sig_ptr = (SIGNAL *)XtMalloc(sizeof(SIGNAL));
+	sig_ptr = (SIGNAL *)XtMalloc (sizeof(SIGNAL));
+	memset (sig_ptr, 0, sizeof (SIGNAL));
 	sig_ptr->trace = trace;
 	sig_ptr->forward = NULL;
 	if (trace->firstsig==NULL) {
@@ -658,37 +631,37 @@ void tempest_read(trace)
 	/*
 	 ** Copy the signal name, add EOS delimiter and initialize the pointer to it
 	 */
-	sig_ptr->signame = (char *)XtMalloc(10+sigChars); /* allow extra space in case becomes vector */
+	sig_ptr->signame = (char *)XtMalloc (10+sigChars); /* allow extra space in case becomes vector */
 	for (j=0;j<sigChars;j++)
 	    sig_ptr->signame[j] = chardata[j];
 	sig_ptr->signame[sigChars] = '\0';
 	
 	/* Checks */
 	if (sig_ptr->file_type.flag.four_state != 0) {
-	    sprintf(message,"Four state tempest not supported.\nSignal %s will be wrong.",sig_ptr->signame);
-	    dino_warning_ack(trace, message);
+	    sprintf (message,"Four state tempest not supported.\nSignal %s will be wrong.",sig_ptr->signame);
+	    dino_warning_ack (trace, message);
 	    }
 
 	/*
 	 ** Read the pad bits
 	 */
-	pad_len = ( sigChars%8 ) ? 8 - (sigChars%8) : 0;
-	status = read(f_ptr, chardata, pad_len);
+	pad_len = (sigChars%8) ? 8 - (sigChars%8) : 0;
+	status = read (read_fd, chardata, pad_len);
 
 	last_sig_ptr = sig_ptr;
 	}
 
     /* Make the busses */
-    read_make_busses(trace);
+    read_make_busses (trace);
 
     /* Read the signal trace data
      * Pass 0-(numRows-1) reads the data, pass numRows processes last line */
     first_data = TRUE;
-    for(i=0;i<numRows;i++) {
+    for (i=0;i<numRows;i++) {
 	/* Read a row of data */
-	status = read(f_ptr, data, numBitsRowPad/8);
+	status = read (read_fd, data, numBitsRowPad/8);
 	if (DTPRINT) {
-	    printf("read: time=%d  data=%08x %08x\n", data[0], 
+	    printf ("read: time=%d  data=%08x %08x\n", data[0], 
 		   data[0], data[1]);
 	    }
 	
@@ -719,9 +692,6 @@ void tempest_read(trace)
 
 	first_data = FALSE;
 	}/* end for */
-
-    /* Close the file */
-    close(f_ptr);
 
     /* Now add EOT to each signal and reset the cptr */
     read_trace_end (trace);
