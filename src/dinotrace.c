@@ -238,7 +238,7 @@ char	*help_message ()
 Compiled %s for %s\n\
 \n\
 Written by Wilson Snyder\n\
-snyder@ricks.enet.dec.com or RICKS::SNYDER\n\
+snyder@segsrv.hlo.dec.com or SEGSRV::SNYDER\n\
 Versions before 4.3 by Allen Gallotta.\n\
 \n\
 Copyright 1993,1994,1995,1996 by Digital Equipment Corporation.\n\

@@ -1,6 +1,6 @@
 
 char dinopost[] = "% $Id$\n\
-% Contact RICKS::SNYDER with any problems with this document\n\
+% Contact snyder@segsrv.hlo.dec.com with any problems with this document\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
 \n\
