@@ -46,7 +46,7 @@
 #define MAXSIGLEN	256	/* Maximum length of signal names */
 #define MAXTIMELEN	20	/* Maximum length of largest time as a string */
 #define MAXFNAMELEN	200	/* Maximum length of file names */
-#define MAXSTATENAMES	130	/* Maximum number of state name translations */
+#define MAXSTATENAMES	256	/* Maximum number of state name translations */
 #define MAXVALUELEN	40	/* Maximum length of values or state names, 32hex digits + 4 sep + NULL */
 #define MAXGRIDS	4	/* Maximum number of grids */
 #define MAXSCREENWIDTH	5000	/* Maximum width of screen */
