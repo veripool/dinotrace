@@ -117,7 +117,7 @@
 /**********************************************************************/
 
 /* See the ascii map to have this make sense */
-#define issigchr(ch)  ( ((ch)>' ') && ((ch)!='=') && ((ch)!='\"') && ((ch)!='\'') )
+#define issigchr(ch)  ( ((ch)>' ') && ((ch)!='=') && ((ch)!='\"') )
 
 #define isstatechr(ch)  ( ((ch)>' ') && ((ch)!=',') && ((ch)!='=') && ((ch)!='{') && ((ch)!='}') && ((ch)!='\"') && ((ch)!='\'') )
 
