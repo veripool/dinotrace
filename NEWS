@@ -11,6 +11,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ***	Reread all traces on receiving a USR1 signal.  [Uwe Bonnes]
 
+****	Allow value searches on one-bit signals.  [Vitaly Oratovsky]
+
 
 * Changes in Dinotrace 9.1f  01/08/2002
 

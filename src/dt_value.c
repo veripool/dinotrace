@@ -506,6 +506,15 @@ void    string_to_value (
     val_minimize (value_ptr, NULL);
 }
 
+Boolean_t  val_zero_or_one (
+    const Value_t	*vptr)
+{
+    return ( (  vptr->siglw.stbits.state == STATE_0)
+	     || (vptr->siglw.stbits.state == STATE_1)
+	     || (vptr->siglw.stbits.state == STATE_B32
+		 && (vptr->number[0] == 1)));
+}
+
 Boolean_t  val_equal (
     const Value_t	*vptra,
     const Value_t	*vptrb)
@@ -546,6 +555,7 @@ void	val_update_search ()
     register int i;
     DCursor_t	*csr_ptr;
     Boolean_t	any_enabled;
+    Boolean_t	zero_or_one_search = FALSE;
     Boolean_t	matches[MAX_SRCH];	/* Cache the wildmat for each bit, so searching is faster */
     static Boolean_t enabled_lasttime = FALSE;
     int		prev_cursor;
@@ -560,8 +570,11 @@ void	val_update_search ()
     /* This saves 3% of the first reading time on large traces */
     any_enabled = enabled_lasttime; 	/* if all get disabled, we still need to clean up enables */
     for (i=0; i<MAX_SRCH; i++) {
-	if (global->val_srch[i].color != 0) any_enabled = TRUE;
-	if (global->val_srch[i].cursor != 0) any_enabled = TRUE;
+	if ((global->val_srch[i].color != 0)
+	    || (global->val_srch[i].cursor != 0)) {
+	    any_enabled = TRUE;
+	    if (val_zero_or_one(&global->val_srch[i].value)) zero_or_one_search = TRUE;
+	}
     }
     enabled_lasttime = FALSE;
 
@@ -573,12 +586,12 @@ void	val_update_search ()
     /* Search every trace for the value, mark the signal if it has it to speed up displaying */
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    if (sig_ptr->bits<2) {
-		/* Single bit signal, don't search for values */
-		continue;
-	    }
-	    
 	    if (any_enabled) {
+		if (!zero_or_one_search && sig_ptr->bits<2) {
+		    /* Single bit signal, don't search for values > 1 for speed */
+		    continue;
+		}
+	    
 		cursorize=0;
 		for (i=0; i<MAX_SRCH; i++) {
 		    matches[i] = 0;
@@ -588,6 +601,10 @@ void	val_update_search ()
 		     cptr = CPTR_NEXT(cptr)) {
 		    int color_to_assign = 0;
 		    switch (cptr->siglw.stbits.state) {
+		    case STATE_0:
+		    case STATE_1:
+			if (!zero_or_one_search) break;
+			/* FALLTHRU */
 		    case STATE_B32:
 		    case STATE_B128:
 		    case STATE_F32:
