@@ -295,22 +295,26 @@ void    val_to_string (
 	} else {
 	    uint_t enlw;
 	    if (value_ptr->siglw.stbits.state == STATE_B128
-		&& value_ptr->siglw.stbits.state != STATE_F128) {
+		|| value_ptr->siglw.stbits.state == STATE_F128) {
 		if (value_ptr->number[3]) {
 		    val_str_lw (radix_ptr, strg, sep, middle, value_ptr->number[3],
-				(value_ptr->siglw.stbits.state == STATE_F128)?value_ptr->number[7]:0);
+				((value_ptr->siglw.stbits.state == STATE_F128)
+				 ?value_ptr->number[7]:0));
 		    strg += strlen (strg);
 		    middle = TRUE;
 		}
-		if (value_ptr->number[2]) {
+		if (value_ptr->number[3] || value_ptr->number[2]) {
 		    val_str_lw (radix_ptr, strg, sep, middle, value_ptr->number[2],
-				(value_ptr->siglw.stbits.state == STATE_F128)?value_ptr->number[6]:0);
+				((value_ptr->siglw.stbits.state == STATE_F128)
+				 ?value_ptr->number[6]:0));
 		    strg += strlen (strg);
 		    middle = TRUE;
 		}
-		if (value_ptr->number[1]) {
+		if (value_ptr->number[3] || value_ptr->number[2]
+		    || value_ptr->number[1]) {
 		    val_str_lw (radix_ptr, strg, sep, middle, value_ptr->number[1],
-				(value_ptr->siglw.stbits.state == STATE_F128)?value_ptr->number[5]:0);
+				((value_ptr->siglw.stbits.state == STATE_F128)
+				 ?value_ptr->number[5]:0));
 		    strg += strlen (strg);
 		    middle = TRUE;
 		}

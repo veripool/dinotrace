@@ -1,11 +1,15 @@
 Dinotrace NEWS --  history of user-visible changes.
-Copyright (C) 1998-2000 Wilson Snyder.
+Copyright (C) 1998-2001 Wilson Snyder.
 Copyright (C) 1992-1997 Digital Equipment Corportation.
 See the end for copying conditions.
 
 The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
+
+* Changes in Dinotrace 9.1d  5/24/2001
+
+***	Fixed missing 0's in display of >64 bit numbers. [Amitvikram Rajkhowa]
 
 * Changes in Dinotrace 9.1c  2/13/2001
 
