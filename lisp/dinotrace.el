@@ -1,103 +1,108 @@
-;;;; dinotrace.el --- minor mode for displaying waveform signal values
+;; dinotrace.el --- minor mode for displaying waveform signal values
 ;;
 ;; $Id$
-;;
-;; Author          : Wilson Snyder <wsnyder@ultranet.com>
+
+;; Author          : Wilson Snyder <wsnyder@world.std.com>
 ;; Keywords        : languages
+
+;;; Commentary:
 ;;
-;;; INSTALLATION:
-;;;
-;;; Distributed from the web
-;;;	http://www.ultranet.com/~wsnyder/veripool/dinotrace
-;;;
-;;; This also requires verilog-mode.el from
-;;; 	http://www.surefirev.com/
-;;;
-;;; To use this package, simply put it in a file called "dinotrace.el" in
-;;; a Lisp directory known to Emacs (see `load-path').
-;;;
-;;; Byte-compile the file (in the dinotrace.el buffer, enter dired with C-x d
-;;; then press B yes RETURN)
-;;;
-;;; Put these lines in your ~/.emacs or site's site-start.el file (excluding
-;;; the START and END lines):
-;;;
-;;;	---INSTALLER-SITE-START---
-;;;	;; Dinotrace mode
-;;;	(autoload 'dinotrace-update "dinotrace" "Update dinotrace annotations in this buffer" t)
-;;;	(autoload 'dinotrace-mode   "dinotrace" "Toggle dinotrace annotations in this buffer" t)
-;;;	(global-set-key "\C-x\C-aa" 'dinotrace-update)
-;;;	(global-set-key "\C-x\C-ad" 'dinotrace-mode)
-;;;	---INSTALLER-SITE-END---
-;;;
-;;;
-;;; USAGE:
-;;;
-;;; Initial Usage:
-;;;   In Dinotrace:
-;;;	Call up a trace.  (Preferrably a trace which has many signals.)
-;;;     Place cursors where you what to know the values.
-;;;     Highlight (or search for) interesting signals.
-;;;     Press 'a'.
-;;;
-;;;   In Emacs:
-;;;	Visit a Verilog file.
-;;;	Press 'C-x C-a a'
-;;;	Annotations appear, with values in the same order and color as
-;;;     the cursors were in dinotrace.  Highlighted dinotrace signals are
-;;;	highlighted in the buffer also.  (Implicit wires are not annotated.)
-;;;     Lines at the top of the file show what the annotations are from.
-;;;
-;;; To put new annotations into Emacs:
-;;;
-;;;   In Dinotrace:
-;;;     Hit 'a'
-;;;
-;;;   In Emacs:
-;;;	Hit 'C-x C-a a'.
-;;;	All visible windows will be annotated.
-;;;
-;;; To remove annotations in Emacs:
-;;;   In Emacs:
-;;;	Make buffer non read-only with C-x C-q
-;;;	or C-u 0 M-x dinotrace-mode	(toggles dinotrace mode to be off)
-;;;
-;;;
-;;; HOW IT WORKS:
-;;;
-;;; Pressing 'a' (or Annotate from the menu) in Dinotrace creates a file
-;;; dinotrace.danno in your home directory.  This file contains the values
-;;; and signal colors.  Pressing C-x C-a a in Emacs causes it to read the
-;;; file, and match up the signals in the file with the verilog code.  This
-;;; match up does NOT know about design heiarchy.  It presumes that each
-;;; signal name is unique across the whole design (it strips
-;;; p_pcs_psm->FOOBAR_L to FOOBAR_L and will highlight any FOOBAR_L
-;;; signal.)
-;;;
-;;; After adding the annotations, Emacs marks the annotated buffer as
-;;; read only.  Changing the buffer to non-read-only will remove the
-;;; annotations.  Also, if a new annotation file is read, old annotations
-;;; will be removed.
-;;;
-;;; COPYING:
-;;;
-;;; Dinotrace.el is free software; you can redistribute it and/or modify
-;;; it under the terms of the GNU General Public License as published by
-;;; the Free Software Foundation; either version 2, or (at your option)
-;;; any later version.
-;;;
-;;; Dinotrace.el is distributed in the hope that it will be useful,
-;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;;; GNU General Public License for more details.
-;;; 
-;;; You should have received a copy of the GNU General Public License
-;;; along with Dinotrace; see the file COPYING.  If not, write to
-;;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-;;; Boston, MA 02111-1307, USA.
-;;;
+;; Distributed from the web
+;;	http://www.veripool.com
+;;
+;; This also requires verilog-mode.el from
+;; 	http://www.surefirev.com/
+;;
+;; To us this package, simply put it in a file called "dinotrace.el" in
+;; a Lisp directory known to Emacs (see `load-path').
+;;
+;; Byte-compile the file (in the dinotrace.el buffer, enter dired with C-x d
+;; then press B yes RETURN)
+;;
+;; Put these lines in your ~/.emacs or site's site-start.el file (excluding
+;; the START and END lines):
+;;
+;;	---INSTALLER-SITE-START---
+;;	;; Dinotrace mode
+;;	(autoload 'dinotrace-update "dinotrace" "Update dinotrace annotations in this buffer" t)
+;;	(autoload 'dinotrace-mode   "dinotrace" "Toggle dinotrace annotations in this buffer" t)
+;;	(global-set-key "\C-x\C-aa" 'dinotrace-update)
+;;	(global-set-key "\C-x\C-ad" 'dinotrace-mode)
+;;	---INSTALLER-SITE-END---
+;;
+;;
+;; USAGE:
+;;
+;; Initial Usage:
+;;   In Dinotrace:
+;;	Call up a trace.  (Preferrably a trace which has many signals.)
+;;     Place cursors where you what to know the values.
+;;     Highlight (or search for) interesting signals.
+;;     Press 'a'.
+;;
+;;   In Emacs:
+;;	Visit a Verilog file.
+;;	Press 'C-x C-a a'
+;;	Annotations appear, with values in the same order and color as
+;;     the cursors were in dinotrace.  Highlighted dinotrace signals are
+;;	highlighted in the buffer also.  (Implicit wires are not annotated.)
+;;     Lines at the top of the file show what the annotations are from.
+;;
+;; To put new annotations into Emacs:
+;;
+;;   In Dinotrace:
+;;     Hit 'a'
+;;
+;;   In Emacs:
+;;	Hit 'C-x C-a a'.
+;;	All visible windows will be annotated.
+;;
+;; To remove annotations in Emacs:
+;;   In Emacs:
+;;	Make buffer non read-only with C-x C-q
+;;	or C-u 0 M-x dinotrace-mode	(toggles dinotrace mode to be off)
+;;
+;;
+;; HOW IT WORKS:
+;;
+;; Pressing 'a' (or Annotate from the menu) in Dinotrace creates a file
+;; dinotrace.danno in your home directory.  This file contains the values
+;; and signal colors.  Pressing C-x C-a a in Emacs causes it to read the
+;; file, and match up the signals in the file with the verilog code.  This
+;; match up does NOT know about design heiarchy.  It presumes that each
+;; signal name is unique across the whole design (it strips
+;; p_pcs_psm->FOOBAR_L to FOOBAR_L and will highlight any FOOBAR_L
+;; signal.)
+;;
+;; After adding the annotations, Emacs marks the annotated buffer as
+;; read only.  Changing the buffer to non-read-only will remove the
+;; annotations.  Also, if a new annotation file is read, old annotations
+;; will be removed.
+;;
+;; COPYING:
+;;
+;; Dinotrace.el is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 2, or (at your option)
+;; any later version.
+;;
+;; Dinotrace.el is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;; 
+;; You should have received a copy of the GNU General Public License
+;; along with Dinotrace; see the file COPYING.  If not, write to
+;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+;; Boston, MA 02111-1307, USA.
+
+;;; History:
+;; 
+
+;;; Code:
 
 (require 'verilog-mode)
+
 (or (string-match "Revision: [456789]" verilog-mode-version)
     (string-match "Revision: 3\.[2-9][0-9]" verilog-mode-version)
     (string-match "Revision: 3\.1[3-9]" verilog-mode-version)
@@ -116,9 +121,9 @@
    (error nil))
  )
 
-;;;
-;;; Global Variables, user configurable
-;;;
+;;
+;; Global Variables, user configurable
+;;
 
 (defgroup dinotrace-mode nil
   "Interface to signal display tool"
@@ -201,9 +206,9 @@ before raising error.")
 annotatable mode, such as verilog, VHDL or C, and annotate-function highlights
 that buffer type.")
 
-;;;
-;;; Bindings
-;;;
+;;
+;; Bindings
+;;
 
 (global-set-key "\C-x\C-aa" 'dinotrace-update)
 
@@ -233,9 +238,9 @@ that buffer type.")
 			     dinotrace-mode-map global-map)
   )
 
-;;;
-;;; Menus
-;;;
+;;
+;; Menus
+;;
 
 ;; If a mode map isn't defvared then create it
 (if (not (boundp 'c++-mode-map))
@@ -265,11 +270,11 @@ that buffer type.")
 		      dinotrace-xemacs-menu))
 ;;(list verilog-mode-map sim-log-mode-map c-mode-map c++-mode-map))
 
-;;;
-;;; Internal Global Variables
-;;;
+;;
+;; Internal Global Variables
+;;
 
-(defconst dinotrace-help-address "wsnyder@ultranet.com"
+(defconst dinotrace-help-address "wsnyder@world.std.com"
   "Address accepting submissions of bug reports and questions.")
 
 ;;
@@ -313,7 +318,7 @@ that buffer type.")
 ;; These variables are created by the emacs annotation file
 
 (defvar dinotrace-program-version nil
-  "Name and version number of dinotrace (program not emacs code).
+  "Name and version number of dinotrace (program not Emacs code).
 Created in the annotation file by dinotrace.")
 
 (defvar dinotrace-socket-name nil
@@ -329,7 +334,7 @@ Created in the annotation file by dinotrace.")
 Created in the annotation file by dinotrace.")
 
 (defvar dinotrace-cursors nil
-  "Array of [[cursor-time color-number color-name face note] ...]
+  "Array of [[cursor-time color-number color-name face note] ...].
 Created in the annotation file by dinotrace.")
 
 (defvar dinotrace-signal-colors nil
@@ -340,9 +345,9 @@ Created in the annotation file by dinotrace.")
   "List of ((basename [signal-name sig-color note ([color value] ...)])  ...)
 Created in the annotation file by dinotrace.")
 
-;;;
-;;; Array element Macros 
-;;;
+;;
+;; Array element Macros 
+;;
 
 (defsubst dinotrace-buffer-annotate-func ()
   (nth 1 (assoc major-mode dinotrace-languages)))
@@ -398,12 +403,15 @@ Created in the annotation file by dinotrace.")
 (defsubst dinotrace-sigcolor-color-name (color-num)
   (aref (aref dinotrace-signal-colors color-num) 1))
 
-;;;
-;;; Mode
-;;;
+;;
+;; Mode
+;;
 
 (defun dinotrace-mode (&optional arg)
-  "Toggle Dinotrace Interface mode. \\<dinotrace-mode-map>
+  "Toggle Dinotrace Interface mode.
+
+ \\<dinotrace-mode-map>
+
 With arg, turn Dinotrace mode on if and only if arg is positive.
 
 When Dinotrace mode is enabled, the buffer is highlighted and locked to the
@@ -428,9 +436,7 @@ Mostly, the last letters in these commands match the Dinotrace program keys.
   \\[dinotrace-goto-and-list-signal]	- Add signal to bottom of display list
   \\[dinotrace-goto-and-list-signal-next-color]	- Add signal next color
   \\[dinotrace-highlight-value]	- Highlight value
-  \\[dinotrace-highlight-value-next-color]	- Highlight value next color
-
-"
+  \\[dinotrace-highlight-value-next-color]	- Highlight value next color"
   (interactive "P")
   (let ((on-p (if arg (> (prefix-numeric-value arg) 0)
 		(not dinotrace-mode))))
@@ -446,9 +452,9 @@ Mostly, the last letters in these commands match the Dinotrace program keys.
       (dinotrace-unannotate-buffer))
     ))
 
-;;;
-;;; Primary Functions
-;;;
+;;
+;; Primary Functions
+;;
 
 (defun dinotrace-update
   ()
@@ -457,8 +463,7 @@ Mostly, the last letters in these commands match the Dinotrace program keys.
 If there is a new annotation file, update all annotations in all visible
 widows, and remove outdated annotations from invisible buffers.
 
-See \\[dinotrace-mode] for more information on this mode.
-"
+See \\[dinotrace-mode] for more information on this mode."
   (interactive)
   ;; Read new file, if we need to
   (dinotrace-read nil)
@@ -473,7 +478,7 @@ See \\[dinotrace-mode] for more information on this mode.
   )
 
 (defun dinotrace-update-new-anno ()
-  "Perform a update due to sending a new annotation command to emacs."
+  "Perform a update due to sending a new annotation command to Emacs."
   (message "Telling Dinotrace to reannotate...")
   (dinotrace-read-till-timeout)
   (dinotrace-update))
@@ -502,9 +507,9 @@ If dinotrace annotated, then remove annotation also."
   (interactive "P")
   (dinotrace-toggle-read-only arg t))
 
-;;;
-;;; Unannotation
-;;;
+;;
+;; Unannotation
+;;
 
 ;; Remove annotations from every buffer
 (defun dinotrace-unannotate-all (&optional out-of-date-only)
@@ -525,8 +530,9 @@ If dinotrace annotated, then remove annotation also."
   (dinotrace-unannotate-all))
   
 (defun dinotrace-unannotate-buffer (&optional buffer)
-  "Remove `value' comments for current buffer.  This is just
-a revert-buffer which keeps the window and point in a similar place."
+  "Remove `value' comments for current buffer.
+This is just a revert-buffer which keeps the window and point in a
+similar place."
   (interactive)
   (if buffer (set-buffer buffer))
   (when (and dinotrace-mode (buffer-file-name))
@@ -587,9 +593,9 @@ a revert-buffer which keeps the window and point in a similar place."
       (force-mode-line-update)
       )))
 
-;;;
-;;; Annotation
-;;;
+;;
+;; Annotation
+;;
       
 (defun dinotrace-reannotate-all-windows ()
   "Check annotations in all buffers, update those that need it."
@@ -604,7 +610,7 @@ a revert-buffer which keeps the window and point in a similar place."
     (select-window sel-win)))
 
 (defun dinotrace-annotate-buffer (&optional buffer)
-  "Add `value' comments to buffer."
+  "Add `value' comments to BUFFER."
   ;; Do we need to do anything at all?
   (if buffer (set-buffer buffer))
   (unless (and dinotrace-mode
@@ -686,7 +692,7 @@ Restore those things."
 ;;
 
 (defun dinotrace-insert-faced (strg face)
-  "Insert a string with given face"
+  "Insert a string with given face."
   (setq strg (copy-sequence strg))
   (set-text-properties 0 (length strg)
 		       (list `face face) strg)
@@ -724,7 +730,7 @@ Restore those things."
        (count-lines 1 (point))))
 
 (defun dinotrace-annotate-verilog-buffer ()
-  "Internal, annotate a verilog-mode buffer's signals."
+  "Internal, annotate a `verilog-mode' buffer's signals."
   ;; Already save-excursioned and at beginning
   (let ((signames (dinotrace-read-signals)))
     (while signames
@@ -760,7 +766,7 @@ Restore those things."
 	))))
 
 (defun dinotrace-read-signals ()
-  "Internal, return list of signals in current module"
+  "Internal, return list of signals in current module."
   (unless (equal dinotrace-buffer-cache-time (visited-file-modtime))
     (set (make-local-variable 'dinotrace-buffer-cache-signals)
 	 (and (dinotrace-buffer-read-signals-func)
@@ -770,8 +776,8 @@ Restore those things."
   dinotrace-buffer-cache-signals)
 
 (defun dinotrace-annotate-verilog-signal (signal face)
-  ;; Internal, quick highlight SIGNAL with FACE
-  ;; Already save-excursioned
+  "Internal, quick highlight SIGNAL with FACE.
+Already save-excursioned"
   (goto-char (point-min))
   (while (search-forward signal nil t)
       (when (and ;; We start at end, so we can just test it
@@ -784,7 +790,7 @@ Restore those things."
     (goto-char (match-end 0))))
 
 (defun dinotrace-annotate-all-values ()
-  ;; Internal, highlight all values in this buffer
+  "Internal, highlight all values in this buffer."
   (let ((vals dinotrace-value-searches))
     (while vals
       (let ((value (dinotrace-value-value (car vals)))
@@ -793,8 +799,8 @@ Restore those things."
 	(setq vals (cdr vals))))))
 
 (defun dinotrace-annotate-verilog-value (value face)
-  ;; Internal, highlight a value in verilog OR sim-log-mode buffers
-  ;; Already save-excursioned
+  "Internal, highlight a value in verilog OR sim-log-mode buffers.
+Already save-excursioned"
   (let ((rexp (concat "[0_]*" value))
 	(case-fold-search t))
     (goto-char (point-min))
@@ -826,8 +832,8 @@ Restore those things."
     ))
 
 (defun dinotrace-annotate-sim-log-buffer ()
-  ;; Internal, annotate a sim-log-mode buffer's times."
-  ;; Already save-excursioned and at beginning
+  "Internal, annotate a sim-log-mode buffer's times.
+Already save-excursioned and at beginning"
   (let ((cursor-num 0)
 	(last-min (point-min)))
     (while (< cursor-num (length dinotrace-cursors))
@@ -843,8 +849,8 @@ Restore those things."
   (dinotrace-annotate-all-values))
 
 (defun dinotrace-annotate-sim-log-cursor (ctime face &optional note)
-  ;; Internal, add a cursor at TIME with COLOR to a sim-log-mode buffer
-  ;; Point must be at proper start position (or point-min)
+  "Internal, add a cursor at TIME with COLOR to a sim-log-mode buffer.
+Point must be at proper start position (or point-min)"
   (let ((ctimen (string-to-number ctime))
 	max-point)
     (while (and (re-search-forward sim-log-time-regexp nil t)
@@ -878,9 +884,9 @@ like \"notafoo12\"."
     (setq dinotrace-buffer-annotate-time nil)	; so definately do it
     (dinotrace-annotate-buffer)))
 
-;;;
-;;; Quick Annotation - Do all buffers when user hits cursor or signal keys
-;;;
+;;
+;; Quick Annotation - Do all buffers when user hits cursor or signal keys
+;;
       
 (defun dinotrace-nop (&rest foo))
 
@@ -930,9 +936,9 @@ like \"notafoo12\"."
 				      value face))))))
 	    (buffer-list))))
 
-;;;
-;;; Reading
-;;;
+;;
+;; Reading
+;;
 
 (defun dinotrace-read (&optional filename)
   "Read the dinotrace annotation optional FILENAME.
@@ -1029,9 +1035,9 @@ dinotrace-read-timout time."
 ;; Turn off font-lock to test this!
 ;;(insert (dinotrace-make-propertied (car dinotrace-signal-values)))
 
-;;;
-;;; Command sending utilities
-;;;
+;;
+;; Command sending utilities
+;;
       
 (defun dinotrace-find-time-default (point)
   "Find a time near the cursor.  Works in sim-log-mode."
@@ -1084,9 +1090,9 @@ dinotrace-read-timout time."
   (setq dinotrace-highlight-color (1+ dinotrace-highlight-color))
   (if (> dinotrace-highlight-color 9) (setq dinotrace-highlight-color 1)))
 
-;;;
-;;; Socket Interactive functions
-;;;
+;;
+;; Socket Interactive functions
+;;
       
 (defun dinotrace-goto-time (point)
   "Goto the time described after POINT.
@@ -1224,9 +1230,9 @@ If prefix-arg, then also put cursors where that value occurs."
   (dinotrace-increment-highlight-color)
   (dinotrace-highlight-value point))
 
-;;;
-;;; Socket Low Level
-;;;
+;;
+;; Socket Low Level
+;;
       
 (defun dinotrace-send-command (&rest commands)
   "Send a given configuration COMMAND to the dinotrace session."
@@ -1250,9 +1256,9 @@ If prefix-arg, then also put cursors where that value occurs."
 	))
 ;;(dinotrace-send-command "refresh\n")
 	 
-;;;
-;;; Utilities
-;;;
+;;
+;; Utilities
+;;
 
 
 ;;;###autoload
@@ -1268,9 +1274,9 @@ If prefix-arg, then also put cursors where that value occurs."
       dinotrace-socket-name
       dinotrace-traces))))
 
-;;;
-;;; Install ourselves
-;;; 
+;;
+;; Install ourselves
+;; 
 
 (unless (assq 'dinotrace-mode minor-mode-alist)
   (setq minor-mode-alist
@@ -1279,3 +1285,7 @@ If prefix-arg, then also put cursors where that value occurs."
 (provide 'dinotrace)
 
 ;; dinotrace.el ends here
+
+(provide 'dinotrace)
+
+;;; dinotrace.el ends here
