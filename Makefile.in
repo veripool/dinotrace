@@ -157,7 +157,7 @@ installdirs:
 
 install: all info installdirs install-info
 	for p in dinotrace; do \
-	  $(INSTALL_PROGRAM) $$p $(bindir)/$p; \
+	  $(INSTALL_PROGRAM) $$p $(bindir)/$$p; \
 	done
 	@echo ""
 	@echo "*** Lisp files not installed, you may want to"
