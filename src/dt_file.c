@@ -151,6 +151,7 @@ void fil_read_cb (trace)
     char	*pchar;
     char 	pipecmd[MAXFNAMELEN+20];
     pipecmd[0]='\0';	/* MIPS: no automatic aggregate initialization */
+    read_fp = NULL;	/* MIPS: no automatic aggregate initialization */
 
     if (DTPRINT_ENTRY) printf ("In fil_read_cb trace=%d filename=%s\n",trace,trace->filename);
     
@@ -229,6 +230,7 @@ void fil_read_cb (trace)
 	    close (read_fd);
 
 	    read_fp = popen (pipecmd, "r");
+	    read_fd = fileno (read_fp);
 	    if (!read_fp) {
 		/* Similar above! */
 		sprintf (message,"Can't create pipe with command '%s'", pipecmd);
@@ -760,6 +762,8 @@ void read_trace_end (trace)
     update_signal_states (trace);
     val_update_search ();
     sig_update_search ();
+
+    if (DTPRINT_FILE) printf ("read_trace_end: Done\n");
     }
 
 
