@@ -28,7 +28,6 @@
 
 #define DTVERSION	"Dinotrace V7.2b"
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
-#define EXPIRATION	((60*60*24)*15) /* 15days */
 #undef	EXPIRATION
 
 /* Turn off alignment for any structures that will be read/written onto Disk! */
