@@ -8,6 +8,9 @@ The contributors that suggested a given feature are shown in [].
 
 **	Added signal note and cursor note menu items.  [Shane Coffman]
 
+**	Searching for a non-vector signal will now return a vectored signal.
+	For example a pattern "Foo" will find "Foo[1:0]."  [Shane Coffman]
+
 ****	Save cursor notes in Customize save files.  [Thomas Dmukauskas]
 
 ****	Fix segfault when using grid timerep without grid. [Scott Venier]

@@ -107,7 +107,7 @@ static int wildmatii(
 	    return(TRUE);
 	}
     }
-    return(*s == '\0');
+    return(*s == '\0' || *s == '[');
 }
 #ifdef VMS
 #pragma inline (wildmatii)
@@ -132,7 +132,7 @@ static int wildmati(
 	    return(TRUE);
 	}
     }
-    return(*s == '\0');
+    return(*s == '\0' || *s == '[');
 }
 #ifdef VMS
 #pragma inline (wildmati)
@@ -158,7 +158,7 @@ int wildmat(
 	    return(TRUE);
 	}
     }
-    return(*s == '\0');
+    return(*s == '\0' || *s == '[');
 }
 #ifdef VMS
 #pragma inline (wildmat)
