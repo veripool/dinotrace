@@ -876,7 +876,10 @@ void	config_process_line_internal (trace, line, eof)
 /* EOF */
 void	config_process_eof (TRACE *trace)
 {
-    char	line[3] = "\0\0";
+    char	line[3];
+    line[0]='\0';	/* MIPS: no automatic aggregate initialization */
+    line[1]='\0';
+    line[2]='\0';
     config_process_line_internal (trace, line, TRUE);
     }
 
