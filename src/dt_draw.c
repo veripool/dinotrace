@@ -66,7 +66,10 @@ void draw_string_fit (trace, textoccupied, x, y, font, strg)
 
     /* Test where the text will be printed, if printing occupies it, then abort printing it */
     for (testx = minx;  testx <= maxx; testx++) {
-	if (textoccupied[testx] == TRUE) break;
+	if ((testx < 0)
+	    || (testx >= MAXSCREENWIDTH)
+	    || (textoccupied[testx] == TRUE))
+	    break;
     }
 
     if (testx > maxx) {
