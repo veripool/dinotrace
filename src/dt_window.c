@@ -124,8 +124,7 @@ void hscroll_drag(w,trace,cb)
 {
     int inc;
 
-    arglist[0].name = XmNvalue;
-    arglist[0].value = (int)&inc;
+    XtSetArg (arglist[0], XmNvalue, &inc);
     XtGetValues(trace->hscroll,arglist,1);
     if (DTPRINT) printf("inc=%d\n",inc);
 

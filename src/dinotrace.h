@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V6.0"	/* also change in dinopost.h */
+#define DTVERSION	"Dinotrace V6.1"	/* also change in dinopost.h */
 
 #define MAXSIGLEN	128	/* Maximum length of signal names */
 #define MAXFNAMELEN	128	/* Maximum length of file names */
@@ -46,13 +46,16 @@
 #define DC_SIG_ADD	2	/* XC_sb_left_arrow	Signal Add */
 #define DC_SIG_MOVE_2	2	/* XC_sb_left_arrow	Signal Move (place) */
 #define DC_SIG_MOVE_1	3	/* XC_sb_right_arrow	Signal Move (pick) */
+#define DC_SIG_COPY_2	2	/* XC_sb_left_arrow	Signal Copy (place) */
+#define DC_SIG_COPY_1	3	/* XC_sb_right_arrow	Signal Copy (pick) */
 #define DC_SIG_DELETE	4	/* XC_hand1		Signal Delete */
+#define DC_SIG_HIGHLIGHT 10	/* XC_spraycan		Signal Highlight */
 #define DC_CUR_ADD	5	/* XC_center_ptr	Cursor Add */
 #define DC_CUR_MOVE	6	/* XC_sb_h_double_arrow	Cursor Move (drag) */
 #define DC_CUR_DELETE	7	/* XC_X_cursor		Cursor Delete */
+#define DC_CUR_HIGHLIGHT 10	/* XC_spraycan		Cursor Highlight */
 #define DC_ZOOM_1	8	/* XC_left_side		Zoom point 1 */
 #define DC_ZOOM_2	9	/* XC_right_side	Zoom point 2 */
-#define DC_SIG_HIGHLIGHT 10	/* XC_spraycan		Signal Highlight */
 
 /* All of the states a signal can be in (have only 3 bits so 0-7) */
 #define STATE_0   0
@@ -147,10 +150,15 @@ typedef struct {
     } SIGNALNAMES;
 
 typedef struct {
-    Widget menu;
-    Widget pulldownmenu[10];
-    Widget pulldownentry[10];
-    Widget pulldown[63];
+    Widget	menu;
+    Widget	pdmenu[10];
+    Widget	pdmenubutton[10];
+    Widget	pdentry[20];
+    Widget	pdentrybutton[63];
+    Widget	pdsubbutton[2+MAX_SRCH*4];
+    int		sig_highlight_pds;
+    int		cur_highlight_pds;
+    int		cur_add_pds;
     } MENU_WDGTS;
 
 typedef struct {
@@ -241,6 +249,8 @@ typedef struct {
 typedef struct st_signal_sb {
     struct st_signal_sb *forward;	/* Forward link to next signal */
     struct st_signal_sb *backward;	/* Backward link to previous signal */
+
+    struct st_signal_sb *copyof;	/* Link to signal this is copy of (or NULL) */
     struct st_trace	*trace;		/* Trace signal belongs to */
 
     char		*signame;	/* Signal name */
@@ -308,16 +318,14 @@ typedef struct st_trace {
     int			grid_res_auto;	/* Number or status of automatic grid resolution */
     int			grid_align_auto; /* Number or status of automatic grid alignment */
 
+    int			cursor_vis;	/* True if cursors are visible */
+
     SIGNALNAMES		*signame;
-    SIGNAL_LW		*(*bptr)[];	/* Signal information for beginning of trace */
-    SIGNAL_LW		*(*cptr)[];	/* Signal information for current time */
+    short int		*bus;
+    GC                  gc;
     int			start_time;	/* Time of beginning of trace */
     int			end_time;	/* Time of ending of trace */
     int			click_time;	/* time clicked on for res_zoom_click */
-    short int		*bus;
-    GC                  gc;
-
-    int			cursor_vis;	/* True if cursors are visible */
 
     XFontStruct		*text_font;	/* Display's Text font */
     int			numpag;		/* Number of pages in dt_printscreen */
@@ -346,7 +354,9 @@ typedef struct {
     char		directory[200];	/* Current directory name */
 
     int			numcursors;	/* Number of cursors */
-    int			cursors[MAX_CURSORS];	/* Time of each cursor */
+    int		cursors[MAX_CURSORS];	/* Time of each cursor */
+    int		cursor_color[MAX_CURSORS]; /* Color of each cursor */
+    int			highlight_color; /* Color selected for sig/cursor highlight */
 
     int			time;		/* Time of trace at left edge of screen */
     float		res;		/* Resolution of graph width (gadgets) */

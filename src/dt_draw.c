@@ -130,8 +130,9 @@ void draw(trace)
 
 	/*
 	if (temp_color > 9) temp_color = 0;
-	sprintf (temp_strg, "%d", temp_color);
 	XSetForeground (global->display, trace->gc, trace->xcolornums[temp_color++]);
+	sprintf (temp_strg, "%d", temp_color);
+	XSetForeground (global->display, trace->gc, temp_color++);
 	*/
 
 	/* calculate the location to draw the signal name and draw it */
@@ -140,6 +141,7 @@ void draw(trace)
 	y1 = trace->ystart + (c+1) * trace->sighgt - SIG_SPACE - yfntloc;
 	XDrawString(global->display, trace->wind, trace->gc, x1, y1,
 		    sig_ptr->signame, strlen(sig_ptr->signame) );
+
 	/*
 	XDrawString(global->display, trace->wind, trace->gc, x1, y1,
 		    temp_strg, strlen(temp_strg) );
@@ -429,11 +431,15 @@ void draw(trace)
 	y1 = 25;
 	y2 = ( (int)((trace->height-trace->ystart)/trace->sighgt) - 1 ) *
 	    trace->sighgt + trace->sighgt/2 + trace->ystart + 2;
-	for (i=0; i < global->numcursors; i++)
-	    {
+
+	for (i=0; i < global->numcursors; i++) {
 	    /* check if cursor is on the screen */
-	    if (global->cursors[i] > global->time)
-		{
+	    if (global->cursors[i] > global->time) {
+
+		/* Change color */
+		XSetForeground (global->display, trace->gc,
+				trace->xcolornums[global->cursor_color[i]]);
+
 		/* draw the cursor */
 		x1 = global->cursors[i] * global->res - adj;
 		XDrawLine(global->display,trace->wind,trace->gc,x1,y1,x1,y2);
@@ -475,6 +481,9 @@ void draw(trace)
 	    }
 	}
     
+    /* Back to default color */
+    XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
+
     } /* End of DRAW */
 
 
@@ -546,7 +555,7 @@ void	update_search ()
 		}
 	    
 	    found=0;
-	    cptr = (SIGNAL_LW *)(sig_ptr)->cptr;
+	    cptr = (SIGNAL_LW *)(sig_ptr)->bptr;
 	    
 	    for (; !found && (cptr->time != EOT); cptr += sig_ptr->inc) {
 		switch (cptr->state) {

@@ -24,12 +24,13 @@ TRACE *create_trace();
 extern void
     ps_rf(), ps_grid(), ps_cursor(), 
     cb_window_expose(), cb_window_focus(), 
-    cb_read_trace(), cb_chg_res(), cb_inc_res(), cb_dec_res(), 
-    cb_reread_trace(), cb_begin(), cb_end(), cb_zoom_res(), cb_full_res(), 
+    cb_chg_res(), cb_inc_res(), cb_dec_res(), 
+    cb_begin(), cb_end(), cb_zoom_res(), cb_full_res(), 
     res_zoom_click_ev(), 
     
     /* trace routines */
-    cb_open_trace(), cb_close_trace(), cb_exit_trace(), cb_clear_trace(),
+    trace_open_cb(), trace_close_cb(), trace_exit_cb(), trace_clear_cb(),
+    trace_read_cb(), trace_reread_cb(), 
     init_globals(),
 
     /* customize routines */
@@ -41,7 +42,8 @@ extern void
     cus_hit_return(), cus_restore_cb(), cus_reread_cb(), 
     
     /* cursor routines */
-    cur_add_cb(), cur_mov_cb(), cur_del_cb(), cur_clr_cb(), 
+    cur_add_cb(), cur_mov_cb(), cur_del_cb(), cur_clr_cb(),
+    cur_highlight_cb(), cur_highlight_ev(),
     cur_add_ev(), cur_move_ev(), cur_delete_ev(), clear_cursor(), 
     
     /* config routines */
@@ -52,10 +54,10 @@ extern void
     grid_align_ev(), 
     
     /* signal routines */
-    sig_add_cb(), sig_mov_cb(), sig_del_cb(), sig_reset_cb(), 
-    sig_selected_cb(), sig_ok_cb(), sig_cancel_cb(), 
-    sig_add_ev(), sig_move_ev(), sig_delete_ev(), 
-    sig_highlight_cb(), sig_highlight_ev(),
+    sig_add_cb(), sig_add_ev(), sig_mov_cb(), sig_move_ev(),
+    sig_del_cb(), sig_delete_ev(), sig_copy_cb(), sig_copy_ev(),
+    sig_highlight_cb(), sig_highlight_ev(), sig_reset_cb(), 
+    sig_selected_cb(), sig_ok_cb(), sig_cancel_cb(),
     sig_search_cb(), sig_search_ok_cb(), sig_search_cancel_cb(),
     sig_search_apply_cb(),
     

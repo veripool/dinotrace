@@ -33,12 +33,20 @@ void    cur_add_cb(w, trace, cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    
+    int i;
+
     if (DTPRINT) printf("In cur_add_cb - trace=%d\n",trace);
     
     /* remove any previous events */
     remove_all_events(trace);
     
+    global->highlight_color = 0;
+    for (i=1; i<=MAX_SRCH; i++) {
+	if (w == trace->menu.pdsubbutton[i + trace->menu.cur_add_pds]) {
+	    global->highlight_color = i;
+	    }
+	}
+
     /* process all subsequent button presses as cursor adds */
     set_cursor (trace, DC_CUR_ADD);
     add_event (ButtonPressMask, cur_add_ev);
@@ -88,6 +96,7 @@ void    cur_clr_cb(w, trace, cb)
     /* clear the cursor array to zero */
     for (i=0; i < MAX_CURSORS; i++) {
 	global->cursors[i] = 0;
+	global->cursor_color[i] = 0;
 	}
     
     /* reset the number of cursors */
@@ -110,8 +119,7 @@ void    cur_add_ev(w, trace, ev)
     if (DTPRINT) printf("In add cursor - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
     
     /* check if there is room for another cursor */
-    if (global->numcursors >= MAX_CURSORS)
-	{
+    if (global->numcursors >= MAX_CURSORS) {
 	sprintf(message,"Reached max of %d cursors in display",global->numcursors);
 	dino_warning_ack(trace,message);
 	return;
@@ -123,17 +131,17 @@ void    cur_add_ev(w, trace, ev)
     
     /* put into cursor array in chronological order */
     i = 0;
-    while ( time > global->cursors[i] && global->cursors[i] != 0)
-	{
+    while ( time > global->cursors[i] && global->cursors[i] != 0) {
 	i++;
 	}
     
-    for (j=global->numcursors; j > i; j--)
-	{
+    for (j=global->numcursors; j > i; j--) {
 	global->cursors[j] = global->cursors[j-1];
+	global->cursor_color[j] = global->cursor_color[j-1];
 	}
     
     global->cursors[i] = time;
+    global->cursor_color[i] = global->highlight_color;
     global->numcursors++;
     
     /* redraw the screen with new cursors */
@@ -145,45 +153,24 @@ void    cur_move_ev(w, trace, ev)
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    int		i,j,time;
+    int		csrnum,j,time;
     int		x1,x2,y1,y2;
     static	last_x = 0;
+    int		csrcolor;
     XEvent	event;
     XMotionEvent *em;
     XButtonEvent *eb;
     
     if (DTPRINT) printf("In cursor_mov\n");
     
-    /* check if there are any cursors to move */
-    if (global->numcursors <= 0)
-	{
-	dino_warning_ack(trace,"No cursors to move");
-	return;
-	}
-    
     /* convert x value to a time value */
-    time = posx_to_time (trace, ev->x);
-    if (time<0) return;
+    csrnum = posx_to_cursor (trace, ev->x);
+    if (csrnum<0) return;
     
-    /* find the closest cursor */
-    i = 0;
-    while ( time > global->cursors[i] && i < global->numcursors)
-	{
-	i++;
-	}
-    
-    /* i is between cursors[i-1] and cursors[i] - determine which is closest */
-    if ( i )
-	{
-	if (global->cursors[i]-time > time-global->cursors[i-1] || 
-	    i == global->numcursors)
-	    {
-	    i--;
-	    }
-	}
-    
-    /* global->cursors[i] is the cursor to be moved - calculate starting x */
-    last_x = (global->cursors[i] - global->time)* global->res + global->xstart;
+    csrcolor = global->cursor_color[csrnum];
+
+    /* global->cursors[csrnum] is the cursor to be moved - calculate starting x */
+    last_x = (global->cursors[csrnum] - global->time)* global->res + global->xstart;
     
     /* not sure why this has to be done but it must be done */
     XUngrabPointer(XtDisplay(trace->work),CurrentTime);
@@ -212,6 +199,7 @@ void    cur_move_ev(w, trace, ev)
 	/* if the pointer moved, erase previous line and draw new one */
 	if (event.type == MotionNotify)
 	    {
+	    XSetForeground (global->display, trace->gc, trace->xcolornums[csrcolor]);
 	    em = (XMotionEvent *)&event;
 	    x1 = x2 = last_x;
 	    y1 = 25;
@@ -220,23 +208,21 @@ void    cur_move_ev(w, trace, ev)
 	    x1 = x2 = em->x;
 	    XDrawLine(global->display,trace->wind,trace->gc,x1,y1,x2,y2);
 	    last_x = em->x;
+	    XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
 	    }
 	
 	/* if window was exposed, must redraw it */
-	if (event.type == Expose)
-	    {
+	if (event.type == Expose) {
 	    cb_window_expose(0,trace);
 	    }
 	
 	/* if window was resized, must redraw it */
-	if (event.type == ConfigureNotify)
-	    {
+	if (event.type == ConfigureNotify) {
 	    cb_window_expose(0,trace);
 	    }
 	
 	/* button released - calculate cursor position and leave the loop */
-	if (event.type == ButtonRelease)
-	    {
+	if (event.type == ButtonRelease) {
 	    eb = (XButtonReleasedEvent *)&event;
 	    time = posx_to_time (trace, eb->x);
 	    break;
@@ -252,22 +238,24 @@ void    cur_move_ev(w, trace, ev)
     XChangeGC(global->display,trace->gc,GCFunction,&xgcv);
     
     /* squeeze cursor array, effectively removing cursor that moved */
-    for (j=i;j<global->numcursors;j++)
+    for (j=csrnum;j<global->numcursors;j++) {
 	global->cursors[j] = global->cursors[j+1];
+	global->cursor_color[j] = global->cursor_color[j+1];
+	}
     
     /* put into cursor array in chronological order */
-    i = 0;
-    while ( time > global->cursors[i] && global->cursors[i] != 0)
-	{
-	i++;
+    csrnum = 0;
+    while ( time > global->cursors[csrnum] && global->cursors[csrnum] != 0) {
+	csrnum++;
 	}
     
-    for (j=global->numcursors; j > i; j--)
-	{
+    for (j=global->numcursors; j > csrnum; j--) {
 	global->cursors[j] = global->cursors[j-1];
+	global->cursor_color[j] = global->cursor_color[j-1];
 	}
     
-    global->cursors[i] = time;
+    global->cursors[csrnum] = time;
+    global->cursor_color[csrnum] = csrcolor;
     
     /* redraw the screen with new cursor position */
     redraw_all (trace);
@@ -278,39 +266,63 @@ void    cur_delete_ev(w, trace, ev)
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    int		i,j,time;
+    int		csrnum,j;
     
     if (DTPRINT) printf("In cur_delete_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
     
-    /* check if there are any cursors to delete */
-    if (global->numcursors <= 0)
-	{
-	dino_warning_ack(trace,"No cursors to delete");
-	return;
-	}
-    
-    time = posx_to_time (trace, ev->x);
-    if (time<0) return;
-    
-    /* find the closest cursor */
-    i = 0;
-    while ( time > global->cursors[i] ) {
-	i++;
-	}
-    
-    /* i is between cursors[i-1] and cursors[i] - determine which is closest */
-    if ( i ) {
-	if ( global->cursors[i] - time > time - global->cursors[i-1] ) {
-	    i--;
-	    }
-	}
+    csrnum = posx_to_cursor (trace, ev->x);
+    if (csrnum<0) return;
     
     /* delete the cursor */
-    for (j=i; j < global->numcursors; j++) {
+    for (j=csrnum; j < global->numcursors; j++) {
 	global->cursors[j] = global->cursors[j+1];
+	global->cursor_color[j] = global->cursor_color[j+1];
 	}
     
     global->numcursors--;
+    
+    /* redraw the screen with new cursors */
+    redraw_all (trace);
+    }
+
+void    cur_highlight_cb(w,trace,cb)
+    Widget			w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    int i;
+
+    if (DTPRINT) printf("In cur_highlight_cb - trace=%d\n",trace);
+    
+    /* remove any previous events */
+    remove_all_events(trace);
+     
+    global->highlight_color = 0;
+    for (i=1; i<=MAX_SRCH; i++) {
+	if (w == trace->menu.pdsubbutton[i + trace->menu.cur_highlight_pds]) {
+	    global->highlight_color = i;
+	    }
+	}
+
+    /* process all subsequent button presses as signal deletions */ 
+    set_cursor (trace, DC_CUR_HIGHLIGHT);
+    add_event (ButtonPressMask, cur_highlight_ev);
+    }
+
+void    cur_highlight_ev(w, trace, ev)
+    Widget		w;
+    TRACE		*trace;
+    XButtonPressedEvent	*ev;
+{
+    int		csrnum,j;
+    
+    if (DTPRINT) printf("In cur_highlight_ev - trace=%d x=%d y=%d\n",trace,ev->x,ev->y);
+    
+    csrnum = posx_to_cursor (trace, ev->x);
+    if (csrnum<0) return;
+    
+    /* change color */
+    global->cursor_color[csrnum] = global->highlight_color;
     
     /* redraw the screen with new cursors */
     redraw_all (trace);

@@ -72,7 +72,7 @@ void free_signals (trace, sig_pptr, select)
 	    if (sig_ptr) sig_ptr->backward = back_ptr;
 	
 	    /* free the signal structure */
-	    XtFree (tmp_sig_ptr->bptr);
+	    if (tmp_sig_ptr->copyof == NULL) XtFree (tmp_sig_ptr->bptr);
 	    XtFree (tmp_sig_ptr);
 	    }
 	else {
@@ -116,30 +116,30 @@ void free_data (trace)
     trace->signame = NULL;
     }
 
-void cb_read_trace(w,trace)
+void trace_read_cb(w,trace)
     Widget		w;
     TRACE		*trace;
 {
-    if (DTPRINT) printf("In cb_read_trace - trace=%d\n",trace);
+    if (DTPRINT) printf("In trace_read_cb - trace=%d\n",trace);
 
     /* get the filename */
     get_file_name(trace);
     }
 
-void cb_reread_trace(w,trace)
+void trace_reread_cb(w,trace)
     Widget		w;
     TRACE		*trace;
 {
     char *semi;
 
     if (!trace->loaded)
-	cb_read_trace(w,trace);
+	trace_read_cb(w,trace);
     else {
 	/* Drop ;xxx */
 	if (semi = strchr(trace->filename,';'))
 	    *semi = '\0';
 	
-	if (DTPRINT) printf("In cb_reread_trace - rereading file=%s\n",trace->filename);
+	if (DTPRINT) printf("In trace_reread_cb - rereading file=%s\n",trace->filename);
 	
 	/* read the file */
 	cb_fil_read(trace);
@@ -487,14 +487,17 @@ cvd2d(trace, line, bus, flag )
     unsigned int value[3];
     int		bitcnt;
     char	zarr[97];
+    char	Zarr[97];
     char	tmp[100];
     unsigned int diff;
     register	char *cp;
     SIGNAL_SB	*sig_ptr;
 
     /* initialize the string to 96 Z's */
-    for (i=0;i<96;i++)
-	zarr[i] = 'Z';
+    for (i=0;i<96;i++) {
+	zarr[i] = 'z';
+	Zarr[i] = 'Z';
+	}
 
     /* point to the first signal in the display */
     sig_ptr = trace->firstsig;
@@ -524,11 +527,10 @@ cvd2d(trace, line, bus, flag )
 	    tmp[*(bus+i)+1] = '\0';
 	    
 	    /* determine the state of the bus */
-	    if ( strncmp(tmp,zarr,*(bus+i)+1) == 0 )
+	    if ( (strncmp(tmp,zarr,*(bus+i)+1) == 0 )
+		|| (strncmp(tmp,Zarr,*(bus+i)+1) == 0 ))
 		state = STATE_Z;
-	    else if (strchr(tmp,'U') != 0 )
-		state = STATE_U;
-	    else if (strchr(tmp,'Z') != 0 )
+	    else if (strpbrk(tmp,"UuZz") != 0 )
 		state = STATE_U;
 	    else {
 		/* compute the value - need to fix for 64 and 96 */
@@ -638,6 +640,8 @@ cvd2d(trace, line, bus, flag )
 	      case '1': state = STATE_1; break;
 	      case 'U': state = STATE_U; break;
 	      case 'Z': state = STATE_Z; break;
+	      case 'u': state = STATE_U; break;
+	      case 'z': state = STATE_Z; break;
 	      default: 
 		if (DTDEBUG) printf("Unknown State: %c\n",line[9+j]);
 		}

@@ -128,6 +128,7 @@ void    remove_all_events(trace)
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,cur_add_ev,trace_ptr);
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,cur_move_ev,trace_ptr);
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,cur_delete_ev,trace_ptr);
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,cur_highlight_ev,trace_ptr);
 	
 	/* remove all possible events due to grid options */ 
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,grid_align_ev,trace_ptr);
@@ -135,6 +136,7 @@ void    remove_all_events(trace)
 	/* remove all possible events due to signal options */ 
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_add_ev,trace_ptr);
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_move_ev,trace_ptr);
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_copy_ev,trace_ptr);
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_delete_ev,trace_ptr);
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_highlight_ev,trace_ptr);
 	}
@@ -750,3 +752,34 @@ SIGNAL_SB	*posy_to_signal(trace,y)
     }
 
 
+
+#pragma inline (posx_to_cursor)
+int	posx_to_cursor(trace, x)
+    /* convert x value to the index of the nearest cursor, return -1 if invalid click */
+    TRACE *trace;
+    int x;
+{
+    int time;
+    int i;
+
+    /* check if there are any cursors */
+    if (global->numcursors <= 0) {
+	return (-1);
+	}
+    
+    time = posx_to_time (trace, x);
+    if (time<0) return (-1);
+    
+    /* find the closest cursor */
+    i = 0;
+    while ( (time > global->cursors[i]) && ((i+1) < global->numcursors) ) {
+	i++;
+	}
+    
+    /* i is between cursors[i-1] and cursors[i] - determine which is closest */
+    if ( i && ( (global->cursors[i] - time) > (time - global->cursors[i-1]) ) ) {
+	i--;
+	}
+
+    return (i);
+    }

@@ -73,13 +73,13 @@ void set_menu_closes ()
 	}
     }
 
-void cb_open_trace(w,trace)
+void trace_open_cb(w,trace)
     Widget		w;
     TRACE		*trace;
 {
     int xp,yp,xs,ys;
 
-    if (DTPRINT) printf("In open_trace - trace=%d\n",trace);
+    if (DTPRINT) printf("In trace_open - trace=%d\n",trace);
 
     XtSetArg(arglist[0], XmNheight, (int)&ys);
     XtSetArg(arglist[1], XmNwidth, (int)&xs);
@@ -93,13 +93,13 @@ void cb_open_trace(w,trace)
     create_trace (xs, ys/2, xp, yp+ys/2);
     }
 
-void cb_close_trace(w,trace)
+void trace_close_cb(w,trace)
     Widget		w;
     TRACE		*trace;
 {
     TRACE	*trace_ptr;
 
-    if (DTPRINT) printf("In close_trace - trace=%d\n",trace);
+    if (DTPRINT) printf("In trace_close - trace=%d\n",trace);
 
     /* clear the screen */
     XClearWindow(global->display, trace->wind);
@@ -123,7 +123,7 @@ void cb_close_trace(w,trace)
     set_menu_closes();
     }
 
-void cb_clear_trace (w,trace)
+void trace_clear_cb (w,trace)
     Widget		w;
     TRACE		*trace;
 {
@@ -136,7 +136,7 @@ void cb_clear_trace (w,trace)
     for (trace_ptr = global->trace_head; trace_ptr; ) {
 	trace_next = trace_ptr->next_trace;
 	if (trace_ptr != trace) {
-	    cb_close_trace (w, trace_ptr);
+	    trace_close_cb (w, trace_ptr);
 	    }
 	trace_ptr = trace_next;
 	}
@@ -153,17 +153,17 @@ void cb_clear_trace (w,trace)
     init_globals();
     }
 
-void cb_exit_trace (w,trace)
+void trace_exit_cb (w,trace)
     Widget		w;
     TRACE		*trace;
 {
     TRACE		*trace_next;
 
-    if (DTPRINT) printf("In cb_exit_trace - trace=%d\n",trace);
+    if (DTPRINT) printf("In trace_exit_cb - trace=%d\n",trace);
 
     for (trace = global->trace_head; trace; ) {
 	trace_next = trace->next_trace;
-	cb_close_trace (w, trace);
+	trace_close_cb (w, trace);
 	trace = trace_next;
 	}
 
@@ -265,10 +265,13 @@ TRACE *create_trace (xs,ys,xp,yp)
 {
     char	string[20];
     int		x1,x2;
-    int		pd=0,pde=0;
+    int		i;
+    int		pd=0,pde=0,pds=0;
     TRACE	*trace;
     int		argc_copy;
     char	**argv_copy;
+    XColor	xcolor,xcolor2;
+    Colormap	cmap;
     
     /*** alloc space for trace to display state block ***/
     trace = (TRACE *)XtMalloc( sizeof(TRACE) );
@@ -307,81 +310,172 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtAddCallback(trace->main, XmNfocusCallback, cb_window_focus, trace);
 #endif
     
+    /* Colors:
+	Black, White, Aquamarine, Blue, BlueViolet, Brown, CadetBlue, Coral,
+	CornflowerBlue, Cyan, DarkGreen, DarkOliveGreen, DarkOrchid, DarkSlateBlue,
+	DarkSlateGrey, DarkTurquoise, Firebrick, ForestGreen, Gold, Goldenrod, Green,
+	GreenYellow, IndianRed, Khaki, LightBlue, LightGrey, LightSteelBlue, LimeGreen,
+	Magenta, Maroon, MediumAquamarine, MediumForestGreen, MediumGoldenrod,
+	MediumOrchid, MediumSeaGreen, MediumSlateBlue, MediumSpringGreen,
+	MediumTurquoise, MidnightBlue, NavyBlue, Orange, OrangeRed, Orchid, PaleGreen,
+	Pink, Plum, Red, Salmon, SeaGreen, Sienna, SkyBlue, SlateBlue, SpringGreen,
+	SteelBlue, Tan, Thistle, Turquoise, Violet, VioletRed, Wheat, Yellow,
+	YellowGreen */
+
+    XtSetArg (arglist[0], XmNcolormap, &cmap);
+    XtSetArg (arglist[1], XmNforeground, &(trace->xcolornums[0]));
+    XtGetValues (trace->main, arglist, 2);
+    trace->xcolornums[1] = XWhitePixel (global->display, 0);
+    XAllocNamedColor (global->display, cmap, "Red", &xcolor, &xcolor2);
+    trace->xcolornums[2] = xcolor.pixel;
+    XAllocNamedColor (global->display, cmap, "ForestGreen", &xcolor, &xcolor2);
+    trace->xcolornums[3] = xcolor.pixel;
+    XAllocNamedColor (global->display, cmap, "Blue", &xcolor, &xcolor2);
+    trace->xcolornums[4] = xcolor.pixel;
+    XAllocNamedColor (global->display, cmap, "Magenta", &xcolor, &xcolor2);
+    trace->xcolornums[5] = xcolor.pixel;
+    XAllocNamedColor (global->display, cmap, "Cyan", &xcolor, &xcolor2);
+    trace->xcolornums[6] = xcolor.pixel;
+    XAllocNamedColor (global->display, cmap, "Yellow", &xcolor, &xcolor2);
+    trace->xcolornums[7] = xcolor.pixel;
+    XAllocNamedColor (global->display, cmap, "Salmon", &xcolor, &xcolor2);
+    trace->xcolornums[8] = xcolor.pixel;
+    XAllocNamedColor (global->display, cmap, "NavyBlue", &xcolor, &xcolor2);
+    trace->xcolornums[9] = xcolor.pixel;
+
+    /*
+    for (i=0; i<63; i++) {
+	xcolor.pixel = i;
+	XQueryColor (global->display, cmap, &xcolor);
+	printf ("%d) = %x, %x, %x\n", i, xcolor.red, xcolor.green, xcolor.blue);
+	}
+	*/
+
     /****************************************
      * create the menu bar
      ****************************************/
     trace->menu.menu = XmCreateMenuBar(trace->main,"menu", NULL, 0);
     XtManageChild(trace->menu.menu);
     
-    /*** create a pulldownmenu widget ***/
-#define	dt_menu_title(title) \
+    /*** create a pulldownmenu on the top bar ***/
+#define	dt_menu_title(title,key) \
     pde++; \
-	trace->menu.pulldownmenu[pde] = XmCreatePulldownMenu(trace->menu.menu,"",NULL,0); \
+	trace->menu.pdmenu[pde] = XmCreatePulldownMenu(trace->menu.menu,"",NULL,0); \
 	    XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(title) ); \
-		XtSetArg(arglist[1], XmNsubMenuId, trace->menu.pulldownmenu[pde] ); \
-		    trace->menu.pulldownentry[pde] = XmCreateCascadeButton \
-			(trace->menu.menu, "", arglist, 2); \
-			    XtManageChild(trace->menu.pulldownentry[pde])
-    
-    /*** create a pulldownmenu widget ***/
-#define	dt_menu_entry(title,callback) \
-    XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(title) ); \
-	trace->menu.pulldown[pd] = XmCreatePushButtonGadget \
-	    (trace->menu.pulldownmenu[pde], "", arglist, 1); \
-		XtAddCallback(trace->menu.pulldown[pd], XmNactivateCallback, callback, trace); \
-		    XtManageChild(trace->menu.pulldown[pd]); \
-			pd++
+		XtSetArg(arglist[1], XmNsubMenuId, trace->menu.pdmenu[pde] ); \
+		    XtSetArg(arglist[2], XmNmnemonic, key ); \
+			trace->menu.pdmenubutton[pde] = XmCreateCascadeButton \
+			    (trace->menu.menu, "", arglist, 3); \
+				XtManageChild(trace->menu.pdmenubutton[pde])
+				
+    /*** create a pulldownmenu entry under the top bar ***/
+#define	dt_menu_entry(title,key,callback) \
+    pd++; \
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(title) ); \
+	    XtSetArg(arglist[1], XmNmnemonic, key ); \
+		trace->menu.pdentrybutton[pd] = XmCreatePushButtonGadget \
+		    (trace->menu.pdmenu[pde], "", arglist, 2); \
+			XtAddCallback(trace->menu.pdentrybutton[pd], XmNactivateCallback, callback, trace); \
+			    XtManageChild(trace->menu.pdentrybutton[pd])
+
+    /*** create a pulldownmenu entry which is a sub menu ***/
+#define	dt_menu_subtitle(title,key) \
+    pd++; \
+	trace->menu.pdentry[pd] = XmCreatePulldownMenu(trace->menu.pdmenu[pde],"",NULL,0); \
+	    XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(title) ); \
+		XtSetArg(arglist[1], XmNsubMenuId, trace->menu.pdentry[pd] ); \
+		    XtSetArg(arglist[2], XmNmnemonic, key ); \
+			trace->menu.pdentrybutton[pd] = XmCreateCascadeButton \
+			    (trace->menu.pdmenu[pde], "", arglist, 3); \
+				XtManageChild(trace->menu.pdentrybutton[pd])
+				
+    /*** create a pulldownmenu entry under a subtitle ***/
+#define	dt_menu_subentry(title,key,callback) \
+    pds++; \
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(title) ); \
+	    XtSetArg(arglist[1], XmNmnemonic, key ); \
+		trace->menu.pdsubbutton[pds] = XmCreatePushButtonGadget \
+		    (trace->menu.pdentry[pd], "", arglist, 2); \
+			XtAddCallback(trace->menu.pdsubbutton[pds], XmNactivateCallback, callback, trace); \
+			    XtManageChild(trace->menu.pdsubbutton[pds])
+
+    /*** create a pulldownmenu entry under a subtitle (uses special colors) ***/
+#define	dt_menu_subentry_c(color, callback) \
+    pds++; \
+	XtSetArg(arglist[0], XmNbackground, color ); \
+	    XtSetArg(arglist[1], XmNmarginRight, 50); \
+		XtSetArg(arglist[2], XmNmarginBottom, 8); \
+		    trace->menu.pdsubbutton[pds] = XmCreatePushButton \
+			(trace->menu.pdentry[pd], "", arglist, 3); \
+			    XtAddCallback(trace->menu.pdsubbutton[pds], XmNactivateCallback, callback, trace); \
+				XtManageChild(trace->menu.pdsubbutton[pds])
 
     /*** begin with -1 pde, since new menu will increment ***/
-    pde = -1;
+    pd = pds = pde = -1;
 
-    dt_menu_title ("Trace");
-    dt_menu_entry	("Read", cb_read_trace);
-    dt_menu_entry	("ReRead", cb_reread_trace);
-    dt_menu_entry	("Open", cb_open_trace);
-    dt_menu_entry	("Close", cb_close_trace);
-    trace->menu_close = trace->menu.pulldown[pd-1];
-    dt_menu_entry	("Clear", cb_clear_trace);
-    dt_menu_entry	("Exit", cb_exit_trace);
-    dt_menu_title ("Customize");
-    dt_menu_entry	("Change", cus_dialog_cb);
-    dt_menu_entry	("ReRead", cus_reread_cb);
-    dt_menu_entry	("Restore", cus_restore_cb);
-    dt_menu_title ("Cursor");
-    dt_menu_entry	("Add", cur_add_cb);
-    dt_menu_entry	("Move", cur_mov_cb);
-    dt_menu_entry	("Delete", cur_del_cb);
-    dt_menu_entry	("Clear", cur_clr_cb);
-    dt_menu_entry	("Cancel", cancel_all_events);
-    dt_menu_title ("Grid");
-    dt_menu_entry	("Res", grid_res_cb);
-    dt_menu_entry	("Align", grid_align_cb);
-    dt_menu_entry	("Reset", grid_reset_cb);
-    dt_menu_entry	("Cancel", cancel_all_events);
-    dt_menu_title ("Signal");
-    dt_menu_entry	("Add", sig_add_cb);
-    dt_menu_entry	("Move", sig_mov_cb);
-    dt_menu_entry	("Delete", sig_del_cb);
-    dt_menu_entry	("Highlight", sig_highlight_cb);
-    dt_menu_entry	("Search", sig_search_cb);
-    /* dt_menu_entry	("Reset", sig_reset_cb); */
-    dt_menu_entry	("Cancel", cancel_all_events);
+    dt_menu_title ("Trace", 'T');
+    dt_menu_entry	("Read",	'R',	trace_read_cb);
+    dt_menu_entry	("ReRead",	'e',	trace_reread_cb);
+    dt_menu_entry	("Open",	'O',	trace_open_cb);
+    dt_menu_entry	("Close",	'C',	trace_close_cb);
+    trace->menu_close = trace->menu.pdentrybutton[pd];
+    dt_menu_entry	("Clear",	'l',	trace_clear_cb);
+    dt_menu_entry	("Exit", 	'x',	trace_exit_cb);
+    dt_menu_title ("Customize", 'u');
+    dt_menu_entry	("Change",	'C',	cus_dialog_cb);
+    dt_menu_entry	("ReRead",	'e',	cus_reread_cb);
+    dt_menu_entry	("Restore",	'R',	cus_restore_cb);
+    dt_menu_title ("Cursor", 'C');
+    dt_menu_subtitle	("Add",		'A');
+    trace->menu.cur_add_pds = pds+1;
+    for (i=0; i<=MAX_SRCH; i++) {
+	dt_menu_subentry_c	(trace->xcolornums[i], cur_add_cb);
+	}
+    dt_menu_entry	("Move",	'M',	cur_mov_cb);
+    dt_menu_entry	("Delete",	'D',	cur_del_cb);
+    dt_menu_entry	("Clear", 	'C',	cur_clr_cb);
+    dt_menu_subtitle	("Highlight",	'H');
+    trace->menu.cur_highlight_pds = pds+1;
+    for (i=0; i<=MAX_SRCH; i++) {
+	dt_menu_subentry_c	(trace->xcolornums[i], cur_highlight_cb);
+	}
+
+    dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
+    dt_menu_title ("Grid", 'G');
+    dt_menu_entry	("Res",	 	'R',	grid_res_cb);
+    dt_menu_entry	("Align",	'A',	grid_align_cb);
+    dt_menu_entry	("Reset",	's',	grid_reset_cb);
+    dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
+    dt_menu_title ("Signal", 'S');
+    dt_menu_entry	("Add",		'A',	sig_add_cb);
+    dt_menu_entry	("Move",	'M',	sig_mov_cb);
+    dt_menu_entry	("Copy",	'C',	sig_copy_cb);
+    dt_menu_entry	("Delete",	'D',	 sig_del_cb);
+    dt_menu_entry	("Search",	'S',	sig_search_cb);
+    dt_menu_subtitle	("Highlight",	'H');
+    trace->menu.sig_highlight_pds = pds+1;
+    for (i=0; i<=MAX_SRCH; i++) {
+	dt_menu_subentry_c	(trace->xcolornums[i], sig_highlight_cb);
+	}
+
+    /* dt_menu_entry	("Reset", 	'R',	sig_reset_cb); */
+    dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
     /*
-    dt_menu_title ("Note");
+    dt_menu_title ("Note", 'N');
     dt_menu_entry	("Add", );
     dt_menu_entry	("Move", );
     dt_menu_entry	("Delete", );
     dt_menu_entry	("Clear", );
-    dt_menu_entry	("Cancel", );
+    dt_menu_entry	("Cancel", 	'L',	cancel_all_events);
     */
-    dt_menu_title ("Printscreen");
-    dt_menu_entry	("Print", ps_dialog);
-    dt_menu_entry	("Reset", ps_reset);
+    dt_menu_title ("Printscreen", 'P');
+    dt_menu_entry	("Print",	'P',	ps_dialog);
+    dt_menu_entry	("Reset",	'e',	ps_reset);
     
     if (DTDEBUG) {
-	dt_menu_title ("Debug");
-	dt_menu_entry	("Print Signal Names", print_sig_names);
-	dt_menu_entry	("Print Signal Info (Screen Only)", print_screen_traces);
+	dt_menu_title ("Debug", 'D');
+	dt_menu_entry	("Print Signal Names", 'N', print_sig_names);
+	dt_menu_entry	("Print Signal Info (Screen Only)", 'I', print_screen_traces);
 	}
     
     /****************************************
@@ -554,7 +648,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetValues(trace->command.reschg_but,arglist,1);
     
 #ifdef NOTDONE
-    /* What does this do? */
+    /* Why is this needed? */
     xgcv.line_width = 0;
     arglist[0].name = XmNforeground;
     arglist[0].value = (int)&fore;
@@ -575,21 +669,6 @@ TRACE *create_trace (xs,ys,xp,yp)
     /* get font information */
     trace->text_font = XQueryFont(global->display,XGContextFromGC(trace->gc));
     
-    /* get color information */
-    arglist[0].name = XmNforeground;
-    arglist[0].value = (int)&(trace->xcolornums[0]);
-    XtGetValues (trace->main, arglist, 1);
-    trace->xcolornums[1] = XWhitePixel (global->display, 0);
-    /* temp kludge */
-    trace->xcolornums[2] = 13;
-    trace->xcolornums[3] = 15;
-    trace->xcolornums[4] = 17;
-    trace->xcolornums[5] = 18;
-    trace->xcolornums[6] = 25;
-    trace->xcolornums[7] = 50;
-    trace->xcolornums[8] = 11;
-    trace->xcolornums[9] = 24;
-
     set_cursor (trace, DC_NORMAL);
 
     get_geometry(trace);

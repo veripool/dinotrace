@@ -124,6 +124,31 @@ void    add_signal_to_queue(trace,sig_ptr,loc_sig_ptr,top_pptr)
 	}
     }
 
+SIGNAL_SB *replicate_signal (trace, sig_ptr)
+    TRACE	*trace;
+    SIGNAL_SB	*sig_ptr;	/* Signal to remove */
+    /* Makes a duplicate copy of the signal */
+{
+    SIGNAL_SB	*new_sig_ptr;
+    
+    if (DTPRINT) printf("In replicate_signal - trace=%d\n",trace);
+    
+    /* Create new structure */
+    new_sig_ptr = (SIGNAL_SB *)XtMalloc(sizeof(SIGNAL_SB));
+
+    /* Copy data */
+    memcpy (new_sig_ptr, sig_ptr, sizeof (SIGNAL_SB));
+
+    /* Erase new links */
+    new_sig_ptr->forward = NULL;
+    new_sig_ptr->backward = NULL;
+    if (sig_ptr->copyof)
+	new_sig_ptr->copyof = sig_ptr->copyof;
+    else new_sig_ptr->copyof = sig_ptr;
+
+    return (new_sig_ptr);
+    }
+
 /****************************** MENU OPTIONS ******************************/
 
 void    sig_add_cb(w,trace,cb)
@@ -237,6 +262,24 @@ void    sig_mov_cb(w,trace,cb)
     set_cursor (trace, DC_SIG_MOVE_1);
     }
 
+void    sig_copy_cb(w,trace,cb)
+    Widget			w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    if (DTPRINT) printf("In sig_copy_cb - trace=%d\n",trace);
+    
+    /* remove any previous events */
+    remove_all_events(trace);
+    
+    /* guarantee next button press selects a signal to be moved */
+    global->selected_sig = NULL;
+    
+    /* process all subsequent button presses as signal moves */ 
+    add_event (ButtonPressMask, sig_copy_ev);
+    set_cursor (trace, DC_SIG_COPY_1);
+    }
+
 void    sig_del_cb(w,trace,cb)
     Widget			w;
     TRACE		*trace;
@@ -257,11 +300,20 @@ void    sig_highlight_cb(w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
+    int i;
+
     if (DTPRINT) printf("In sig_highlight_cb - trace=%d\n",trace);
     
     /* remove any previous events */
     remove_all_events(trace);
-    
+     
+    global->highlight_color = 0;
+    for (i=1; i<=MAX_SRCH; i++) {
+	if (w == trace->menu.pdsubbutton[i + trace->menu.sig_highlight_pds]) {
+	    global->highlight_color = i;
+	    }
+	}
+
     /* process all subsequent button presses as signal deletions */ 
     set_cursor (trace, DC_SIG_HIGHLIGHT);
     add_event (ButtonPressMask, sig_highlight_ev);
@@ -282,6 +334,8 @@ void    sig_reset_cb(w,trace,cb)
     
     /* ADD RESET CODE !!! */
     }
+
+/****************************** EVENTS ******************************/
 
 void    sig_add_ev(w,trace,ev)
     Widget			w;
@@ -390,6 +444,48 @@ void    sig_move_ev(w,trace,ev)
     redraw_all (trace);
     }
 
+void    sig_copy_ev(w,trace,ev)
+    Widget			w;
+    TRACE		*trace;
+    XButtonPressedEvent	*ev;
+{
+    SIGNAL_SB		*sig_ptr, *new_sig_ptr;
+    
+    if (DTPRINT) printf("In sig_copy_ev - trace=%d\n",trace);
+    
+    /* make sure button has been clicked in in valid location of screen */
+    sig_ptr = posy_to_signal (trace, ev->y);
+    if (!sig_ptr) return;
+   
+    if ( global->selected_sig == NULL ) {
+	/* next call will perform the copy */
+	global->selected_sig = sig_ptr;
+	global->selected_trace = trace;
+	set_cursor (trace, DC_SIG_COPY_2);
+	}
+    else {
+	/* get previous signal */
+	if (sig_ptr) sig_ptr = sig_ptr->backward;
+    
+	/* if not the same signal perform the move */
+	if ( sig_ptr != global->selected_sig ) {
+	    /* make copy of signal */
+	    new_sig_ptr = replicate_signal (global->selected_trace, global->selected_sig);
+	    
+	    /* add the signal to the new location */
+	    add_signal_to_queue(trace, new_sig_ptr, sig_ptr, &trace->dispsig);
+	    trace->numsig++;
+	    }
+	
+	/* guarantee that next button press will select signal */
+	global->selected_sig = NULL;
+	set_cursor (trace, DC_SIG_COPY_1);
+	}
+    
+    /* redraw the screen */
+    redraw_all (trace);
+    }
+
 void    sig_delete_ev(w,trace,ev)
     Widget			w;
     TRACE		*trace;
@@ -452,7 +548,7 @@ void    sig_highlight_ev(w,trace,ev)
     if (!sig_ptr) return;
     
     /* Change the color */
-    sig_ptr->color = (sig_ptr->color + 1) & 3;
+    sig_ptr->color = global->highlight_color;
 
     /* redraw the screen */
     redraw_all (trace);
