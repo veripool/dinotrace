@@ -1,4 +1,6 @@
 $!	
+$! DESCRIPTION: Dinotrace: VMS build script
+$!	
 $! This com file will compule and link together the obj's necessary to
 $! create a Dinotrace executable. This should will work on systems running
 $! VMS version 5.1 or better.

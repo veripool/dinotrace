@@ -4,8 +4,8 @@
 @settitle Dinotrace Installation
 @c %**end of header
 
-@c This file is included by autoconf.texi and is used to produce
-@c the INSTALL file.
+@c DESCRIPTION: TexInfo: DOCUMENT source run through texinfo to produce INSTALL file
+@c Use 'make INSTALL' to produce the output file
 
 @node Dinotrace Installation, Obtaining Distribution
 @section Dinotrace Installation

@@ -7,8 +7,11 @@
 @finalout
 @c %**end of header
 
-@set UPDATED January 2001
-@set VERSION 9.1a
+@set UPDATED Feburary 2001
+@set VERSION 9.1b
+
+@c DESCRIPTION: TexInfo: DOCUMENT source run through texinfo to produce FAQ file
+@c Use 'make FAQ' to produce the output file
 
 @c All functions use these for searching ease
 @macro dmenu {f}

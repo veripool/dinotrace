@@ -20,9 +20,13 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set VERSION 9.1a
-@set UPDATED August 2000
+@set VERSION 9.1b
+@set UPDATED Feburary 2001
 @set ID @value{VERSION}
+
+@c DESCRIPTION: TexInfo: DOCUMENT source run through texinfo to produce documentation file
+@c Use 'make dinotrace.txt' to produce the output file
+
 @c All functions use these for searching ease
 @macro dmenu{f}
 @code{\f\}
