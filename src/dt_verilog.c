@@ -131,7 +131,7 @@ void	verilog_read_timescale (trace, line, readfp)
 	break;
       case 'f':
       default:
-	sprintf (message,"Unknown time scale unit '%c'\non line %d of %s\n",
+	sprintf (message,"Unknown time scale unit '%c' on line %d of %s\n",
 		 *line, verilog_line_num, current_file);
 	dino_error_ack (trace, message);
 	}
@@ -159,14 +159,14 @@ void	verilog_process_var (trace, line)
     TRACE	*trace;
     char	*line;
 {
-    char	*cmd, *code;
+    char	*type, *cmd, *code;
     int		bits;
     SIGNAL	*new_sig_ptr;
     char	signame[10000];
     int		t, len;
 
-    /* Skip <vartype> */
-    verilog_skip_parameter (line);
+    /* Read <vartype> */
+    verilog_read_parameter (line, type);
 	
     /* Read <size> */
     verilog_read_parameter (line, cmd);
@@ -188,6 +188,11 @@ void	verilog_process_var (trace, line)
     verilog_read_parameter (line, cmd);
     if (*cmd != '$' && strcmp(cmd, "[-1]")) strcat (signame, cmd);
     
+    if (!strncmp (type, "real", 4)) {
+	printf ("%%W, Reals not supported, signal %s ignored.\n", signame);
+	return;
+    }
+
     /* Allocate new signal structure */
     new_sig_ptr = XtNew (SIGNAL);
     memset (new_sig_ptr, 0, sizeof (SIGNAL));
@@ -438,6 +443,7 @@ void	verilog_read_data (trace, readfp)
 	switch (*line++) {
 	  case '\n':
 	  case '$':	/* Command, $end, $dump, etc (ignore) */
+	  case 'r':	/* Real number */
 	    break;
 	  case '#':	/* Time stamp */
 	    verilog_enter_busses (trace, first_data, time);
@@ -528,7 +534,8 @@ void	verilog_read_data (trace, readfp)
 				sig_ptr->file_value.number[2] = 
 				    ( sig_ptr->file_value.number[2] & (~ (1<<bit)) );
 				}
-			    else printf ("%E, Signal too wide\n");
+			    else printf ("%E, Signal too wide on line %d of %s\n",
+					 verilog_line_num, current_file);
 			    }
 			break;
 
@@ -555,7 +562,8 @@ void	verilog_read_data (trace, readfp)
 				sig_ptr->file_value.number[2] = 
 				    ( sig_ptr->file_value.number[2] | (1<<bit) );
 				}
-			    else printf ("%E, Signal too wide\n");
+			    else printf ("%E, Signal too wide on line %d of %s\n",
+					 verilog_line_num, current_file);
 			    }
 			break;
 			}
@@ -578,7 +586,8 @@ void	verilog_read_data (trace, readfp)
 	    sig_ptr = signal_by_pos[ pos ];
 	    if (sig_ptr) {
 		if ((sig_ptr->bits == 0) || !sig_ptr->file_type.flag.perm_vector) {
-		    printf ("%%E, Vector decode on single-bit or non perm_vector signal\n");
+		    printf ("%%E, Vector decode on single-bit or non perm_vector signal on line %d of %s\n",
+			    verilog_line_num, current_file);
 		    }
 		else {
 		    register int len;
@@ -617,11 +626,13 @@ void	verilog_read_data (trace, readfp)
 			}
 		    }
 		}
-	    else printf ("%%E, Unknown <identifier_code> '%s'\n", code);
+	    else printf ("%%E, Unknown <identifier_code> '%s' on line %d of %s\n",
+			 code, verilog_line_num, current_file);
 	    break;
 
 	  default:
-	    printf ("%%E, Unknown line character in verilog trace '%c'\n", line[0]);
+	    printf ("%%E, Unknown line character in verilog trace '%c' on line %d of %s\n",
+		    *(line-1), verilog_line_num, current_file);
 	    }
 	}
 
@@ -681,7 +692,7 @@ void	verilog_process_lines (trace, readfp)
 	    else {
 		if (DTPRINT_FILE) printf ("%%E, Too many scope levels on verilog line %d\n", verilog_line_num);
 		
-		sprintf (message, "Too many scope levels\non line %d of %s\n",
+		sprintf (message, "Too many scope levels on line %d of %s\n",
 			 cmd, verilog_line_num, current_file);
 		dino_error_ack (trace,message);
 		}
@@ -701,7 +712,7 @@ void	verilog_process_lines (trace, readfp)
 	else {
 	    if (DTPRINT_FILE) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, verilog_line_num);
 	    
-	    sprintf (message, "Unknown command '%s'\non line %d of %s\n",
+	    sprintf (message, "Unknown command '%s' on line %d of %s\n",
 		     cmd, verilog_line_num, current_file);
 	    dino_error_ack (trace,message);
 	    }
