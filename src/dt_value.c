@@ -144,8 +144,17 @@ void	val_update_search ()
     int		found, cursorize;
     register int i;
     CURSOR	*csr_ptr;
+    Boolean	any_enabled;
 
     if (DTPRINT_ENTRY) printf ("In val_update_search\n");
+
+    /* If no searches are enabled, skip the cptr loop.  This saves */
+    /* 3% of the first reading time on large traces */
+    any_enabled = FALSE;
+    for (i=0; i<MAX_SRCH; i++) {
+	if (global->val_srch[i].color != 0) any_enabled = TRUE;
+	if (global->val_srch[i].cursor != 0) any_enabled = TRUE;
+    }
 
     /* Mark all cursors that are a result of a search as old (-1) */
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
@@ -161,52 +170,54 @@ void	val_update_search ()
 		}
 	    
 	    found=0;
-	    cursorize=0;
-	    cptr = (SIGNAL_LW *)(sig_ptr->bptr);
-	    
-	    for (; (cptr->sttime.time != EOT); cptr += sig_ptr->lws) {
-		switch (cptr->sttime.state) {
-		  case STATE_B32:
-		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
-			    && ( global->val_srch[i].value[1] == 0) 
-			    && ( global->val_srch[i].value[2] == 0)
-			    && ( global->val_srch[i].value[3] == 0) ) {
-			    found |= ( global->val_srch[i].color != 0) ;
-			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
-			    /* don't break, because if same value on two lines, one with cursor and one without will fail */
+
+	    if (any_enabled) {
+		cursorize=0;
+		cptr = (SIGNAL_LW *)(sig_ptr->bptr);
+		for (; (cptr->sttime.time != EOT); cptr += sig_ptr->lws) {
+		    switch (cptr->sttime.state) {
+		      case STATE_B32:
+			for (i=0; i<MAX_SRCH; i++) {
+			    if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
+				&& ( global->val_srch[i].value[1] == 0) 
+				&& ( global->val_srch[i].value[2] == 0)
+				&& ( global->val_srch[i].value[3] == 0) ) {
+				found |= ( global->val_srch[i].color != 0) ;
+				if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
+				/* don't break, because if same value on two lines, one with cursor and one without will fail */
 			    }
 			}
-		    break;
-		    
-		  case STATE_B128:
-		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
-			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
-			    && ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
-			    && ( global->val_srch[i].value[3]== *((unsigned int *)cptr+4) ) ) {
-			    found |= ( global->val_srch[i].color != 0) ;
-			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
+			break;
+			
+		      case STATE_B128:
+			for (i=0; i<MAX_SRCH; i++) {
+			    if ( ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) )
+				&& ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
+				&& ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
+				&& ( global->val_srch[i].value[3]== *((unsigned int *)cptr+4) ) ) {
+				found |= ( global->val_srch[i].color != 0) ;
+				if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
 			    }
 			}
-		    break;
+			break;
 		    } /* switch */
-
-		if (cursorize) {
-		    if (NULL != (csr_ptr = time_to_cursor (cptr->sttime.time))) {
-			if (csr_ptr->type == SEARCHOLD) {
-			    /* mark the old cursor as new so won't be deleted */
-			    csr_ptr->type = SEARCH;
+		    
+		    if (cursorize) {
+			if (NULL != (csr_ptr = time_to_cursor (cptr->sttime.time))) {
+			    if (csr_ptr->type == SEARCHOLD) {
+				/* mark the old cursor as new so won't be deleted */
+				csr_ptr->type = SEARCH;
 			    }
 			}
-		    else {
-			/* Make new cursor at this location */
-			cur_add (cptr->sttime.time, cursorize, SEARCH);
+			else {
+			    /* Make new cursor at this location */
+			    cur_add (cptr->sttime.time, cursorize, SEARCH);
 			}
-		    cursorize = 0;
+			cursorize = 0;
 		    }
-
+		    
 		} /* for cptr */
+	    } /* if enabled */
 	    
 	    sig_ptr->srch_ena = found;
 	    if (found && DTPRINT_FILE) printf ("Signal %s matches search string.\n", sig_ptr->signame);
