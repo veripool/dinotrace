@@ -54,7 +54,7 @@ AC_C_BIGENDIAN
 
 dnl Checks for library functions.
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS(gethostname strdup strcascmp)
+AC_CHECK_FUNCS(gethostname strdup strcasecmp)
 
 dnl Checks for system services
 

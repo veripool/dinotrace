@@ -10,7 +10,7 @@ errstatus=0
 
 for file
 do
-   st fnord `echo ":$file" | sed -ne 's/^:\//#/;s/^://;s/\// /g;s/^#/\//;p'`
+   set fnord `echo ":$file" | sed -ne 's/^:\//#/;s/^://;s/\// /g;s/^#/\//;p'`
    shift
 
    pathcomp=
