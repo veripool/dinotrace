@@ -348,7 +348,8 @@ are one it it is two parallel lines with the upper one bolded.  If the
 bus is some mix of zeros and ones it is two narrow parallel lines.  If
 there is space the value of the bus will be shown based on the
 @dmenu{Signal Radix} menu option.  Finally, the @dmenu{Signal Waveform}
-allows analog waveforms.
+allows analog waveforms, or signed waveforms (two's complement with 0 making
+a centered trace.)
 
 Gadgets surround the main area.  The vertical scroll bar on the right is
 the @widget{Signal Slider} used to scroll signals, if they all cannot
@@ -1908,7 +1909,7 @@ probably won't display the values you wish.
 @subsection signal_waveform
 @findex signal_waveform
 @cindex Waveform, Signals
-@config{signal_waveform}	@var{signal_pattern} ANALOG | DIGITAL
+@config{signal_waveform}	@var{signal_pattern} ANALOG | ANALOG_SIGNED | DIGITAL
 
 Changes signals matching @var{signal_pattern} to have the specified
 waveform representation on the display.
