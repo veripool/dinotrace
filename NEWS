@@ -17,7 +17,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	ASCII traces which had timestamps would not show the last state of the
 	bus, as Dinotrace did not guess at how long that last state was valid for.
 	Now, it looks at the smallest time step in the trace, and uses that
-	as a guess at the timescale.
+	as a guess at the timescale. [Pani Kodandapani]
 
 ****	Builds on FreeBSD.  [Dan McMahill]
 
