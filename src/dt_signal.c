@@ -795,6 +795,11 @@ char *sig_examine_string (
 	
     /* Debugging information */
     if (DTDEBUG) {
+	if (sig_ptr->copyof) {
+	    sprintf (strg2, "\nCopy-of %s\n",
+		     sig_ptr->copyof->signame);
+	    strcat (strg, strg2);
+	}
 	sprintf (strg2, "\nType %d   Blocks %ld\n",
 		 sig_ptr->type, sig_ptr->blocks);
 	strcat (strg, strg2);
