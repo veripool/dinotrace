@@ -620,7 +620,7 @@ typedef struct {
     DTime_t		alignment;	/* Grid alignment (time grid starts at) */
     int			grid_num;	/* Number of this grid */
     enum { PA_USER=0, PA_AUTO=1, PA_EDGE=2 } period_auto;	/* Status of automatic grid resolution */
-    enum { AA_USER=0, AA_ASS=1, AA_DEASS=2 } align_auto; /* Status of automatic grid alignment */
+    enum { AA_USER=0, AA_ASS=1, AA_DEASS=2, AA_BOTH=3 } align_auto; /* Status of automatic grid alignment */
     Boolean_t		visible;	/* True if grid is visible */
     Boolean_t		wide_line;	/* True to draw a double-width line */
     char 		signal[MAXSIGLEN];	/* Signal name of the clock */

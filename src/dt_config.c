@@ -873,7 +873,7 @@ static void	config_process_line_internal (
 		    else if (toupper(pattern[0])=='E')
 			grid_ptr->period_auto = PA_EDGE;
 		    else {
-			config_error_ack (trace, "Grid_res must be >0, ASSERTION, or EDGE\n");
+			config_error_ack (trace, "Grid_res must be >0, AUTO or EDGE\n");
 		    }
 		}
 	    }
@@ -892,8 +892,10 @@ static void	config_process_line_internal (
 			grid_ptr->align_auto = AA_ASS;
 		    else if (toupper(pattern[0])=='D')
 			grid_ptr->align_auto = AA_DEASS;
+		    else if (toupper(pattern[0])=='B')
+			grid_ptr->align_auto = AA_BOTH;
 		    else {
-			config_error_ack (trace, "Grid_align must be >0, ASSERTION, or DEASSERTION\n");
+			config_error_ack (trace, "Grid_align must be >0, ASSERTION, or DEASSERTION, or BOTH\n");
 		    }
 		}
 	    }

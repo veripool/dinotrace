@@ -186,8 +186,23 @@ static void draw_grid (
 
     switch (grid_ptr->period_auto) {
     case PA_EDGE:
-	/* Edges not supported yet */
+    {
+	Value_t *cptr;
+	Signal *sig_ptr = grid_ptr->signal_synced;
+	if (sig_ptr) {
+	    /* Put cursor at every appropriate transition */
+	    for (cptr = sig_ptr->cptr; (CPTR_TIME(cptr) != EOT && CPTR_TIME(cptr) < end_time);
+		 cptr = CPTR_NEXT(cptr)) {
+		if (((cptr->siglw.stbits.state != STATE_0 || grid_ptr->align_auto==AA_DEASS)
+		     && (cptr->siglw.stbits.state != STATE_1 || grid_ptr->align_auto==AA_ASS))
+		    || grid_ptr->align_auto==AA_BOTH) {
+		    xtime = CPTR_TIME(cptr);
+		    draw_grid_line (trace, textoccupied, grid_ptr, xtime, ytop, ymid, ybot);
+		}
+	    }
+	}
 	break;
+    }
 
     case PA_USER:
     case PA_AUTO:

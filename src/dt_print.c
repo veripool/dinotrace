@@ -170,8 +170,29 @@ static void print_draw_grid (
 
     switch (grid_ptr->period_auto) {
     case PA_EDGE:
-	/* Edges not supported yet */
+    {
+	Value_t *cptr;
+	Signal *sig_ptr = grid_ptr->signal_synced;
+	if (sig_ptr) {
+	    /* Put cursor at every appropriate transition */
+	    for (cptr = sig_ptr->cptr; (CPTR_TIME(cptr) != EOT && CPTR_TIME(cptr) < end_time);
+		 cptr = CPTR_NEXT(cptr)) {
+		if (((cptr->siglw.stbits.state != STATE_0 || grid_ptr->align_auto==AA_DEASS)
+		     && (cptr->siglw.stbits.state != STATE_1 || grid_ptr->align_auto==AA_ASS))
+		    || grid_ptr->align_auto==AA_BOTH) {
+		    xtime = CPTR_TIME(cptr);
+		    x2 = TIME_TO_XPOS_REL (xtime, printtime);
+		    /* compute the time value and draw it if it fits */
+		    if (draw_numbers) {
+		      time_to_string (trace, strg, xtime, FALSE);
+		    } else strg[0] = '\0';
+		    /* Draw if space, centered on grid line */
+		    fprintf (psfile,"%d (%s) GRID\n", x2, strg);
+		}
+	    }
+	}
 	break;
+    }
 
     case PA_USER:
     case PA_AUTO:

@@ -164,9 +164,14 @@ static void	grid_calc_auto (
     /* Set defaults based on changes */
     switch (grid_ptr->period_auto) {
     case PA_AUTO:
+    case PA_EDGE:
 	grid_ptr->signal_synced = sig_ptr;
 	if (rise1 < rise2)	grid_ptr->period = rise2 - rise1;
 	else if (fall1 < fall2) grid_ptr->period = fall2 - fall1;
+	if (grid_ptr->align_auto == AA_BOTH) {
+	    if (rise2 && fall2)	grid_ptr->period = ABS(fall2 - rise2);
+	    else if (rise1 && fall1)	grid_ptr->period = ABS(fall1 - rise1);
+	}
 	break;
     default: break;	/* User defined */
     }
@@ -181,6 +186,11 @@ static void	grid_calc_auto (
     case AA_DEASS:
 	grid_ptr->signal_synced = sig_ptr;
 	if (fall1) grid_ptr->alignment = fall1 % grid_ptr->period;
+	break;
+    case AA_BOTH:
+	grid_ptr->signal_synced = sig_ptr;
+	if (fall1) grid_ptr->alignment = fall1 % grid_ptr->period;
+	if (rise1) grid_ptr->alignment = rise1 % grid_ptr->period;
 	break;
     default: break;	/* User defined */
     }
@@ -553,13 +563,11 @@ void    grid_customize_cb (
 	    DAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
 	    DManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1], trace, MC_NOKEYS);
 
-	    /*
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Auto Edges Only") );
 	    trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[2] =
-		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoperiod_pulldown,"pdbutton0",arglist,1);
+	      XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoperiod_pulldown,"pdbutton0",arglist,1);
 	    DAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[2], XmNactivateCallback, grid_customize_sensitives_cb, trace);
 	    DManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[2], trace, MC_NOKEYS);
-	    */
 
 	    XtSetArg (arglist[0], XmNsubMenuId, trace->gridscus.grid[grid_num].autoperiod_pulldown);
 	    XtSetArg (arglist[1], XmNx, xb+15);
@@ -598,6 +606,12 @@ void    grid_customize_cb (
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoalign_pulldown,"pdbutton0",arglist,1);
 	    DAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[2], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
 	    DManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[2], trace, MC_NOKEYS);
+
+	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Both Edges") );
+	    trace->gridscus.grid[grid_num].autoalign_pulldownbutton[3] =
+		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoalign_pulldown,"pdbutton0",arglist,1);
+	    DAddCallback (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[3], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
+	    DManageChild (trace->gridscus.grid[grid_num].autoalign_pulldownbutton[3], trace, MC_NOKEYS);
 
 	    XtSetArg (arglist[0], XmNsubMenuId, trace->gridscus.grid[grid_num].autoalign_pulldown);
 	    XtSetArg (arglist[1], XmNx, xb+15);
@@ -691,7 +705,7 @@ void    grid_customize_ok_cb (
 	grid_ptr->wide_line = XmToggleButtonGetState (trace->gridscus.grid[grid_num].wide_line);
 	grid_ptr->color = option_to_number(trace->gridscus.grid[grid_num].options, trace->gridscus.grid[grid_num].pulldownbutton, MAX_SRCH);
 	grid_ptr->period_auto = option_to_number(trace->gridscus.grid[grid_num].autoperiod_options, trace->gridscus.grid[grid_num].autoperiod_pulldownbutton, 2);
-	grid_ptr->align_auto = option_to_number(trace->gridscus.grid[grid_num].autoalign_options, trace->gridscus.grid[grid_num].autoalign_pulldownbutton, 2);
+	grid_ptr->align_auto = option_to_number(trace->gridscus.grid[grid_num].autoalign_options, trace->gridscus.grid[grid_num].autoalign_pulldownbutton, 3);
 	if (grid_ptr->period_auto == PA_USER) {
 	    grid_ptr->period = string_to_time (trace, XmTextGetString (trace->gridscus.grid[grid_num].period));
 	}

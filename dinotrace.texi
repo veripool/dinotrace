@@ -1433,22 +1433,24 @@ Enables or disables the grid.  Same as the visible toggle buttons in
 @subsection grid_resolution
 @findex grid_resolution
 @cindex Resolution, Grids
-@config{grid_resolution}	@var{grid_number}       @var{number} | AUTO
+@config{grid_resolution}	@var{grid_number}       @var{number} | AUTO | EDGE
 
 Changes the horizontal space between grids, normally the period of a
 clock.  Specify a number in nanoseconds, or @code{AUTO} to compute the
-grid based on the @config{grid_signal}.
+grid based on the @config{grid_signal}.  Use @code{EDGE} to place a grid
+on each change of the @config{grid_signal}.
 
 @node grid_align, grid_signal, grid_resolution, Configuration Commands
 @subsection grid_align
 @findex grid_align
 @cindex Aligning, Grids
-@config{grid_align}	@var{grid_number}       @var{number} | ASSERTION | DEASSERTION
+@config{grid_align}	@var{grid_number}       @var{number} | ASSERTION | DEASSERTION | BOTH
 
 Changes the horizontal location of the first grid mark.  Specify a
 number in nanoseconds, @samp{ASSERTION} to align with the asserting edge
 of the @config{grid_signal}, or @samp{DEASSERTION} to align with the
-deasserting edge of the @config{grid_signal}.  The grid may also align
+deasserting edge of the @config{grid_signal}, or @samp{BOTH} to align
+with both edges of the @config{grid_signal}.  The grid may also align
 with changes in a bus, although in that case @samp{ASSERTION} and
 @samp{DEASSERTION} have the same effect.
 
