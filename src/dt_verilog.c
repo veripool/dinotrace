@@ -956,7 +956,6 @@ static void	verilog_read_data (
 	    /* Things to ignore, uncommon */
 	case '\n':
 	case '$':	/* Command, $end, $dump, etc (ignore) */
-	    printf ("Gotcmt '%s'\n", line);
 	    if (0==strncmp (line, "comment", 7)) {
 		verilog_read_till_end();
 	    }
