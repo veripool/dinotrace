@@ -517,7 +517,7 @@ void    win_goto_cb (w,trace,cb)
 	}
     
     /* right units */
-    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (time_units_to_string (trace->timerep)));
+    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (time_units_to_string (trace->timerep, FALSE)));
     XtSetValues (trace->gotos.label2, arglist, 1);
 
     /* make right one active */
