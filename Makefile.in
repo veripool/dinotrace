@@ -212,7 +212,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.ev *.evs *.ov *.ovs *.cv *.cvs *.ma *.mas
 
 distclean maintainer-clean::
-	rm -f Makefile config.status config.cache config.log dinotrace TAGS
+	rm -f Makefile config.status config.cache config.log dinotrace dinotrace.exe TAGS
 
 
 TAGFILES=${srcdir}/src/*.c ${srcdir}/src/*.h ${srcdir}/src/[a-z]*.in \
