@@ -9,6 +9,11 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 * Changes in Dinotrace 9.1i  03/07/2003
 
+****	Fix coredump on read and GCC 3.2.  [Jason Mancini]
+
+
+* Changes in Dinotrace 9.1i  03/07/2003
+
 ***	Display values with appropriate leading 0s. [Dan McMahill]
 
 ***	Fix 0 extension of verilog values.  [Dominik Strasser, Bill Welch]

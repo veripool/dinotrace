@@ -632,7 +632,11 @@ void fil_make_busses (
 	}
 
 	/* Restore the characters after the bus name */
-	if (sig_ptr->signame_buspos) strcat (sig_ptr->signame, postbusstuff);
+	if (sig_ptr->signame_buspos) {
+            sig_ptr->signame = XtRealloc(sig_ptr->signame,
+					 strlen (sig_ptr->signame) + strlen (postbusstuff) + 1);
+            strcat (sig_ptr->signame, postbusstuff);
+        }
 
 	/* Calc numsig, last_sig_ptr */
 	(trace->numsig) ++;
