@@ -205,8 +205,8 @@ See the Help menu for more information.");
 		draw_perform();
 		}
 
-	    XtAppNextEvent (global->appcontext, event);
-	    XtDispatchEvent (event);
+	    XtAppNextEvent (global->appcontext, &event);
+	    XtDispatchEvent (&event);
 	    }
 	}
     else {
