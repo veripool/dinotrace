@@ -828,6 +828,12 @@ void	update_signal_states (trace)
 	    if (rise1 && twohigh1) trace->grid_align = rise1 % trace->grid_res;
 	    else if (rise2 && twohigh2) trace->grid_align = rise2 % trace->grid_res;
 	    else if (rise3 && twohigh3) trace->grid_align = rise3 % trace->grid_res;
+
+	    if (twohigh1 && twohigh2 && twohigh3) {
+		/* Clocks are symmetric, override twohigh */
+		trace->grid_res_auto = GRID_RES_AUTO;
+		trace->grid_res /= 2;
+		}
 	    break;
 	    }
 
