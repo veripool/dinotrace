@@ -189,7 +189,7 @@ extern void     string_to_value ();
     
 /* dt_window routines */
 extern void
-    win_expose_cb(), win_resize_cb(),
+    win_expose_cb(), win_resize_cb(), win_refresh_cb(),
     win_goto_cb(), win_goto_option_cb(),
     win_goto_ok_cb(), win_goto_cancel_cb(),
     win_chg_res_cb(), win_inc_res_cb(), win_dec_res_cb(), 

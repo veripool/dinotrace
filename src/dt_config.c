@@ -31,6 +31,7 @@
 ! Config:
 !	click_to_edge	ON | OFF
 !	cursor		ON | OFF
+!	refreshing	AUTO | MANUAL
 !	grid		ON | OFF
 !	grid_align	<number> | ASSERTION | DEASSERTION | TWOCLOCK
 !	grid_resolution	<number> | AUTO | DOUBLE
@@ -587,6 +588,15 @@ void	config_process_line_internal (trace, line, eof)
 		if (DTPRINT_CONFIG) printf ("Config: click_to_edge=%d\n",value);
 		global->click_to_edge = value;
 		}
+	    }
+	else if (!strcmp(cmd, "REFRESHING")) {
+	    if (toupper(line[0])=='A')
+		global->redraw_manually = FALSE;
+	    else if (toupper(line[0])=='M')
+		global->redraw_manually = TRUE;
+	    else {
+		config_error_ack (trace, "Refreshing must be AUTO, or MANUAL\n");
+	        }
 	    }
 	else if (!strcmp(cmd, "SIGNAL_HEIGHT")) {
 	    value = trace->sighgt;

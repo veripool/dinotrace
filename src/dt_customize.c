@@ -156,29 +156,16 @@ void cus_dialog_cb (w,trace,cb)
 	trace->custom.ttimecyc = XmCreateToggleButton (trace->custom.rtime,"ttimecyc",arglist,1);
 	XtManageChild (trace->custom.ttimecyc);
 	
-/*	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Decsim"));
-	trace->custom.format_decsim = XmCreateToggleButton (trace->custom.format_radio,"fmtdec",arglist,1);
-	XtManageChild (trace->custom.format_decsim);
-	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Tempest CCLI"));
-	trace->custom.format_tempest = XmCreateToggleButton (trace->custom.format_radio,"fmttmp",arglist,1);
-	XtManageChild (trace->custom.format_tempest);
-	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Verilog DMP"));
-	trace->custom.format_verilog = XmCreateToggleButton (trace->custom.format_radio,"fmtvlg",arglist,1);
-	XtManageChild (trace->custom.format_verilog);
-*/	
 	/* Create signal height slider */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Signal Height"));
 	XtSetArg (arglist[1], XmNx, 180);
-	XtSetArg (arglist[2], XmNy, 190);
+	XtSetArg (arglist[2], XmNy, 170);
 	trace->custom.sighgt_label = XmCreateLabel (trace->custom.customize,"sighgtlabel",arglist,3);
 	XtManageChild (trace->custom.sighgt_label);
 	
 	XtSetArg (arglist[0], XmNshowValue, 1);
 	XtSetArg (arglist[1], XmNx, 180);
-	XtSetArg (arglist[2], XmNy, 220);
+	XtSetArg (arglist[2], XmNy, 200);
 	XtSetArg (arglist[3], XmNwidth, 100);
 	XtSetArg (arglist[4], XmNminimum, 15);
 	XtSetArg (arglist[5], XmNmaximum, 50);
@@ -195,6 +182,14 @@ void cus_dialog_cb (w,trace,cb)
 	trace->custom.click_to_edge = XmCreateToggleButton (trace->custom.customize,
 							"click_to_edge",arglist,4);
 	XtManageChild (trace->custom.click_to_edge);
+	
+	/* Create refresh button */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Manual Refreshing"));
+	XtSetArg (arglist[1], XmNx, 180);
+	XtSetArg (arglist[2], XmNy, 255);
+	XtSetArg (arglist[3], XmNshadowThickness, 1);
+	trace->custom.refreshing = XmCreateToggleButton (trace->custom.customize,"refreshing",arglist,4);
+	XtManageChild (trace->custom.refreshing);
 	
 	/* Create RF button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Rise/Fall Time"));
@@ -287,6 +282,9 @@ void cus_dialog_cb (w,trace,cb)
     XtSetArg (arglist[0], XmNset, global->click_to_edge ? 1:0);
     XtSetValues (trace->custom.click_to_edge,arglist,1);
     
+    XtSetArg (arglist[0], XmNset, global->redraw_manually ? 1:0);
+    XtSetValues (trace->custom.refreshing,arglist,1);
+    
     /* Do it */
     XtManageChild (trace->custom.customize);
     }
@@ -348,6 +346,7 @@ void	cus_ok_cb (w,trace,cb)
     trace->grid_vis = XmToggleButtonGetState (trace->custom.grid_state);
     trace->cursor_vis = XmToggleButtonGetState (trace->custom.cursor_state);
     global->click_to_edge = XmToggleButtonGetState (trace->custom.click_to_edge);
+    global->redraw_manually = XmToggleButtonGetState (trace->custom.refreshing);
 
     if (XmToggleButtonGetState (trace->custom.rfwid))
 	trace->sigrf = SIG_RF;

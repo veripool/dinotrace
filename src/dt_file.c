@@ -488,6 +488,7 @@ void read_make_busses (trace, not_tempest)
 	bbeg = sep+1;
 	if (!sep || !isdigit (*bbeg)) {
 	    if (trace->vector_seperator == '\0') {
+		/* Allow numbers at end to be stripped off as the vector bit */
 		for (sep = sig_ptr->signame + strlen (sig_ptr->signame) - 1;
 		     (sep > sig_ptr->signame) && isdigit (*sep);
 		     sep --) ;
@@ -565,7 +566,6 @@ void read_make_busses (trace, not_tempest)
 					    sig_ptr->signame, sig_ptr->msb_index, 
 					    sig_ptr->bits, sig_ptr->file_pos);
 					    */
-
 	/* Start on 2nd signal, see if can merge with previous signal */
 	if (bus_sig_ptr) {
 	    /* Combine signals with same base name, if */

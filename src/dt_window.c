@@ -65,6 +65,16 @@ void win_resize_cb (w,trace)
     draw_needed (trace);
     }
 
+void win_refresh_cb (w,trace)
+    Widget		w;
+    TRACE		*trace;
+{
+    if (DTPRINT_ENTRY) printf ("In win_refresh_cb - trace=%d\n",trace);
+    draw_all_needed ();
+    /* Main loop won't refresh if in manual refresh mode */
+    if (global->redraw_manually) draw_perform();
+    }
+
 void hscroll_unitinc (w,trace,cb)
     Widget			w;
     TRACE		*trace;

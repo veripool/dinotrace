@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V7.2b"
+#define DTVERSION	"Dinotrace V7.3a"
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
@@ -254,6 +254,7 @@ typedef struct {
     Widget reszoom_but;
     Widget resinc_but;
     Widget end_but;
+    Widget refresh_but;
     } COMMAND_WDGTS;
 
 typedef struct {
@@ -272,6 +273,7 @@ typedef struct {
     Widget grid_width;
     Widget grid_label;
     Widget click_to_edge;
+    Widget refreshing;
     Widget b1;
     Widget b2;
     Widget b3;
@@ -623,6 +625,8 @@ typedef struct {
     Boolean		save_enables;	/* Save enable wires */
 
     int			redraw_needed;	/* Some trace needs to refresh the screen when get a chance, 0=NO, 1=YES, 2=Do All */
+    Boolean		redraw_manually;/* True if in manual refreshing mode */
+
     DTime		time;		/* Time of trace at left edge of screen */
     float		res;		/* Resolution of graph width (gadgets) */
     Boolean		res_default;	/* True if resolution has never changed from initial value */

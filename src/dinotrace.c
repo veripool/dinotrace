@@ -219,7 +219,7 @@ See the Help menu for more information.");
     while (1) {
 	XEvent event;
 
-	if (global->redraw_needed && !XtAppPending (global->appcontext)) {
+	if (global->redraw_needed && !XtAppPending (global->appcontext) && !global->redraw_manually) {
 	    draw_perform();
 	    }
 

@@ -726,6 +726,16 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtAddCallback (trace->command.end_but, XmNactivateCallback, win_end_cb, trace);
     XtManageChild (trace->command.end_but);
     
+    /*** create refresh button in command region ***/
+    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Refresh") );
+    XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_WIDGET );
+    XtSetArg (arglist[2], XmNrightOffset, 7);
+    XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_FORM );
+    XtSetArg (arglist[4], XmNrightWidget, trace->command.end_but);
+    trace->command.refresh_but = XmCreatePushButton (trace->command.command, "refresh", arglist, 5);
+    XtAddCallback (trace->command.refresh_but, XmNactivateCallback, win_refresh_cb, trace);
+    XtManageChild (trace->command.refresh_but);
+    
     /*** create resolution button in command region ***/
     XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_POSITION );
     XtSetArg (arglist[1], XmNleftPosition, 45);
