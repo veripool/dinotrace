@@ -606,31 +606,13 @@ void get_geometry (
     /* calulate the number of signals possibly visible on the screen */
     trace->numsigvis = (trace->yend - trace->ystart) / global->sighgt;
     
-    /* Correct starting position to be reasonable */
-    if (global->namepos > (global->namepos_hier + global->namepos_base - global->namepos_visible))
-	global->namepos = (global->namepos_hier + global->namepos_base - global->namepos_visible);
-
-    /* Move horiz scrollbar left edge to start position */
-    if (trace->xstart_last != global->xstart
-	|| trace->width_last != trace->width) {
-	trace->xstart_last = global->xstart;
-	trace->width_last = trace->width;
-	XtUnmanageChild (trace->hscroll);
-	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
-	XtSetArg (arglist[1], XmNleftOffset, global->xstart - XSTART_MARGIN);
-	XtSetValues (trace->hscroll,arglist,2);
-	XtManageChild (trace->hscroll);	/* Don't need DManage... already set up */
-    }
-
+    /*update_scrollb (w, value, inc, min, max, size) */
     update_scrollbar (trace->hscroll, global->time,
 		      grid_primary_period (trace),
 		      trace->start_time, trace->end_time, 
 		      (int)TIME_WIDTH(trace) );
 
-    update_scrollbar (trace->command.namescroll, global->namepos,
-		      (global->namepos_hier + global->namepos_base - global->namepos_visible)/10,
-		      0, (global->namepos_hier + global->namepos_base),
-		      global->namepos_visible);
+    draw_namescroll (trace);
 
     update_scrollbar (trace->vscroll, trace->numsigstart, 1,
 		      0, trace->numsig, MIN (trace->numsigvis, trace->numsig - trace->numsigstart)); 

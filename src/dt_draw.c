@@ -660,31 +660,63 @@ static void draw_trace_signame (
     Dimension m_sig_width = XTextWidth (global->signal_font,"m",1);
     int truncchars;
     int prefix_chars = 0;
+    int startpos;
+    int endspace;
+    int scrollright;
+    int scrollleft;
+    int leftover;
     char *showname;
 
     showname = sig_ptr->signame;
     if (!global->prefix_enable) {
 	prefix_chars = MIN(global->namepos_prefix, strlen(sig_ptr->signame));
-	if (prefix_chars) prefix_chars--;	/* Include a hiearchy sep */
 	showname += prefix_chars;
     }
-
     basename = sig_basename (trace, sig_ptr);
 
+    /* Presume there is no scrolling, the startpos is char to start showing */
+    startpos = (strlen(showname) - strlen(basename)); /* where base starts */
+
+    /* Adjust for scrolling */
+    scrollright = global->namepos;
+    scrollleft = 0;
+    if (scrollright > 0) {
+	/* Make sure there is something invisible off to the right first */
+	scrollright = MIN(scrollright, ((int)strlen(basename)-global->namepos_visible));
+	scrollright = MAX(0,scrollright);
+	startpos += scrollright;
+    }
+    if (scrollright < 0) {
+	scrollleft = -scrollright;
+	scrollleft = MIN(scrollleft, startpos);
+	startpos -= scrollleft;
+    }
+
+    /* Add space to end of the name to align all basenames in a nice column */
+    endspace = MIN(global->namepos_base - (int)strlen(basename) - scrollleft,
+		   global->namepos_visible - (int)strlen(basename) - scrollleft);
+    endspace = MAX(0,endspace);
+
+    /* Add any more characters we can fit to the left */
+    leftover = global->namepos_visible - strlen(showname+startpos) - endspace;
+    leftover = MAX(0,leftover);
+    leftover = MIN(startpos,leftover);
+    startpos -= leftover;
+
     /* calculate the location to draw the signal name and draw it */
+    truncchars = MIN((int)strlen(showname+startpos), global->namepos_visible);
+    truncchars = MAX(0,truncchars);
+
     x1 = global->xstart - XSTART_MARGIN	/* rightmost character position */
-	- m_sig_width * strlen (showname)  /* fit in whole signal */
-	- m_sig_width * (global->namepos_base - strlen (basename)) /* extra chars to align basename */
-	+ m_sig_width * global->namepos;	/* Scroll position */
-    truncchars = global->namepos - (global->namepos_base - strlen (basename));
-    if (truncchars < 0) truncchars = 0;
+	- m_sig_width * (truncchars)  /* fit in whole signal */
+	- m_sig_width * (endspace); /* extra chars to align basename */
 
-    /*printf ("m_sig_width %d  npos %d nbase %d nhier %d nvis %d x1 %d tc %d\n", m_sig_width, global->namepos,
-      global->namepos_base, global->namepos_hier, global->namepos_visible, x1, truncchars);*/
+    /* printf ("npos %d nbase %d nhier %d nvis %d sp %d es %d trunc %d %s\n",
+	    global->namepos,  global->namepos_base, global->namepos_hier, global->namepos_visible,
+	    startpos, endspace, truncchars, showname);*/
 
-	XDrawString (global->display, trace->pixmap, trace->gc, x1, y,
-		     showname,
-		     strlen (showname) - truncchars);
+    XDrawString (global->display, trace->pixmap, trace->gc, x1, y,
+		 showname+startpos, truncchars);
 }
 
 void	draw_update_sigstart ()
@@ -695,7 +727,7 @@ void	draw_update_sigstart ()
     Signal_t *sig_ptr;
     Dimension widest_hier;
     Dimension widest_base;
-    Dimension xstart_sig, xstart_base;
+    Dimension xstart_sig;
     char *prefix;
     char *basename;
     Dimension smallest_width;
@@ -708,6 +740,9 @@ void	draw_update_sigstart ()
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	smallest_width = MIN (smallest_width,trace->width);
     }
+
+    /* /--prefix---\/-hier--\/--base--\ */
+    /* common_prefix.baz.bar.signal[10] */
 
     /* Calculate xstart from longest signal name */
     widest_hier = 0;
@@ -728,19 +763,36 @@ void	draw_update_sigstart ()
 		bp--;
 		*bp = '\0';
 	    }
- 	    if (DTPRINT) printf ("Signal = '%s'  hier=%d base=%d prefix=%s\n",sig_ptr->signame,widest_hier, widest_base, prefix);
+ 	    /*if (DTPRINT) printf ("Signal = '%s'  hier=%d base=%d prefix=%s\n",sig_ptr->signame,widest_hier, widest_base, prefix);*/
 	}
-	    
-	/* Don't waste more then 1/3 the screen area on signame */
-	xstart_sig = XMARGIN + MIN (m_sig_width * (widest_hier+widest_base), (smallest_width/3)) + XSTART_MARGIN;
-	xstart_base = XMARGIN + m_sig_width * widest_base + XSTART_MARGIN;
-	global->xstart = MAX (xstart_sig, xstart_base);
     }
+	    
+    {	/* A prefix must end at a bus separator, so we don't cut a word in half */
+	int preflen = 0;
+	if (prefix) {
+	    preflen = strlen(prefix);
+	    while (preflen && prefix[preflen-1]!=global->trace_head->dfile.hierarchy_separator)
+		preflen--;
+	    if (preflen) preflen--; /* Include a separator so user knows we stripped it */
+	}
+	global->namepos_prefix = preflen;
+    }
+
+    if (!global->prefix_enable) {
+	widest_hier = MAX(0,widest_hier - global->namepos_prefix);
+    }
+    /* Don't waste more then 1/3 the screen area on signame */
+    xstart_sig = XMARGIN + MIN (m_sig_width * (widest_hier+widest_base), (smallest_width/3)) + XSTART_MARGIN;
+    global->xstart = xstart_sig;
+
     /* Remember position of text */
     global->namepos_hier = widest_hier;
     global->namepos_base = widest_base;
-    global->namepos_prefix = prefix ? strlen(prefix) : 0;
     global->namepos_visible = (global->xstart - XSTART_MARGIN) / m_sig_width;
+
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	draw_namescroll (trace);
+    }
 
     DFree (prefix);
 }
@@ -813,6 +865,34 @@ void draw_update ()
     if (global->updates_needed & GUD_VAL_STATES) {
 	val_states_update ();
 	global->updates_needed &= ~GUD_VAL_STATES;
+    }
+}
+
+
+void draw_namescroll (Trace_t *trace)
+{
+    /* Correct starting position to be reasonable */
+    if (global->namepos > global->namepos_base)
+	global->namepos = global->namepos_base;
+    if (global->namepos < -(int)(global->namepos_hier))
+	global->namepos = -(int)(global->namepos_hier);
+
+    update_scrollbar (trace->command.namescroll,
+		      global->namepos,
+		      1,
+		      -(int)(global->namepos_hier), global->namepos_base + global->namepos_visible,
+		      global->namepos_visible);
+
+    /* Move horiz scrollbar left edge to start position */
+    if (trace->xstart_last != global->xstart
+	|| trace->width_last != trace->width) {
+	trace->xstart_last = global->xstart;
+	trace->width_last = trace->width;
+	XtUnmanageChild (trace->hscroll);
+	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[1], XmNleftOffset, global->xstart - XSTART_MARGIN);
+	XtSetValues (trace->hscroll,arglist,2);
+	XtManageChild (trace->hscroll);	/* Don't need DManage... already set up */
     }
 }
 

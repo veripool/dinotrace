@@ -997,9 +997,8 @@ Trace_t *create_trace (
     XtSetArg (arglist[4], XmNrightAttachment, XmATTACH_WIDGET );
     XtSetArg (arglist[5], XmNrightWidget, trace->hscroll);
     XtSetArg (arglist[6], XmNheight, 18);
-    XtSetArg (arglist[7], XmNprocessingDirection, XmMAX_ON_LEFT);
-    XtSetArg (arglist[8], XmNwidth, 18);
-    trace->command.namescroll = XmCreateScrollBar ( trace->command.form, "namescroll", arglist, 9);
+    XtSetArg (arglist[7], XmNwidth, 18);
+    trace->command.namescroll = XmCreateScrollBar ( trace->command.form, "namescroll", arglist, 8);
     DAddCallback (trace->command.namescroll, XmNvalueChangedCallback, win_namescroll_change_cb, trace);
     DAddCallback (trace->command.namescroll, XmNdragCallback,  win_namescroll_change_cb, trace);
     DManageChild (trace->command.namescroll, trace, MC_GLOBALKEYS);

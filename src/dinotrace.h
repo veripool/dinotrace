@@ -869,11 +869,11 @@ typedef struct {
     float		res;		/* Resolution of graph width (gadgets) */
     Boolean_t		res_default;	/* True if resolution has never changed from initial value */
     Position		xstart;		/* Start X pos of signals on display */
-    uint_t		namepos;	/* Position of first visible character based on xstart */
-    uint_t		namepos_hier;	/* Maximum hiearchy width in chars */
-    uint_t		namepos_base;	/* Maximum basename width in chars */
-    uint_t		namepos_prefix; /* Maximum characters in prefix hieararchy */
-    uint_t		namepos_visible;/* Visible size of names in chars */
+    int			namepos;	/* Position of first visible character based on xstart */
+    int			namepos_hier;	/* Maximum hiearchy width in chars */
+    int			namepos_base;	/* Maximum basename width in chars */
+    int			namepos_prefix; /* Maximum characters in prefix hieararchy */
+    int			namepos_visible;/* Visible size of names in chars */
     Boolean_t		prefix_enable;  /* Show entire prefix on screen */
     DTime_t		click_time;	/* time clicked on for res_zoom_click */
     Grid_t		*click_grid;	/* grid being set by grid_align */

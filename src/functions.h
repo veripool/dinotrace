@@ -483,6 +483,7 @@ extern void	socket_create (void);
 extern void	draw_update_sigstart (void);
 extern void	draw_perform (void);
 extern void	draw_update (void);
+extern void	draw_namescroll (Trace_t *trace);
 extern void	draw_scroll_hook_cb_expose (void);
 
 /* dt_icon */

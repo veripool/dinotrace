@@ -210,7 +210,7 @@ void cus_dialog_cb (
 	DManageChild (trace->custom.cursor_state, trace, MC_NOKEYS);
 	
 	/* Create prefix button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Show common signal prefix"));
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Draw common signal prefix"));
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNshadowThickness, 1);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
@@ -347,6 +347,9 @@ void	cus_ok_cb (
     
     /* res units may have changed, fix it & redraw the display */
     new_res (trace, global->res);
+
+    draw_needupd_sig_start ();	/* If prefix dropping changed */
+    draw_all_needed ();
 }
 
 void	cus_apply_cb (
