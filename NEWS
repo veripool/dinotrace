@@ -7,7 +7,7 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-* Changes in Dinotrace 9.1e  ***/2001
+* Changes in Dinotrace 9.1e  11/16/2001
 
 ***	Allow 1-bit wide signals to have statenames.  [Dominik Strasser]
 

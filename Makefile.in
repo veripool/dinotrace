@@ -237,3 +237,6 @@ dist: $(DISTDEP) maintainer-copy
 	rm -fr $$distname; \
 	uuencode $$distname.tar.gz $$distname.tar.gz > $$distname.tar.gz.uu; \
 
+maintainer-dist: dist tag
+	cp *.gz ~/backpack
+	mv *.gz ~/src/kits
