@@ -98,12 +98,15 @@ extern void draw_hscroll (),
 
 
 #define MAXCNT	4000		/* Maximum number of segment pairs to draw before stopping this signal */
+#define OVERLAPSPACE 2		/* Number of pixels within which two signal transitions are visualized as one */
 /* Don't make this above 4000, as some servers choke with that many points. */
 
 void draw (trace)                                 
     TRACE	*trace;                        
 {         
     int c=0,i,cnt,adj,ymdpt,yt,xloc,xend,du,len,mid,yfntloc;
+    int last_drawn_xloc;
+    unsigned int last_drawn_state;
     int	x1,x2,y1,y2;
     int numprt;				/* Number of signals printed out on screen */
     int srch_this_color;		/* Color to print signal if matches search value */
@@ -185,6 +188,7 @@ void draw (trace)
 	
 	/* Compute starting points for signal */
 	Pts[cnt].x = global->xstart - trace->sigrf;
+	last_drawn_xloc = -1;
 	switch ( cptr->sttime.state ) {
 	  case STATE_0: Pts[cnt].y = y2; break;
 	  case STATE_1: Pts[cnt].y = y1; break;
@@ -207,6 +211,18 @@ void draw (trace)
 	    
 	    /* find the x location for the end of this segment */
 	    xloc = nptr->sttime.time * global->res - adj;
+	    
+	    /* printf ("L %07x\t%d < %d < %d\n", cptr, last_drawn_xloc+OVERLAPSPACE, xloc, xend); */
+	    if ( (last_drawn_state==(cptr->sttime.state)) && ((last_drawn_xloc+OVERLAPSPACE) > xloc)
+		&& (xloc < xend-OVERLAPSPACE) ) {
+		/* Too close to previously drawn vector.  User won't see the difference */
+		/* printf ("\tskip\n"); */
+		goto next_state;
+		}
+	    else {
+		last_drawn_xloc = xloc;
+		last_drawn_state = cptr->sttime.state;
+		}
 	    
 	    /* Determine what the state of the signal is and build transition */
 	    switch ( cptr->sttime.state ) {
@@ -385,12 +401,20 @@ void draw (trace)
 		} /* end switch */
 	    
 	    cnt += 2;
+
+	  next_state:
+
 	    cptr += sig_ptr->lws;
 	    }
         cnt++;
 	
 	/* draw the lines */
 	XDrawLines (global->display, trace->wind, trace->gc, Pts, cnt, CoordModeOrigin);
+	/*
+	for (cnt--; cnt>0; cnt--) {
+	    printf ("C%d\tx%d\ty%d\n", cnt, Pts[cnt].x, Pts[cnt].y);
+	    }
+	    */
 	} /* end of FOR */
     
     /* Back to default color */
@@ -518,6 +542,8 @@ void	update_globals ()
     int xstarttemp;
     char *t1;
 
+    if (DTPRINT) printf ("In update_globals\n");
+
     /* Calculate xstart from longest signal name */
     xstarttemp=XSTART_MIN;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
@@ -538,7 +564,7 @@ void	update_globals ()
 void redraw_all (trace)
     TRACE		*trace;
 {
-    if (DTPRINT) printf ("In new_grid - trace=%d\n",trace);
+    if (DTPRINT) printf ("In redraw_all\n");
 
     /* do not unroll this loop, as it will make the refresh across windows */
     /* appear out of sync */

@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V6.7a"
+#define DTVERSION	"Dinotrace V6.7b"
 /*#define EXPIRATION	(60*60*24*30)	/ * In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
@@ -36,6 +36,12 @@
 #pragma member_alignment
 #endif
 */
+
+#ifdef __osf__
+#define	INLINE inline
+#else
+#define	INLINE
+#endif
 
 #define MAXSIGLEN	256	/* Maximum length of signal names */
 #define MAXFNAMELEN	200	/* Maximum length of file names */
@@ -208,8 +214,8 @@ typedef struct {
     Widget	menu;
     Widget	pdmenu[11];
     Widget	pdmenubutton[11];
-    Widget	pdentry[20];
-    Widget	pdentrybutton[70];
+    Widget	pdentry[22];
+    Widget	pdentrybutton[72];
     Widget	pdsubbutton[4+MAX_SRCH*4];
     int		sig_highlight_pds;
     int		cur_highlight_pds;
@@ -262,9 +268,10 @@ typedef struct {
     Widget notetext;
     Widget notelabel;
     Widget pagelabel;
+    Widget all_signals;
+    Widget all_times;
     Widget s1;
     Widget b1;
-    Widget b2;
     Widget b3;
     } PRINT_WDGTS;
 
@@ -477,6 +484,7 @@ typedef struct st_trace {
     Widget		message;	/* Message (error/warn/etc) widget */
 
     char		filename[MAXFNAMELEN];	/* Current file */
+    char		printname[MAXFNAMELEN];	/* Print filename */
     struct stat		filestat;	/* Information on the current file */
     int			fileformat;	/* Type of trace file (see FF_*) */
     Boolean		loaded;		/* True if the filename is loaded in */
@@ -541,6 +549,8 @@ typedef struct {
 
     int			pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
     PrintSize		print_size;	/* Size of paper for dt_printscreen */
+    Boolean		print_all_signals; /* Print all signals in the trace */
+    Boolean		print_all_times;   /* Print all times in the trace */
     Boolean		click_to_edge;	/* True if clicking to edges is enabled */
     TimeRep		time_precision;	/* Time precision = TIMEREP_NS/TIMEREP_CYC */
     char		time_format[12]; /* Time format = printf format or *NULL */

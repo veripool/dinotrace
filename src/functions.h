@@ -79,8 +79,8 @@ extern void
     
 /* dt_printscreen routines */
 extern void
-    ps_print(), ps_print_all(), ps_numpag_cb(), ps_dialog(), 
-    ps_reset();
+    ps_print_internal(), ps_print_req_cb(), ps_print_direct_cb(),
+    ps_print_all(), ps_numpag_cb(), ps_dialog(), ps_reset();
     
 /* dt_binary.c routines */
 extern void
@@ -94,7 +94,6 @@ extern void
     fil_string_to_value(),
     fil_add_cptr(),
     decsim_read_ascii(), 
-    cptr_to_value(),
     read_trace_end(), help_cb(), help_trace_cb(), update_signal_states();
 
 /* dt_util routines */

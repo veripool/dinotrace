@@ -170,8 +170,6 @@ void trace_close_cb (w,trace,cb)
     free_data (trace);
     /* destroy all the widgets created for the screen */
     XtDestroyWidget (trace->toplevel);
-    /* free the display structure */
-    DFree (trace);
 
     /* relink pointers to ignore this trace */
     if (trace == global->trace_head)
@@ -179,6 +177,9 @@ void trace_close_cb (w,trace,cb)
     for (trace_ptr = global->trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	if (trace_ptr->next_trace == trace) trace_ptr->next_trace = trace->next_trace;
 	}
+
+    /* free the display structure */
+    DFree (trace);
 
     /* Update menus */
     set_menu_closes ();
@@ -310,6 +311,7 @@ void create_globals (argc, argv, sync)
 				    NULL, 0, &argc_copy, argv_copy);
 
     if (global->display==NULL) {
+	display_name[0] = '\0';
 	printf ("Can't open display '%s'\n", XDisplayName (display_name));
 	exit (0);
 	}
@@ -506,7 +508,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     pd = pds = pde = -1;
 
     dt_menu_title ("Trace", 'T');
-    dt_menu_entry	("Read",	'R',	trace_read_cb);
+    dt_menu_entry	("Read...",	'R',	trace_read_cb);
     dt_menu_entry	("ReRead",	'e',	trace_reread_cb);
     dt_menu_entry	("ReRead All",	'A',	trace_reread_all_cb);
     dt_menu_entry	("Open",	'O',	trace_open_cb);
@@ -516,7 +518,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     dt_menu_entry	("Exit", 	'x',	trace_exit_cb);
 
     dt_menu_title ("Customize", 'u');
-    dt_menu_entry	("Change",	'C',	cus_dialog_cb);
+    dt_menu_entry	("Change...",	'C',	cus_dialog_cb);
     dt_menu_entry	("ReRead",	'e',	cus_reread_cb);
     dt_menu_entry	("Restore",	'R',	cus_restore_cb);
 
@@ -537,32 +539,33 @@ TRACE *create_trace (xs,ys,xp,yp)
     dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
 
     dt_menu_title ("Grid", 'G');
-    dt_menu_entry	("Res",	 	'R',	grid_res_cb);
+    dt_menu_entry	("Res...", 	'R',	grid_res_cb);
     dt_menu_entry	("Align",	'A',	grid_align_cb);
     dt_menu_entry	("Reset",	's',	grid_reset_cb);
     dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
 
     dt_menu_title ("Signal", 'S');
-    dt_menu_entry	("Add",		'A',	sig_add_cb);
+    dt_menu_entry	("Add...",	'A',	sig_add_cb);
     dt_menu_entry	("Move",	'M',	sig_mov_cb);
     dt_menu_entry	("Copy",	'C',	sig_copy_cb);
     dt_menu_entry	("Delete",	'D',	sig_del_cb);
-    dt_menu_entry	("Search",	'S',	sig_search_cb);
+    dt_menu_entry	("Search...",	'S',	sig_search_cb);
     dt_menu_subtitle	("Highlight",	'H');
     trace->menu.sig_highlight_pds = pds+1;
     for (i=0; i<=MAX_SRCH; i++) {
 	dt_menu_subentry_c	(trace->xcolornums[i], sig_highlight_cb);
 	}
-    dt_menu_entry	("Select",	'e',	sig_select_cb);
+    dt_menu_entry	("Select...",	'e',	sig_select_cb);
     dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
 
     dt_menu_title ("Value", 'V');
     dt_menu_entry	("Examine",	'E',	val_examine_cb);
-    dt_menu_entry	("Search",	'S',	val_search_cb);
+    dt_menu_entry	("Search...",	'S',	val_search_cb);
     dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
 
     dt_menu_title ("Print", 'P');
-    dt_menu_entry	("Print",	'P',	ps_dialog);
+    dt_menu_entry	("Print...",	'i',	ps_dialog);
+    dt_menu_entry	("Print",	'P',	ps_print_direct_cb);
     dt_menu_entry	("Reset",	'e',	ps_reset);
     
     if (DTDEBUG) {
@@ -724,6 +727,8 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtManageChild (trace->main);
     XtRealizeWidget (trace->toplevel);
     
+    ps_reset (NULL, trace, NULL);
+
     /* Initialize Various Parameters */
     trace->firstsig = NULL;
     trace->dispsig = NULL;

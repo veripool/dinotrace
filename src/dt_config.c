@@ -632,8 +632,8 @@ void	config_process_line (trace, line, readfp)
 	switch (toupper(line[0])) {
 	  case 'D':
 	    if (toupper (*tp) == 'Z')
-		file_format = FF_DECSIM;
-	    else file_format = FF_DECSIM_Z;
+		file_format = FF_DECSIM_Z;
+	    else file_format = FF_DECSIM;
 	    break;
 	  case 'T':
 	    file_format = FF_TEMPEST;

@@ -167,26 +167,22 @@ void fil_read_cb (trace)
     
     /* Compute the file format */
     if (trace->fileformat == FF_AUTO) {
-	switch (file_format) {
-	  case	FF_AUTO:
-	  case	FF_DECSIM:
-	  case	FF_DECSIM_BIN:
+	trace->fileformat =	file_format;
+	}
+
+    /* Normalize format */
+    switch (trace->fileformat) {
+      case	FF_AUTO:
+      case	FF_DECSIM:
+      case	FF_DECSIM_BIN:
 #ifdef VMS
-	    trace->fileformat =	FF_DECSIM_BIN;
+	trace->fileformat =	FF_DECSIM_BIN;
 #else
-	    /* Binary relys on varible RMS records - Ultrix has no such thing */
-	    trace->fileformat =	FF_DECSIM_ASCII;
+	/* Binary relys on varible RMS records - Ultrix has no such thing */
+	trace->fileformat =	FF_DECSIM_ASCII;
 #endif
-	    break;
-	  case	FF_TEMPEST:
-	  case	FF_VERILOG:
-	  case	FF_DECSIM_ASCII:
-	  case	FF_DECSIM_Z:
-	    trace->fileformat =	file_format;
-	    break;
-	  default:
-	    fprintf (stderr, "Unknown file format (AUTO)!!\n");
-	    }
+	break;
+	/* No default */
 	}
 
     /* Open file and copy descriptor information */
@@ -278,6 +274,7 @@ void fil_read_cb (trace)
     set_cursor (trace, DC_NORMAL);
     if (global->res_default) win_full_res_cb (NULL, trace, NULL);
     new_time (trace);	/* Realignes start and displays */
+    if (DTPRINT) printf ("fil_read_cb done!\n");
     }
 
 void help_cb (w,trace,cb)

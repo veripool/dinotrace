@@ -401,7 +401,8 @@ void    fil_format_option_cb (w,trace,cb)
 
     for (i=0; i<FF_NUMFORMATS; i++) {
 	if (w == trace->fileselect.format_item[i]) {
-	    file_format = i;
+	    file_format = i;	/* Change global verion */
+	    trace->fileformat = i;	/* Specifically make this file use this format */
 	    fil_select_set_pattern (trace);
 	    }
 	}
@@ -649,7 +650,6 @@ void    print_cptr (cptr)
 	break;
 	}
     }
-
 
 void    print_screen_traces (w,trace)
     Widget	w;

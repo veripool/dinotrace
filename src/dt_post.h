@@ -47,8 +47,8 @@ char dinopost[] = "% Header last modified 5/11/94 by Wilson Snyder, RICKS::SNYDE
   1 setlinecap 1 setlinejoin 1 setlinewidth	% set line char\n\
 \n\
   20 20 MT 20 string cvs true charpath stroke	% draw logo\n\
-  PG_WID 180 sub 20 MT (Page ) true charpath	% draw PAGE\n\
-  3 string cvs true charpath stroke		% draw page number\n\
+  PG_WID 180 sub 20 MT\n\
+    20 string cvs true charpath stroke		% draw page number\n\
 \n\
   /Times-Roman findfont 10 scalefont setfont    % choose normal font\n\
   1 setlinecap 1 setlinejoin 1 setlinewidth     % set line char\n\

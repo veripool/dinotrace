@@ -40,7 +40,6 @@
 
 /****************************** UTILITIES ******************************/
 
-#pragma inline (value_to_string)
 void    value_to_string (trace, strg, cptr)
     TRACE *trace;
     char *strg;
