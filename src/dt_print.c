@@ -77,7 +77,7 @@
 /* If XTextWidth is called in this file, then something's wrong, as X widths != print widths */
 
 
-void print_signame_scrolled (
+static void print_signame_scrolled (
     Trace	*trace,
     FILE	*psfile,
     Signal	*sig_ptr)
@@ -133,7 +133,7 @@ void    print_reset (
 #endif
 }
 
-void print_draw_grid (
+static void print_draw_grid (
     Trace	*trace,
     FILE	*psfile,
     DTime	printtime,	/* Time to start on */
@@ -197,7 +197,7 @@ void print_draw_grid (
     }
 }
 
-void print_draw_grids (
+static void print_draw_grids (
     Trace	*trace,
     FILE	*psfile,
     DTime	printtime)
@@ -229,7 +229,7 @@ void print_draw_grids (
 }
 
 
-void print_draw_val (
+static void print_draw_val (
     Trace	*trace,
     FILE	*psfile,
     Signal	*sig_ptr,	/* Vertical signal to start on */
@@ -411,7 +411,7 @@ void print_draw_val (
 } /* End of DRAW */
 
 
-void print_draw_sig (
+static void print_draw_sig (
     Trace	*trace,
     FILE	*psfile,
     Signal	*sig_ptr,	/* Vertical signal to start on */
@@ -444,7 +444,7 @@ void print_draw_sig (
     }
 }
 
-void print_draw_cursors (
+static void print_draw_cursors (
     Trace	*trace,
     FILE	*psfile,
     DTime	printtime)	/* Time to start on */
@@ -737,7 +737,7 @@ void    print_range_sensitives_cb (
 }
 
 
-void    print_range_create (
+static void    print_range_create (
     Trace		*trace,
     RangeWidgets_t	*range_ptr,
     Widget		above,		/* Upper widget for form attachment */

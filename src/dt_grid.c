@@ -100,7 +100,7 @@ DTime	grid_primary_period (
 
 /****************************** AUTO GRIDS ******************************/
 
-void	grid_calc_auto (
+static void	grid_calc_auto (
     Trace	*trace,
     Grid	*grid_ptr)
 {
@@ -240,7 +240,7 @@ char *grid_examine_string (
 
 /****************************** MENU OPTIONS ******************************/
 
-void    grid_align_choose (
+static void    grid_align_choose (
     Trace	*trace,
     Grid	*grid_ptr)
 {
@@ -689,13 +689,12 @@ void    grid_customize_ok_cb (
 	strcpy (grid_ptr->signal, XmTextGetString (trace->gridscus.grid[grid_num].signal));
 	grid_ptr->visible = XmToggleButtonGetState (trace->gridscus.grid[grid_num].visible);
 	grid_ptr->wide_line = XmToggleButtonGetState (trace->gridscus.grid[grid_num].wide_line);
-	if (grid_ptr->period_auto == PA_USER) {
-	    grid_ptr->period = string_to_time (trace, XmTextGetString (trace->gridscus.grid[grid_num].period));
-	}
-
 	grid_ptr->color = option_to_number(trace->gridscus.grid[grid_num].options, trace->gridscus.grid[grid_num].pulldownbutton, MAX_SRCH);
 	grid_ptr->period_auto = option_to_number(trace->gridscus.grid[grid_num].autoperiod_options, trace->gridscus.grid[grid_num].autoperiod_pulldownbutton, 2);
 	grid_ptr->align_auto = option_to_number(trace->gridscus.grid[grid_num].autoalign_options, trace->gridscus.grid[grid_num].autoalign_pulldownbutton, 2);
+	if (grid_ptr->period_auto == PA_USER) {
+	    grid_ptr->period = string_to_time (trace, XmTextGetString (trace->gridscus.grid[grid_num].period));
+	}
     }
     
     XtUnmanageChild (trace->gridscus.dialog);

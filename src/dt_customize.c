@@ -241,7 +241,7 @@ void cus_dialog_cb (
     }
     XtSetValues (trace->custom.page_option, arglist, 1);
 
-    if (global->timerep == TIMEREP_NS)
+    if (global->timerep == TIMEREP_PS)
 	XtSetArg (arglist[0], XmNmenuHistory, trace->custom.time_item[0]);
     else if (global->timerep == TIMEREP_NS)
 	XtSetArg (arglist[0], XmNmenuHistory, trace->custom.time_item[1]);
@@ -271,7 +271,7 @@ void cus_reread_cb (
 {
     if (DTPRINT_ENTRY) printf ("in cus_reread_cb trace=%p\n",trace);
     
-    config_read_defaults (trace, TRUE);
+    config_read_defaults (trace, FALSE);
     
     /* Reformat and refresh */
     draw_all_needed ();
@@ -319,8 +319,8 @@ void	cus_ok_cb (
     else if (clicked == trace->custom.time_item[2])
 	global->timerep = TIMEREP_US;
     else if (clicked == trace->custom.time_item[1])
-	global->timerep = TIMEREP_PS;
-    else global->timerep = TIMEREP_NS;
+	global->timerep = TIMEREP_NS;
+    else global->timerep = TIMEREP_PS;
 
     XtSetArg (arglist[0], XmNmenuHistory, &clicked);
     XtGetValues (trace->custom.page_option, arglist, 1);
@@ -456,7 +456,7 @@ void cus_read_ok_cb (
     DFree (tmp);
     if (DTPRINT_FILE) printf ("In cus_read_ok_cb Filename=%s\n",trace->filename);
 
-    config_read_file (trace, filename, TRUE, TRUE);
+    config_read_file (trace, filename, TRUE, FALSE);
 
     /* Apply the statenames */
     grid_calc_autos (trace);

@@ -170,6 +170,21 @@ int    main (
 		    global->config_enable[cfg_num] = FALSE;
 		}
 	    }
+            else if ( !strcmp (sw, "simview") ) {
+		/* Enable use of SimView */
+		/* Next parameter is associates with "-simview" */
+		shift;
+		if (i >= argc) {
+		    printf ("Error: -simview requires a second argument.\n");
+		    exit(1);
+		}
+		/* Indicate the SimView is used by allocating a structure for it. */
+		global->simview_info_ptr = (SimViewInfo_t*)XtMalloc (sizeof (SimViewInfo_t));
+		/* Store the simview argument for future SimView initialization.
+		 * We can't initialize SimView now because Xt has not been initialized yet. */
+		global->simview_info_ptr->application_name_with_args = strdup(argv[i]);
+		global->simview_info_ptr->handshake = TRUE;
+            }
 	    else {
 		printf ("Invalid %s Option: %s\n", DTVERSION, sw);
 		exit (-1);
@@ -197,10 +212,15 @@ int    main (
     /* create global information */
     create_globals (0, argv, sync);
 
+    /* Initialize SimView. */
+    if (global->simview_info_ptr) {
+	simview_init (global->simview_info_ptr->application_name_with_args);
+    }
+              
     /* Load config options (such as file_format) */
     /* Create a temporary trace structure for this, as config will want to write to the trace structure */
     trace = malloc_trace ();
-    config_read_defaults (trace, TRUE);
+    config_read_defaults (trace, FALSE);
 
     /* Make the temporary trace the deleted signal trace */
     strcpy (trace->filename, "DELETED");

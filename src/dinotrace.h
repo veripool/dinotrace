@@ -141,7 +141,7 @@
 #define DC_SIG_DELETE	4	/* XC_hand1		Signal Delete */
 #define DC_SIG_HIGHLIGHT 10	/* XC_spraycan		Signal Highlight */
 #define DC_SIG_RADIX	13	/* XC_dotbox		Signal Radix */
-#define DC_CUR_ADD	5	/* XC_center_ptr	Cursor Add */
+#define DC_CUR_ADD	5	/* XC_center_ptr	Cursor Add (and Cursor Add SimView) */
 #define DC_CUR_MOVE	6	/* XC_sb_h_double_arrow	Cursor Move (drag) */
 #define DC_CUR_DELETE	7	/* XC_X_cursor		Cursor Delete */
 #define DC_CUR_HIGHLIGHT 10	/* XC_spraycan		Cursor Highlight */
@@ -315,6 +315,7 @@ typedef struct {
     uint_t	sig_radix_pds;
     uint_t	cur_highlight_pds;
     uint_t	cur_add_pds;
+    uint_t      cur_add_simview_pds;
     uint_t	val_highlight_pds;
     uint_t	pdm, pdmsep, pde, pds;		/* Temp for loading structure */
 } MenuWidgets_t;
@@ -585,7 +586,8 @@ typedef enum {
     USER=0,	/* User placed it, preserve across rereading traces */
     SEARCH,	/* Value search, replace as needed */
     SEARCHOLD,	/* Old search, used by val_update_search only */
-    CONFIG	/* Config file read in, replace when reread */
+    CONFIG,	/* Config file read in, replace when reread */
+    SIMVIEW     /* Linked to a SimView view */
 } CursorType_t;
 
 typedef struct st_cursor {
@@ -596,6 +598,9 @@ typedef struct st_cursor {
     ColorNum		color;		/* Color number (index into trace->xcolornum) */
     CursorType_t	type;		/* Type of cursor */
     char		*note;		/* Information for user, or NULL */
+    int                 simview_id;     /* For SIMVIEW cursors only: an ID number.
+                                         *   ids >= 0 assigned by Dinotrace
+                                         *   ids <  0 assigned by SimView. */
 } DCursor; /* Not 'Cursor', as that's defined in X11.h */
 
 typedef struct {
@@ -747,15 +752,23 @@ struct st_trace {
     DTime		end_time;	/* Time of ending of trace */
 }; /*Trace;  typedef'd above */
 
+/* SimView use information. */
+typedef struct {
+    char *		application_name_with_args;
+    boolean_t 		handshake;  /* TRUE/FALSE.  TRUE means Dinotrace only communicates changes, */
+    /*                 without altering cursors.  SimView replies will alter them. */
+} SimViewInfo_t;
+
 /* Global information */
 typedef struct {
     Trace		*trace_head;	/* Pointer to first trace, set deleted_trace->next too  */
     Trace		*preserved_trace;	/* Pointer to old trace when reading in new one */
     Trace		*deleted_trace_head;	/* Pointer to trace with deleted signals, which then links to teace_head */
 
-    Signal		*selected_sig;	/* Selected signal to move or add */
-    Trace		*selected_trace; /* Selected signal's trace */
+    Signal		*selected_sig;		/* Selected signal to move or add */
+    Trace		*selected_trace; 	/* Selected signal's trace */
     Radix_t		*selected_radix;	/* Selected radix to change to */
+    CursorType_t	selected_curtype;	/* Selected cursor type */
     SignalList		*select_head;	/* Pointer to selected signal list head */
 
     DCursor		*cursor_head;	/* Pointer to first cursor */
@@ -847,6 +860,8 @@ typedef struct {
     char		*cuswr_filename;	/* Config write filename */
     Boolean_t		cuswr_item[CUSWRITEM_MAX];	/* Config write item enables */
     TraceSel_t		cuswr_traces;	/* Which traces to include */
+
+    SimViewInfo_t	*simview_info_ptr;    /* NULL if SimView not enabled. */
 } Global;
 
 extern Global *global;

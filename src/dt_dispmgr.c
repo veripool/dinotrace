@@ -180,7 +180,7 @@ void set_cursor (
 }
 
 /* Make the close menu options on all of the menus be active */
-void set_menu_closes ()
+static void dm_set_menu_closes ()
 {
     Trace	*trace;
     int		sensitive;
@@ -283,7 +283,7 @@ void trace_close (
     DFree (trace);
 
     /* Update menus */
-    set_menu_closes ();
+    dm_set_menu_closes ();
 }
 
 void trace_close_cb (
@@ -540,7 +540,7 @@ Trace *malloc_trace (void)
 }
     
 
-void dm_menu_title (
+static void dm_menu_title (
     Trace *trace,
     char *title,	
     char key		/* Or '\0' for none */
@@ -558,7 +558,7 @@ void dm_menu_title (
     DManageChild (trace->menu.pdmenubutton[trace->menu.pde], trace, MC_NOKEYS);
 }
 	
-void dm_menu_entry (
+static void dm_menu_entry (
     Trace *trace,
     char *title,	
     char key,		/* Or '\0' for none */
@@ -580,7 +580,7 @@ void dm_menu_entry (
     DManageChild (trace->menu.pdentrybutton[trace->menu.pdm], trace, MC_NOKEYS);
 }
 
-void dm_menu_separator (
+static void dm_menu_separator (
     Trace *trace
     )
     /*** create a separator menu entry under the top bar ***/
@@ -590,7 +590,7 @@ void dm_menu_separator (
     DManageChild (trace->menu.pdsep[trace->menu.pdmsep], trace, MC_NOKEYS);
 }
 
-void dm_menu_subtitle (Trace *trace,
+static void dm_menu_subtitle (Trace *trace,
 		       char *title,	
 		       char key			/* Or '\0' for none */
 		       )
@@ -607,7 +607,7 @@ void dm_menu_subtitle (Trace *trace,
     DManageChild (trace->menu.pdentrybutton[trace->menu.pdm], trace, MC_NOKEYS);
 }
 				
-void dm_menu_subentry (
+static void dm_menu_subentry (
     Trace *trace,
     char *title,	
     char key,		/* Or '\0' for none */
@@ -629,7 +629,7 @@ void dm_menu_subentry (
     DManageChild (trace->menu.pdsubbutton[trace->menu.pds], trace, MC_NOKEYS);
 }
 
-void dm_menu_subentry_colors (
+static void dm_menu_subentry_colors (
     Trace *trace,
     char *cur_accel,	/* Accelerator, or NULL */
     char *cur_accel_string,	/* Accelerator string, or NULL */
@@ -655,7 +655,7 @@ void dm_menu_subentry_colors (
 }
 
 
-void dm_menu_subentry_radixs (
+static void dm_menu_subentry_radixs (
     Trace *trace,
     void (*callback)()
     )
@@ -684,7 +684,7 @@ void dm_menu_subentry_radixs (
 *  return (XLoadQueryFont (global->display, global->signal_font_name))
 *  but that crashes if a font isn't found.
 */
-XFontStruct *grab_font (
+static XFontStruct *grab_font (
     Trace	*trace,
     char	*font_name)		/* Name of the font */
 {
@@ -835,6 +835,11 @@ Trace *create_trace (
     dm_menu_subtitle (trace, 	"Add",		'A');
     trace->menu.cur_add_pds = trace->menu.pds+1;
     dm_menu_subentry_colors (trace, "!<Key>C:", "c", "!Shift<Key>C:", "S-c",cur_add_cb);
+    if (global->simview_info_ptr) {
+	dm_menu_subtitle (trace, "Open View",	'V');
+	trace->menu.cur_add_simview_pds = trace->menu.pds+1;
+	dm_menu_subentry_colors (trace, NULL, NULL, NULL, NULL, cur_add_simview_cb);    
+    }
     dm_menu_subtitle (trace,	 "Highlight",	'H');
     trace->menu.cur_highlight_pds = trace->menu.pds+1;
     dm_menu_subentry_colors (trace, 		NULL, NULL, NULL, NULL,	cur_highlight_cb);
@@ -1085,7 +1090,7 @@ Trace *create_trace (
 
     get_geometry (trace);
 
-    set_menu_closes ();
+    dm_set_menu_closes ();
 
     return (trace);
 }

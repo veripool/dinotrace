@@ -125,6 +125,7 @@
 
 /* File locals */
 static Boolean_t config_report_errors;
+static Boolean_t config_format_only;
 static char *config_file="";
 static int config_line_num=0;
 static Boolean_t config_reading_socket;
@@ -155,7 +156,7 @@ void	config_error_ack (
 *	READING FUNCTIONS
 **********************************************************************/
 
-void config_get_line (
+static void config_get_line (
     char *line,
     int len,
     FILE *readfp)
@@ -168,7 +169,7 @@ void config_get_line (
     config_line_num++;
 }
 
-int	config_read_string (
+static int config_read_string (
     Trace *trace,
     char *line,
     char *out)
@@ -217,7 +218,7 @@ int	config_read_string (
     return (outlen);
 }
 
-int	config_read_value (
+static int config_read_value (
     Trace *trace,
     char *line,
     char *out)
@@ -268,7 +269,7 @@ int	config_read_value (
     return (outlen);
 }
 
-int	config_read_pattern (
+static int config_read_pattern (
     Trace	*trace,
     char *line,
     char *pattern)
@@ -281,7 +282,7 @@ int	config_read_pattern (
     return (outlen);
 }
 
-int	config_read_state (
+static int config_read_state (
     char *line,
     char *out,
     int *statenum_ptr)
@@ -316,7 +317,7 @@ int	config_read_state (
     return (strlen(out)+outlen);
 }
 
-int	config_read_int (
+static int config_read_int (
     char *line,
     int *out)
 {
@@ -361,7 +362,7 @@ SignalState_t	*signalstate_find (
     return (NULL);
 }
 
-void	signalstate_add (
+static void	signalstate_add (
     Trace	*trace,
     SignalState_t *info)
 {
@@ -394,7 +395,7 @@ void	signalstate_add (
     }
 }
 
-void	signalstate_free (void)
+static void	signalstate_free (void)
 {
     SignalState_t *sstate_ptr, *last_ptr;
 
@@ -407,7 +408,7 @@ void	signalstate_free (void)
     global->signalstate_head = NULL;
 }
 
-void	signalstate_write (
+static void	signalstate_write (
     FILE *writefp, char *c)
 {
     SignalState_t *sstate_ptr;
@@ -473,7 +474,7 @@ void	config_parse_geometry (
 				geometry->xp?'%':'-', geometry->yp?'%':'-');
 }
 
-void	config_geometry_string (
+static void	config_geometry_string (
     Geometry	*geometry,
     char *strg)
 {
@@ -489,7 +490,7 @@ void	config_geometry_string (
 *	reading functions w/ error messages
 **********************************************************************/
 
-int	config_read_on_off (
+static int	config_read_on_off (
     Trace	*trace,
     char *line,
     int *out)
@@ -513,7 +514,7 @@ int	config_read_on_off (
     return (outlen);
 }
 
-int	config_read_color (
+static int	config_read_color (
     Trace	*trace,
     char 	*line,
     ColorNum	*color,
@@ -585,7 +586,7 @@ int	config_read_grid (
 *	config_process_states
 **********************************************************************/
 
-int	config_process_state (
+static int config_process_state (
     Trace	*trace,
     char 	*line,
     SignalState_t *sstate_ptr)
@@ -619,9 +620,10 @@ int	config_process_state (
 *	config_process_line
 **********************************************************************/
 
-void	config_process_line_internal (
+static void	config_process_line_internal (
     Trace	*trace,
     char	*line,
+    Boolean_t	format_only,
     Boolean_t	eof)		/* Final call of process_line with EOF */
 {
     char cmd[MAXSIGLEN];
@@ -684,7 +686,6 @@ void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "PRINT")) {
-	    
 	    value=DTPRINT;
 	    if (toupper(line[0])=='O' && toupper(line[1])=='N') DTPRINT = -1;
 	    else if (toupper(line[0])=='O' && toupper(line[1])=='F') DTPRINT = 0;
@@ -698,6 +699,28 @@ void	config_process_line_internal (
 		}
 	    }
 	    if (DTPRINT) printf ("Config: DTPRINT=0x%x\n",value);
+	}
+	else if (!strcmp(cmd, "FILE_FORMAT")) {
+	    char *tp;
+	    for (tp = line; *tp && *tp!='Z' && *tp!='z'; tp++) ;
+	    switch (toupper(line[0])) {
+	      case 'D':
+		file_format = FF_DECSIM;
+		break;
+	      case 'T':
+		file_format = FF_TEMPEST;
+		break;
+	      case 'V':
+		if (toupper(line[1]) == 'P') {
+		    file_format = FF_VERILOG_VPD;
+		} else {
+		    file_format = FF_VERILOG;
+		}
+		break;
+	      default:
+		config_error_ack (trace, "File_Format must be DECSIM, TEMPEST, VPD or VERILOG\n");
+	    }
+	    if (DTPRINT_CONFIG) printf ("File_format = %d\n", file_format);
 	}
 	else if (!strcmp(cmd, "SAVE_ENABLES")) {
 	    value=global->save_enables;
@@ -713,6 +736,76 @@ void	config_process_line_internal (
 		global->save_ordering=value;
 	    }
 	}
+	else if (!strcmp(cmd, "TIME_REP")) {
+	    switch (toupper(line[0])) {
+	      case 'N':	global->timerep = TIMEREP_NS;	break;
+	      case 'U':	global->timerep = TIMEREP_US;	break;
+	      case 'P':	global->timerep = TIMEREP_PS;	break;
+	      case 'C':	global->timerep = TIMEREP_CYC;	break;
+	      case '0': case '1': case '2': case '3': case '4':
+	      case '5': case '6': case '7': case '8': case '9': case '.':
+		global->timerep = atof(line);	break;
+	      default:
+		config_error_ack (trace, "Time_Rep must be PS, NS, US, or CYCLE\n");
+	    }
+	    if (DTPRINT_CONFIG) printf ("timerep = %f\n", global->timerep);
+	}
+	else if (!strcmp(cmd, "TIME_PRECISION")) {
+	    switch (toupper(line[0])) {
+	      case 'N':	global->time_precision = TIMEREP_NS;	break;
+	      case 'U':	global->time_precision = TIMEREP_US;	break;
+	      case 'P':	global->time_precision = TIMEREP_PS;	break;
+	      default:
+		config_error_ack (trace, "Time_Precision must be PS, NS, or US\n");
+	    }
+	    if (DTPRINT_CONFIG) printf ("time_precision = %f\n", global->time_precision);
+	}
+	else if (!strcmp(cmd, "TIME_FORMAT")) {
+	    line += config_read_string (trace, line, cmd);
+	    strcpy (global->time_format, cmd);
+	    if (DTPRINT_CONFIG) printf ("time_format = '%s'\n", global->time_format);
+	}
+	else if (!strcmp(cmd, "TIME_MULTIPLIER")) {
+	    value = global->tempest_time_mult;
+	    line += config_read_int (line, &value);
+	    if (value > 0) global->tempest_time_mult = value;
+	    else {
+		config_error_ack (trace, "Time_Mult must be > 0\n");
+	    }
+	}
+	else if (!strcmp(cmd, "HIERARCHY_SEPARATOR")) {
+	    line += config_read_string (trace, line, pattern);
+	    if (pattern[0]) {
+		trace->hierarchy_separator = pattern[0];
+	    }
+	}
+	else if (!strcmp(cmd, "VECTOR_SEPERATOR")	/* Backward compatible spelling! */
+		 || !strcmp(cmd, "VECTOR_SEPARATOR")) {
+	    if (*line=='"') line++;
+	    if (*line && *line!='"') {
+		trace->vector_separator = line[0];
+	    }
+	    else {
+		trace->vector_separator = '\0';
+	    }
+	    /* Take a stab at the ending character */
+	    switch (trace->vector_separator) {
+	      case '`':	trace->vectorend_separator = '\''; break;
+	      case '(':	trace->vectorend_separator = ')'; break;
+	      case '[':	trace->vectorend_separator = ']'; break;
+	    case '{':	trace->vectorend_separator = '}'; break;
+	      case '<':	trace->vectorend_separator = '>'; break;
+	      default:  trace->vectorend_separator = trace->vector_separator; break;	/* a wild guess SIG$20:1$? */
+	    }
+	    if (DTPRINT_CONFIG) printf ("vector_separator = '%c'  End='%c'\n", 
+					trace->vector_separator, trace->vectorend_separator);
+	}
+	else if (format_only) {
+	    return;
+	}
+	/**************************************************************/
+	/** beginning of non-file_format commands */
+	/**************************************************************/
 	else if (!strcmp(cmd, "CURSOR")) {
 	    value = global->cursor_vis;
 	    line += config_read_on_off (trace, line, &value);
@@ -841,43 +934,6 @@ void	config_process_line_internal (
 	    }
 	    if (DTPRINT_CONFIG) printf ("page_inc = %d\n", global->pageinc);
 	}
-	else if (!strcmp(cmd, "TIME_REP")) {
-	    switch (toupper(line[0])) {
-	      case 'N':	global->timerep = TIMEREP_NS;	break;
-	      case 'U':	global->timerep = TIMEREP_US;	break;
-	      case 'P':	global->timerep = TIMEREP_PS;	break;
-	      case 'C':	global->timerep = TIMEREP_CYC;	break;
-	      case '0': case '1': case '2': case '3': case '4':
-	      case '5': case '6': case '7': case '8': case '9': case '.':
-		global->timerep = atof(line);	break;
-	      default:
-		config_error_ack (trace, "Time_Rep must be PS, NS, US, or CYCLE\n");
-	    }
-	    if (DTPRINT_CONFIG) printf ("timerep = %f\n", global->timerep);
-	}
-	else if (!strcmp(cmd, "TIME_PRECISION")) {
-	    switch (toupper(line[0])) {
-	      case 'N':	global->time_precision = TIMEREP_NS;	break;
-	      case 'U':	global->time_precision = TIMEREP_US;	break;
-	      case 'P':	global->time_precision = TIMEREP_PS;	break;
-	      default:
-		config_error_ack (trace, "Time_Precision must be PS, NS, or US\n");
-	    }
-	    if (DTPRINT_CONFIG) printf ("time_precision = %f\n", global->time_precision);
-	}
-	else if (!strcmp(cmd, "TIME_FORMAT")) {
-	    line += config_read_string (trace, line, cmd);
-	    strcpy (global->time_format, cmd);
-	    if (DTPRINT_CONFIG) printf ("time_format = '%s'\n", global->time_format);
-	}
-	else if (!strcmp(cmd, "TIME_MULTIPLIER")) {
-	    value = global->tempest_time_mult;
-	    line += config_read_int (line, &value);
-	    if (value > 0) global->tempest_time_mult = value;
-	    else {
-		config_error_ack (trace, "Time_Mult must be > 0\n");
-	    }
-	}
 	else if (!strcmp(cmd, "PRINT_SIZE")) {
 	    switch (toupper(line[0])) {
 	      case 'A':
@@ -894,55 +950,6 @@ void	config_process_line_internal (
 	      default:
 		config_error_ack (trace, "Print_Size must be A, B, EPSLAND, or EPSPORT\n");
 	    }
-	}
-	else if (!strcmp(cmd, "FILE_FORMAT")) {
-	    char *tp;
-	    for (tp = line; *tp && *tp!='Z' && *tp!='z'; tp++) ;
-	    switch (toupper(line[0])) {
-	      case 'D':
-		file_format = FF_DECSIM;
-		break;
-	      case 'T':
-		file_format = FF_TEMPEST;
-		break;
-	      case 'V':
-		if (toupper(line[1]) == 'P') {
-		    file_format = FF_VERILOG_VPD;
-		} else {
-		    file_format = FF_VERILOG;
-		}
-		break;
-	      default:
-		config_error_ack (trace, "File_Format must be DECSIM, TEMPEST, VPD or VERILOG\n");
-	    }
-	    if (DTPRINT_CONFIG) printf ("File_format = %d\n", file_format);
-	}
-	else if (!strcmp(cmd, "HIERARCHY_SEPARATOR")) {
-	    line += config_read_string (trace, line, pattern);
-	    if (pattern[0]) {
-		trace->hierarchy_separator = pattern[0];
-	    }
-	}
-	else if (!strcmp(cmd, "VECTOR_SEPERATOR")	/* Backward compatible spelling! */
-		 || !strcmp(cmd, "VECTOR_SEPARATOR")) {
-	    if (*line=='"') line++;
-	    if (*line && *line!='"') {
-		trace->vector_separator = line[0];
-	    }
-	    else {
-		trace->vector_separator = '\0';
-	    }
-	    /* Take a stab at the ending character */
-	    switch (trace->vector_separator) {
-	      case '`':	trace->vectorend_separator = '\''; break;
-	      case '(':	trace->vectorend_separator = ')'; break;
-	      case '[':	trace->vectorend_separator = ']'; break;
-	    case '{':	trace->vectorend_separator = '}'; break;
-	      case '<':	trace->vectorend_separator = '>'; break;
-	      default:  trace->vectorend_separator = trace->vector_separator; break;	/* a wild guess SIG$20:1$? */
-	    }
-	    if (DTPRINT_CONFIG) printf ("vector_separator = '%c'  End='%c'\n", 
-					trace->vector_separator, trace->vectorend_separator);
 	}
 	else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
 	    ColorNum color;
@@ -1093,9 +1100,10 @@ void	config_process_line_internal (
 		do {
 		    line += config_read_string (trace, line, flag);
 		    if (!strcasecmp(flag, "-USER")) type=USER;
+		    else if (!strcasecmp(flag, "-SIMVIEW") && global->simview_info_ptr) type=SIMVIEW;
 		    else if (flag[0]) strcpy (note, flag);
 		} while (flag[0]);
-		cur_add (ctime, color, type, note);
+		cur_new (ctime, color, type, note);
 	    }
 	}
 	else if (!strcmp(cmd, "CURSOR_STEP_FORWARD")) {
@@ -1173,16 +1181,16 @@ void	config_process_line_internal (
 }
     
 /* Normal call */
-#define config_process_line(trace, line)	config_process_line_internal(trace, line, FALSE)
+#define config_process_line(trace, line, fmt)	config_process_line_internal(trace, line, fmt, FALSE)
 
 /* EOF */
-void	config_process_eof (Trace *trace)
+static void	config_process_eof (Trace *trace)
 {
     char	line[3];
     line[0]='\0';	/* MIPS: no automatic aggregate initialization */
     line[1]='\0';
     line[2]='\0';
-    config_process_line_internal (trace, line, TRUE);
+    config_process_line_internal (trace, line, FALSE, TRUE);
 }
 
 /**********************************************************************
@@ -1193,7 +1201,7 @@ void config_read_file (
     Trace	*trace,
     char	*filename,	/* Specific filename of CONFIG file */
     Boolean_t	report_notfound,
-    Boolean_t	report_errors)
+    Boolean_t	format_only)
 {
     FILE	*readfp;
     char line[1000];
@@ -1208,7 +1216,7 @@ void config_read_file (
 	return;
     }
     
-    config_report_errors = report_errors;
+    config_report_errors = !format_only;
     
 #ifndef VMS
     /* Check if regular file (not directory) */
@@ -1219,9 +1227,8 @@ void config_read_file (
 	    /* Not regular file */
 	    read_fd = -1;
 	}
+	close (read_fd);
     }
-    close (read_fd);
-
 #endif
 
     /* Open File For Reading */
@@ -1248,7 +1255,7 @@ void config_read_file (
 	/* Read line & kill EOL at end */
 	config_get_line (line, 1000, readfp);
 	/* 	printf ("line='%s'\n",line);	*/
-	config_process_line (trace, line);
+	config_process_line (trace, line, format_only);
     }
 
     config_process_eof (trace);
@@ -1277,12 +1284,11 @@ void config_read_socket (
 	config_process_eof (global->trace_head);
     }
     else {
-	config_process_line (global->trace_head, line);
+	config_process_line (global->trace_head, line, FALSE);
     }
 }
 
 /**********************************************************************
-*	config_read_defaults
 **********************************************************************/
 
 void config_update_filenames (Trace *trace)
@@ -1314,7 +1320,7 @@ void config_update_filenames (Trace *trace)
 
 void config_read_defaults (
     Trace	*trace,
-    Boolean_t	report_errors)
+    Boolean_t	format_only)
 {
     int		cfg_num;
     Signal	*new_dispsig;
@@ -1331,7 +1337,7 @@ void config_read_defaults (
 
     for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
 	if ( global->config_enable[cfg_num] ) {
-	    config_read_file (trace, global->config_filename[cfg_num], FALSE, report_errors);
+	    config_read_file (trace, global->config_filename[cfg_num], FALSE, format_only);
 	}
     }
 

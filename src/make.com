@@ -38,6 +38,7 @@ $ recomp   DT_SIGNAL		 'qual'	dinotrace.h functions.h
 $ recomp   DT_UTIL		 'qual'	dinotrace.h functions.h
 $ recomp   DT_WINDOW		 'qual'	dinotrace.h functions.h
 $ recomp   DT_BINARY		 'qual'	dinotrace.h functions.h bintradef.h
+$ recomp   DT_ASCII		 'qual'	dinotrace.h functions.h
 $ recomp   DT_VERILOG		 'qual'	dinotrace.h functions.h
 $ purge *.obj
 $!
@@ -80,7 +81,7 @@ $ link 'qual'	/exe=dinotrace'arch_bin_v'.exe -
 	objdir:dt_customize, objdir:dt_cursor, objdir:dt_config, -
 	objdir:dt_grid,	objdir:dt_signal, objdir:dt_binary,-
 	objdir:dt_util, objdir:dt_icon, objdir:dt_value,-
-	objdir:dt_print,-
+	objdir:dt_print, objdir:dt_ascii, -
 	objdir:link.tmp/options
 $! deassign sys$output
 $!----

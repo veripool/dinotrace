@@ -76,11 +76,13 @@ maintainer-copy::
 
 SRCS = dt_binary.c dt_config.c dt_cursor.c dt_customize.c dt_dispmgr.c dt_draw.c \
 	dt_file.c dt_grid.c dt_print.c dt_signal.c dt_util.c \
-	dt_window.c dt_value.c dt_verilog.c dt_socket.c dinotrace.c dt_icon.c 
+	dt_window.c dt_value.c dt_verilog.c dt_socket.c dinotrace.c dt_icon.c \
+	dt_ascii.c
 
 OBJS = dt_binary.o dt_config.o dt_cursor.o dt_customize.o dt_dispmgr.o dt_draw.o \
 	dt_file.o dt_grid.o dt_print.o dt_signal.o dt_util.o \
-	dt_window.o dt_value.o dt_verilog.o dt_socket.o dinotrace.o dt_icon.o
+	dt_window.o dt_value.o dt_verilog.o dt_socket.o dinotrace.o dt_icon.o \
+	dt_ascii.o
 
 COMMON_HDRS = dinotrace.h functions.h
 ALL_HDRS = $(COMMON_HDRS) bintradef.h dist_date.h dt_post.h dinodoc.h
@@ -94,6 +96,9 @@ ALL_HDRS = $(COMMON_HDRS) bintradef.h dist_date.h dt_post.h dinodoc.h
 
 dinodoc.h: ../dinotrace.txt dinodoc.pl
 	$(PERL) dinodoc.pl <../dinotrace.txt >dinodoc.h
+
+../dinotrace.txt:
+	(cd .. ; $(MAKE) dinotrace.txt)
 
 # No dependancy on other files in case user extracted without preserving
 # date stamps
@@ -135,4 +140,6 @@ dt_window.o:	dt_window.c $(COMMON_HDRS)
 dt_value.o: 	dt_value.c $(COMMON_HDRS)
 
 dt_verilog.o:	dt_verilog.c $(COMMON_HDRS)
+
+dt_ascii.o:	dt_ascii.c $(COMMON_HDRS)
 

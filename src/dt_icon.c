@@ -123,7 +123,7 @@ static char bigdino_icon_bits[] = {
     0x00, 0x00, 0x1f, 0xe0,
     0x00, 0x00, 0x00, 0x00};
 
-Pixmap    icon_make (
+static Pixmap    icon_make (
     Display		*display,
     Drawable		root,
     char		*data,

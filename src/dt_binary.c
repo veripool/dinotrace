@@ -116,7 +116,7 @@ int	EXTRACT_2STATE (
 #endif
 
 #pragma inline (read_4state_to_value)
-void	read_4state_to_value (
+static void	read_4state_to_value (
     const Signal	*sig_ptr,
     const char	*buf,
     Value_t	*value_ptr)
@@ -183,7 +183,7 @@ void	read_4state_to_value (
 }
 
 #pragma inline (read_2state_to_value)
-void	read_2state_to_value (
+static void	read_2state_to_value (
     const Signal *sig_ptr,
     const char	*buf,
     Value_t	*value_ptr)
@@ -230,7 +230,7 @@ void	read_2state_to_value (
 }
 
 #pragma inline (fil_decsim_binary_add_cptr)
-void	fil_decsim_binary_add_cptr (
+static void	fil_decsim_binary_add_cptr (
     /* Add a cptr corresponding to the decsim value for this signal */
     Signal	*sig_ptr,
     const char	*buf,
@@ -462,7 +462,7 @@ void decsim_read_binary (
 	    /**** CLASS: Unknown ****/
 	  default:
 	    if (DTPRINT_FILE) printf ("Unknown record class %d, assuming ASCII\n", buf->tra$b_class);
-	    decsim_read_ascii (trace, read_fd, NULL);
+	    ascii_read (trace, read_fd, NULL);
 	    return;
 	}
     }
@@ -481,7 +481,7 @@ void decsim_read_binary (
 
 
 #pragma inline (fil_tempest_binary_add_cptr)
-void	fil_tempest_binary_add_cptr (
+static void	fil_tempest_binary_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
     Signal	*sig_ptr,
     const uint_t *buf,
@@ -568,7 +568,7 @@ void	fil_tempest_binary_add_cptr (
       value.number[0]);*/
 }
 
-uint_t bin_read_little_uint_t32 (int read_fd)
+static uint_t bin_read_little_uint_t32 (int read_fd)
     /* Read a little endian 32 bit uint_t, correct to internal representation */
 {
     uint_t	status;

@@ -324,12 +324,14 @@ void new_res (
     if (global->res==0.0) global->res=0.1;	/* prevent div zero error */
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	/* change res button's value */
-	time_to_string (trace, timestrg, (int)(RES_SCALE/global->res), TRUE);
-	sprintf (string,"Res=%s %s", timestrg,
-		 time_units_to_string (global->timerep, FALSE));
-	XtSetArg (arglist[0],XmNlabelString,XmStringCreateSimple (string));
-	XtSetValues (trace->command.reschg_but,arglist,1);
+	if (trace->toplevel) {
+	    /* change res button's value */
+	    time_to_string (trace, timestrg, (int)(RES_SCALE/global->res), TRUE);
+	    sprintf (string,"Res=%s %s", timestrg,
+		     time_units_to_string (global->timerep, FALSE));
+	    XtSetArg (arglist[0],XmNlabelString,XmStringCreateSimple (string));
+	    XtSetValues (trace->command.reschg_but,arglist,1);
+	}
     }
 
     draw_all_needed ();
@@ -657,7 +659,7 @@ void    win_goto_ok_cb (
 	/* Add cursor if wanted */
 	if (global->goto_color > 0) {
 	    /* make the cursor */
-	    cur_add (time, global->goto_color, USER, note);
+	    cur_new (time, global->goto_color, USER, note);
 	}
 
 	new_time (trace);

@@ -244,9 +244,13 @@ extern void	cus_write_cb (Widget w);
 extern void	cus_write_ok_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackStruct *cb);
 
 /* dt_cursor.c routines */
-extern void	cur_add (DTime time, ColorNum color, CursorType_t type, const char *note);
+extern DCursor *cur_add (DTime time, ColorNum color, CursorType_t type, const char *note);
 extern void	cur_remove (DCursor *);
+extern void     cur_new (DTime ctime, ColorNum color, CursorType_t type, const char *note);
+extern void     cur_move (DCursor *csr_ptr, DTime new_time);
+extern void	cur_delete (DCursor *csr_ptr);
 extern void	cur_delete_of_type (CursorType_t type);
+extern void	cur_free (DCursor *csr_ptr);
 extern DTime	cur_time_first (const Trace *trace);
 extern DTime	cur_time_last (const Trace *trace);
 extern void	cur_write (FILE *, char *c);
@@ -254,6 +258,7 @@ extern char *	cur_examine_string (Trace *trace, DCursor *cursor_ptr);
 extern void	cur_step (DTime step);
 
 extern void	cur_add_cb (Widget w);
+extern void     cur_add_simview_cb (Widget w);
 extern void	cur_mov_cb (Widget w);
 extern void	cur_del_cb (Widget w);
 extern void	cur_clr_cb (Widget w);
@@ -261,9 +266,11 @@ extern void	cur_step_fwd_cb (Widget w);
 extern void	cur_step_back_cb (Widget w);
 extern void	cur_highlight_cb (Widget w);
 extern void	cur_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void     cur_highlight (DCursor *csr_ptr, ColorNum color);
 extern void	cur_add_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	cur_move_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	cur_delete_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern DCursor *cur_id_to_cursor (int id);
 
 /* dt_config.c routines */
 extern void	config_read_defaults (Trace *trace, Boolean_t);
@@ -358,14 +365,16 @@ extern void	print_range_sensitives_cb (Widget w, RangeWidgets_t *range_ptr, XmSe
 extern void	tempest_read (Trace *trace, int read_fd);
 extern void	decsim_read_binary (Trace *trace, int read_fd);
 
+/* dt_ascii.c routines */
+extern void	ascii_string_add_cptr (Signal *sig_ptr, const char *value_strg, DTime time, Boolean_t nocheck);
+extern void	ascii_read (Trace *trace, int read_fd, FILE *decsim_z_readfp);
+
 /* dt_file.c routines */
 extern void	fil_read (Trace *trace);
 extern void	free_data (Trace *trace);
 extern void	fil_make_busses (Trace *trace, Boolean_t not_tempest);
-extern void	decsim_read_ascii (Trace *trace, int read_fd, FILE *decsim_z_readfp);
 extern void	fil_trace_end (Trace *trace);
 extern void 	fil_select_set_pattern (Trace *trace, Widget dialog, char *pattern);
-extern void	fil_string_add_cptr (Signal *sig_ptr, const char *value_strg, DTime time, Boolean_t nocheck);
 #ifndef fil_add_cptr
 extern void	fil_add_cptr (Signal *sig_ptr, Value_t *value_ptr, Boolean_t nocheck);
 #endif
@@ -407,6 +416,8 @@ extern Grid *	posx_to_grid (Trace *trace, Position x, DTime *time_ptr);
 extern DCursor *posx_to_cursor (Trace *trace, Position x);
 extern DCursor *time_to_cursor (DTime xtime);
 extern void	time_to_string (Trace *trace, char *strg, DTime ctime, Boolean_t relative);
+extern double   time_to_cyc_num (DTime time);
+extern DTime    cyc_num_to_time (double cyc_num);
 extern DTime 	time_units_to_multiplier (TimeRep_t timerep);
 extern char *	time_units_to_string (TimeRep_t timerep, Boolean_t showvalue);
 extern void	string_to_value (Radix_t **radix_pptr, const char *strg, Value_t *value_ptr);
@@ -477,3 +488,9 @@ extern Pixmap	icon_dinos (void);
 extern void	verilog_read (Trace *trace, int read_fd);
 extern void	verilog_womp_128s (Trace *);
 
+/* SimView Hooks */
+extern void	simview_init (char *cmdlinearg);
+extern void	simview_cur_create (int cur_num, double cyc_num, ColorNum color, char *color_name);
+extern void	simview_cur_move (int cur_num, double cyc_num);
+extern void	simview_cur_highlight (int cur_num, ColorNum color, char *color_name);
+extern void	simview_cur_delete (int cur_num);

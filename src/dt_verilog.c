@@ -95,7 +95,7 @@ static Signal	**signal_update_array_last_pptr;
 			    ):0) \
 		):0)
 
-void	verilog_read_till_end (
+static void	verilog_read_till_end (
     char	*line,
     FILE	*readfp)
 {
@@ -121,7 +121,7 @@ void	verilog_read_till_end (
     }
 }
 
-void	verilog_read_timescale (
+static void	verilog_read_timescale (
     Trace	*trace,
     char	*line,
     FILE	*readfp)
@@ -174,7 +174,7 @@ void	verilog_read_timescale (
 	if (*_line_) *_line_++ = '\0'; \
 					   }
 
-void	verilog_process_var (
+static void	verilog_process_var (
     /* Process a VAR statement (read a signal) */
     Trace	*trace,
     char	*line)
@@ -309,7 +309,7 @@ void	verilog_womp_128s (
 }
 
 
-void	verilog_print_pos (
+static void	verilog_print_pos (
     int max_pos)
     /* Print the pos array */
 {
@@ -328,7 +328,7 @@ void	verilog_print_pos (
     }
 }
 
-void	verilog_process_definitions (
+static void	verilog_process_definitions (
     /* Process the definitions */
     Trace	*trace)
 {
@@ -427,7 +427,7 @@ void	verilog_process_definitions (
     if (DTPRINT_FILE) verilog_print_pos (max_pos);
 }
 
-void	verilog_enter_busses (
+static void	verilog_enter_busses (
     /* If at a new time a signal has had its state non zero then */
     /* enter the file_value as a new cptr */
     Trace	*trace,
@@ -464,7 +464,7 @@ void	verilog_enter_busses (
     signal_update_array_last_pptr = signal_update_array;
 }
 
-void	verilog_read_data (
+static void	verilog_read_data (
     Trace	*trace,
     FILE	*readfp)
 {
@@ -599,7 +599,7 @@ void	verilog_read_data (
 
 			/* Store the file information */
 			/*if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %d %s  value %s\n", code, pos, time, sig_ptr->signame, value_strg);*/
-			fil_string_add_cptr (sig_ptr, value_strg, time, first_data);
+			ascii_string_add_cptr (sig_ptr, value_strg, time, first_data);
 
 			/* Push string past this signal's bits */
 			value_strg += sig_ptr->bits;
@@ -665,7 +665,7 @@ void	verilog_read_data (
     verilog_enter_busses (trace, first_data, time);
 }
 
-void	verilog_process_lines (
+static void	verilog_process_lines (
     Trace	*trace,
     FILE	*readfp)
 {

@@ -88,7 +88,7 @@ void strcpy_overlap (
 
 /* Pattern matching from GNU (see wildmat.c) */
 /* Triple procedures, all inlined, unrolls loop much better */
-int wildmatii(
+static int wildmatii(
     const char	*s,	/* Buffer */
     const char	*p)	/* Pattern */
 {
@@ -111,7 +111,7 @@ int wildmatii(
 }
 #pragma inline (wildmatii)
 
-int wildmati(
+static int wildmati(
     const char	*s,	/* Buffer */
     const char	*p)	/* Pattern */
 {
@@ -398,7 +398,7 @@ void 	add_event (
     }
 }
 
-void    remove_event (
+static void    remove_event (
     int		type,
     void	(*callback)())
 {
@@ -497,7 +497,7 @@ Trace	*widget_to_trace (
 }
 
 /* Adjust starting times on signals to new point */
-void new_time_sigs (
+static void new_time_sigs (
     Signal	*sig_first_ptr)
 {
     Signal	*sig_ptr;	
@@ -1247,6 +1247,32 @@ DCursor *time_to_cursor (
 	return (csr_ptr);
     else return (NULL);
 }
+
+/* Convert time to nearest cycle number. */
+double time_to_cyc_num (DTime time) {
+    Trace *trace;
+    double f_time;
+
+    trace = global->trace_head;
+    if (time == EOT) {
+	return (0);	/* Not right, but not important. */
+    }
+
+    f_time = (double)time;
+    f_time -= (double)(trace->grid[0].alignment % grid_primary_period(trace));	/* Want integer remainder */
+    return (f_time / (double)grid_primary_period(trace));
+}
+
+/* Convert time to a cycle number. */
+DTime cyc_num_to_time (double cyc_num) {
+  Trace *trace;
+
+  trace = global->trace_head;
+
+  return ((DTime)cyc_num * grid_primary_period(trace)
+	  + trace->grid[0].alignment % grid_primary_period(trace));
+}
+
 
 #pragma inline (string_to_time)
 DTime string_to_time (

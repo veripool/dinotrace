@@ -69,13 +69,13 @@
 
 #define OVERLAPSPACE 2		/* Number of pixels within which two signal transitions are visualized as one */
 
-extern void draw_trace_signame (Trace *trace, const Signal *sig_ptr, Position y);
-extern void draw_hscroll (Trace *trace);
-extern void draw_vscroll (Trace *trace);
+static void draw_trace_signame (Trace *trace, const Signal *sig_ptr, Position y);
+static void draw_hscroll (Trace *trace);
+static void draw_vscroll (Trace *trace);
 
 XtExposeProc draw_orig_scroll_expose=NULL;	/* Original function for scroll exposure */
 
-void draw_string_fit (
+static void draw_string_fit (
     Trace	*trace,
     Boolean_t	*textoccupied,
     Position	x,
@@ -112,7 +112,7 @@ void draw_string_fit (
     }
 }
     
-void draw_grid_line (
+static void draw_grid_line (
     Trace	*trace,
     Boolean_t	*textoccupied,
     const Grid	*grid_ptr,		/* Grid information */
@@ -144,7 +144,7 @@ void draw_grid_line (
     draw_string_fit (trace, textoccupied, x2, trace->ygridtime, global->time_font, strg);
 }
 
-void draw_grid (
+static void draw_grid (
     Trace	*trace,
     Boolean_t	*textoccupied,
     const Grid	*grid_ptr)		/* Grid information */
@@ -222,7 +222,7 @@ void draw_grid (
     XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
 }
 
-void draw_grids (
+static void draw_grids (
     Trace	*trace)
 {           
     Boolean_t	textoccupied[MAXSCREENWIDTH];
@@ -238,7 +238,7 @@ void draw_grids (
 }
 
 
-void draw_cursors (
+static void draw_cursors (
     Trace	*trace)
 {         
     int		len,end_time;
@@ -271,6 +271,11 @@ void draw_cursors (
 	    if (csr_ptr->type==USER) {
 		XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
 	    }
+            else if (csr_ptr->type==SIMVIEW) {
+		//XSetLineAttributes (global->display,trace->gc,0,LineDoubleDash,0,0);
+		XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0,0);
+		XSetDashes (global->display, trace->gc, 0, "\010\002", 2);
+            }
 	    else {
 		XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0,0);
 		XSetDashes (global->display, trace->gc, 0, "\003\001", 2);
@@ -354,7 +359,7 @@ void draw_cursors (
        DRAW_SEGS; \
        XSetForeground (global->display, trace->gc, col);}}
 
-void draw_trace (
+static void draw_trace (
     Trace	*trace)
 {         
     int cnt=0, cntd=0;
@@ -630,7 +635,7 @@ void draw_trace (
 } /* End of DRAW */
 
 
-void draw_trace_signame (
+static void draw_trace_signame (
     Trace *trace,
     const Signal *sig_ptr,
     Position y)
@@ -784,7 +789,7 @@ void draw_update ()
 /* If clear, modify the scrollbar directly and ignore double buffering (vms???) */
 #define BUFFERED_PIXMAP 1
 
-void draw_hscroll (
+static void draw_hscroll (
     Trace *trace)
     /* Draw on the horizontal scroll bar - needs guts of the ScrollBarWidget */
 {
@@ -858,7 +863,7 @@ void draw_hscroll (
 #endif
 }
 
-void draw_vscroll (
+static void draw_vscroll (
     Trace *trace)
     /* Draw on the vertical scroll bar - needs guts of the ScrollBarWidget */
 {
@@ -931,7 +936,7 @@ void draw_vscroll (
 #endif
 }
 
-void hscroll_expose (Widget w, XEvent *event, Region region)
+void hscroll_expose_cb (Widget w, XEvent *event, Region region)
 {
     Trace *trace;
     /* Draw the scroll bar normally */
@@ -955,7 +960,7 @@ void draw_scroll_hook_cb_expose ()
        and draw appropriately */
 {
     XtExposeProc unchanged, changeto;
-    changeto = hscroll_expose;
+    changeto = hscroll_expose_cb;
     unchanged = xmScrollBarClassRec.core_class.expose;
     if (unchanged != changeto) {
 	draw_orig_scroll_expose = unchanged;

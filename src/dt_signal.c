@@ -130,14 +130,14 @@ void sig_free (
 }
 
 
-void    remove_signal_from_queue (
+static void sig_remove_from_queue (
     Trace	*trace,
     Signal	*sig_ptr)	/* Signal to remove */
     /* Removes the signal from the current and any other ques that it is in */
 {
     Signal	*next_sig_ptr, *prev_sig_ptr;
     
-    if (DTPRINT_ENTRY) printf ("In remove_signal_from_queue - trace=%p sig %p\n",trace,sig_ptr);
+    if (DTPRINT_ENTRY) printf ("In sig_remove_from_queue - trace=%p sig %p\n",trace,sig_ptr);
     
     /* redirect the forward pointer */
     prev_sig_ptr = sig_ptr->backward;
@@ -164,14 +164,14 @@ void    remove_signal_from_queue (
 }
 
 #define ADD_LAST ((Signal *)(-1))
-void    add_signal_to_queue (
+static void    sig_add_to_queue (
     Trace	*trace,
     Signal	*sig_ptr,	/* Signal to add */
     Signal	*loc_sig_ptr)	/* Pointer to signal ahead of one to add, NULL=1st, ADD_LAST=last */
 {
     Signal	*next_sig_ptr, *prev_sig_ptr;
     
-    if (DTPRINT_ENTRY) printf ("In add_signal_to_queue - trace=%p   loc=%p%s\n",trace,
+    if (DTPRINT_ENTRY) printf ("In sig_add_to_queue - trace=%p   loc=%p%s\n",trace,
 			       loc_sig_ptr, loc_sig_ptr==ADD_LAST?"=last":"");
     
     if (sig_ptr==loc_sig_ptr) {
@@ -337,9 +337,9 @@ void	sig_move (
 {
 
     if (sig_ptr) {
-	remove_signal_from_queue (old_trace, sig_ptr);
+	sig_remove_from_queue (old_trace, sig_ptr);
 	sig_ptr->deleted = FALSE;
-	add_signal_to_queue (new_trace, sig_ptr, after_sig_ptr);
+	sig_add_to_queue (new_trace, sig_ptr, after_sig_ptr);
     }
     
 #if 0
@@ -379,7 +379,7 @@ void	sig_copy (
 	else {
 	    new_sig_ptr = sig_replicate (old_trace, sig_ptr);
 	    sig_ptr->deleted = FALSE;
-	    add_signal_to_queue (new_trace, new_sig_ptr, after_sig_ptr);
+	    sig_add_to_queue (new_trace, new_sig_ptr, after_sig_ptr);
 	}
     }
 }
@@ -412,7 +412,7 @@ void	sig_update_search ()
 }
 
 #if 0 /* Unused */
-Boolean_t sig_is_same (
+static Boolean_t sig_is_same (
     const Signal	*siga_ptr,
     const Signal	*sigb_ptr)
 {
@@ -437,7 +437,7 @@ Boolean_t sig_is_same (
     return (TRUE);
 }
 
-void sig_count (
+static void sig_count (
     const Trace *trace)
 {
     Signal	*sig_ptr;
@@ -451,7 +451,7 @@ void sig_count (
 }
 #endif
 
-Boolean_t sig_is_constant (
+static Boolean_t sig_is_constant (
     const Trace	*trace,
     const Signal	*sig_ptr,
     Boolean_t	ignorexz)		/* TRUE = ignore xz */
@@ -1439,7 +1439,7 @@ void    sig_select_cb (
     sig_sel_pattern_cb (NULL, trace, NULL);
 }
 
-void    sig_sel_update_pattern (
+static void    sig_sel_update_pattern (
     Widget	w,			/* List widget to update */
     Signal	*head_sig_ptr,		/* Head signal in the list */
     char	*pattern,		/* Pattern to match to the list */
@@ -1700,7 +1700,7 @@ void sig_cross_preserve (
     trace->numsigstart = 0;
 }
 
-void sig_cross_sigmatch (
+static void sig_cross_sigmatch (
     /* Look through each signal in the old list, attempt to match with
        signal from the new_trace.  When found create new_trace_sig link to/from old & new signal */
     Trace	*new_trace,
@@ -1926,7 +1926,7 @@ void sig_cross_restore (
 
 /****************************** Enable COMBINING ******************************/
 
-void sig_modify_en_signal (
+static void sig_modify_en_signal (
     Trace	*trace,
     Signal	*en_sig_ptr,
     Signal	*base_sig_ptr,
@@ -2086,7 +2086,7 @@ void sig_modify_en_signal (
     fil_add_cptr (new_sig_ptr, &new_value, TRUE);
     new_sig_ptr->cptr = new_sig_ptr->bptr;
 
-    add_signal_to_queue (trace, new_sig_ptr, base_sig_ptr);
+    sig_add_to_queue (trace, new_sig_ptr, base_sig_ptr);
 
     /*if (DTPRINT_FILE) {
 	print_sig_info (new_sig_ptr);

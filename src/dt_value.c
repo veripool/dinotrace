@@ -77,7 +77,7 @@ char *val_state_name[] = { "STATE_0", "STATE_1", "STATE_U", "STATE_Z",
 
 /****************************** UTILITIES ******************************/
 
-uint_t val_bit (
+static uint_t val_bit (
     const Value_t *value_ptr,
     int bit)
     /* Return bit value, understanding 4-state, may be 0/1/U/Z */
@@ -118,7 +118,7 @@ uint_t val_bit (
     }
 }
 
-char	val_str_digit_ascii (
+static char	val_str_digit_ascii (
     const Value_t *value_ptr,
     int lsb)
 {
@@ -137,7 +137,7 @@ char	val_str_digit_ascii (
     return (val);
 }
 
-void	val_str_ascii (
+static void	val_str_ascii (
     char *strg,
     const Value_t *value_ptr,
     Boolean_t compressed)		/* Drawing on screen; keep small & tidy */
@@ -171,7 +171,7 @@ void	val_str_ascii (
     *cp++ = '\0';
 }
 
-char	val_str_digit (
+static char	val_str_digit (
     int lsb,
     uint_t mask,
     uint_t lw,
@@ -192,7 +192,7 @@ char	val_str_digit (
     return (lw + ((lw < 10) ? '0':('a'-10)));
 }
 
-void    val_str_lw (
+static void    val_str_lw (
     const Radix_t *radix_ptr,
     char *strg,
     char sep,
@@ -607,7 +607,7 @@ void	val_update_search ()
 			}
 			else {
 			    /* Make new cursor at this location */
-			    cur_add (CPTR_TIME(cptr), cursorize, SEARCH, NULL);
+			    cur_new (CPTR_TIME(cptr), cursorize, SEARCH, NULL);
 			}
 			cursorize = 0;
 		    }
@@ -637,7 +637,7 @@ Radix_t *val_radix_find (
     return (NULL);
 }
 
-Radix_t *val_radix_add (
+static Radix_t *val_radix_add (
     RadixType_t type,
     const char *name,
     const char *prefix)
@@ -862,7 +862,7 @@ char *val_examine_string (
     return (strg);
 }
 	
-void    val_examine_popdown (
+static void    val_examine_popdown (
     Trace	*trace)
 {
     if (trace->examine.popup) {
@@ -880,7 +880,7 @@ void    val_examine_popdown (
     }
 }
 
-void    val_examine_popup (
+static void    val_examine_popup (
     /* Create the popup menu for val_examine, based on cursor position x,y */
     Trace	*trace,
     XButtonPressedEvent	*ev)
@@ -1064,7 +1064,7 @@ void    val_examine_popup_act (
     set_cursor (prev_cursor);
 }
 
-void    val_search_widget_update (
+static void    val_search_widget_update (
     Trace	*trace)
 {
     VSearchNum search_pos;
@@ -1535,7 +1535,7 @@ void    val_annotate_apply_cb (
     val_annotate_cb (trace->main);
 }
 
-void	val_print_quoted (
+static void	val_print_quoted (
     FILE *fp,
     char *strg)
 {
