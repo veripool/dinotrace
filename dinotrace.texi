@@ -20,9 +20,9 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set ID 9.0b
-@set VERSION 9.0b
-@set UPDATED August 1998
+@set ID 9.0c
+@set VERSION 9.0c
+@set UPDATED September 1998
 @c All functions use these for searching ease
 @macro dmenu{f}
 @code{\f\}
@@ -242,7 +242,7 @@ Larry Gust, Larry Herman, Dave Horan, Tom Hunt, Tracey Jones, Mike
 Kagen, Dan Katz, Sol Katzman, Steve Kolecki, Steve Lang, Charlie Lind,
 Ben Marshall, Bob McNamara, John Murphy, Lisa Noack, Mitch Norcross,
 Michael Quadri, Reinhard Schumann, Simcha, Jai Singh, Dean Sovie, Julie
-Staraitis, Bob Walsh, Paul Wasson, and Bob Yodlowski.
+Staraitis, Bob Walsh, Paul Wasson, Steve Wilson, and Bob Yodlowski.
 
 @c ======================================================================
 @node Invoking Dinotrace, Screen Description, History, Top

@@ -59,6 +59,8 @@ This version of Dinotrace has been built and tested on:
 @item sparc-sun-solaris2.5.1
 @item sparc-sun-sunos4.1.4
 @item alpha-dec-osf4.0
+@item i386-pc-linux
+@item i386-pc-cygwin32	(under Windows-NT)
 @end itemize
 
 Previous versions of Dinotrace were once built, and probably will
@@ -252,6 +254,63 @@ Look for Dinotrace's source code in directory @var{dir}.  Usually
 @noindent
 @code{configure} also accepts some other, not widely useful, options.
 
+
+@node NT Installation,  , Unix Installation
+@section NT Installation
+
+Dinotrace can be built for Windows 95 and Windows NT under the Cygwin32
+environment.
+
+@subsection Binary Installation
+
+Dinotrace is still a X11 program, even under Windows-NT.  Thus several
+packages need to be installed under NT to provide X11 services.
+
+@enumerate
+@item
+Install Cygwin32, a sharewear package that provides the BASH shell and
+Unix utilities.  It is available at
+@uref{http://www.cygnus.com/misc/gnu-win32/}.  Dinotrace is known to
+work with Cygwin Beta 19,
+@uref{ftp://go.cygnus.com/pub/ftp.cygnus.com/gnu-win32/gnu-win32-b19/cdk.exe}.
+After downloading, click on the executable and install, preferably
+accepting the default location of @file{C:/Cygnus/B19}.
+
+@item
+Install X11, a port that works with Cygwin32 and provides X11R6.3 is
+available at
+@uref{ftp://ftp.franken.de/pub/win32/develop/gnuwin32/cygwin32/packages/X11R6.3/}.
+Gunzip the file and UN tar @emph{while in} /usr.  This will create a
+/usr/X11R6.3 directory.  Do not move it, even though the documentation
+suggests you can, this directory is hard-coded in the X11 executables.
+Add /usr/X11R6.3/bin to your PATH, using the Control Panel/System/Enviornment
+requester.
+
+@item
+Obtain a X11 server.  If you're using Unix you probably already have the
+commercial @prog{eXcursion} or @prog{exceed} programs, and are all set.
+There are also public domain versions, such as MI/X available from
+@uref{http://tnt.microimages.com/www/html/freestuf/mix/}
+
+@item
+Download the Dinotrace kit, if not done previously.
+
+@item
+The Dinotrace executable should work, it's under
+@file{bin/dinotrace-i386-pc-cygwin32.exe}  Make a shortcut to the executable
+or add it to your path.
+
+@item
+Finally, see the Dinotrace manual for configuring Dinotrace for your site.
+
+@end enumerate
+
+@subsection Source Installation
+
+Normally the executable distributed with Dinotrace is sufficient.  You
+may rebuild the kit from the source code by downloading and installing
+the same Cygwin32 and X11R6 packages as above, then following the Unix
+installation instructions.
 
 @node VMS Installation,  , Unix Installation
 @section VMS Installation
