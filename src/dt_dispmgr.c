@@ -753,7 +753,7 @@ Trace *create_trace (
     XtAppAddActions (global->appcontext, actions, XtNumber(actions));
 
     /*** add pixmap and position trace->toplevel widget ***/
-    XtSetArg (arglist[0], XtNallowShellResize, TRUE);
+    XtSetArg (arglist[0], XtNallowShellResize, FALSE);
     XtSetArg (arglist[1], XtNiconPixmap, global->bdpm);
     XtSetArg (arglist[2], "iconifyPixmap", global->dpm);
     XtSetArg (arglist[3], XmNx, xp);
@@ -977,10 +977,11 @@ Trace *create_trace (
     XtSetArg (arglist[1], XmNbottomAttachment, XmATTACH_WIDGET );
     XtSetArg (arglist[2], XmNbottomWidget, trace->command.end_but);
     XtSetArg (arglist[3], XmNleftAttachment, XmATTACH_FORM );
-    XtSetArg (arglist[4], XmNrightAttachment, XmATTACH_WIDGET );
-    XtSetArg (arglist[5], XmNrightWidget, trace->vscroll);
-    XtSetArg (arglist[6], XmNheight, 18);
-    trace->hscroll = XmCreateScrollBar ( trace->command.form, "hscroll", arglist, 7);
+    XtSetArg (arglist[4], XmNleftOffset, global->xstart - XSTART_MARGIN);
+    XtSetArg (arglist[5], XmNrightAttachment, XmATTACH_WIDGET );
+    XtSetArg (arglist[6], XmNrightWidget, trace->vscroll);
+    XtSetArg (arglist[7], XmNheight, 18);
+    trace->hscroll = XmCreateScrollBar ( trace->command.form, "hscroll", arglist, 8);
     DAddCallback (trace->hscroll, XmNincrementCallback, hscroll_unitinc_cb, trace);
     DAddCallback (trace->hscroll, XmNdecrementCallback, hscroll_unitdec_cb, trace);
     DAddCallback (trace->hscroll, XmNdragCallback, hscroll_drag_cb, trace);
