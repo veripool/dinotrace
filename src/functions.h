@@ -92,6 +92,8 @@ extern void
     cur_add (DTime, ColorNum, CursorType),
     cur_remove (CURSOR *),
     cur_delete_of_type ();
+extern DTime cur_time_first();
+extern DTime cur_time_last();
     
 /* dt_config.c routines */
 extern void
@@ -109,6 +111,7 @@ extern void
     grid_customize_cb(),
     grid_align_cb(), grid_res_cb(), grid_reset_cb(),
     grid_align_ev();
+extern void grid_calc_autos();
     
 /* dt_signal.c routines */
 extern void
@@ -118,7 +121,7 @@ extern void
     sig_add_cb(), sig_add_ev(), sig_mov_cb(), sig_move_ev(),
     sig_del_cb(), sig_delete_ev(), sig_copy_cb(), sig_copy_ev(),
     sig_highlight_cb(), sig_highlight_ev(), sig_reset_cb(), 
-    sig_selected_cb(), sig_ok_cb(), sig_cancel_cb(),
+    sig_selected_cb(), sig_cancel_cb(),
     sig_examine_cb(), sig_examine_ev(),
     sig_search_cb(), sig_search_ok_cb(), sig_search_apply_cb(),
     sig_select_cb(), sig_select_ok_cb(), sig_select_apply_cb();
@@ -145,7 +148,7 @@ extern void
 /* dt_printscreen routines */
 extern void
     ps_print_internal(), ps_print_req_cb(), ps_print_direct_cb(),
-    ps_print_all(), ps_numpag_cb(), ps_dialog(), ps_reset();
+    ps_print_all(), ps_dialog(), ps_reset();
 extern void cur_print (FILE *);
     
 /* dt_binary.c routines */
@@ -176,7 +179,7 @@ extern void
     dino_message_ack(), 
     fil_read_cb(), get_data_popup(), time_to_string(),
     fil_format_option_cb(),
-    print_sig_names(), print_all_traces(), print_screen_traces(), print_sig_info(SIGNAL *);
+    print_sig_names(), print_screen_traces(), print_sig_info(SIGNAL *);
 extern TRACE	*widget_to_trace (Widget);
 extern SIGNAL_LW *cptr_at_time ();
 extern char	*extract_first_xms_segment (XmString);
@@ -217,6 +220,10 @@ extern void
     vscroll_pageinc(), vscroll_pagedec(), 
     vscroll_bot(), vscroll_top();
 extern int	win_goto_number();
+extern void	vscroll_new();
+
+/* dt_socket */
+extern void	socket_create();
 
 /* dt_draw */
 extern void
