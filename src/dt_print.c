@@ -139,7 +139,7 @@ DwtAnyCallbackStruct	*cb;
     XtSetValues(ptr->prntscr.s1,arglist,1);
 
     /* if a file has been read in, make printscreen buttons active */
-    if (ptr->filename[0] == '\0')
+    if (!ptr->loaded)
 	XtSetArg(arglist[0],DwtNsensitive, FALSE);
     else
 	XtSetArg(arglist[0],DwtNsensitive, TRUE);
@@ -597,7 +597,7 @@ FILE		*psfile;
     int c=0,i,ymdpt;
 
     /* don't draw anything if there is no file is loaded */
-    if (ptr->filename[0] == '\0') return;
+    if (!ptr->loaded) return;
 
     /* initialize the signal pointer to the first visible one */
     tmp_sig_ptr = ptr->startsig;

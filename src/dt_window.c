@@ -21,7 +21,8 @@
  *				 casts for Ultrix support
  *     AAG	 9-Jul-91	Fixed sigstart on vscroll inc/dec/drag and
  *				 added get_geom call
- *     WPS	 8-Jan-92	Added pageinc and unitdec routines
+ *     WPS	 8-Jan-93	Added pageinc and unitdec routines
+ *     WPS	15-Feb-93	Added zoom, full, new_res routines
  */
 
 
@@ -33,97 +34,11 @@
 
 
 
-void
-free_data(ptr)
-DISPLAY_SB		*ptr;
+void cb_window_expose(w,ptr)
+    Widget		w;
+    DISPLAY_SB		*ptr;
 {
-    int		i;
-    SIGNAL_SB	*sig_ptr,*tmp_sig_ptr;
-
-    if (DTPRINT) printf("In free_data - ptr=%d\n",ptr);
-
-    /* free bus array */
-    if (ptr->bus != NULL)
-	free(ptr->bus);
-    ptr->bus = NULL;
-
-    /* free signal array */
-    if (ptr->signame != NULL)
-	free(ptr->signame);
-    ptr->signame = NULL;
-
-    /* loop and free signal data and each signal structure */
-    sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
-    for (i=0;i<ptr->numsig-ptr->numsigdel;i++) {
-	/* free the signal data */
-	if (sig_ptr->bptr != NULL)
-	    free(sig_ptr->bptr);
-
-	tmp_sig_ptr = sig_ptr;
-	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
-
-	/* free the signal structure */
-	if (tmp_sig_ptr != NULL)
-	    free(tmp_sig_ptr);
-	}
-    ptr->sig.forward = NULL;
-    ptr->sig.backward = NULL;
-    ptr->numsig = 0;
-    ptr->numsigdel = 0;
-    }
-
-void
-clear_display(w,ptr)
-Widget			w;
-DISPLAY_SB		*ptr;
-{
-    char	title[100];
-
-    if (DTPRINT) printf("In clear_display - ptr=%d\n",ptr);
-
-    /* clear the screen */
-    XClearWindow(ptr->disp, ptr->wind);
-
-    /* free memory associated with the data */
-    free_data(ptr);
-
-    /* clear the name from DISPLAY_SB */
-    ptr->filename[0] = '\0';
-
-    /* change the name on title bar back to the ptr */
-    change_title (ptr);
-}
-
-void
-delete_display(w,ptr)
-Widget			w;
-DISPLAY_SB		*ptr;
-{
-    if (DTPRINT) printf("In delete_display - ptr=%d\n",ptr);
-
-    /* remove the display */
-    XtUnmanageChild(ptr->main);
-
-    /* free memory associated with the data */
-    free_data(ptr);
-
-    /* destroy all the widgets created for the screen */
-    XtDestroyWidget(ptr->main);
-
-    /* free the display structure */
-    if (ptr != NULL)
-	free(ptr);
-
-    /* all done */
-    exit(1);
-}
-
-void
-cb_window_expose(w,ptr)
-Widget			w;
-DISPLAY_SB		*ptr;
-{
-    char	string[20],data[10];
+    char	string[20];
     int		width;
 
     /* initialize to NULL string */
@@ -145,22 +60,16 @@ DISPLAY_SB		*ptr;
     drawsig( ptr );
 
     /* if the width has changed, update the resolution button */
-    if (width != ptr->width)
-    {
-	sprintf(data,"%d",(int)((ptr->width-ptr->xstart)/ptr->res) );
-	strcat(string,"Res=");
-	strcat(string,data);
-	strcat(string," ns");
+    if (width != ptr->width)    {
+	sprintf(string,"Res=%d ns",(int)((ptr->width-ptr->xstart)/ptr->res) );
         XtSetArg(arglist[0],DwtNlabel,DwtLatin1String(string));
         XtSetValues(ptr->command.reschg_but,arglist,1);
+	}
     }
 
-}
-
-void
-cb_window_focus(w,ptr)
-Widget			w;
-DISPLAY_SB		*ptr;
+void cb_window_focus(w,ptr)
+    Widget		w;
+    DISPLAY_SB		*ptr;
 {
     if (DTPRINT) printf("In Window Focus - ptr=%d\n",ptr);
 
@@ -171,62 +80,7 @@ DISPLAY_SB		*ptr;
     get_geometry( ptr );
     draw( ptr );
     drawsig( ptr );
-}
-
-void cb_read_trace(w,ptr)
-    Widget			w;
-    DISPLAY_SB		*ptr;
-{
-    char	*filename;
-
-    if (DTPRINT) printf("In cb_read_trace - ptr=%d\n",ptr);
-
-    /* free all previous memory */
-    free_data(ptr);
-
-    /* get the filename */
-    get_file_name(ptr);
     }
-
-void cb_reread_trace(w,ptr)
-    Widget			w;
-    DISPLAY_SB		*ptr;
-{
-    char *semi;
-
-    if (ptr->filename[0]=='\0')
-	cb_read_trace(w,ptr);
-    else {
-	if (DTPRINT) printf("In cb_reread_trace - ptr=%d file=%s\n",ptr,ptr->filename);
-
-	/* Drop ;xxx */
-	if (semi = strchr(ptr->filename,';'))
-	    *semi = '\0';
-
-	if (DTPRINT) printf("In cb_reread_trace - rereading file=%s\n",ptr->filename);
-
-	/* free all previous memory */
-	free_data(ptr);
-
-	/* read the filename */
-	cb_fil_read(ptr);
-	}
-    }
-
-void
-quit(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtAnyCallbackStruct	*cb;
-{
-    if (DTPRINT) printf("Quitting\n");
-
-    /* destroy all widgets in the hierarchy */
-    XtDestroyWidget(toplevel);
-
-    /* all done */
-    exit(1);
-}
 
 void hscroll_unitinc(w,ptr,cb)
     Widget			w;
@@ -302,6 +156,24 @@ void hscroll_drag(w,ptr,cb)
 
     ptr->time = inc;
 
+    new_time(ptr);
+    }
+
+void cb_begin(w, ptr )
+    Widget		w;
+    DISPLAY_SB		*ptr;
+{
+    if (DTPRINT) printf("In cb_start ptr=%d\n",ptr);
+    ptr->time = ptr->start_time;
+    new_time(ptr);
+    }
+
+void cb_end(w, ptr )
+    Widget		w;
+    DISPLAY_SB		*ptr;
+{
+    if (DTPRINT) printf("In cb_end ptr=%d\n",ptr);
+    ptr->time = ptr->end_time - (int)((ptr->width-XMARGIN-ptr->xstart)/ptr->res);
     new_time(ptr);
     }
 
@@ -421,110 +293,158 @@ void vscroll_drag(w,ptr,cb)
     vscroll_new (ptr, inc);
     }
 
-void
-vscroll_bot(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtScrollBarCallbackStruct *cb;
+void vscroll_bot(w,ptr,cb)
+    Widget		w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
 {
     if (DTPRINT) printf("In vscroll_bot ptr=%d\n",ptr);
-}
+    }
 
-void
-vscroll_top(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtScrollBarCallbackStruct *cb;
+void vscroll_top(w,ptr,cb)
+    Widget		w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
 {
     if (DTPRINT) printf("In vscroll_top ptr=%d\n",ptr);
-}
+    }
 
-void
-cb_chg_res(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtAnyCallbackStruct	*cb;
+void cb_chg_res(w,ptr,cb)
+    Widget		w;
+    DISPLAY_SB		*ptr;
+    DwtAnyCallbackStruct	*cb;
 {
     char string[10];
 
     if (DTPRINT) printf("In cb_chg_res - ptr=%d\n",ptr);
     get_data_popup(ptr,"Resolution",IO_RES);
-}
+    }
 
-void
-cb_inc_res(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtAnyCallbackStruct	*cb;
+
+void new_res(ptr, redisplay)
+    DISPLAY_SB		*ptr;
+    int		redisplay;	/* TRUE to refresh the screen after change */
 {
-    char	string[20],data[10];
+    char	string[20];
 
-    /* initialize to NULL string */
-    string[0] = '\0';
+    if (DTPRINT) printf ("In new_res - res = %f\n",ptr->res);
 
+    if (ptr->res==0.0) ptr->res=0.1;	/* prevent div zero error */
+
+    /* change res button's value */
+    sprintf(string,"Res=%d ns",(int)((ptr->width-ptr->xstart)/ptr->res) );
+    XtSetArg(arglist[0],DwtNlabel,DwtLatin1String(string));
+    XtSetValues(ptr->command.reschg_but,arglist,1);
+
+    if (redisplay) {
+	/* redraw the screen with new resolution */
+	get_geometry(ptr);
+	XClearWindow(ptr->disp,ptr->wind);
+     	drawsig(ptr);
+	draw(ptr);
+	}
+    }
+
+void cb_inc_res(w,ptr,cb)
+    Widget		w;
+    DISPLAY_SB		*ptr;
+    DwtAnyCallbackStruct	*cb;
+{
     if (DTPRINT) printf("In cb_inc_res - ptr=%d\n",ptr);
 
     /* increase the resolution by 10% */
     ptr->res = ptr->res*1.1;
-    sprintf(data,"%d",(int)((ptr->width-ptr->xstart)/ptr->res) );
-    strcat(string,"Res=");
-    strcat(string,data);
-    strcat(string," ns");
-    XtSetArg(arglist[0],DwtNlabel,DwtLatin1String(string));
-    XtSetValues(ptr->command.reschg_but,arglist,1);
+    new_res (ptr, TRUE);
+    }
 
-    /* redraw the screen with new resolution */
-    get_geometry(ptr);
-    XClearWindow(ptr->disp,ptr->wind);
-    drawsig(ptr);
-    draw(ptr);
-}
-
-void
-cb_dec_res(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtAnyCallbackStruct	*cb;
+void cb_dec_res(w,ptr,cb)
+    Widget		w;
+    DISPLAY_SB		*ptr;
+    DwtAnyCallbackStruct	*cb;
 {
-    char	string[20],data[10];
-
-    /* initialize to NULL string */
-    string[0] = '\0';
-
     if (DTPRINT) printf("In cb_dec_res - ptr=%d\n",ptr);
 
     /* decrease the resolution by 10% */
     ptr->res = ptr->res*0.9;
-    sprintf(data,"%d",(int)((ptr->width-ptr->xstart)/ptr->res) );
-    strcat(string,"Res=");
-    strcat(string,data);
-    strcat(string," ns");
-    XtSetArg(arglist[0],DwtNlabel,DwtLatin1String(string));
-    XtSetValues(ptr->command.reschg_but,arglist,1);
-
-    /* redraw the screen with new resolution */
-    get_geometry(ptr);
-    XClearWindow(ptr->disp,ptr->wind);
-    drawsig(ptr);
-    draw(ptr);
-}
-
-void
-cb_begin(w, ptr )
-Widget		w;
-DISPLAY_SB	*ptr;
-{
-    if (DTPRINT) printf("In cb_start ptr=%d\n",ptr);
-    ptr->time = ptr->start_time;
-    new_time(ptr);
+    new_res (ptr, TRUE);
     }
 
-void
-cb_end(w, ptr )
-Widget		w;
-DISPLAY_SB	*ptr;
+void cb_full_res(w,ptr,cb)
+    Widget		w;
+    DISPLAY_SB		*ptr;
+    DwtAnyCallbackStruct	*cb;
 {
-    if (DTPRINT) printf("In cb_end ptr=%d\n",ptr);
-    ptr->time = ptr->end_time - (int)((ptr->width-XMARGIN-ptr->xstart)/ptr->res);
-    new_time(ptr);
+    if (DTPRINT) printf("In cb_full_res - ptr=%d\n",ptr);
+
+    /*    printf("%d %d %d %d %d\n",
+	   ptr->xstart, ptr->width,XMARGIN, ptr->end_time, ptr->start_time);	   */
+
+    /* set resolution  */
+    if (ptr->end_time != ptr->start_time) {
+	ptr->res = ((float)(ptr->width - ptr->xstart)) /
+	    ((float)(ptr->end_time - ptr->start_time));
+	ptr->time = ptr->start_time;
+	new_res (ptr, FALSE);
+	new_time (ptr);
+	}
+    }
+
+void cb_zoom_res(w,ptr,cb)
+    Widget		w;
+    DISPLAY_SB		*ptr;
+    DwtAnyCallbackStruct	*cb;
+{
+    if (DTPRINT) printf("In cb_zoom_res - ptr=%d\n",ptr);
+
+    /* process all subsequent button presses as res_zoom clicks */
+    ptr->click_time = -1;
+    remove_all_events (ptr);
+    XtAddEventHandler(ptr->work,ButtonPressMask,TRUE,res_zoom_click_ev,ptr);
+    }
+
+void res_zoom_click_ev(w, ptr, ev)
+    Widget		w;
+    DISPLAY_SB		*ptr;
+    XButtonPressedEvent	*ev;
+{
+    int		time, tmp;
+
+    if (DTPRINT) printf("In res_zoom_click1_ev - ptr=%d x=%d y=%d\n",ptr,ev->x,ev->y);
+
+    /* check if button has been clicked on trace portion of screen */
+    if ( ev->x < ptr->xstart || ev->x > ptr->width - XMARGIN )
+	return;
+
+    /* convert x value to a time value */
+    time = (ev->x + ptr->time * ptr->res - ptr->xstart) / ptr->res;
+
+    /* If no click time defined, define one and wait for second click */
+    if ( ptr->click_time < 0) {
+	ptr->click_time = time;
+	return;
+	}
+
+    if (DTPRINT) printf ("click1 = %d, click2 = %d\n",ptr->click_time, time);
+
+    /* Got 2 clicks, set res */
+    if (time != ptr->click_time) {
+	/* Swap so time is the max */
+	if (time < ptr->click_time) {
+	    tmp = time;
+	    time = ptr->click_time;
+	    ptr->click_time = tmp;
+	    }
+       
+	/* Set new res & time */
+	ptr->res = ((float)(ptr->width - ptr->xstart)) /
+	    ((float)(time - ptr->click_time));
+	
+	ptr->time = ptr->click_time;
+
+	new_res (ptr, FALSE);
+	new_time(ptr);
+	}
+
+    /* remove handlers */
+    remove_all_events (ptr);
     }

@@ -25,7 +25,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V5.1"
+#define DTVERSION	"Dinotrace V5.2"
 
 #define MAXSIGLEN 128		/* Maximum length of signal names */
 #define MAXFNAMELEN 128		/* Maximum length of file names */
@@ -143,6 +143,8 @@ typedef struct {
     Widget resdec_but;
     Widget reschg_but;
     Widget resinc_but;
+    Widget resfull_but;
+    Widget reszoom_but;
     Widget end_but;
 } COMMAND_WDGTS;
 
@@ -207,18 +209,22 @@ typedef struct {
     int			sighgt;
 } PS_DATA;
 
+/* Signal information structure */
 typedef struct {
-    int			*forward;
-    int	 		*backward;
-    char		*signame;
+    int			*forward;	/* Forward link to next signal */
+    int	 		*backward;	/* Backward link to previous signal */
+    char		*signame;	/* Signal name */
     int			type;
-    SIGNALSTATE		*decode;
+    SIGNALSTATE		*decode;	/* Pointer to decode information, NULL if none */
     int			inc;
     int			ind_s,ind_e;
-    int			blocks;
+    int			blocks;		/* Number of time data blocks */
     GC			gc;
-    int			*bptr;    /* begin ptr */
-    int			*cptr;    /* current ptr */
+    int			bits;		/* Number of bits in a bus, 0=single */
+    int			binary_type;	/* type of trace if binary, two/fourstate */
+    int			binary_pos;	/* position of bits in binary trace */
+    int			*bptr;		/* begin of time data ptr */
+    int			*cptr;		/* current time data ptr */
 } SIGNAL_SB;
 
 typedef struct {
@@ -244,7 +250,8 @@ typedef struct {
     PS_DATA		signal;
     Widget		customize;
     Widget		fileselect;		/* File selection widget */
-    char		filename[200];
+    char		filename[200];		/* Current file */
+    int			loaded;			/* True if the filename is loaded in */
     int			*startsig;		/* ptr to SIGNAL_SB */
     int			*delsig;		/* ptr to SIGNAL_SB */
     float		res;		/* Resolution of graph width */
@@ -273,6 +280,7 @@ typedef struct {
     int			time;                 
     int			start_time;
     int			end_time;
+    int			click_time;    /* time clicked on for res_zoom_click */
     short int		*bus;
     int			separator;
     GC                  gc;

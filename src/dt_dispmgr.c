@@ -555,9 +555,31 @@ create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
 	    arglist, 3);
 	XtManageChild(ptr->command.reschg_but);
 
-	/*** create resolution decrease button in command region ***/
+	/*** create full button in command region ***/
  	XtSetArg(arglist[0], DwtNadbRightAttachment, DwtAttachWidget);
 	XtSetArg(arglist[1], DwtNadbRightWidget, ptr->command.reschg_but);
+	XtSetArg(arglist[2], DwtNadbRightOffset, 2);
+	full_res_cb[0].tag = (int)ptr;
+	XtSetArg(arglist[3], DwtNactivateCallback, full_res_cb );
+	XtSetArg(arglist[4], DwtNlabel, DwtLatin1String("Full") );
+	ptr->command.resfull_but = DwtPushButtonCreate(ptr->command.command, "",
+	    arglist, 5);
+	XtManageChild(ptr->command.resfull_but);
+
+	/*** create zoom button in command region ***/
+	XtSetArg(arglist[0], DwtNadbLeftAttachment, DwtAttachWidget);
+	XtSetArg(arglist[1], DwtNadbLeftWidget, ptr->command.reschg_but);
+	XtSetArg(arglist[2], DwtNadbLeftOffset, 2);
+	zoom_res_cb[0].tag = (int)ptr;
+	XtSetArg(arglist[3], DwtNactivateCallback, zoom_res_cb );
+	XtSetArg(arglist[4], DwtNlabel, DwtLatin1String("Zoom") );
+	ptr->command.reszoom_but = DwtPushButtonCreate(ptr->command.command, "",
+	    arglist, 5);
+	XtManageChild(ptr->command.reszoom_but);
+
+	/*** create resolution decrease button in command region ***/
+ 	XtSetArg(arglist[0], DwtNadbRightAttachment, DwtAttachWidget);
+	XtSetArg(arglist[1], DwtNadbRightWidget, ptr->command.resfull_but);
 	XtSetArg(arglist[2], DwtNadbRightOffset, 2);
 	dec_res_cb[0].tag = (int)ptr;
 	XtSetArg(arglist[3], DwtNactivateCallback, dec_res_cb );
@@ -568,7 +590,7 @@ create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
 
 	/*** create resolution increase button in command region ***/
 	XtSetArg(arglist[0], DwtNadbLeftAttachment, DwtAttachWidget);
-	XtSetArg(arglist[1], DwtNadbLeftWidget, ptr->command.reschg_but);
+	XtSetArg(arglist[1], DwtNadbLeftWidget, ptr->command.reszoom_but);
 	XtSetArg(arglist[2], DwtNadbLeftOffset, 2);
 	inc_res_cb[0].tag = (int)ptr;
 	XtSetArg(arglist[3], DwtNactivateCallback, inc_res_cb );
@@ -610,6 +632,7 @@ create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
     ptr->prntscr.customize = NULL;
     ptr->fileselect = NULL;
     ptr->filename[0] = '\0';
+    ptr->loaded = 0;
     ptr->numsig = 0;
     ptr->numsigvis = 0;
     ptr->numsigdel = 0;

@@ -20,7 +20,7 @@
  *     AAG	 6-Nov-90	popped add signal widget to top of stack after
  *				adding signal by unmanage/managing widget
  *     AAG	29-Apr-91	Use X11 for Ultrix support
- *
+ *     WPS	11-Mar-93	Fixed move_signal ->backward being null bug
  */
 
 
@@ -44,6 +44,8 @@ DISPLAY_SB	*ptr;
 SIGNAL_SB	*sig_ptr;
 {
     SIGNAL_SB		*prev_sig_ptr,*next_sig_ptr;
+
+    if (DTPRINT) printf("In remove_signal_from_queue - ptr=%d\n",ptr);
 
     /* obtain the prev and next signals */
     prev_sig_ptr = sig_ptr->backward;
@@ -72,6 +74,8 @@ SIGNAL_SB	*sig_ptr;
 SIGNAL_SB	*loc_sig_ptr;
 {
     SIGNAL_SB		*next_sig_ptr;
+
+    if (DTPRINT) printf("In add_signal_from_queue - ptr=%d\n",ptr);
 
     /* obtain the next signal */
     next_sig_ptr = loc_sig_ptr->forward;
@@ -303,7 +307,7 @@ XButtonPressedEvent	*ev;
     if (DTPRINT) printf("In add_signal - ptr=%d\n",ptr);
 
     /* return if there is no file */
-    if ( ptr->filename[0] == '\0')
+    if (!ptr->loaded)
 	return;
 
     /* make sure button has been clicked in in valid location of screen */
@@ -374,7 +378,7 @@ XButtonPressedEvent	*ev;
     if (DTPRINT) printf("In move_signal - ptr=%d\n",ptr);
 
     /* return if there is no file */
-    if ( ptr->filename[0] == '\0')
+    if ( !ptr->loaded )
 	return;
 
     /* return if there is less than 2 signals to move */
@@ -403,7 +407,7 @@ XButtonPressedEvent	*ev;
     {
 	/* set pointer to signal to insert moved signal */
 	sig_ptr = ptr->startsig;
-	sig_ptr = sig_ptr->backward;
+	/* sig_ptr = sig_ptr->backward;*/
 	for (i=0; i<num; i++)
 	    sig_ptr = sig_ptr->forward;
 
@@ -442,7 +446,7 @@ XButtonPressedEvent	*ev;
     if (DTPRINT) printf("In delete_signal - ptr=%d\n",ptr);
 
     /* return if there is no file */
-    if ( ptr->filename[0] == '\0')
+    if ( !ptr->loaded )
 	return;
 
     /* return if there are no signals to delete */

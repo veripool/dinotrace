@@ -62,6 +62,9 @@ DISPLAY_SB		*ptr;
 {
     if (DTPRINT) printf("In remove_all_events - ptr=%d\n",ptr);
 
+    /* remove all possible events due to res options */ 
+    XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,res_zoom_click_ev,ptr);
+
     /* remove all possible events due to cursor options */ 
     XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,add_cursor,ptr);
     XtRemoveEventHandler(ptr->work,ButtonPressMask,TRUE,move_cursor,ptr);
@@ -126,9 +129,12 @@ new_time(ptr)
 
     /* Update window */
     XClearWindow(ptr->disp, ptr->wind);
+    get_geometry(ptr);
     draw(ptr);
     drawsig(ptr);
     }
+
+/* Get window size, calculate what fits on the screen and update scroll bars */
 
 get_geometry( ptr )
     DISPLAY_SB	*ptr;
@@ -186,9 +192,8 @@ static DwtCallback fil_can_cb[2] =
     {NULL,       NULL}
 };
 
-void 
-get_file_name( ptr )
-DISPLAY_SB	*ptr;
+void  get_file_name( ptr )
+    DISPLAY_SB	*ptr;
 {
     char mask[200], *pchar;
 
@@ -213,18 +218,15 @@ DISPLAY_SB	*ptr;
 	ptr->fileselect = DwtFileSelectionCreate( ptr->main, "", arglist, 6);
 
 	XSync(ptr->disp,0);
-    }
+	}
 
     XtManageChild(ptr->fileselect);
+    }
 
-    return;
-}
-
-void
-cb_fil_ok(widget, ptr, reason)
-Widget		widget;
-DISPLAY_SB	*ptr;
-DwtFileSelectionCallbackStruct *reason;
+void cb_fil_ok(widget, ptr, reason)
+    Widget	widget;
+    DISPLAY_SB	*ptr;
+    DwtFileSelectionCallbackStruct *reason;
 {
     int d,status,charset,direction,language,rendition;
     char *tmp;
@@ -235,27 +237,23 @@ DwtFileSelectionCallbackStruct *reason;
     /*
     ** Unmanage the file select widget here and wait for sync so
     ** the window goes away before the read process begins in case
-    ** the ile is very big.
+    ** the idle is very big.
     */
     XtUnmanageChild(ptr->fileselect);
     XSync(ptr->disp,0);
 
-    if ( DwtInitGetSegment(&context, reason->value) == DwtSuccess )
-    {
+    if ( DwtInitGetSegment(&context, reason->value) == DwtSuccess ) {
 	if ( DwtGetNextSegment(&context, &tmp, &charset, &direction,
-			&language, &rendition) == DwtSuccess )
-	{
+			&language, &rendition) == DwtSuccess ) {
 	    if (DTPRINT) printf("filename=%s\n",tmp);
-	}
-	else
-	{
+	    }
+	else {
 	    printf("failure (GetNext)\n");
+	    }
 	}
-    }
-    else
-    {
+    else {
 	printf("failure (InitNext)\n");
-    }
+	}
 
     strcpy (ptr->filename,tmp);
 
@@ -266,11 +264,14 @@ DwtFileSelectionCallbackStruct *reason;
     }
 
 
-void
-cb_fil_read(ptr)
-DISPLAY_SB	*ptr;
+void cb_fil_read(ptr)
+    DISPLAY_SB	*ptr;
 {
     if (DTPRINT) printf("In cb_fil_read ptr=%d filename=%s\n",ptr,ptr->filename);
+
+    /* Clear the data structures & the screen */
+    clear_display (0, ptr);
+    XSync(ptr->disp,0);
 
     /*
     ** Read in the trace file using the format selected by the user
@@ -299,19 +300,18 @@ DISPLAY_SB	*ptr;
     XClearWindow(ptr->disp,ptr->wind);
     draw(ptr);
     drawsig(ptr);
-}
+    }
 
-void
-cb_fil_can( widget, ptr, reason )
-Widget		widget;
-DISPLAY_SB	*ptr;
-DwtFileSelectionCallbackStruct *reason;
+void cb_fil_can( widget, ptr, reason )
+    Widget	widget;
+    DISPLAY_SB	*ptr;
+    DwtFileSelectionCallbackStruct *reason;
 {
     if (DTPRINT) printf("In cb_fil_can ptr=%d\n",ptr);
 
     /* remove the file select widget */
     XtUnmanageChild( ptr->fileselect );
-}
+    }
 
 
 Widget popup_wid, ok_wid, can_wid, text_wid, label_wid;
@@ -320,11 +320,10 @@ void get_data_popup(), ok(), can(), hit_return();
 
 static char io_trans_table[100]; 
 
-    static XtActionsRec io_action_table[] =
-{
+    static XtActionsRec io_action_table[] = {
         {"hit_return", (XtActionProc)hit_return},
         {NULL,        NULL}
-};
+	};
 
     XtTranslations io_trans_parsed;
 

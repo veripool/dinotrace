@@ -23,7 +23,8 @@ extern void	create_display(), delete_display(), clear_display(),
 		ps_rf(),ps_grid(),ps_cursor(),
 		cb_window_expose(), cb_window_focus(),
 		cb_read_trace(), cb_chg_res(), cb_inc_res(), cb_dec_res(),
-		cb_reread_trace(), cb_begin(), cb_end(),
+		cb_reread_trace(), cb_begin(), cb_end(), cb_zoom_res(), cb_full_res(),
+                res_zoom_click_ev(), 
 
 		/* customize routines */
 		cus_dialog_cb(),cus_read_cb(),cus_save_cb(),cus_page_cb(),
@@ -213,16 +214,28 @@ static DwtCallback dec_res_cb[2] =
     {NULL,            NULL}
 };
 
+static DwtCallback full_res_cb[2] =
+{
+    {cb_full_res,     NULL},
+    {NULL,            NULL}
+};
+
+static DwtCallback zoom_res_cb[2] =
+{
+    {cb_zoom_res,	NULL},
+    {NULL,		NULL}
+};
+
 static DwtCallback begin_cb[2] =
 {
-    {cb_begin,      NULL},
-    {NULL,            NULL}
+    {cb_begin,		NULL},
+    {NULL,		NULL}
 };
 
 static DwtCallback end_cb[2] =
 {
-    {cb_end,      NULL},
-    {NULL,            NULL}
+    {cb_end,		NULL},
+    {NULL,		NULL}
 };
 
 static DwtCallback custom_cb[28] =

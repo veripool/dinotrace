@@ -21,6 +21,8 @@
  *     AAG	 6-Nov-90	Upped Pts[] to 5000 and added check in case
  *				that limit is exceeded
  *     AAG	29-Apr-91	Use X11, fixed casts for Ultrix support
+ *     WPS	01-Jan-93	V5.0 signal_states support
+ *     WPS	15-Feb-93	V5.2 print number if state doesn't fit
  */
 
 
@@ -99,7 +101,7 @@ DISPLAY_SB	*ptr;
     if (DTPRINT) printf("In draw - filename=%s\n",ptr->filename);
 
     /* don't draw anything if no file is loaded */
-    if (ptr->filename[0] == '\0') return;
+    if (!ptr->loaded) return;
 
     /* calculate the font y location */
     yfntloc = ptr->text_font->max_bounds.ascent + ptr->text_font->max_bounds.descent;
@@ -221,21 +223,26 @@ DISPLAY_SB	*ptr;
 		    (value>=0 && value<MAXSTATENAMES) &&
 		    (tmp_sig_ptr->decode->statename[value][0] != '\0')) {
 		    strcpy (tmp, tmp_sig_ptr->decode->statename[value]);
+		    len = XTextWidth(ptr->text_font,tmp,strlen(tmp));
+		    if ( xloc-Pts[cnt].x < len + 2 ) {
+			/* doesn't fit, try number */
+			goto value_rep;
+			}
 		    }
 		else {
-		    if (ptr->busrep == HBUS)
+value_rep:	    if (ptr->busrep == HBUS)
 			sprintf(tmp,"%X", value);
 		    else if (ptr->busrep == OBUS)
 			sprintf(tmp,"%o", value);
 		    }
 		
 		/* calculate positional parameters */
-		mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
 		len = XTextWidth(ptr->text_font,tmp,strlen(tmp));
 		
 		/* write the bus value if it fits */
 		if ( xloc-Pts[cnt].x >= len + 2 )
 		    {
+		    mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
 		    XDrawString(XtDisplay(toplevel), XtWindow( ptr->work),
 				ptr->gc, mid-len/2, y2-yfntloc, tmp, strlen(tmp) );
 		    }
@@ -261,12 +268,12 @@ DISPLAY_SB	*ptr;
 			    *((unsigned int *)cptr+2));
 		
 		/* calculate positional parameters */
-		mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
 		len = XTextWidth(ptr->text_font,tmp,strlen(tmp));
 		
 		/* write the bus value if it fits */
 		if ( xloc-Pts[cnt].x >= len + 2 )
 		    {
+		    mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
 		    XDrawString(XtDisplay(toplevel), XtWindow( ptr->work),
 				ptr->gc, mid-len/2, y2-yfntloc, tmp, strlen(tmp) );
 		    }
@@ -294,12 +301,12 @@ DISPLAY_SB	*ptr;
 			    *((unsigned int *)cptr+2));
 		
 		/* calculate positional parameters */
-		mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
 		len = XTextWidth(ptr->text_font,tmp,strlen(tmp));
 		
 		/* write the bus value if it fits */
 		if ( xloc-Pts[cnt].x >= len + 2 )
 		    {
+		    mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
 		    XDrawString(XtDisplay(toplevel), XtWindow( ptr->work),
 				ptr->gc, mid-len/2, y2-yfntloc, tmp, strlen(tmp) );
 		    }
@@ -444,7 +451,7 @@ DISPLAY_SB	*ptr;
 
 /* don't draw anything if there is no file is loaded */
 
-    if (ptr->filename[0] == '\0') return;
+    if (!ptr->loaded) return;
 
 /* check for all signals being deleted */
     if (ptr->startsig == NULL) return;

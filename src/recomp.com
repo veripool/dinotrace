@@ -13,6 +13,6 @@ $    if ((f$cvtime(f$file(file, "RDT")) .les. f$cvtime(f$file(obj, "RDT"))) .and
 	 then exit
 $docmd:
 $    write sys$output "Compiling ''name'..."
-$    cc 'file'
+$    cc 'p2' 'file'
 $    purge /nolog 'obj'
 $    write sys$output "---------------"
