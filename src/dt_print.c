@@ -12,7 +12,7 @@
  *
  * Some of the code in this file was originally developed for Digital
  * Semiconductor, a division of Digital Equipment Corporation.  They
- * gratefuly have agreed to share it, and thus the bas version has been
+ * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
  * 
@@ -292,8 +292,8 @@ static void print_draw_val (
 	/* find data start */
 	cptr = sig_ptr->bptr;
 	if (printtime >= CPTR_TIME(cptr) ) {
-	    while ((CPTR_TIME(cptr) != EOT) &&
-		   (printtime > CPTR_TIME(CPTR_NEXT(cptr)))) {
+	    while ((CPTR_TIME(cptr) != EOT)
+		   && (printtime > CPTR_TIME(CPTR_NEXT(cptr)))) {
 		cptr = CPTR_NEXT(cptr);
 	    }
 	}
@@ -405,7 +405,7 @@ static void print_draw_val (
 	    }
 
 	    /* Plot value */
-	    if (sig_ptr->bits>1
+	    if ((sig_ptr->bits>1 || (sig_ptr->decode != NULL))
 		&& (sig_ptr->waveform == WAVEFORM_DIGITAL)
 		&& cptr->siglw.stbits.state != STATE_U
 		&& cptr->siglw.stbits.state != STATE_Z
@@ -413,17 +413,20 @@ static void print_draw_val (
 		char *vsname = NULL;
 		char *vname = "";
 		uint_t num0 = 0;
-		if (cptr->siglw.stbits.state != STATE_0) num0 = cptr->number[0];
+		if (cptr->siglw.stbits.state == STATE_0) num0 = 0;
+		else if (cptr->siglw.stbits.state == STATE_1) num0 = 1;
+		else num0 = cptr->number[0];
 		/* Below evaluation left to right important to prevent error */
 		if (cptr->siglw.stbits.state != STATE_0) {
 		    val_to_string (sig_ptr->radix, strg, cptr, TRUE);
 		    vname = strg;
 		}
 		if ((cptr->siglw.stbits.state == STATE_B32
-		     || cptr->siglw.stbits.state == STATE_0) &&
-		    (sig_ptr->decode != NULL) &&
-		    (num0 < sig_ptr->decode->numstates) &&
-		    (sig_ptr->decode->statename[num0][0] != '\0')) {
+		     || cptr->siglw.stbits.state == STATE_0
+		     || cptr->siglw.stbits.state == STATE_1)
+		    && (sig_ptr->decode != NULL)
+		    && (num0 < sig_ptr->decode->numstates)
+		    && (sig_ptr->decode->statename[num0][0] != '\0')) {
 		    vsname = sig_ptr->decode->statename[num0];
 		    fprintf (psfile," (%s) (%s) SN",vsname,vname);
 		}

@@ -7,6 +7,11 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.1e  ***/2001
+
+***	Allow 1-bit wide signals to have statenames.  [Dominik Strasser]
+
+
 * Changes in Dinotrace 9.1d  5/24/2001
 
 ***	Fixed missing 0's in display of >64 bit numbers. [Amitvikram Rajkhowa]
