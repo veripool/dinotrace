@@ -100,13 +100,14 @@ You may also want Verilator, a public domain simulator, and other tools
 available at the Veripool.
 
 @c --------------------
-@section Will Dinotrace work with Windows NT?
+@section Will Dinotrace work with Windows NT/Windows XP?
 
-Yes, though it may not have the look and feel you expect.  (Where expect
-is defined by Microsoft, not Unix.)  Some consider that a feature.
+Yes, though it may not have the look and feel you expect.  (Because
+your expectations were unfortunately defined by Microsoft, not Unix.)
+Some consider that a feature.
 
-Read the installation instructions on the Website.  You'll need cygwin,
-X11R6, and a X11 server, like Exceed or Excursion.
+Read the installation instructions on the Website.  You'll need
+cygwin, and a bunch of subpackages that are a part of cygwin.
 
 @c ======================================================================
 @chapter On-line Help, Printed Manuals, Other Sources of Help

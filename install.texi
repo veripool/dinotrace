@@ -61,7 +61,7 @@ This version of Dinotrace has been built and tested on:
 @item sparc-sun-sunos4.1.4
 @item alpha-dec-osf4.0
 @item i386-pc-linux
-@item i386-pc-cygwin32	(under Windows-2000 & Windows-ME)
+@item i386-pc-cygwin32	(under Windows-2000 & Windows-XP)
 @end itemize
 
 Previous versions of Dinotrace were once built, and probably will
@@ -275,8 +275,7 @@ add several packages to Cygwin.
 @item
 Install Cygwin32, a shareware package that provides the BASH shell and
 Unix utilities.  It is available at
-@uref{http://sourceware.cygnus.com/cygwin/}.  Dinotrace is known to
-work with Cygwin Beta 20.1,
+@uref{http://sourceware.cygnus.com/cygwin/}.
 
 @enumerate
 @item
@@ -289,7 +288,8 @@ the XFree86-prog (headers) package.
 @item
 Obtain a X11 server.  You can use XFree86 that came with cygwin.
 Another alternative is the commercial @strong{eXcursion} or
-@strong{exceed} programs.
+@strong{exceed} programs.  If using XFree86, you can start the server
+with @samp{xwin -multiwindow}.
 
 @item
 Download the Dinotrace kit, if not done previously.
