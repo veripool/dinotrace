@@ -390,7 +390,7 @@ void decsim_read_binary (
 	      case tra$k_nnr:
 		/* if (DTPRINT_FILE) printf ("Reading signal name data, ptr=%d\n", sig_ptr); */
 		len = buf->TRA$W_NODNAMLEN;
-		sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
+		sig_ptr->signame = (char *)XtMalloc(16+len);	/* allow extra space in case becomes vector */
 		strncpy (sig_ptr->signame, buf->TRA$T_NODNAMSTR, (size_t) len);
 		sig_ptr->signame[len] = '\0';
 		

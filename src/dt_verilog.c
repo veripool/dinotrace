@@ -437,7 +437,7 @@ void sig_new_file (
 	    trace->lastsig = new_sig_ptr;
 	    
 	    /* copy signal info */
-	    new_sig_ptr->signame = (char *)XtMalloc(10+strlen (signame));	/* allow extra space in case becomes vector */
+	    new_sig_ptr->signame = (char *)XtMalloc(16+strlen (signame));	/* allow extra space in case becomes vector */
 	    strcpy (new_sig_ptr->signame, signame);
 	    new_sig_ptr->signame_buspos = (signame_buspos
 					   ? strdup(signame_buspos) : NULL);
