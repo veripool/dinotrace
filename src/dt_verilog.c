@@ -223,6 +223,7 @@ static void	verilog_read_timescale (
     char *line = verilog_gettok();
     time_scale = atol (line);
     while (isdigit (*line)) line++;
+    if (!*line) line = verilog_gettok();	/* Allow '10 ns' */
     switch (*line) {
     case 's':
 	time_scale *= 1000;
