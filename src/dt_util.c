@@ -30,6 +30,7 @@
 
 
 #include <stdio.h>
+#include <time.h>
 
 #include <X11/Xlib.h>
 #include <Xm/MessageB.h>
@@ -39,8 +40,7 @@
 #include "dinotrace.h"
 #include "callbacks.h"
 
-extern void cb_prompt_ok(), cb_prompt_cancel(),
-    cb_fil_ok(), cb_fil_can();
+extern void cb_prompt_ok(), cb_prompt_cancel(), cb_fil_ok(), cb_fil_can();
 
 
 /* get normal string from XmString */
@@ -59,6 +59,70 @@ char *extract_first_xms_segment(cs)
     return(primitive_string);
     }
 
+
+XmString string_create_with_cr (msg)
+    char *msg;
+{
+    XmString	xsout,xsnew,xsfree;
+    char	*ptr,*nptr;
+    char	aline[200];
+
+    /* create string w/ seperators */
+    xsout = NULL;
+    for (ptr=msg; ptr && *ptr; ptr = nptr) {
+	nptr = strchr (ptr, '\n');
+	if (nptr) {
+	    strncpy (aline, ptr, nptr-ptr);
+	    aline[nptr-ptr] = '\0';
+	    nptr++;
+	    xsnew = XmStringCreateSimple (aline);
+	    }
+	else {
+	    xsnew = XmStringCreateSimple (ptr);
+	    }
+
+	if (xsout) {
+	    xsout = XmStringConcat (xsfree=xsout, XmStringSeparatorCreate());
+	    XmStringFree (xsfree);
+	    if (!XmStringEmpty (xsnew)) {
+		xsout = XmStringConcat (xsfree=xsout, xsnew);
+		XmStringFree (xsfree);
+		}
+	    XmStringFree (xsnew);
+	    }
+	else {
+	    xsout = xsnew;
+	    }
+	}
+    return (xsout);
+    }
+    
+
+char *date_string()
+{
+    static char	date_str[50];
+    int time_num;
+    
+    time_num=time (NULL);
+    strcpy (date_str, asctime (localtime (&time_num)));
+    if (date_str[strlen(date_str)-1]=='\n')
+	date_str[strlen(date_str)-1]='\0';
+
+    return (date_str);
+    }
+
+
+void    unmanage_cb (widget, tag, reason )
+    /* Generic unmanage routine, usually for cancel buttons */
+    Widget		widget;
+    Widget		*tag;
+    XmAnyCallbackStruct *reason;
+{
+    if (DTPRINT) printf("In unmanage_cb\n");
+    
+    /* unmanage the widget */
+    XtUnmanageChild(widget);
+    }
 
 void    cancel_all_events(w,trace,cb)
     Widget			w;
@@ -141,6 +205,9 @@ void    remove_all_events(trace)
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_copy_ev,trace_ptr);
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_delete_ev,trace_ptr);
 	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,sig_highlight_ev,trace_ptr);
+
+	/* remove all possible events due to nvalue options */ 
+	XtRemoveEventHandler(trace_ptr->work,ButtonPressMask,TRUE,val_examine_ev,trace_ptr);
 	}
 
     global->selected_sig = NULL;
@@ -341,12 +408,6 @@ void get_data_popup(trace,string,type)
     if (DTPRINT) 
 	printf("In get_data trace=%d string=%s type=%d\n",trace,string,type);
     
-    /* parse the translation table - do this each time for diff types */
-/*
-    sprintf(io_trans_table,"<KeyPress>0xff0d: cb_prompt_ok(%d,%d)",trace,type); 
-    XtAddActions(io_action_table, 1);
-    io_trans_parsed = XtParseTranslationTable(io_trans_table);
-*/    
     if (trace->prompt_popup == NULL) {
 	/* only need to create the widget once - now just manage/unmanage */
 	/* create the dialog box popup window */
@@ -361,10 +422,6 @@ void get_data_popup(trace,string,type)
 	XtUnmanageChild( XmSelectionBoxGetChild (trace->prompt_popup, XmDIALOG_HELP_BUTTON));
 	}
     
-    /*
-    XtSetArg(arglist[0], DwtNtextMergeTranslations, io_trans_parsed );
-    XtSetValues(popup_wid,arglist,1);
-    */
     XtSetArg(arglist[0], XmNdialogTitle, XmStringCreateSimple(string) );
     XtSetArg(arglist[1], XmNtextString, XmStringCreateSimple("") );
     XtSetValues(trace->prompt_popup,arglist,2);
@@ -459,10 +516,8 @@ void dino_message_ack(trace, type, msg)
 {
     static	MAPPED=FALSE;
     static Widget message;
-    char	aline[200];
     Arg		arglist[10];
-    XmString	xsout,xsnew,xsfree;
-    char	*ptr,*nptr;
+    XmString	xsout;
     
     if (DTPRINT) printf("In dino_message_ack msg=%s\n",msg);
     
@@ -481,39 +536,14 @@ void dino_message_ack(trace, type, msg)
 	    message = XmCreateErrorDialog(trace->work, "error", arglist, 1);
 	    break;
 	    }
-	XtAddCallback(message, XmNokCallback, message_ack, trace);
+	XtAddCallback(message, XmNokCallback, unmanage_cb, trace);
 	XtUnmanageChild( XmMessageBoxGetChild (message, XmDIALOG_CANCEL_BUTTON));
 	XtUnmanageChild( XmMessageBoxGetChild (message, XmDIALOG_HELP_BUTTON));
 	MAPPED=TRUE;
 	}
 
     /* create string w/ seperators */
-    xsout = NULL;
-    for (ptr=msg; ptr && *ptr; ptr = nptr) {
-	nptr = strchr (ptr, '\n');
-	if (nptr) {
-	    strncpy (aline, ptr, nptr-ptr);
-	    aline[nptr-ptr] = '\0';
-	    nptr++;
-	    xsnew = XmStringCreateSimple (aline);
-	    }
-	else {
-	    xsnew = XmStringCreateSimple (ptr);
-	    }
-
-	if (xsout) {
-	    xsout = XmStringConcat (xsfree=xsout, XmStringSeparatorCreate());
-	    XmStringFree (xsfree);
-	    if (!XmStringEmpty (xsnew)) {
-		xsout = XmStringConcat (xsfree=xsout, xsnew);
-		XmStringFree (xsfree);
-		}
-	    XmStringFree (xsnew);
-	    }
-	else {
-	    xsout = xsnew;
-	    }
-	}
+    xsout = string_create_with_cr (msg);
     
     /* change the label value and location */
     XtSetArg(arglist[0], XmNmessageString, xsout);
@@ -522,17 +552,6 @@ void dino_message_ack(trace, type, msg)
     
     /* manage the widget */
     XtManageChild(message);
-    }
-
-void    message_ack(widget, tag, reason )
-    Widget		widget;
-    Widget		*tag;
-    XmAnyCallbackStruct *reason;
-{
-    if (DTPRINT) printf("In message_ack\n");
-    
-    /* unmanage the widget */
-    XtUnmanageChild(widget);
     }
 
 /******************************************************************************

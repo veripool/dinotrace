@@ -112,8 +112,10 @@ void free_data (trace)
     trace->bus = NULL;
 
     /* free signal array */
+    /*
     XtFree(trace->signame);
     trace->signame = NULL;
+    */
     }
 
 void trace_read_cb(w,trace)
@@ -360,12 +362,17 @@ void read_decsim_ascii(trace)
     sig_ptr = trace->firstsig;
     for (i=0,j=0; i < trace->numsig; i++) {
 	sig_ptr->signame = trace->signame[j].array;
+	sig_ptr->index = 0;
+	sig_ptr->bits = *pshort;
 	if (*pshort == 0) {
 	    sig_ptr->inc = 1;
 	    sig_ptr->type = 0;
-	    sig_ptr->ind_e = 0;
 	    }
 	else {
+	    /* Get index */
+	    t1 = strchr(trace->signame[j].array,'<');
+	    if (t1) sig_ptr->index = atoi (t1+1);
+
 	    /*** t1 points to '>' in signame[j] ***/
 	    t1 = strchr(trace->signame[j].array,'>');
 	    *t1 = '\0';
@@ -378,7 +385,6 @@ void read_decsim_ascii(trace)
 	    sig_ptr->type = (*pshort < 32) ? STATE_B32 :
 		(*pshort < 64) ? STATE_B64 : STATE_B96;
 	    for (t1=sig_ptr->signame; *t1==' '; t1++);
-	    sig_ptr->ind_e = 0;
 	    j += *pshort;
 	    } 
 	j++;
@@ -478,9 +484,9 @@ read_trace_dump (trace)
 
     /* loop thru each signal */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	printf (" Sig '%s'  ty=%d inc=%d ind_e=%d btyp=%d bpos=%d bits=%d\n",
+	printf (" Sig '%s'  ty=%d inc=%d index=%d btyp=%d bpos=%d bits=%d\n",
 		sig_ptr->signame, sig_ptr->type, sig_ptr->inc,
-		sig_ptr->ind_e,
+		sig_ptr->index,
 		sig_ptr->binary_type, sig_ptr->binary_pos, sig_ptr->bits
 		);
 	}
@@ -784,8 +790,9 @@ void read_hlo_tempest(trace)
 	    sig_ptr->backward = last_sig_ptr;
 	    }
 	sig_ptr->inc = 1;
+	sig_ptr->index = 0;
 	sig_ptr->type = 0;
-	sig_ptr->ind_e = sigWidth;
+	sig_ptr->bits = sigWidth - 1;
 	
 	/*
 	 ** Copy the signal name into the signal name array, add an
@@ -868,7 +875,7 @@ void read_hlo_tempest(trace)
 		sig_ptr->cptr = sig_ptr->bptr+diff;
 		}
 	    
-	    width = sig_ptr->ind_e;
+	    width = sig_ptr->bits + 1;
 	    
 	    value[0] = value[1] = value[2] = 0;
 	    value_index = value_bit = 0;
@@ -900,7 +907,7 @@ void read_hlo_tempest(trace)
 		width--;
 		}  /* end while width */
 	    
-	    width = sig_ptr->ind_e;
+	    width = sig_ptr->bits + 1;
 	    if ( width == 1 ) {
 		switch(value[0]) {
 		  case 0:

@@ -57,6 +57,7 @@ void set_cursor (trace, cursor_num)
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	XDefineCursor (global->display, trace->wind, global->xcursors[cursor_num]);
 	}
+    XmSetMenuCursor (global->display, global->xcursors[cursor_num]);
     }
 
 /* Make the close menu options on all of the menus be active */
@@ -89,8 +90,10 @@ void trace_open_cb(w,trace)
     XtGetValues(trace->toplevel, arglist, 4);
 
     XtSetArg(arglist[0], XmNheight, ys/2);
+    /* printf ("&& && oldy = %d, newy = %d\n", ys, ys/2); */
     XtSetValues(trace->toplevel, arglist, 1);
 
+    /* printf ("&& && new xs %d, ys = %d, xp %d, ys %d\n", xs, ys/2, xp, yp+ys/2); */
     trace_new = create_trace (xs, ys/2, xp, yp+ys/2);
 
     /* Ask for a file in the new window */
@@ -190,6 +193,8 @@ void init_globals ()
     global->xstart = 200;
     global->time = 0;
 
+    global->goto_color = -1;
+
     for (i=0; i<MAX_SRCH; i++) {
 	global->srch[i].color = global->srch[i].cursor =
 	    global->srch[i].value[0] = global->srch[i].value[1] =
@@ -257,6 +262,7 @@ void create_globals(argc,argv,res)
     global->xcursors[8] = XCreateFontCursor (global->display, XC_left_side);
     global->xcursors[9] = XCreateFontCursor (global->display, XC_right_side);
     global->xcursors[10] = XCreateFontCursor (global->display, XC_spraycan);
+    global->xcursors[11] = XCreateFontCursor (global->display, XC_question_arrow);
     }
 
 
@@ -288,6 +294,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg (arglist[1], XtNargv, argv_copy);
     trace->toplevel = XtAppCreateShell (NULL, "Dinotrace",
 				 applicationShellWidgetClass, global->display, arglist, 2);
+    /* printf ("&& && trace %d, top=%d\n", trace, trace->toplevel); */
 
     change_title (trace);
     
@@ -453,7 +460,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     dt_menu_entry	("Move",	'M',	sig_mov_cb);
     dt_menu_entry	("Copy",	'C',	sig_copy_cb);
     dt_menu_entry	("Delete",	'D',	 sig_del_cb);
-    dt_menu_entry	("Search",	'S',	sig_search_cb);
+    /* dt_menu_entry	("Search",	'S',	val_search_cb); */
     dt_menu_subtitle	("Highlight",	'H');
     trace->menu.sig_highlight_pds = pds+1;
     for (i=0; i<=MAX_SRCH; i++) {
@@ -462,6 +469,12 @@ TRACE *create_trace (xs,ys,xp,yp)
 
     /* dt_menu_entry	("Reset", 	'R',	sig_reset_cb); */
     dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
+
+    dt_menu_title ("Value", 'V');
+    dt_menu_entry	("Examine",	'E',	val_examine_cb);
+    dt_menu_entry	("Search",	'S',	val_search_cb);
+    dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
+
     /*
     dt_menu_title ("Note", 'N');
     dt_menu_entry	("Add", );
@@ -470,7 +483,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     dt_menu_entry	("Clear", );
     dt_menu_entry	("Cancel", 	'L',	cancel_all_events);
     */
-    dt_menu_title ("Printscreen", 'P');
+    dt_menu_title ("Print", 'P');
     dt_menu_entry	("Print",	'P',	ps_dialog);
     dt_menu_entry	("Reset",	'e',	ps_reset);
     

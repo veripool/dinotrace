@@ -1,6 +1,7 @@
 $ qual := """"""
 $ if p1 .eqs. "DEBUG" then qual := '/debug'
 $ recomp   DINOTRACE		 'qual'	dinotrace.h callbacks.h
+$ recomp   DT_VALUE		 'qual'	dinotrace.h callbacks.h
 $ recomp   DT_CONFIG		 'qual'	dinotrace.h callbacks.h
 $ recomp   DT_CURSOR		 'qual'	dinotrace.h callbacks.h
 $ recomp   DT_CUSTOMIZE	 	 'qual'	dinotrace.h callbacks.h

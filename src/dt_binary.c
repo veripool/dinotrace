@@ -21,6 +21,7 @@
 #define TRA$W_BITLEN tra$r_data.tra$$r_nfd_data.tra$w_bitlen
 #define TRA$L_BITPOS tra$r_data.tra$$r_nfd_data.tra$l_bitpos
 #define TRA$L_TIME_LO tra$r_data.tra$$r_nsr_data.tra$r_fill_13.tra$r_fill_14.tra$l_time_lo
+#define TRA$L_TIME_HI tra$r_data.tra$$r_nsr_data.tra$r_fill_13.tra$r_fill_14.tra$l_time_hi
 
 /* Extract 1 bit or 2 bits from bit position POS in the buffer */
 /* Type casting to long is important to prevent bit 7 & 8 from seperating */
@@ -128,6 +129,7 @@ void read_decsim(trace)
 		sig_ptr->binary_type = buf->TRA$B_DATTYP;
 		sig_ptr->binary_pos = buf->TRA$L_BITPOS;
 		sig_ptr->bits = 0;	/* = buf->TRA$W_BITLEN; */
+		sig_ptr->index = 0;
 		/* if (DTPRINT) printf ("Reading signal format data, ptr=%d\n", sig_ptr); */
 
 		/* initialize all the pointers that aren't NULL */
@@ -154,7 +156,8 @@ void read_decsim(trace)
 
 		/**** TYPE: Node state data ****/
 	      case tra$k_nsr:
-		time = ((buf->TRA$L_TIME_LO>>1)&0x1FFFFFFF)/1000;
+		time = ((buf->TRA$L_TIME_LO>>1)&0x3FFFFFFF)/1000 +
+		    ((buf->TRA$L_TIME_HI)&0x3FFFFFFF) * (0x40000000 / 1000);
 
 		/* save start/ end time */
 		if (first_data) {
@@ -193,6 +196,8 @@ void read_decsim(trace)
 	    }
 	}
 
+    if (DTPRINT) printf ("Times = %d to %d\n", trace->start_time, trace->end_time);
+
     read_trace_end (trace);
 
     close(in_fd);
@@ -204,19 +209,25 @@ read_binary_make_busses (trace)
     TRACE	*trace;
 {
     SIGNAL		*sig_ptr,*bus_sig_ptr;	/* ptr to signal which is being bussed */
-    char *bbeg, *bcol, *bnew, *sbeg;
+    char *bbeg, *bcol, *bnew, *sbeg, *tbeg;
 
     /* Vectorize signals */
     bus_sig_ptr = NULL;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	if (bus_sig_ptr) {	/* Start on 2nd signal */
+	/* Setup index */
+	tbeg = strchr (sig_ptr->signame,'<');
+	if (tbeg) sig_ptr->index = atoi(tbeg+1);
+
+	/* Start on 2nd signal, see if can merge with previous signal */
+	if (bus_sig_ptr) {
 	    bbeg = strchr(bus_sig_ptr->signame,'<');
 	    bcol = strchr(bus_sig_ptr->signame,':');
 	    sbeg = bbeg-bus_sig_ptr->signame + sig_ptr->signame;	/* < in sig_ptr->signame */
 	    if (!bcol) bcol=bbeg;
 	    if ( bbeg && 
-		( strncmp(sig_ptr->signame, bus_sig_ptr->signame, bbeg-bus_sig_ptr->signame+1) == 0 ) &&
-		(abs(atoi(bcol+1) - atoi(sbeg+1)) == 1)) {
+		( strncmp(sig_ptr->signame, bus_sig_ptr->signame, bbeg-bus_sig_ptr->signame+1) == 0 )
+		&& (abs(atoi(bbeg+1) - atoi(sbeg+1)) < 96)
+		&& (abs(atoi(bcol+1) - atoi(sbeg+1)) == 1)) {
 		/* Only allow signals that are different by 1 in the subscript to combine */
 
 		/* Can be bussed with previous signal */
@@ -548,7 +559,7 @@ read_binary_time (trace, buf, time, flag )
 		    break;
 		    
 		  default:
-		    if (DTPRINT) printf("Error: Bad sig_ptr->type=%d\n",sig_ptr->type);
+		    printf("Error: Bad sig_ptr->type=%d in binary trace\n",sig_ptr->type);
 		    }
 		}
 	    }

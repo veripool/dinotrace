@@ -130,10 +130,13 @@ Prior versions by Allen Gallotta.\n\
 \n\
 Please see %sDINOTRACE.TXT for documentation.\n\
 \n\
+A complete Dinotrace kit is available on:\n\
+     DIPS::DISK$DIPS_PAGE:[SNYDER.RELEASE.DINOTRACE]\n\
+\n\
 For configuration information, Dinotrace reads:\n\
-     %sDinotrace.dino\n\
-     %sDinotrace.dino\n\
-     %sDinotrace.dino\n\
+     %sdinotrace.dino\n\
+     %sdinotrace.dino\n\
+     %sdinotrace.dino\n\
      %sCURRENT_TRACE_NAME.dino\n",
 	     DTVERSION,
 #ifdef VMS

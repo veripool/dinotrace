@@ -28,6 +28,13 @@
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
+#include <Xm/RowColumnP.h>
+#include <Xm/LabelP.h>
+#include <Xm/CascadeBP.h>
+#include <Xm/BulletinB.h>
+#include <Xm/PushB.h>
+#include <Xm/ToggleB.h>
+#include <Xm/Text.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
@@ -273,18 +280,6 @@ void cb_chg_res(w,trace,cb)
     }
 
 
-void win_goto_cb (w,trace,cb)
-    Widget		w;
-    TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
-{
-    if (DTPRINT) printf("In win_goto_cb - trace=%d\n",trace);
-    get_data_popup(trace,
-		   (trace->timerep == TIMEREP_CYC)?"Goto Cycle Number":"Goto Time",
-		   IO_TIME);
-    }
-
-
 void new_res(trace, redisplay)
     TRACE		*trace;
     int		redisplay;	/* TRUE to refresh the screen after change */
@@ -359,7 +354,7 @@ void cb_zoom_res(w,trace,cb)
     if (DTPRINT) printf("In cb_zoom_res - trace=%d\n",trace);
 
     /* process all subsequent button presses as res_zoom clicks */
-    trace->click_time = -1;
+    global->click_time = -1;
     remove_all_events (trace);
     set_cursor (trace, DC_ZOOM_1);
     add_event (ButtonPressMask, res_zoom_click_ev);
@@ -379,28 +374,28 @@ void res_zoom_click_ev(w, trace, ev)
     if (time<0) return;
 
     /* If no click time defined, define one and wait for second click */
-    if ( trace->click_time < 0) {
-	trace->click_time = time;
+    if ( global->click_time < 0) {
+	global->click_time = time;
 	set_cursor (trace, DC_ZOOM_2);
 	return;
 	}
 
-    if (DTPRINT) printf ("click1 = %d, click2 = %d\n",trace->click_time, time);
+    if (DTPRINT) printf ("click1 = %d, click2 = %d\n",global->click_time, time);
 
     /* Got 2 clicks, set res */
-    if (time != trace->click_time) {
+    if (time != global->click_time) {
 	/* Swap so time is the max */
-	if (time < trace->click_time) {
+	if (time < global->click_time) {
 	    tmp = time;
-	    time = trace->click_time;
-	    trace->click_time = tmp;
+	    time = global->click_time;
+	    global->click_time = tmp;
 	    }
        
 	/* Set new res & time */
 	global->res = ((float)(trace->width - global->xstart)) /
-	    ((float)(time - trace->click_time));
+	    ((float)(time - global->click_time));
 	
-	global->time = trace->click_time;
+	global->time = global->click_time;
 
 	new_res (trace, FALSE);
 	new_time(trace);
@@ -408,5 +403,226 @@ void res_zoom_click_ev(w, trace, ev)
 
     /* remove handlers */
     remove_all_events (trace);
+    }
+
+/****************************** GOTO ******************************/
+
+void    win_goto_cb(w,trace,cb)
+    Widget		w;
+    TRACE	*trace;
+    XmSelectionBoxCallbackStruct *cb;
+{
+    int		i;
+    char	strg[40];
+    
+    if (DTPRINT) printf("In win_goto_cb - trace=%d\n",trace);
+    
+    if (!trace->gotos.popup) {
+	XtSetArg(arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple ("Goto Time") );
+	XtSetArg(arglist[2], XmNwidth, 500);
+	XtSetArg(arglist[3], XmNheight, 400);
+	trace->gotos.popup = XmCreateBulletinBoardDialog(trace->work,"goto",arglist,4);
+	XtAddCallback(trace->gotos.popup, XmNmapCallback, win_goto_option_cb, trace);
+	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Time"));
+	XtSetArg(arglist[1], XmNx, 5);
+	XtSetArg(arglist[2], XmNy, 15);
+	trace->gotos.label1 = XmCreateLabel(trace->gotos.popup,"label1",arglist,3);
+	XtManageChild(trace->gotos.label1);
+	
+	/* create the goto text widget */
+	XtSetArg(arglist[0], XmNrows, 1);
+	XtSetArg(arglist[1], XmNcolumns, 15);
+	XtSetArg(arglist[2], XmNx, 50);
+	XtSetArg(arglist[3], XmNy, 10);
+	XtSetArg(arglist[4], XmNresizeHeight, FALSE);
+	XtSetArg(arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
+	trace->gotos.text = XmCreateText(trace->gotos.popup,"textn",arglist,6);
+	XtAddCallback(trace->gotos.text, XmNactivateCallback, win_goto_ok_cb, trace);
+	XtManageChild(trace->gotos.text);
+	    
+	/* Make option menu */
+	trace->gotos.pulldown = XmCreatePulldownMenu(trace->gotos.popup,"pulldown",arglist,0);
+
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("None") );
+	trace->gotos.pulldownbutton[0] =
+	    XmCreatePushButtonGadget (trace->gotos.pulldown,"pdbutton0",arglist,1);
+	XtAddCallback(trace->gotos.pulldownbutton[0], XmNactivateCallback, win_goto_option_cb, trace);
+	XtManageChild(trace->gotos.pulldownbutton[0]);
+
+	for (i=0; i<MAX_SRCH; i++) {
+	    XtSetArg(arglist[0], XmNbackground, trace->xcolornums[i] );
+	    XtSetArg(arglist[1], XmNmarginRight, 20);
+	    XtSetArg(arglist[2], XmNmarginBottom, 4);
+	    trace->gotos.pulldownbutton[i+1] =
+		XmCreatePushButton (trace->gotos.pulldown,"",arglist,3);
+	    XtAddCallback(trace->gotos.pulldownbutton[i+1], XmNactivateCallback, win_goto_option_cb, trace);
+	    XtManageChild(trace->gotos.pulldownbutton[i+1]);
+	    }
+
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Place Cursor:"));
+	XtSetArg(arglist[1], XmNx, 5);
+	XtSetArg(arglist[2], XmNy, 50);
+	XtSetArg(arglist[3], XmNsubMenuId, trace->gotos.pulldown);
+	trace->gotos.options = XmCreateOptionMenu(trace->gotos.popup,"options",arglist,4);
+	XtManageChild(trace->gotos.options);
+	
+	/* Create OK button */
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(" OK ") );
+	XtSetArg(arglist[1], XmNx, 10);
+	XtSetArg(arglist[2], XmNy, 100);
+	trace->gotos.ok = XmCreatePushButton(trace->gotos.popup,"ok",arglist,3);
+	XtAddCallback(trace->gotos.ok, XmNactivateCallback, win_goto_ok_cb, trace);
+	XtManageChild(trace->gotos.ok);
+	
+	/* create cancel button */
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Cancel") );
+	XtSetArg(arglist[1], XmNx, 140);
+	XtSetArg(arglist[2], XmNy, 100);
+	trace->gotos.cancel = XmCreatePushButton(trace->gotos.popup,"cancel",arglist,3);
+	XtAddCallback(trace->gotos.cancel, XmNactivateCallback, win_goto_cancel_cb, trace);
+	XtManageChild(trace->gotos.cancel);
+	}
+    
+    /* make right one active */
+    XtSetArg (arglist[0], XmNmenuHistory, trace->gotos.pulldownbutton[global->goto_color + 1]);
+    XtSetValues (trace->gotos.options, arglist, 1);
+    XmTextSetString (trace->gotos.text, "");
+
+    /* Must redraw color box on any exposures */
+    XtAddEventHandler (trace->gotos.popup, ExposureMask, TRUE, win_goto_option_cb, trace);
+
+    /* manage the popup on the screen */
+    XtManageChild(trace->gotos.popup);
+    XSync(global->display,0);
+
+    /* Update button - must be after manage*/
+    win_goto_option_cb (w, trace, NULL);
+    }
+
+int    win_goto_number (trace)
+    TRACE			*trace;
+    /* Get the color number in the option menu */
+{
+    int			tempi;
+    Widget		clicked;
+
+    /* Get menu */
+    XtSetArg (arglist[0], XmNmenuHistory, &clicked);
+    XtGetValues (trace->gotos.options, arglist, 1);
+    for (tempi=MAX_SRCH; tempi>0; tempi--) {
+	if (trace->gotos.pulldownbutton[tempi]==clicked) break;
+	}
+    return (tempi - 1);
+    }
+
+void    win_goto_option_cb(w,trace,cb)
+    Widget	w;
+    TRACE	*trace;
+    XmSelectionBoxCallbackStruct *cb;
+    /* Puts the color in the option menu, since Xm does not copy colors on selection */
+    /* Also used as an event callback for exposures */
+{
+    int i;
+    Widget button;
+    int x,y,height,width;
+
+    if (DTPRINT) printf("In win_goto_option_cb - trace=%d\n",trace);
+
+    i = win_goto_number (trace);
+
+    if (i < 0) {
+	/* Put "None" in the button */
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("None"));
+	XtSetValues ( XmOptionButtonGadget (trace->gotos.options), arglist, 1);
+	}
+    else {
+	/* Put "Place" in the button */
+	XSetForeground (global->display, trace->gc, trace->xcolornums[i]);
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Place"));
+	XtSetValues ( XmOptionButtonGadget (trace->gotos.options), arglist, 1);
+
+	/* Find the coords of the button */
+	button = XmOptionButtonGadget (trace->gotos.options);
+	x = (((XmCascadeButtonWidget) button)->core.x);
+	y = (((XmCascadeButtonWidget) button)->core.y);
+	width = (((XmCascadeButtonWidget) button)->core.width);
+	height = (((XmCascadeButtonWidget) button)->core.height);
+
+	/* Fill the button with the color */
+	XSetForeground (global->display, trace->gc, trace->xcolornums[i]);
+	XFillRectangle(global->display, XtWindow (button), trace->gc,
+		       x, y, width, height);
+	}
+    }
+
+
+void    win_goto_ok_cb(w,trace,cb)
+    Widget	w;
+    TRACE	*trace;
+    XmSelectionBoxCallbackStruct *cb;
+{
+    char	*strg;
+    int		time;
+    CURSOR	*csr_ptr;
+
+    if (DTPRINT) printf("In win_goto_ok_cb - trace=%d\n",trace);
+
+    /* Get menu */
+    global->goto_color = win_goto_number (trace);
+    if (DTPRINT) printf("\tnew goto_color=%d\n",global->goto_color);
+
+    /* Get value */
+    strg = XmTextGetString (trace->gotos.text);
+    time = atoi(strg);
+
+    /* unmanage the popup window */
+    XtRemoveEventHandler (trace->gotos.popup, ExposureMask, TRUE, win_goto_option_cb, trace);
+    XtUnmanageChild(trace->gotos.popup);
+
+    if (time < 0) {
+	sprintf(message,"Value %d out of range",time);
+	dino_error_ack(trace,message);
+	return;
+	}
+
+    if (time > 0) {
+	/* Center it on the screen */
+	global->time = int_to_time (trace, time)
+	    - (int)((trace->width-global->xstart)/global->res/2);
+	
+	/* Limit time extent */
+	if ( time > trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res) ) {
+	    time = trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res);
+	    }
+	if ( time < trace->start_time ) {
+	    time = trace->start_time;
+	    }
+
+	/* Add cursor if wanted */
+	if (global->goto_color > 0) {
+	    /* make the cursor */
+	    csr_ptr = (CURSOR *)XtMalloc(sizeof(CURSOR));
+	    csr_ptr->time = time;
+	    csr_ptr->color = global->goto_color;
+	    csr_ptr->search = 0;
+	    add_cursor (csr_ptr);
+	    }
+
+	new_time(trace);
+	}
+    }
+
+void    win_goto_cancel_cb(w,trace,cb)
+    Widget			w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    if (DTPRINT) printf("In win_goto_cancel_cb - trace=%d\n",trace);
+    
+    /* unmanage the popup on the screen */
+    XtRemoveEventHandler (trace->gotos.popup, ExposureMask, TRUE, win_goto_option_cb, trace);
+    XtUnmanageChild(trace->gotos.popup);
     }
 

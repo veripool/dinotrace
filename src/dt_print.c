@@ -229,15 +229,6 @@ void    ps_print(w,trace,cb)
     int		i,ns;
     char	*psfilename;
     
-    /* text descriptor structure */
-    
-    struct textstr {
-	short int	dsc$w_length;
-	unsigned char	dsc$b_dtype;
-	unsigned char	dsc$b_class;
-	char		*dsc$a_pointer;
-	} date;
-    
     if (DTPRINT) printf("In ps_print - trace=%d\n",trace);
     
     /* get page size */
@@ -265,18 +256,8 @@ void    ps_print(w,trace,cb)
 	return;
 	}
     
-    /* get the date */
     set_cursor (trace, DC_BUSY);
     XSync(global->display,0);
-    
-#ifdef VMS
-    date.dsc$b_dtype = DSC$K_DTYPE_T;
-    date.dsc$b_class = DSC$K_CLASS_S;
-    date.dsc$a_pointer = malloc(24*sizeof(char));
-    date.dsc$w_length = 23;
-    sys$asctim(0,&date,0,0);
-    date.dsc$a_pointer[24] = '\0';
-#endif VMS
     
     /* include the postscript macro information */
     fputs(dinopost,psfile);
@@ -298,7 +279,7 @@ void    ps_print(w,trace,cb)
 		global->time + ns,		/* end time */
 		global->time,			/* start time */
 		ns,				/* resolution */
-		date.dsc$a_pointer,		/* time & date */
+		date_string(),			/* time & date */
 		trace->filename,		/* filename */
 		i+1,				/* page number */
 		DTVERSION			/* version (for title) */
@@ -321,9 +302,6 @@ void    ps_print(w,trace,cb)
 	    new_time(trace);
 	    }
 	}
-    
-    /* free the date memory */
-    free(date.dsc$a_pointer);
     
     /* free the memory from getting the filename */
     XtFree(psfilename);

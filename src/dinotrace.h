@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V6.2"
+#define DTVERSION	"Dinotrace V6.3"
 
 #pragma member_alignment
 
@@ -58,6 +58,7 @@
 #define DC_CUR_HIGHLIGHT 10	/* XC_spraycan		Cursor Highlight */
 #define DC_ZOOM_1	8	/* XC_left_side		Zoom point 1 */
 #define DC_ZOOM_2	9	/* XC_right_side	Zoom point 2 */
+#define DC_VAL_EXAM	11	/* XC_question_arrow	Value Examine */
 
 /* All of the states a signal can be in (have only 3 bits so 0-7) */
 #define STATE_0   0
@@ -218,6 +219,22 @@ typedef struct {
     Widget cancel;
     } SIGNAL_WDGTS;
 
+typedef struct {
+    Widget popup;
+    Widget label;
+    } EXAMINE_WDGTS;
+
+typedef struct {
+    Widget popup;
+    Widget text;
+    Widget ok;
+    Widget label1;
+    Widget cancel;
+    Widget pulldown;
+    Widget pulldownbutton[MAX_SRCH+1];
+    Widget options;
+    } GOTOS_WDGTS;
+
 /* 5.0: Structure for each signal-state assignment */
 typedef struct st_signalstate {
     struct st_signalstate *next;	/* Next structure in a linked list */
@@ -271,8 +288,8 @@ typedef struct st_signal {
 
     int			type;
     SIGNALSTATE		*decode;	/* Pointer to decode information, NULL if none */
-    int			inc;
-    int			ind_e;		/* something in dt_file */
+    int			inc;		/* Number of LWs in a SIGNAL_LW record */
+    int			index;		/* Bit subscript of first index in a signal (<10:20> == 10) */
     int			blocks;		/* Number of time data blocks */
     int			bits;		/* Number of bits in a bus, 0=single */
     int			binary_type;	/* type of trace if binary, two/fourstate */
@@ -309,6 +326,8 @@ typedef struct st_trace {
     CUSTOM_DATA		custom;
     PRINT_WDGTS		prntscr;
     SIGNAL_WDGTS	signal;
+    EXAMINE_WDGTS	examine;
+    GOTOS_WDGTS		gotos;
     Widget		customize;	/* Customization widget */
     Widget		fileselect;	/* File selection widget */
     Widget		toplevel;	/* Top level shell */
@@ -342,7 +361,6 @@ typedef struct st_trace {
 
     int			start_time;	/* Time of beginning of trace */
     int			end_time;	/* Time of ending of trace */
-    int			click_time;	/* time clicked on for res_zoom_click */
 
     SIGNALSTATE		*signalstate_head;	/* Head of signal state information */
     } TRACE;
@@ -361,7 +379,7 @@ typedef struct {
 
     XtAppContext	appcontext;	/* X App context */
     Display		*display;	/* X display pointer */
-    Cursor		xcursors[11];	/* X cursors */
+    Cursor		xcursors[12];	/* X cursors */
     Pixmap		dpm,bdpm;	/* X pixmaps for the icons */
 
     int			argc;		/* Program argc for X stuff */
@@ -370,10 +388,13 @@ typedef struct {
     char		directory[200];	/* Current directory name */
 
     int			highlight_color; /* Color selected for sig/cursor highlight */
+    int			goto_color;	/* Cursor color to place on a 'GOTO' -1=none */
 
     int			time;		/* Time of trace at left edge of screen */
     float		res;		/* Resolution of graph width (gadgets) */
     int			xstart;		/* Start X pos of signals on display (read_DECSIM) */
+
+    int			click_time;	/* time clicked on for res_zoom_click */
     } GLOBAL;
 
 extern GLOBAL *global;
