@@ -1,0 +1,812 @@
+Dinotrace NEWS --  history of user-visible changes.
+Copyright (C) 1998 Wilson Snyder.
+Copyright (C) 1992,1993,1994,1995,1996,1997 Digital Equipment Corportation.
+See the end for copying conditions.
+
+The contributors that suggested a given feature is shown in [].
+	
+This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
+
+* Changes in Dinotrace 9.0a  4/13/98
+
+** Enhancements:
+
+**	Added Customize Save As.  Saves a .dino file with controls for which
+	pieces are saved.
+
+** 	Values are now 4-state on a per-bit basis.  U's are still shown for
+	mixed tristate/U busses, but value examine will show the true value.	
+
+**	Added examination of grids, signal names, and cursors.  Added
+	signal_note and cursor_add notes for passing messages to be seen
+	with value examine.
+
+**	Rewrote dinotrace.el to use the new verilog-mode.el and support more
+	intelligent key bindings.	
+
+***	Added many keyboard accelerators, cursor keys, etc.  Most are also
+	usable in dinotrace.el
+
+***	Signal names won't use up more then 1/3 of the width of the
+	display.  A scroll bar was added to see names longer then this.
+
+***	High boolean, or busses with all bits set now use a bolder line to aid
+	in discriminating them from low signals.  Basic redrawing algorithm
+	was rewritten to support better highlighting and better visibility
+	when showing many changes in little space.
+
+***	Added radix selection on a per-signal basis.  Added signal_radix
+	command and Signal Radix menu.  Added ascii and real radixes.
+
+***	Changed the order of parameters for configuration commands,
+	to make them consistent with each other.  **This requires upgrading
+	your .dino files.  The commands changed are value_highlight, signal_rename and
+	value_highlight, and all cursor_* commands.
+
+***	Added hierarchy_separator for aligning signal names, and annotation.	
+
+***	Added trace selection to Value Annotate.	
+
+****	Added -IGNORE_XZ to signal_delete_constant.
+
+****	Print has moved to the trace menu, since most programs have it under the
+	first menu item.	
+
+****	Most popups now use forms, for cleaner looks with larger fonts.
+
+** First version distributed outside Digital:
+
+**	Dinotrace now uses GNU configure.  It compiles clean on Sun
+	Solaris 5.5.1.  Added texinfo documents for manual, FAQ, and
+	installation.
+
+**	Verilog is now the default format.  This includes the default
+	vector_seperator being now "[" to coincide with Verilog.  If you
+	are using another format (such as tempest), you will have to
+	override it.
+
+***	Removed Digital Internal vtrace and cvtbin programs.  Removed old
+	-siz and -pos flags (use -geometry instead.)
+
+****	Many source code changes to aid readability and maintainabily.  The
+	main trace data structure changed to support true 4-state and to
+	allow future enhancements.  This required modifing all trace
+	reading routines, so latent bugs may cause values to be
+	mis-displayed.
+
+
+* Changes in Dinotrace 8.3b  9/12/97
+
+***	Allowed colors in signal_add, signal_move, signal_rename, signal_copy.
+	[Duane Galbi]
+
+
+* Changes in Dinotrace 8.3a  1/29/97
+
+***	Allowed value searches to specify a signal name to search in.
+	[Lisa Noack]
+
+***	Made save signal ordering be on by default.
+
+***	Added signal_rename command.  [Julie Staraitis]
+
+***	Added the full documentation to Help menu option.
+
+
+* Changes in Dinotrace 8.2b  11/07/96
+
+****	Fixed a bug which would cause a common bus to be made containing
+	two unrelated signals.  [Serge Bogdanov]
+
+
+* Changes in Dinotrace 8.2  10/10/96
+
+***	Added support for 3-state COSMOS traces.  [Serge Bogdanov]
+
+
+* Changes in Dinotrace 8.1e  7/24/96
+
+****	Fixed a bug where reading a directory as a config file would
+	crash, rather then warn.  [Steve Lang]
+
+****	Fixed a bug where annotation would add many leading zeros.
+	[Rachel Berman]
+
+
+* Changes in Dinotrace 8.1c  5/20/96
+
+****	Fixed a bug where signal_add would add signals from any trace,
+	not just from deleted signals.  (Use signal_copy to add signals
+	from any trace including deleted signals.)  [Michael Quadri]
+
+
+* Changes in Dinotrace 8.1b  4/30/96
+
+****	Fixed a bug where deleting signals would make the top signals in
+	a trace disappear.  [Steve Lang]
+
+
+* Changes in Dinotrace 8.1a  3/27/96
+
+***	Added a customize read option, and allowed selection of which
+	.dino files are read automatically with traces.  [Mike Kagen]
+
+***	Added a tempest format which stores data only when signals change.
+	This greatly reduces file sizes.  This new format is created by
+	Verilator, still called a .bt, and automatically detected by
+	Dinotrace.  [Paul Wasson]
+
+***	Added decimal bus representations.
+
+****	Made several speedups to reading ASCII based traces.  Verilog is
+	now 32% faster, Decsim 17%.  [Reinhard Schumann]
+
+	Deleting and adding signals with long names will now narrow and
+	widen the space set aside for signal names automatically.
+
+	Fixed a bug which leaked about 1MB every file read.  [Mike Kagen]
+
+
+* Changes in Dinotrace 8.0e  3/8/96
+
+****	Fixed a bug where refresh in a configuration file would crash
+	Dinotrace.  [Sol Katzman]
+
+
+
+* Changes in Dinotrace 8.0d  3/6/96
+
+***	Increased the number of states on a signal to 512.  [Mike Kagen,
+	Yifat Ben-Shachar]
+
+****	Fixed a bug which would mis-print busses over 32 bits wide.  [Steve
+	Glaser]
+
+
+* Changes in Dinotrace 8.0c  3/4/96
+
+**	Massively improved grid support, especially for multi-clock
+	designs.  The grid item is no longer on the main menu, all
+	functions are now under Customize Grid.  You can now choose which
+	signal to grid, and have up to 4 grids at once.  The colors and
+	alignment options are also now selectable.  See above for the new
+	grid configuration commands.  In the process, also fixed a bug that
+	would cause grid time stamps to be off one tick at the beginning of
+	traces.  [Rachel Berman, Steve Glaser]  Dinotrace now calculates
+	the period from the LAST assertions in the file, thus eliminating
+	clock start-up effects.  [Mike Kagen]
+
+**	When rereading a trace, Dinotrace will now attempt to keep the
+	signal position the same.  Previously, the trace would jump up
+	vertically to the first signal when rereading.  [Paul Chan]
+
+**	Added reading a configuration file that is read from DINOCONFIG:
+	(VMS) or the DINOCONFIG enviornment variable (OSF).  This is useful
+	for session specific start-up, like setting screen size depending
+	on what type of system you are using.  [Steve Glaser]
+
+***	Changed the print requester to allow greater flexability in setting
+	the start and end print times.  Also, will now print the value
+	instead of just leaving a blank space if a signal_state is too wide
+	to be printed. [Steve Glaser]
+
+***	Added support for displaying 128 bit busses on one line, instead of
+	the previous scheme of displaying them as two lines.
+
+***	Added the resolution configuration command to change screen
+	resolutions, just like the Res button.
+
+****	Fixed a bug where listing a enable signal after the data signal in
+	a verilog .tra file would crash Dinotrace.  [Paul Chan]
+
+****	Fixed drawing overlapping numbers when cursors were too close.
+
+****	Fixed a bug with deleting constant signals that are no longer
+	constant on rereads.  [Mike Kagen]
+
+****	Fixed a bug which crashed Dinotrace after reading a corrupted trace
+	file.  [Dan Katz]
+
+****	Fixed a bug reading ASCII chango which would create a random "SIG 0"
+	when the file had a leading space.
+
+****	Fixed a bug which misdrew signals when they were added after
+	scrolling the main window. [Sol Katzman]
+
+****	Fixed a bug which crashed Dinotrace when scrolling with a
+	grid on odd signal boundaries.  [Sol Katzman]
+
+
+
+* Changes in Dinotrace 7.4a  2/01/96
+
+**	Added time, value, and signal font selection (see resource
+	section.)  [Steve Lang]
+
+***	When real numbers are found in Verilog traces a warning is printed
+	rather then a indecipherable error message.  [Reinhard Schumann]
+
+***	Values in the trace window now use lower case letters when printing
+	hex.  This mainly makes it easier to discriminate "E" and "F".
+
+
+
+* Changes in Dinotrace 7.3b  12/04/95
+
+***	Added support for Merlin binary traces (tempest format).  [Dan Katz]
+
+****	Fixed a preservation bug.  When order preservation was turned on,
+	if a signal was deleted because it was a constant, then a new trace
+	read in which had the signal changing, the new signal would be
+	deleted.  Now it will detect this case and not delete the signal.
+
+
+
+* Changes in Dinotrace 7.3a  12/04/95
+
+**	Dinotrace will attempt to preserve signal colors, ordering, and
+	deletions when re-reading a trace.  This is controllable with the
+	save_ordering command and button on the file open window. [Ed
+	Arthur, Steve Kolecki, et al]
+
+**	Added manual refreshing, useful for dialup eXcursion.  Added
+	related refresh, and refreshing commands.  Added refresh button
+	near End button.  [Reinhard Schumann]
+
+
+* Changes in Dinotrace 7.2b  10/29/95
+
+***	Added the signal_add command.  [Reinhard Schumann]
+
+***	Decsim traces now allow '?' as unknows to support the Nextest
+	trace format.  [Josh Belkin]
+
+
+* Changes in Dinotrace 7.2a  10/4/95
+
+***	Value Annotation now has seperate enables for automatic cursors,
+	which default to off.
+
+***	Added a parity calculation message to the Value Annotate window.
+	[Bob Yodlowski]
+
+****	Fixed a bug where Verilog DMPs with over 1024 bit busses would
+	core dump.  [Dean Sovie]
+
+
+
+* Changes in Dinotrace 7.1c  6/28/95
+
+**	Files ending in .Z or .gz will now be uncompressed or ungnuzip'ed
+	respectively.  This results in large disk space savings.
+
+***	Multiple trace files can now be specified on the command line.  All
+	will be read in to independent trace windows on startup.  [Paul
+	Wasson]
+
+***	Added a warning when the timescale is too large in Verilog DMP files.
+	[Yifat Ben-Shachar]
+
+****	Fixed a bug which would make commands after Value Highlight behave
+	strangely.
+
+****	Fixed a bug where signal searching with the first color couldn't be
+	turned off.  [Charlie Lind]
+
+****	Fixed a bug where characters after the bus name would be truncated.
+	[Paul Wasson]
+
+
+
+* Changes in Dinotrace 7.1a  5/24/95
+
+**	Added a socket interface for Emacs (Ultrix/OSF only).  This allows
+	Emacs to feed configuration commands, such as cursor placements, to
+	Dinotrace on-the-fly.  See dinotrace.el for more information.
+	Added the time_goto, signal_goto, and annotate configuration
+	commands.
+
+***	Added the Value Highlight command. [Mike Kagen]
+
+***	Added many keyboard accelerators, see KEYBOARD section above.
+	[Paul Wasson]
+
+***	The center mouse button now always does value examine.  The first
+	button has the same functionality as before.  [Many]
+
+***	If a value is too small to print, a "?" will be printed instead,
+	presuming that the ? will fit.  This allows highlighted values
+	(with value search) to be seen.  Value Examine (MB2) can then be
+	used to see the exact value.
+
+****	The resolution change button is now of constant size.  [Bob
+	Yodlowski]
+
+****	Fixed a bug where printscreen would cause "Implementation limit
+	exceeded" printer errors in traces with undefined values.  [Bill
+	Bruce]
+
+****	Fixed a bug where signals of over 96 bits in Verilog DMP files
+	would show up as blank.  [Ben Marshall]
+
+
+* Changes in Dinotrace 7.0c  2/20/95
+
+****	Fixed a bug where highlighting wouldn't happen when the same value
+	was in multiple colors in the value search requester.  [Mike Kagen]
+	
+
+* Changes in Dinotrace 7.0b  2/20/95
+
+***	Added -noconfig command line option.
+
+****	Fixed a performance bug when reading Verilog Dump files.  [Tracey
+	Jones]
+
+
+
+* Changes in Dinotrace 7.0a  2/20/95
+
+**	Added the annotation feature and Emacs library.  Any behavioral
+	code debuggers should look at this feature!!
+
+***	Added the signal_delete and signal_delete_constant configuration
+	commands.  [Paul Wasson]
+
+***	Added the delete constant value button in the signal select requester.
+
+***	Added a configuration command for using two different grids on
+	rising and falling edges.
+
+***	Changed the printout to dynamically compute the width of signal
+	names.  This will prevent signal names from being chopped off from
+	the left margin of printouts.  [Josh Belkin]
+
+***	Tempest format traces will have the cycle count multiplied by one,
+	not two which was the prior default.  This can be overridden by
+	time_multiplier.  [Paul Wasson]
+
+***	Placing one cursor over another cursor will now delete the older
+	cursor.  Cursors added in configuration files are now dotted,
+	and will disappear when the configuration is re-read.
+
+****	Fixed a bug which would not display tempest signals over 96 bits.
+	Setting the signal separator to non '<' will now break up tempest
+	signals.
+
+****	Fixed a bug which would not accept #2 subscripts on signals
+	in DECSIM ASCII traces.  [Dave Horan]
+
+****	Fixed a bug which would not refresh the trace when the window was
+	resized.
+
+
+* Changes in Dinotrace 6.7  10/05/94
+
+***	This release is the first to include an Alpha-VMS executable.
+	*** PLEASE NOTE THAT THIS CHANGES THE FILENAMES OF THE KIT AND
+	EXECUTABLES. The file dinotrace.exe is now named dinotrace_vv.exe,
+	and is distributed as a save set.
+
+***	Changed the print requester to add the include-off-screen options.
+	[Bob Walsh]
+
+***	Added the cursor_add and signal_highlight configuration commands.
+	[Tom Hunt]
+
+***	Added support for Verilator/CCLI tristates.  (See the Verilator
+	manual.)
+
+***	Added ... to those menu items that pop up requesters.
+
+***	Rewrote the ASCII Trace header reader to remove limitations on
+	the number of signals, and length of signal names.
+
+***	Auto grid setting now works on Tempest files.  Previously it would
+	set the grid based upon phase_count.  Now it is set based upon the
+	second signal in the trace.
+
+***	Removed a old pre-4.2 limitation on the number of traced signals in a
+	tempest file.  [Simcha]
+
+****	Fixed a bug where Alpha OSF systems would pop-up windows that were
+	too small to contain all of the widgets.
+
+****	Fixed a bug which caused page increments of other then one to
+	not work.  [Larry Herman]
+
+****	Fixed a bug where some X-servers would crash when large traces were
+	displayed on the screen.  [Charlie Lind]
+
+
+* Changes in Dinotrace 6.6  5/23/94
+
+***	This release is the first to include an Alpha-OSF executable.
+
+***	The Decsim ASCII reader now also understands traces produced
+	by Chango.  Chango Binary is not supported.
+
+***	Added an EPS (Encapsulated Postscript) option to printscreen for
+	making figures for inclusion in other documents.  [David Chen]
+
+***	Added resources to change the screen colors.  Changed the
+	background color under every other signal to aid in readability.
+	(Like the old green-barred paper.)  [Larry Gust]
+
+***	Inside the print dialogue, hitting return in the filename window
+	has the same action as hitting the print button.  [Mitch Norcross]
+
+***	The limit of 512 signals in a Decsim Ascii trace has been removed.
+	All formats are now limited only by memory availability.  [Josh
+	Belkin]
+
+****	Fixed a bug where the -res option on the command line would crash
+	Dinotrace.  [Erik Debriae]
+
+****	Fixed a bug where clicking on OK in File Open without selecting a
+	file would hang.  [Larry Gust]
+
+
+
+* Changes in Dinotrace 6.5  1/10/94
+
+**	Added Trace->Reread All which will reread the trace in every
+	window.  To support this Trace->Reread will now only read a trace
+	if that trace has changed, otherwise it will do nothing.  The time
+	the trace was created can now be seen under the new Help -> On
+	Trace menu item.
+
+***	Added a -geometry to the command line to support the X standard.
+	The now redundant -siz and -pos flags remain for compatibility, but
+	will be removed in the next release.  Added start_geometry,
+	open_geometry, and shrink_geometry to config files to support
+	different personal preferences.  [Mitch Norcross]
+
+***	A optional feature was added that will cause Cursors and Grids to
+	be snapped to a signal edge within 20 pixels of the cursor.  Added
+	a toggle button and click_to_edge configuration command to support
+	this.
+
+***	Added a note field to print requester.  Any information entered
+	will be printed on the postscript print.  Changed the B-Sized
+	postscript to spread out the page number at the bottom.
+
+***	Moved the file format selector that was under the Customize Change
+	menu to the File Open Menu.  Added Decsim Compressed ASCII format
+	on Ultrix only (since VMS can support Decsim Binary), and
+	corresponding -decsim_z switch to command line.  [Bob McNamara]
+
+***	Added a signal select requester, which allows specific signals to
+	be chosen off from a list of signals.  Also allows signals matching
+	a pattern to be selected.  [Simcha]
+
+***	Dinotrace will automatically zoom out to show the entire trace, when
+	the first trace is read in after starting Dinotrace or selecting
+	Trace Clear, just as if the "full" button was pressed.  [Paul
+	Dormitzer]
+
+***	Added picoseconds and microseconds to the time representation
+	customize window, and the time_rep configure command.  Added the
+	time_precision and time_format configure commands.  These may be
+	used to view traces with better then 1 ns precision.  Made Verilog
+	format detect the time resolution of the trace automatically.
+	[Paul Dormitzer]
+
+***	A bug was fixed which would put error and information windows up on
+	the incorrect trace window.  A bug was fixed where a signal that
+	was copied would have its name change when the trace was reread.  A
+	bug was fixed in Decsim Binary which would show a signal as the
+	wrong assertion until the first time it changed in the trace.
+	[John Murphy]
+
+
+
+* Changes in Dinotrace 6.4  11/18/93
+
+***	The major change in this release is in reading files.  Verilog
+	format is supported, and Tempest format now works correctly.
+	Decsim binary reading has been speeded up by some 200-300%.
+
+**	Added support for Verilog DMP traces.  [Edward Arthur, et. al.] See
+	the instructions above for special information on using dumps.
+
+**	Added Signal->Search, which searches for a signal name, possibly
+	including wild cards.  [Mitch Norcross, Lauren Carlson] Added color
+	bars to the vertical signal scroll bar that shows highlighted
+	signals, similar to the cursors in the horizontal time slider.
+
+***	Eliminated glitches in displaying Tempest format traces.  [Ronen
+	Boneh] 	Added "file_format" command to configuration files, and
+	button to configuration menu.  I suggest putting the line
+	"file_format tempest" in the DINODISK:dinotrace.dino rather then
+	having to always use the dinotrace -tempest command line switch.
+	Tempest files with tristates are not supported; I do not know of a
+	program which generates tempest tristates.
+
+***	Added a "vector_seperator" configuration command which will allow
+	signals that use symbols other then "<#>" to separate the names of
+	signals from their bit subscripts.  [Paul Dormitzer] The
+	vectorization routine now always displays the correct subscripts,
+	surrounded by angle brackets, even if a tempest trace file did not
+	have them.  Dinotrace also now supports little endian (<0:10>)
+	vectors.  [Josh Belkin]
+
+***	Added a "print_size" configuration command.  Made the print size
+	affect all traces that are open, rather than each trace
+	individually.
+
+***	The .dino configuration files used to be read after the trace
+	itself.  These files are now read before the trace.  This allows
+	commands such as vector_seperator and file_format to take affect on
+	the file that is being read.
+
+****	Fixed a bug which would place a cursor at the wrong position when
+	using goto with a position near the end of the trace.  [Mike Blake]
+	Fixed a bug where Trace->Open, Trace->Read, Trace->ReRead would
+	crash Dinotrace.  [Jai Singh]
+
+
+
+* Changes in Dinotrace 6.3  8/11/93
+
+**	A new top level value menu was created to effect and search on the
+	value of signals.  Signal Search has been moved to Value Search.  A
+	new Value Examine has been added to aid in determining which bits
+	are set on large busses, and to determine values when the space is
+	too small to display the value inside the signal's waveform.
+
+***	The goto button now has a option menu to place a cursor at the
+	value entered. [Mike Blake]
+
+***	It is now acceptable to click Zoom in one window and click on two
+	points in another window.
+
+***	Fixed a bug where Ultrix printouts had a incorrect date.  [Edward
+	Arthur]
+
+****	Fixed a bug where a bus of over 96 bits used to hang Dinotrace.
+	Dinotrace now splits busses of over 96 bit into multiple lines on
+	the screen.
+
+****	Fixed a buf where Reading Binary traces which had times over 537,000
+	ns would cause the screen to fill with garbage. (All times
+	in binary and ASCII traces must still be under 2,000,000,000 ns.)
+
+
+* Changes in Dinotrace 6.2  5/14/93
+
+**	The time scroll bar (horizontal) now shows the position of cursors
+	that are not on the screen.  This makes it easy to quickly scroll
+	to the position of the next cursor.
+
+***	Dinotrace now uses the logical or environment variable DINODISK,
+	not DINO$DISK, as in the previous versions.  This provides
+	compatibility between the VMS and Unix versions.
+
+***	A goto button has been added next to the begin button.  Pressing it
+	will prompt for the time or cycle number, and then center that time
+	on the screen.  [Mitch Norcross]
+
+***	The signal search requester now has 2 buttons for each search
+	button.  The first is the same as before, and will highlight any
+	display value that equals the value entered.  The new second button
+	will add a cursor at the time where the value begins.  Cursors that
+	are placed in this fashion are temporary, and will go away if the
+	search value is changed.  Highlighting or moving a cursor makes it
+	permanent; it will not go away when the search changes.  Likewise
+	deleting a cursor that was placed automatically will still cause
+	the cursor to reappear when the search is requested again.
+
+***	Pressing return when entering a signal search value has the same
+	function as hitting "OK".  [Mitch Norcross]
+
+***	Added A/B sized page selector to the printscreen requester.  Added
+	version help option to menu.  Time can now be displayed in
+	nanoseconds (as before), or in number of cycles.  Cycles are
+	determined based on the grid position and resolution.  (Cycle
+	counting is useful for performance analysis.)
+
+***	The Trace Open menu option now automatically does a Trace Read in the
+	new window.  [Mitch Norcross]
+
+****	Fixed a configuration file bug where a ", }" would cause the next
+	line in the file to be skipped.  [Mitch Norcross]
+
+****	Improved handling of color on Unix systems.
+
+****	Added Verilog information and VTRACE to Documentation.  [Written
+	by Gregg Bouchard]
+
+
+* Changes in Dinotrace 6.1  4/12/93
+
+**	Added keyboard accelerators.  The keyboard may be used to select
+	menu options when the mouse is over the menu by pressing the
+	underlined character in the menus.  If the mouse is not over the
+	menu, hold the Compose-Character key while pressing the underlined
+	letter, then release and press the sub-menu letter.  [Derrick
+	Dacosta]
+
+***	Added a signal copy option.  As with signal move, a copied signal
+	will be erased when the trace it came from is closed or reread.
+	[Mike Goulet]
+
+***	Changed signal highlight so that the color is chosen from a menu,
+	rather then being toggled when a signal is clicked on.  Added a
+	similar function, cursor highlight.  [Lauren Carlson]
+
+***	Hard coded the color selection values to be the specific colors:
+	Window Foreground, White, Red, ForestGreen, Blue, Magenta, Cyan,
+	Yellow, Salmon, and NavyBlue.
+
+***	Allowed lower case "z" or "U" in decsim ascii traces to support
+	Verilog.  [Gregg Bouchard]
+
+
+* Changes in Dinotrace 6.0  4/6/93
+
+	This is a major release with many new features, so read up!
+
+**	The major new feature is multiple trace support.  The Trace Open
+	menu option will shrink the current window in half, and open
+	another window.  Two traces may then be viewed together, and they
+	will move together and share cursors, etc.  Trace Close closes the
+	current trace.  Trace Clear closes all other windows and resets
+	Dinotrace as if you exited and then ran Dinotrace again.  These
+	options are intended for traces that were made together; using it
+	with traces that are of different lengths is buggy.
+
+**	Added Signal Searching to simplify finding data that is dropped on
+	the floor due to bugs.  Allows 9 values to be specified which will
+	be searched for in the trace.  Each value is entered into a text
+	widget and the toggle button to the left is activated.  Anywhere
+	that the value appears in a trace, the value will be printed using
+	the color of the toggle button.  There is currently a bug that
+	causes the colors that are used to be somewhat random, and on some
+	machined black.
+
+**	Converted user interface to OSF/Motif (which fixed the file
+	selector bug).
+
+***	Updated support for Ultrix version.  Because binary traces use
+	VMS's RMS, binary traces are not supported in the Ultrix version.
+	[Gregg Bouchard]
+
+***	Added different cursors for each mode.  Neatened internal code.
+	Removed screen number switch, as it was non-functional (use set
+	display).
+
+***	Added Signal Highlight menu option for highlighting a signal and
+	its trace.  For now it only alternates between the foreground color
+	and white.
+
+***	To make it easier to compare two windows with different traces the
+	resolution now stays constant when resizing the window, and
+	resizing makes more or fewer cycles visible.  The resolution of a
+	trace used to change during resizing such that the time range being
+	displayed stayed constant, and the screen was magnified or shrunk.
+
+***	Cursors, resolution, and the current position in time are
+	preserve across traces.  If they are setup and the trace is reread,
+	they will be in the same place as before.
+
+****	Fixed a bug which would cause Dinotrace to crash when using very
+	large (dense) resolutions.  Now if a signal is very dense, it may
+	end part way across the screen.  (Not perfect, but beats crashing.)
+	[Mike Goulet]
+
+
+
+* Changes in Dinotrace 5.2b  3/11/93
+
+***	Re-release to fix bug where move signal would crash Dinotrace when
+	using binary traces.  Changed "Dinotrace V5.0" to "5.2" in
+	postscript printing.
+
+
+* Changes in Dinotrace 5.2  2/17/93
+
+**	The main new feature is Binary Traces.  Dinotrace now can read
+	either binary or ascii traces, and it automatically determines
+	which type is being read.  Binary traces should normally be used as
+	they consume less disk space and are less CPU Time intensive.
+
+***	The screen now clears at the beginning of reading a new file to
+	make it more obvious when the new data has been loaded.  A main
+	part of the reading algorithm calculated exponentials.  This was
+	removed, resulting in ~50% speed up on reading large vectored
+	traces.
+
+***	Two new resolution changing gadgets were added:
+
+	    zoom:	(Text box to RIGHT of number box) Click on two time
+		points.  Expands the trace so that the time between the
+		clicks occupies the entire screen.  [Mitch Norcross]
+
+	    full:	(Text box to LEFT of number box) Shrinks the time
+		so that the entire trace fits onto the screen.  [Mitch
+		Norcross]
+	
+****	A bug where canceling the read requester would erase the trace has
+	been fixed.
+
+****	If a vector was not constructed correctly, for example if it
+	consists of <25:3,3,2:1> with either missing or duplicate tag
+	values, the bus will not be combined.  Previously they would be
+	assumed to be in order, which could cause misinterpretation.
+
+****	If a statename is too wide to print, the number will be printed
+	instead.  Previously nothing would be printed.
+
+
+
+* Changes in Dinotrace 5.1
+
+***	Dinotrace now supports state machines with up to 96 states, rather
+	the the 64 allowed earlier.
+
+****	Fixed a bug which would prevent printouts from working when printing
+	times over 10,000.  [Jai Singh]
+
+
+
+* Changes in Dinotrace 5.0  1/11/93
+
+***	You may now specify a filename on the command line that will be
+	read when Dinotrace starts up.
+
+***	The title in the icon now represents the file that Dinotrace is
+	displaying.  This makes it much simpler when many Dinotrace icons
+	are on the screen at once.
+
+***	The main window interface has been made consistent with Motif
+	standards.  The scroll bar unit and page increments were made
+	consistent.  The resolution increase and decrease buttons were
+	swapped.  Wide signal widths are no longer truncated.
+
+***	Trace ReRead was added.  [Lauren Carlson]
+
+***	Customize ReRead and Restore were added.  The entire customization
+	file and signal_states features were added.
+
+
+* Changes in Dinotrace 4.2
+
+	Versions prior to 5.0 were by Allen Gallotta.
+
+***	Created VMS link procedure
+***	Signal add dialog box retains focus when adding signals
+***	Added a check for #2's in trace file
+
+****	Fixed signal right justification on printscreen
+****	Fixed printing of 'wide' bus values on printscreen
+****	Fixed 'wide' bus representation of signals not a multiple of
+	  32 bits wide, both on screen and printscreen
+****	Fixed bus string compares
+****	Fixed last signal always deleted when using cursors
+****	Fixed crash when resolution was set too high
+
+****	Known bug: will crash in File->Select when filtering with long
+	filters ( toolkit problem??? )
+
+-----------------------------------------------------------------------------
+$Id$
+-----------------------------------------------------------------------------
+Copyright information:
+
+Copyright (C) 1998 Wilson Snyder
+
+   Permission is granted to anyone to make or distribute verbatim copies of
+   this document as received, in any medium, provided that the copyright
+   notice and this permission notice are preserved, thus giving the
+   recipient permission to redistribute in turn without charge.
+
+   Permission is granted to distribute modified versions of this document,
+   or of portions of it, under the above conditions, provided also that
+   they carry prominent notices stating who last changed them.
+
+Local variables:
+mode: outline
+paragraph-separate: "[ 	]*$"
+end:
+
