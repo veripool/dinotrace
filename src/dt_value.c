@@ -721,17 +721,19 @@ char *val_examine_string (
 	strcat (strg, "\n");
     }
 
-    switch (cptr->siglw.stbits.state) {
-    case STATE_B32:
-    case STATE_B128:
-	if ( (sig_ptr->decode != NULL) 
-	     && (cptr->siglw.stbits.state == STATE_B32)
-	     && (cptr->number[0] < sig_ptr->decode->numstates)
-	     && (sig_ptr->decode->statename[cptr->number[0]][0] != '\0') ) {
-	    sprintf (strg2, " = %s\n", sig_ptr->decode->statename[cptr->number[0]] );
+    if (sig_ptr->bits>1
+	&& (cptr->siglw.stbits.state == STATE_B32
+	    || cptr->siglw.stbits.state == STATE_0)) {
+	uint_t num0 = 0;
+	if (cptr->siglw.stbits.state != STATE_0) num0 = cptr->number[0];
+	if ((sig_ptr->decode != NULL) 
+	    && (num0 < sig_ptr->decode->numstates)
+	    && (sig_ptr->decode->statename[num0][0] != '\0') ) {
+	    /* Show decode */
+	    sprintf (strg2, "signal state = %s\n", sig_ptr->decode->statename[num0] );
 	    strcat (strg, strg2);
 	}
-    } /* Case */
+    }
 	
     switch (cptr->siglw.stbits.state) {
     case STATE_B32:
@@ -872,14 +874,6 @@ void    val_examine_unpopup_act (
     /* redraw the screen as popup may have mangled widgets */
     /* draw_all_needed ();*/
 }
-
-char *events[40] = {"","", "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelease", "MotionNotify",
-			"EnterNotify", "LeaveNotify", "FocusIn", "FocusOut", "KeymapNotify", "Expose", "GraphicsExpose",
-			"NoExpose", "VisibilityNotify", "CreateNotify", "DestroyNotify", "UnmapNotify", "MapNotify",
-			"MapRequest", "ReparentNotify", "ConfigureNotify", "ConfigureRequest", "GravityNotify",
-			"ResizeRequest", "CirculateNotify", "CirculateRequest", "PropertyNotify", "SelectionClear",
-			"SelectionRequest", "SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
-		    "LASTEvent"};
 
 void    val_examine_ev (
     Widget		w,
