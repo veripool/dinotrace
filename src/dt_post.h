@@ -313,6 +313,15 @@ char dt_post[] = "% $Id$\n\
   x ymdpt MT\n\
   } def\n\
 \n\
+/SA		% (x pct_high) analog\n\
+{ /xl x def\n\
+  /pct exch def\n\
+  /x exch XADJ def\n\
+  ytop ybot sub   pct mul   ybot add   /ypct exch def\n\
+  xl sigrf add ypct LT	% / \n\
+  x sigrf sub ypct LT	% - \n\
+  } def\n\
+\n\
 /SV	% (valstrg) draw bus value\n\
 { /v exch def			% value as string\n\
   v stringwidth pop		% get width of string\n\

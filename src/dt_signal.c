@@ -594,6 +594,22 @@ void    sig_radix_selected (
     draw_all_needed ();
 }
 
+void    sig_waveform_selected (
+    Boolean_t	analog)
+{
+    Signal_t	*sig_ptr;
+    SignalList_t	*siglst_ptr;
+    
+    if (DTPRINT_ENTRY) printf ("In sig_waveform_selected\n");
+    
+    for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
+	sig_ptr = siglst_ptr->signal;
+	sig_ptr->analog = analog;
+    }
+
+    draw_all_needed ();
+}
+
 void    sig_move_selected (
     /* also used for adding deleted signals */
     Trace_t	*new_trace,
@@ -943,6 +959,20 @@ void    sig_radix_cb (
     remove_all_events (trace);
     set_cursor (DC_SIG_RADIX);
     add_event (ButtonPressMask, sig_radix_ev);
+}
+
+void    sig_waveform_cb (
+    Widget	w)
+{
+    Trace_t *trace = widget_to_trace(w);
+    int subnum = submenu_to_color (trace, w, trace->menu.sig_waveform_pds);
+    if (DTPRINT_ENTRY) printf ("In sig_waveform_digital_cb - trace=%p sub=%d\n",trace, subnum);
+    global->selected_waveform = subnum;
+
+    /* process all subsequent button presses as signal deletions */ 
+    remove_all_events (trace);
+    set_cursor (DC_SIG_RADIX);
+    add_event (ButtonPressMask, sig_waveform_ev);
 }
 
 void    sig_highlight_cb (
@@ -1311,6 +1341,25 @@ void    sig_radix_ev (
     
     /* Change the radix */
     sig_ptr->radix = global->selected_radix;
+
+    draw_all_needed ();
+}
+
+void    sig_waveform_ev (
+    Widget	w,
+    Trace_t	*trace,
+    XButtonPressedEvent	*ev)
+{
+    Signal_t	*sig_ptr;
+    
+    if (DTPRINT_ENTRY) printf ("In sig_waveform_ev - trace=%p\n",trace);
+    if (ev->type != ButtonPress || ev->button!=1) return;
+    
+    sig_ptr = posy_to_signal (trace, ev->y);
+    if (!sig_ptr) return;
+    
+    /* Change the radix */
+    sig_ptr->analog = global->selected_waveform;
 
     draw_all_needed ();
 }

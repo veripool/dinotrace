@@ -245,7 +245,7 @@ static void	verilog_read_timescale (
 	dino_error_ack (trace, message);
     }
     if (time_scale == 0) time_scale = 1;
-    if (DTPRINT_FILE) printf ("timescale=%d\n",time_scale);
+    if (DTPRINT_FILE) printf ("timescale=%f\n",time_scale);
 
     verilog_read_till_end ();
 }
@@ -953,7 +953,6 @@ static void	verilog_read_data (
 	    }
 	    if (trace->end_time > time
 		&& !told_wrap) {
-		char msg[1000];
 		told_wrap = TRUE;
 		dino_warning_ack (trace, "Time has wrapped dinotrace's integer size.\nTry increasing Timescale.");
 		printf ("Time out %d  Time in %d  TS %g  TD %d\n", time, atol(line), time_scale, time_divisor);

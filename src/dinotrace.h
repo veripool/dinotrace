@@ -312,17 +312,22 @@ typedef struct {
     Widget	cancel;
 } OkApplyWidgets_t;
 
+#define MENU_PDE_MAX 13
+#define MENU_PDM_MAX 78
+#define MENU_PDS_MAX (8+(MAX_SRCH+2)*5+RADIX_MAX_MENU)
+#define MENU_PDMSEP_MAX 12
 typedef struct {
     Widget	menu;
-    Widget	pdmenu[11];
-    Widget	pdmenubutton[11];
-    Widget	pdsep[10];
-    Widget	pdentry[22];
-    Widget	pdentrybutton[74];
-    Widget	pdsubbutton[4+(MAX_SRCH+2)*5+RADIX_MAX_MENU];
+    Widget	pdmenu[MENU_PDE_MAX-1];
+    Widget	pdmenubutton[MENU_PDE_MAX-1];
+    Widget	pdsep[MENU_PDMSEP_MAX-1];
+    Widget	pdentry[MENU_PDM_MAX-1];
+    Widget	pdentrybutton[MENU_PDM_MAX-1];
+    Widget	pdsubbutton[MENU_PDS_MAX-1];
     Widget	menu_close;	/* Pointer to menu_close widget */
     uint_t	sig_highlight_pds;
     uint_t	sig_radix_pds;
+    uint_t	sig_waveform_pds;
     uint_t	cur_highlight_pds;
     uint_t	cur_add_pds;
     uint_t      cur_add_simview_pds;
@@ -673,6 +678,7 @@ struct st_signal {
     Boolean_t		deleted;	/* Signal is deleted */
     Boolean_t		deleted_preserve; /* Preserve the deletion of this signal (not deleted because constant) */
     Boolean_t		preserve_done;	/* Preservation process has moved this signal to new link structure */
+    Boolean_t		analog;		/* Display as analog waveform */
 
     uint_t		type;		/* Type of signal, STATE_B32, _B64, etc */
     ulong_t		blocks;		/* Number of time data blocks allocated, in # of ints */
@@ -793,6 +799,7 @@ typedef struct {
     Signal_t		*selected_sig;		/* Selected signal to move or add */
     Trace_t		*selected_trace; 	/* Selected signal's trace */
     Radix_t		*selected_radix;	/* Selected radix to change to */
+    Boolean_t		selected_waveform;	/* Selected analog/digital to change to */
     CursorType_t	selected_curtype;	/* Selected cursor type */
     SignalList_t	*select_head;	/* Pointer to selected signal list head */
 

@@ -379,7 +379,40 @@ static void print_draw_val (
 	    /* Draw the transition lines */
 	    if (dr_mask) {
 		char cmd;
-		if (dr_mask & DR_U) {
+		if (sig_ptr->analog && !(dr_mask & (DR_U|DR_Z))) {
+		    double ythis_pct = 0.0;
+		    switch (cptr->siglw.stbits.state) {
+		    case STATE_0:	ythis_pct = 0.0; break;
+		    case STATE_1:	ythis_pct = 1.0; break;
+		    case STATE_B32:	ythis_pct = (double)cptr->number[0] / (double)sig_ptr->value_mask[0]; break;
+		    case STATE_B128: {
+			if (sig_ptr->bits > 96) {
+			ythis_pct =
+			    (((double)cptr->number[3]   / (double)sig_ptr->value_mask[3])
+			     + ((double)cptr->number[2] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2])
+			     + ((double)cptr->number[1] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1])
+			     + ((double)cptr->number[0] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
+			} else if (sig_ptr->bits > 64) {
+			ythis_pct =
+			    (((double)cptr->number[2]   / (double)sig_ptr->value_mask[2])
+			     + ((double)cptr->number[1] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1])
+			     + ((double)cptr->number[0] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
+			} else if (sig_ptr->bits > 32) {
+			ythis_pct =
+			    (((double)cptr->number[1]   / (double)sig_ptr->value_mask[1])
+			     + ((double)cptr->number[0] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
+			} else {
+			    ythis_pct =
+				((((double)cptr->number[0] / (double)sig_ptr->value_mask[0])));
+			}
+			break;
+		    }
+		    }
+		    cmd='A';
+		    fprintf (psfile,"%d %f S%c",xright, ythis_pct, cmd);			
+		}
+		/* Digital */
+		else if (dr_mask & DR_U) {
 		    cmd='U';	/* SU  unknown fill */
 		} else if (dr_mask == DR_LOW) {
 		    cmd='0';	/* S0  low */
@@ -389,12 +422,15 @@ static void print_draw_val (
 		    cmd='H';	/* SH  bus all high */
 		} else if (dr_mask == DR_Z) {
 		    cmd='Z';	/* SZ  tristate dash */
-		} else cmd='B';	/* SB  Bus, if nothing better chosen */
-		fprintf (psfile,"%d S%c",xright, cmd);
+		} else {
+		    cmd='B';	/* SB  Bus, if nothing better chosen */
+		}
+		if (cmd!='A') fprintf (psfile,"%d S%c",xright, cmd);
 	    }
 
 	    /* Plot value */
 	    if (sig_ptr->bits>1
+		&& !sig_ptr->analog
 		&& cptr->siglw.stbits.state != STATE_U
 		&& cptr->siglw.stbits.state != STATE_Z
 		) {

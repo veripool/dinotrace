@@ -96,6 +96,7 @@
 #	signal_copy	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
 #	signal_move	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
 #	signal_radix	<signal_pattern> <HEX|BINARY|OCT|ASCII|DEC>
+#	signal_waveform	<signal_pattern> <DIGITAL|ANALOG>
 #	signal_rename	<signal_pattern> <new_signal_name>	[<color>]
 #	signal_highlight <signal_pattern> <color> 
 #	signal_note	<signal_pattern> <note> 
@@ -1002,6 +1003,26 @@ static void	config_process_line_internal (
 		} else {
 		    sig_wildmat_select (NULL, pattern);
 		    sig_radix_selected (radix_ptr	);
+		}
+	    }
+	}
+	else if (!strcmp(cmd, "SIGNAL_WAVEFORM")) {
+	    line += config_read_pattern (trace, line, pattern);
+	    if (pattern[0]) {
+		Boolean_t analog;
+		char strg[MAXSIGLEN];
+		line += config_read_string (trace,line, strg);
+		if (0==strcmp (strg, "DIGITAL")) {
+		    analog = FALSE;
+		    sig_wildmat_select (NULL, pattern);
+		    sig_waveform_selected (analog);
+		} else if (0==strcmp (strg, "ANALOG")) {
+		    analog = TRUE;
+		    sig_wildmat_select (NULL, pattern);
+		    sig_waveform_selected (analog);
+		} else {
+		    sprintf (message, "Signal_Waveform must be ANALOG or DIGITAL\n");
+		    config_error_ack (trace, message);
 		}
 	    }
 	}

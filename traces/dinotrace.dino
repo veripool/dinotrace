@@ -6,25 +6,27 @@
 #	click_to_edge	ON | OFF
 #	cursor		ON | OFF
 #	refreshing	AUTO | MANUAL
-#	grid		ON | OFF	<grid_number>
-#	grid_align	<number> | ASSERTION | DEASSERTION	<grid_number>
-#	grid_resolution	<number> | AUTO | EDGE	 <grid_number>
-#	grid_type	NORMAL | WIDE		 <grid_number>
-#	grid_signal	<signal_pattern> 	 <grid_number>
-#	grid_color	<color>		 	 <grid_number>
+#	grid		<grid_number>	ON | OFF	
+#	grid_align	<grid_number>	<number> | ASSERTION | DEASSERTION
+#	grid_resolution	<grid_number>	<number> | AUTO | EDGE 	 
+#	grid_type	<grid_number>	NORMAL | WIDE
+#	grid_signal	<grid_number>	<signal_pattern>
+#	grid_color	<grid_number>	<color>
 #	page_inc	4 | 2 | 1
 #	print_size	A | B | EPSPORT | EPSLAND
 #	rise_fall_time	<number>
 #	signal_height	<number>
 #	time_format	%0.6lf | %0.6lg | "" 
-#	time_precision	US | NS | PS
-#	time_rep	<number> | US | NS | PS | CYCLE
+#	time_precision	US | NS | PS | FS
+#	time_rep	<number> | US | NS | PS | FS | CYCLE
 # File Format:
 #	file_format	DECSIM | TEMPEST | VERILOG
 #	save_enables	ON | OFF
 #	save_ordering	ON | OFF
+#	save_duplicates	ON | OFF
 #	signal_states	<signal_pattern> = {<State>, <State>...}
 #	vector_separator "<char>"
+#	hierarchy_separator "<chars>"
 #       time_multiplier	<number>
 # Geometry/resources:
 #	open_geometry	<width>[%]x<height>[%]+<xoffset>[%]+<yoff>[%]
@@ -36,13 +38,16 @@
 #	signal_add	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
 #	signal_copy	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
 #	signal_move	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
+#	signal_radix	<signal_pattern> <HEX|BINARY|OCT|ASCII|DEC>
+#	signal_waveform	<signal_pattern> <DIGITAL|ANALOG>
 #	signal_rename	<signal_pattern> <new_signal_name>	[<color>]
-#	signal_highlight <color> <signal_pattern>
-#	cursor_add	<color> <time>	[-USER]
-#	value_highlight <color>	<value>	[<signal_pattern>] [-CURSOR] [-VALUE]
+#	signal_highlight <signal_pattern> <color> 
+#	signal_note	<signal_pattern> <note> 
+#	cursor_add	<time> <color>	[-USER]
+#	value_highlight <value>	<color>	[<signal_pattern>] [-CURSOR] [-VALUE]
 # Display changes:
-#	time_goto	<time>
 #	signal_goto	<signal_pattern>	(if not on screen, first match)
+#	time_goto	<time>
 #	resolution	<res>
 #	refresh
 #	annotate
@@ -58,13 +63,13 @@
 #time_precision NS
 
 # Set up grid #1, other grids are not used
-#grid on 0
-#grid_align assertion 0
-#grid_resolution 100 0
-#grid_resolution auto 0
-#grid_type wide 0
-#grid_signal 0 "*"	#<- matches first signal
-#grid_color 0 1
+grid on 0
+grid_align assertion 0
+grid_resolution 0 100
+grid_resolution 0 auto
+grid_type wide 0
+grid_signal 0 "*"	#<- matches first signal
+grid_color 0 1
 
 # Default format is verilog:
 #vector_seperator "<"
@@ -80,9 +85,9 @@
 
 
 # Default, one above the other
-#shrink_geometry 100%x50%+0%+0%
-#open_geometry 100%x50%+0%+50%
-#
+shrink_geometry 100%x50%+0%+0%
+open_geometry 100%x50%+0%+50%
+
 # Open one on top of the other
 #shrink_geometry 100%x100%+0%+0%
 #open_geometry 100%x100%+0%+0%

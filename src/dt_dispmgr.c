@@ -549,7 +549,7 @@ static void dm_menu_title (
 {
     int arg=0;
 
-    trace->menu.pde++;
+    if (++trace->menu.pde >= MENU_PDE_MAX) printf ("Out of menu space\n");
     trace->menu.pdmenu[trace->menu.pde] = XmCreatePulldownMenu (trace->menu.menu,"",NULL,0);
     XtSetArg (arglist[arg], XmNlabelString, XmStringCreateSimple (title) );		arg++;
     XtSetArg (arglist[arg], XmNsubMenuId, trace->menu.pdmenu[trace->menu.pde] );	arg++;
@@ -570,7 +570,7 @@ static void dm_menu_entry (
 {
     int arg=0;
 
-    trace->menu.pdm++;
+    if (++trace->menu.pdm >= MENU_PDM_MAX) printf ("Out of pdm menu space\n");
     XtSetArg (arglist[arg], XmNlabelString, XmStringCreateSimple (title) );	arg++;
     if (key != '\0') { XtSetArg (arglist[arg], XmNmnemonic, key );	arg++; }
     if (accel != NULL) { XtSetArg (arglist[arg], XmNacceleratorText, XmStringCreateSimple (accel_string) );	arg++; }
@@ -585,7 +585,7 @@ static void dm_menu_separator (
     )
     /*** create a separator menu entry under the top bar ***/
 {
-    trace->menu.pdmsep++;
+    if (++trace->menu.pdmsep >= MENU_PDMSEP_MAX) printf ("Out of pdmsep menu space\n");
     trace->menu.pdsep[trace->menu.pdmsep] = XmCreateSeparator (trace->menu.pdmenu[trace->menu.pde], "msep", arglist, 0);
     DManageChild (trace->menu.pdsep[trace->menu.pdmsep], trace, MC_NOKEYS);
 }
@@ -598,7 +598,7 @@ static void dm_menu_subtitle (Trace_t *trace,
 {
     int arg=0;
 
-    trace->menu.pdm++;
+    if (++trace->menu.pdm >= MENU_PDM_MAX) printf ("Out of pdm menu space\n");
     trace->menu.pdentry[trace->menu.pdm] = XmCreatePulldownMenu (trace->menu.pdmenu[trace->menu.pde],"",NULL,0);
     XtSetArg (arglist[arg], XmNlabelString, XmStringCreateSimple (title) );	arg++;
     XtSetArg (arglist[arg], XmNsubMenuId, trace->menu.pdentry[trace->menu.pdm] );	arg++;
@@ -619,7 +619,7 @@ static void dm_menu_subentry (
 {
     int arg=0;
 
-    trace->menu.pds++;
+    if (++trace->menu.pds >= MENU_PDS_MAX) printf ("Out of pds menu space\n");
     XtSetArg (arglist[arg], XmNlabelString, XmStringCreateSimple (title) );	arg++;
     if (key != '\0') { XtSetArg (arglist[arg], XmNmnemonic, key );	arg++; }
     if (accel_string != NULL) { XtSetArg (arglist[arg], XmNacceleratorText, XmStringCreateSimple (accel_string) );	arg++; }
@@ -642,7 +642,7 @@ static void dm_menu_subentry_colors (
     int color;
 
     for (color=0; color <= MAX_SRCH; color++) {
-	trace->menu.pds++;
+	++trace->menu.pds;
 	XtSetArg (arglist[0], XmNbackground, trace->xcolornums[color]);
 	XtSetArg (arglist[1], XmNmarginBottom, 8);
 	/*XtSetArg (arglist[2], XmNmarginRight, 50);*/
@@ -861,6 +861,10 @@ Trace_t *create_trace (
     dm_menu_subtitle (trace, 	"Radix",	'R');
     trace->menu.sig_radix_pds = trace->menu.pds+1;
     dm_menu_subentry_radixs (trace, sig_radix_cb);
+    dm_menu_subtitle (trace, 	"Waveform",	'W');
+    trace->menu.sig_waveform_pds = trace->menu.pds+1;
+    dm_menu_subentry (trace, 		"Digital", 'D', NULL, NULL,	sig_waveform_cb);
+    dm_menu_subentry (trace, 		"Analog", 'A', NULL, NULL,	sig_waveform_cb);
     dm_menu_entry (trace, 	"Search...",	'S', "<Key>F:", "f/C-f", sig_search_cb);
     dm_menu_entry (trace, 	"Select...",	'e',	NULL, NULL,	sig_select_cb);
     dm_menu_entry (trace, 	"Clear Highlight",'i',	NULL, NULL,	sig_highlight_clear_cb);

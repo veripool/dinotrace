@@ -20,7 +20,7 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set VERSION 9.0m
+@set VERSION 9.1a
 @set UPDATED August 2000
 @set ID @value{VERSION}
 @c All functions use these for searching ease
@@ -237,15 +237,16 @@ Allen Gallotta, Steve Hoover, Nathan Hughes, and Craig Ziegler.
 Some of the people who have provided ideas and feedback for Dinotrace
 include Edward Arthur, Sally Barry, Josh Belkin, Yifat Ben-Shachar, Lee
 Bradshaw, Rachel Berman, Sass Berman, Mike Blake, Serge Bogdanov, Ronen
-Boneh, Gregg Bouchard, Bill Bruce, Lauren Carlson, Paul Chan, David
-Chen, Derrick Dacosta, Erik Debriae, Paul Dormitzer, Duane Galbi, Allen
-Gallotta, Steve Glaser, Mike Goulet, Larry Gust, Larry Herman, Dave
-Horan, Steve Hoover, Nathan Hughes, Tom Hunt, Tracey Jones, Mike Kagen,
-Dan Katz, Sol Katzman, Steve Kolecki, Steve Lang, Charlie Lind, Dan
-Lussier, Ben Marshall, Bob McNamara, John Murphy, Aki Niimura, Lisa
-Noack, Mitch Norcross, Michael Quadri, Reinhard Schumann, Simcha, Jai
-Singh, Dean Sovie, Julie Staraitis, Dominik Strasser, Bob Walsh, Paul
-Wasson, Steve Wilson, Bob Yodlowski, and Craig Ziegler.
+Boneh, Gregg Bouchard, Derek Bosch, Bill Bruce, Lauren Carlson, Paul
+Chan, Ta-Chung Chang, David Chen, Dave Colson, Derrick Dacosta, Erik
+Debriae, Paul Dormitzer, Duane Galbi, Allen Gallotta, Steve Glaser, Mike
+Goulet, Larry Gust, Larry Herman, Dave Horan, Steve Hoover, Nathan
+Hughes, Tom Hunt, Tracey Jones, Mike Kagen, Dan Katz, Sol Katzman, Steve
+Kolecki, Steve Lang, Charlie Lind, Dan Lussier, Ben Marshall, Bob
+McNamara, Harunobu Miyashita, John Murphy, Aki Niimura, Lisa Noack,
+Mitch Norcross, Michael Quadri, Reinhard Schumann, Simcha, Jai Singh,
+Dean Sovie, Julie Staraitis, Dominik Strasser, Bob Walsh, Paul Wasson,
+Steve Wilson, Bob Yodlowski, and Craig Ziegler.
 
 @c ======================================================================
 @node Invoking Dinotrace, Screen Description, History, Top
@@ -342,11 +343,12 @@ drawn.  As usual, low, tristate, and high are low, middle, and high
 strait lines.  The high value has a bolder line to aid in discriminating
 it from a low.  Unknowns are filled areas.
 
-Busses are drawn in one of three ways; if zero they are low, if all bits
+Busses are drawn in one of four ways; if zero they are low, if all bits
 are one it it is two parallel lines with the upper one bolded.  If the
 bus is some mix of zeros and ones it is two narrow parallel lines.  If
 there is space the value of the bus will be shown based on the
-@dmenu{Signal Radix} menu option.
+@dmenu{Signal Radix} menu option.  Finally, the @dmenu{Signal Waveform}
+allows analog waveforms.
 
 Gadgets surround the main area.  The vertical scroll bar on the right is
 the @widget{Signal Slider} used to scroll signals, if they all cannot
@@ -907,6 +909,7 @@ Selecting @dmenu{Cursor Cancel}, or pressing @kbd{@key{esc}} will stop
 * Signal Copy::                 
 * Signal Delete::               
 * Signal Radix::                
+* Signal Waveform::             
 * Signal Search...::            
 * Signal Select...::            
 * Signal Clear Highlight::      
@@ -967,7 +970,7 @@ deletes those signals.  @dmenu{Signal Select} may be used to recover the
 deleted signals.  @xref{signal_delete} for the equivalent configuration
 file command.
 
-@node Signal Radix, Signal Search..., Signal Delete, Signal Menu
+@node Signal Radix, Signal Waveform, Signal Delete, Signal Menu
 @subsection Signal Radix
 @cindex Signal Radix
 @cindex Radix, Signals
@@ -979,7 +982,16 @@ other non-real signals to a real format probably won't display the
 values you wish.  @xref{signal_radix} for the equivalent configuration
 file command.
 
-@node Signal Search..., Signal Select..., Signal Radix, Signal Menu
+@node Signal Waveform, Signal Search..., Signal Radix, Signal Menu
+@subsection Signal Waveform
+@cindex Signal Waveform
+@cindex Waveform, Signals
+
+Selecting @dmenu{Signal Waveform} then clicking @kbd{@key{MB1}} on
+signals changes the signal to be displayed as either analog or digital.
+@xref{signal_waveform} for the equivalent configuration file command.
+
+@node Signal Search..., Signal Select..., Signal Waveform, Signal Menu
 @subsection Signal Search...
 @cindex Signal Search...
 @cindex Searching, Signals
@@ -1387,6 +1399,7 @@ is ignored in all but state names.  The commands are:
 * signal_move::                 
 * signal_rename::               
 * signal_radix::                
+* signal_waveform::             
 * signal_states::               
 @end menu
 
@@ -1880,7 +1893,7 @@ Changes the @strong{first} signal matching @var{signal_pattern} to have
 the name @var{new_signal_name} This can be used to make a alias copy of
 a signal by copying a signal, then renaming it.
 
-@node signal_radix, signal_states, signal_rename, Configuration Commands
+@node signal_radix, signal_waveform, signal_rename, Configuration Commands
 @subsection signal_radix
 @findex signal_radix
 @cindex Radix, Signals
@@ -1891,7 +1904,16 @@ radix.  Note that the @code{real} radix is detected for Verilog
 automatically, and changing other non-real signals to a real format
 probably won't display the values you wish.
 
-@node signal_states,  , signal_radix, Configuration Commands
+@node signal_waveform, signal_states, signal_radix, Configuration Commands
+@subsection signal_waveform
+@findex signal_waveform
+@cindex Waveform, Signals
+@config{signal_waveform}	@var{signal_pattern} ANALOG | DIGITAL
+
+Changes signals matching @var{signal_pattern} to have the specified
+waveform representation on the display.
+
+@node signal_states,  , signal_waveform, Configuration Commands
 @subsection signal_states
 @findex signal_states
 @cindex States, Signals

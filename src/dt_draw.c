@@ -393,6 +393,7 @@ static void draw_signal (
     int star_width;			/* Width of '*' character */
     int colornum_last = -1;
     int colornum_sig;
+    int ylast_analog = 0;
     
     int yhigh, ylow;
      /*if (DTPRINT_DRAW) printf ("draw %s\n",sig_ptr->signame);*/
@@ -414,6 +415,7 @@ static void draw_signal (
     ymdpt = (yhigh + ylow)/2;
     ysigfntloc = ymdpt + (global->signal_font->max_bounds.ascent / 2);
     yvalfntloc = ymdpt + (global->value_font->max_bounds.ascent / 2);
+    ylast_analog = ymdpt;
     
     /* Grab the signal color and font, draw the signal*/
     XSetFont (global->display, trace->gc, global->signal_font->fid);
@@ -458,12 +460,12 @@ static void draw_signal (
 	color_value = cptr->siglw.stbits.color;
 	if (cptr->siglw.stbits.allhigh) dr_mask |= DR_HIGHHIGH;
 	switch (cptr->siglw.stbits.state) {
-	case STATE_0:	dr_mask |= DR_LOW; break;
-	case STATE_1:	dr_mask |= DR_HIGHHIGH; break;
-	case STATE_U:	dr_mask |= DR_U; break;
-	case STATE_F32:	dr_mask |= DR_U; break;
+	case STATE_0:		dr_mask |= DR_LOW; break;
+	case STATE_1:		dr_mask |= DR_HIGHHIGH; break;
+	case STATE_U:		dr_mask |= DR_U; break;
+	case STATE_F32:		dr_mask |= DR_U; break;
 	case STATE_F128:	dr_mask |= DR_U; break;
-	case STATE_Z:	dr_mask |= DR_Z; break;
+	case STATE_Z:		dr_mask |= DR_Z; break;
 	default:		dr_mask |= DR_LOW | DR_HIGH; break;
 	}
 	
@@ -493,12 +495,12 @@ static void draw_signal (
 		  xleft, xright, xend, xleft_ok_next );*/
 		/* Build combination image, which is overlay of all values in space */
 		switch (nptr->siglw.stbits.state) {
-		case STATE_0:	dr_mask |= DR_LOW; break;
-		case STATE_1:	dr_mask |= DR_HIGHHIGH; break;
-		case STATE_U:	dr_mask |= DR_U; break;
-		case STATE_F32:	dr_mask |= DR_U; break;
+		case STATE_0:		dr_mask |= DR_LOW; break;
+		case STATE_1:		dr_mask |= DR_HIGHHIGH; break;
+		case STATE_U:		dr_mask |= DR_U; break;
+		case STATE_F32:		dr_mask |= DR_U; break;
 		case STATE_F128:	dr_mask |= DR_U; break;
-		case STATE_Z:	dr_mask |= DR_Z; break;
+		case STATE_Z:		dr_mask |= DR_Z; break;
 		default:		dr_mask |= DR_LOW | DR_HIGH; break;
 		}
 		color_value = MAX(color_value, nptr->siglw.stbits.color);
@@ -517,32 +519,78 @@ static void draw_signal (
 	xsigrfright = (xright==xend)?0:xsigrf;
 	if (dr_mask & DR_U) {
 	    XPoint pts[10];
-	    pts[0].x = xleft;		pts[0].y = ymdpt;
+	    pts[0].x = xleft;			pts[0].y = ymdpt;
 	    pts[1].x = xleft+xsigrfleft;	pts[1].y = ylow;
 	    pts[2].x = xright-xsigrfright;	pts[2].y = ylow;
-	    pts[3].x = xright;		pts[3].y = ymdpt;
+	    pts[3].x = xright;			pts[3].y = ymdpt;
 	    pts[4].x = xright-xsigrfright;	pts[4].y = yhigh;
 	    pts[5].x = xleft+xsigrfleft;	pts[5].y = yhigh;
-	    pts[6].x = xleft;		pts[6].y = ymdpt;
+	    pts[6].x = xleft;			pts[6].y = ymdpt;
 	    XFillPolygon (global->display, trace->pixmap, trace->gc,
 			  pts, 7, Convex, CoordModeOrigin);
 	    /* Don't need to draw lines, since we filled region */
 	} else {
-	    if (dr_mask & DR_LOW) {
-		if (xsigrfleft)
-		    ADD_SEG (xleft, ymdpt, xleft+xsigrfleft, ylow);
-		ADD_SEG (xleft+xsigrfleft, ylow,  xright-xsigrfright, ylow);
-		if (xsigrfright)
-		    ADD_SEG (xright-xsigrfright, ylow,  xright, ymdpt);
-	    }
-	    if (dr_mask & (DR_HIGH | DR_HIGHHIGH)) {
-		if (xsigrfleft)
-		    ADD_SEG (xleft, ymdpt, xleft+xsigrfleft, yhigh);
-		ADD_SEG (xleft+xsigrfleft, yhigh, xright-xsigrfright, yhigh);
-		if (xsigrfright)
-		    ADD_SEG (xright-xsigrfright, yhigh, xright, ymdpt);
-		if (dr_mask & DR_HIGHHIGH)
-		    ADD_SEG (xleft+xsigrfleft, yhigh+1, xright-xsigrfright, yhigh+1);
+	    if (sig_ptr->analog) {
+		/* ANALOG drawing */
+		if (dr_mask & (DR_LOW | DR_HIGH | DR_HIGHHIGH)) {
+		    /* Note ylow > yhigh, as bigger coords are at bottom of screen */
+		    double ythis_pct = 0.0;
+		    int ythis;
+		    switch (cptr->siglw.stbits.state) {
+		    case STATE_0:	ythis_pct = 0.0; break;
+		    case STATE_1:	ythis_pct = 1.0; break;
+		    case STATE_B32:	ythis_pct = (double)cptr->number[0] / (double)sig_ptr->value_mask[0]; break;
+		    case STATE_B128: {
+			if (sig_ptr->bits > 96) {
+			ythis_pct =
+			    (((double)cptr->number[3]   / (double)sig_ptr->value_mask[3])
+			     + ((double)cptr->number[2] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2])
+			     + ((double)cptr->number[1] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1])
+			     + ((double)cptr->number[0] / (double)sig_ptr->value_mask[3] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
+			} else if (sig_ptr->bits > 64) {
+			ythis_pct =
+			    (((double)cptr->number[2]   / (double)sig_ptr->value_mask[2])
+			     + ((double)cptr->number[1] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1])
+			     + ((double)cptr->number[0] / (double)sig_ptr->value_mask[2] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
+			} else if (sig_ptr->bits > 32) {
+			ythis_pct =
+			    (((double)cptr->number[1]   / (double)sig_ptr->value_mask[1])
+			     + ((double)cptr->number[0] / (double)sig_ptr->value_mask[1] / (double)sig_ptr->value_mask[0]));
+			} else {
+			    ythis_pct =
+				((((double)cptr->number[0] / (double)sig_ptr->value_mask[0])));
+			}
+			break;
+		    }
+		    default:		printf ("bad case -- mask bad? %x\n", dr_mask); break;
+		    }
+		    ythis = (ylow-yhigh)*(1.0-ythis_pct) + yhigh;
+		    if (xsigrfleft)
+			ADD_SEG (xleft-xsigrfleft, ylast_analog, xleft+xsigrfleft, ythis);
+		    ADD_SEG (xleft+xsigrfleft, ythis,  xright-xsigrfright, ythis);
+		    ylast_analog = ythis;
+		}
+		else {
+		    ylast_analog = ymdpt;
+		}
+	    } else {
+		/* DIGITAL drawing */
+		if (dr_mask & DR_LOW) {
+		    if (xsigrfleft)
+			ADD_SEG (xleft, ymdpt, xleft+xsigrfleft, ylow);
+		    ADD_SEG (xleft+xsigrfleft, ylow,  xright-xsigrfright, ylow);
+		    if (xsigrfright)
+			ADD_SEG (xright-xsigrfright, ylow,  xright, ymdpt);
+		}
+		if (dr_mask & (DR_HIGH | DR_HIGHHIGH)) {
+		    if (xsigrfleft)
+			ADD_SEG (xleft, ymdpt, xleft+xsigrfleft, yhigh);
+		    ADD_SEG (xleft+xsigrfleft, yhigh, xright-xsigrfright, yhigh);
+		    if (xsigrfright)
+			ADD_SEG (xright-xsigrfright, yhigh, xright, ymdpt);
+		    if (dr_mask & DR_HIGHHIGH)
+			ADD_SEG (xleft+xsigrfleft, yhigh+1, xright-xsigrfright, yhigh+1);
+		}
 	    }
 	    if (dr_mask & DR_Z) {
 		ADD_SEG_DASH (xleft, ymdpt, xright, ymdpt);
@@ -551,6 +599,7 @@ static void draw_signal (
 	
 	/* Plot value */
 	if (sig_ptr->bits>1
+	    && !sig_ptr->analog
 	    && cptr->siglw.stbits.state != STATE_U
 	    && cptr->siglw.stbits.state != STATE_Z
 	    ) {
