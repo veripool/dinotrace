@@ -61,7 +61,7 @@ This version of Dinotrace has been built and tested on:
 @item sparc-sun-sunos4.1.4
 @item alpha-dec-osf4.0
 @item i386-pc-linux
-@item i386-pc-cygwin32	(under Windows-NT)
+@item i386-pc-cygwin32	(under Windows-2000 & Windows-ME)
 @end itemize
 
 Previous versions of Dinotrace were once built, and probably will

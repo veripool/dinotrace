@@ -919,29 +919,24 @@ static void	verilog_read_data (
 		    fil_add_cptr (sig_ptr, &value, first_data);
 		}
 		else {
-		    register int len;
-
+		    /* compute size across all bits of signal */
+		    int size = 0;
+		    int offset;
+		    Signal_t	*loop_sig_ptr;
+		    for (loop_sig_ptr=sig_ptr; loop_sig_ptr; loop_sig_ptr=loop_sig_ptr->verilog_next) {
+			if (!loop_sig_ptr->copyof) {
+			    size += loop_sig_ptr->bits;
+			}
+		    }
+		    offset = size - strlen(value_strg);
+		    if (offset != 0) {
+			char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
+			memmove (value_strg + offset, value_strg, strlen(value_strg)+1);
+			memset (value_strg, extend_char, offset);
+		    }
+		    
 		    for (; sig_ptr; sig_ptr=sig_ptr->verilog_next) {
 			if (!sig_ptr->copyof) {
-			    /* Verilog requires us to extend the value if it is too short */
-			    len = (sig_ptr->bits) - strlen (value_strg);
-			    if (len > 0) {
-				/* This is rare, so not fast (see bradshaw.dmp)*/
-				/* 1's extend as 0's, x as x */
-				register char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
-				char *cp;
-				strcpy (scratchline, value_strg);
-				cp = value_strg;
-				while (len>0) {
-				    *cp++ = extend_char;
-				    len--;
-				}
-				*cp++ = '\0';
-				
-				strcat (value_strg, scratchline);	/* tack on the original value */
-				if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", scratchline, value_strg);
-			    }
-			    
 			    /* Store the file information */
 			    /*if (DTPRINT_FILE) printf ("\tsignal '%s'=%d @%d %s  fp %d value %s\n", code, poscode, time, sig_ptr->signame, sig_ptr->file_pos, value_strg);*/
 			    ascii_string_add_cptr (sig_ptr, value_strg + sig_ptr->file_pos, time, first_data);

@@ -11,6 +11,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ***	Display values with appropriate leading 0s. [Dan McMahill]
 
+***	Fix 0 extension of verilog values.  [Dominik Strasser, Bill Welch]
+
 
 * Changes in Dinotrace 9.1h  08/30/2002
 
