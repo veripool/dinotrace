@@ -975,7 +975,7 @@ $Id$
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-Copyright (C) 1998-2004 Wilson Snyder.
+Copyright (C) 1998-2005 Wilson Snyder.
 Copyright (C) 1992-1997 Digital Equipment Corportation.
 
    Permission is granted to anyone to make or distribute verbatim copies of
