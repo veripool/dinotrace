@@ -932,7 +932,7 @@ static void	verilog_read_data (
 		    }
 		    offset = size - strlen(value_strg);
 		    if (offset < 0) {
-			printf("Bad file format, string length off on line %d, %d %d\n", verilog_line_num,size,strlen(value_strg));
+			printf("Bad file format, string length off on line %d, %d %d\n", (int)verilog_line_num,(int)size, (int)strlen(value_strg));
 		    } else if (offset != 0) {
 			char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
 			//printf ("Extend %d mb %d ll %d size %d\n",offset,verilog_max_bits,strlen(value_strg), size);

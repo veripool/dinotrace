@@ -34,10 +34,10 @@ Download the latest package from that site, and decompress.
 @samp{gunzip dinotrace_version.tar.gz ; tar xvf dinotrace_version.tar}
 
 @item
-Dinotrace requires the Motif Widget set.  If your system doesn't include
-Motif, a public domain version, LessTif, is available at
-@uref{ftp://ftp.lesstif.org}.  Version 0.93.36 was known to work for
-this release.
+Dinotrace requires the Motif Widget set.  If your system doesn't
+include Motif, or OpenMotif, a public domain version, LessTif, is
+available at @uref{ftp://ftp.lesstif.org}.  Version 0.93.36 was known
+to work for this release.
 
 @item
 For best results, you should have perl installed on the system.
