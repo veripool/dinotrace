@@ -809,9 +809,9 @@ char *val_examine_string (
 	cols = ceil ((double)(rows) / 4.0) * 4;
 	rows = ceil ((double)(sig_ptr->bits)/ (double)cols);
 	
-	format = "<%01d>=%c ";
-	if (sig_ptr->msb_index >= 10)  format = "<%02d>=%c ";
-	if (sig_ptr->msb_index >= 100) format = "<%03d>=%c ";
+	format = "[%01d]=%c ";
+	if (sig_ptr->msb_index >= 10)  format = "[%02d]=%c ";
+	if (sig_ptr->msb_index >= 100) format = "[%03d]=%c ";
 	
 	bit = 0;
 	for (row=rows - 1; row >= 0; row--) {
