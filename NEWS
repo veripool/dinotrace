@@ -7,6 +7,11 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.0m  11/21/2000
+
+****	Fixed a bug reading compressed tempest on Digital UNIX. [Steve Hoover]
+
+
 * Changes in Dinotrace 9.0l  8/30/2000
 
 **	Added support for femtosecond Verilog timescales [Derek Bosch]
