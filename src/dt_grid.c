@@ -75,7 +75,7 @@ void grid_reset_cb (w, trace, cb)
     /* cancel the button actions */
     remove_all_events (trace);
 
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 void grid_align_ev (w, trace, ev)
@@ -94,5 +94,5 @@ void grid_align_ev (w, trace, ev)
 
     trace->grid_align = time;
 
-    draw_all_needed (trace);
+    draw_all_needed ();
     }

@@ -304,7 +304,7 @@ void cus_read_cb (w,trace,cb)
     config_read_file (trace, "DINODISK:DINOTRACE.DINO", FALSE, TRUE);
     
     /* Reformat and refresh */
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 void cus_reread_cb (w,trace,cb)
@@ -317,7 +317,7 @@ void cus_reread_cb (w,trace,cb)
     config_read_defaults (trace, TRUE);
     
     /* Reformat and refresh */
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 void	cus_restore_cb (w,trace,cb)
@@ -331,7 +331,7 @@ void	cus_restore_cb (w,trace,cb)
     config_restore_defaults (trace);
     
     /* redraw the display */
-    draw_all_needed (trace);
+    draw_all_needed ();
     }
 
 void	cus_ok_cb (w,trace,cb)
