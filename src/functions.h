@@ -74,6 +74,7 @@ extern void
     trace_open_cb(), trace_close_cb(), trace_exit_cb(), trace_clear_cb(),
     init_globals(), create_globals(),
     set_cursor();
+extern int	last_set_cursor ();
 
 /* dt_customize.c routines */
 extern void
@@ -87,7 +88,8 @@ extern void
     cur_highlight_cb(), cur_highlight_ev(),
     cur_add_ev(), cur_move_ev(), cur_delete_ev(),
     cur_add (DTime, ColorNum, CursorType),
-    cur_remove (CURSOR *);
+    cur_remove (CURSOR *),
+    cur_delete_of_type ();
     
 /* dt_config.c routines */
 extern void
@@ -117,6 +119,10 @@ extern void
     sig_examine_cb(), sig_examine_ev(),
     sig_search_cb(), sig_search_ok_cb(), sig_search_apply_cb(),
     sig_select_cb(), sig_select_ok_cb(), sig_select_apply_cb();
+extern void sig_modify_enables (TRACE *);
+extern void sig_delete_pattern (TRACE *, char *);
+extern void sig_delete_constant_pattern (TRACE *, char *);
+extern void sig_goto_pattern (TRACE *, char *);
     
 /* dt_value.c routines */
 extern void
@@ -130,6 +136,7 @@ extern void
 extern void
     ps_print_internal(), ps_print_req_cb(), ps_print_direct_cb(),
     ps_print_all(), ps_numpag_cb(), ps_dialog(), ps_reset();
+extern void cur_print (FILE *);
     
 /* dt_binary.c routines */
 extern void
@@ -173,6 +180,9 @@ extern char	*time_units_to_string ();
 extern SIGNAL	*posy_to_signal ();
 extern CURSOR	*posx_to_cursor ();
 extern CURSOR	*time_to_cursor ();
+extern ColorNum submenu_to_color (TRACE *, Widget, int);
+extern void     cptr_to_string ();
+extern void     string_to_value ();
     
 /* dt_window routines */
 extern void
@@ -197,12 +207,13 @@ extern int	win_goto_number();
 /* dt_draw */
 extern void
     update_globals(),
-    draw(),
-    drawsig();
+    draw_perform(),
+    draw();
 
 /* dt_icon */
 extern Pixmap	make_icon (Display *, Drawable, char *, Dimension, Dimension);
 
 /* dt_verilog */
 extern void	verilog_read();
+extern void	verilog_womp_96s(TRACE *);
 
