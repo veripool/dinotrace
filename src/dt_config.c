@@ -853,6 +853,7 @@ void	config_process_line_internal (trace, line, eof)
 	    line += config_read_signal (line, newsigst.signame);
 	    processing_sig_state = TRUE;
 	    /* if (DTPRINT) printf ("config_process_states  signal=%s\n", newsigst.signame); */
+	    goto re_process_line;
 	    }
 	else {
 	    sprintf (message, "Unknown command '%s'\n", cmd);
