@@ -377,7 +377,7 @@ void win_full_res (
     if (trace->end_time != trace->start_time) {
 	global->time = trace->start_time;
 	new_res (trace,
-		 ( ((float)(trace->width - global->xstart)) /
+		 ( ((float)(trace->width - global->xstart - XMARGIN)) /
 		   ((float)(trace->end_time - trace->start_time)) )
 		 );
 	new_time (trace);
@@ -521,11 +521,35 @@ void    win_goto_cb (
 	DManageChild (trace->gotos.options, trace, MC_NOKEYS);
 	
 
+	/* Create label widget for notetext widget */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cursor Note") );
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNleftOffset, 5);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNtopOffset, 5);
+	XtSetArg (arglist[5], XmNtopWidget, trace->gotos.options);
+	trace->gotos.notelabel = XmCreateLabel (trace->gotos.form,"",arglist,6);
+	DManageChild (trace->gotos.notelabel, trace, MC_NOKEYS);
+	
+	/* Create the print note text widget */
+	XtSetArg (arglist[0], XmNrows, 1);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[2], XmNleftOffset, 5);
+	XtSetArg (arglist[3], XmNcolumns, 30);
+	XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[5], XmNtopOffset, 0);
+	XtSetArg (arglist[6], XmNtopWidget, trace->gotos.notelabel);
+	XtSetArg (arglist[7], XmNresizeHeight, FALSE);
+	XtSetArg (arglist[8], XmNeditMode, XmSINGLE_LINE_EDIT);
+	trace->gotos.notetext = XmCreateText (trace->gotos.form,"notetext",arglist,9);
+	DAddCallback (trace->gotos.notetext, XmNactivateCallback, win_goto_ok_cb, trace);
+	DManageChild (trace->gotos.notetext, trace, MC_NOKEYS);
+	
 	/* Create Separator */
 	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->gotos.options );
+	XtSetArg (arglist[3], XmNtopWidget, trace->gotos.notetext );
 	XtSetArg (arglist[4], XmNtopOffset, 10);
 	trace->gotos.sep = XmCreateSeparator (trace->gotos.form, "sep",arglist,5);
 	DManageChild (trace->gotos.sep, trace, MC_NOKEYS);
@@ -620,6 +644,7 @@ void    win_goto_ok_cb (
 {
     char	*strg;
     DTime	time;
+    char	*note = NULL;
 
     if (DTPRINT_ENTRY) printf ("In win_goto_ok_cb - trace=%p\n",trace);
 
@@ -631,6 +656,8 @@ void    win_goto_ok_cb (
     /* Get value */
     strg = XmTextGetString (trace->gotos.text);
     time = string_to_time (trace, strg);
+    note = XmTextGetString (trace->gotos.notetext);
+    if (!note[0]) note=NULL;
 
     /* unmanage the popup window */
     XtRemoveEventHandler (trace->gotos.dialog, ExposureMask, TRUE,
@@ -653,7 +680,7 @@ void    win_goto_ok_cb (
 	/* Add cursor if wanted */
 	if (global->goto_color > 0) {
 	    /* make the cursor */
-	    cur_add (time, global->goto_color, USER);
+	    cur_add (time, global->goto_color, USER, note);
 	}
 
 	new_time (trace);

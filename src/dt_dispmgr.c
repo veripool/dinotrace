@@ -133,6 +133,7 @@ static XtActionsRec actions[] = {
     {"vscroll_unitdec", (XtActionProc)vscroll_unitdec_cb},
     {"vscroll_pageinc", (XtActionProc)vscroll_pageinc_cb},
     {"vscroll_pagedec", (XtActionProc)vscroll_pagedec_cb},
+    {"val_annotate",	(XtActionProc)val_annotate_do_cb},
     {"win_begin",	(XtActionProc)win_begin_cb},
     {"win_end",		(XtActionProc)win_end_cb},
     {"win_goto",	(XtActionProc)win_goto_cb},
@@ -157,7 +158,8 @@ char *key_translations = "\
 !<Key>osfRight:		hscroll_unitinc(0)\n\
 !<Key>osfBeginLine:	win_begin(0)\n\
 !<Key>osfEndLine:	win_end(0)\n\
-<Key>G:		win_goto(0)\n\
+<Key>G:			win_goto(0)\n\
+!<Key>F2:		val_annotate(0)\n\
 ";
 
 static int last_set_cursor_num = DC_NORMAL;
@@ -394,7 +396,7 @@ void init_globals (void)
     strcat (global->anno_filename, "dinotrace.danno");
 #endif
 
-    val_bases_init ();
+    val_radix_init ();
 
     /* Search stuff */
     for (i=0; i<MAX_SRCH; i++) {
@@ -404,7 +406,7 @@ void init_globals (void)
 	/* Value */
 	memset ((char *)&global->val_srch[i], 0, sizeof (ValSearch_t));
 	strcpy (global->val_srch[i].signal, "*");
-	global->val_srch[i].base = global->bases[0];
+	global->val_srch[i].radix = global->radixs[0];
 
 	/* Signal */
 	memset ((char *)&global->sig_srch[i], 0, sizeof (SigSearch_t));
@@ -626,22 +628,22 @@ void dm_menu_subentry_colors (
 }
 
 
-void dm_menu_subentry_bases (
+void dm_menu_subentry_radixs (
     Trace *trace,
     void (*callback)()
     )
 {
-    int basenum;
-    Base_t *base_ptr;
+    int radixnum;
+    Radix_t *radix_ptr;
     char name[100];
 
-    for (basenum=0; basenum<BASE_MAX; basenum++) {
-	base_ptr=global->bases[basenum];
-	if (base_ptr) {
-	    strcpy (name, base_ptr->name);
-	    if (base_ptr->prefix[0]) {
+    for (radixnum=0; radixnum<RADIX_MAX; radixnum++) {
+	radix_ptr=global->radixs[radixnum];
+	if (radix_ptr) {
+	    strcpy (name, radix_ptr->name);
+	    if (radix_ptr->prefix[0]) {
 		strcat (name, " (");
-		strcat (name, base_ptr->prefix);
+		strcat (name, radix_ptr->prefix);
 		strcat (name, ")");
 	    }
 	    dm_menu_subentry (trace, name, '\0', NULL, NULL, callback);
@@ -821,9 +823,9 @@ Trace *create_trace (
     dm_menu_entry (trace, 	"Move",		'M',	NULL, NULL,	sig_mov_cb);
     dm_menu_entry (trace, 	"Copy",		'C',	NULL, NULL,	sig_copy_cb);
     dm_menu_entry (trace, 	"Delete",	'D',	NULL, NULL,	sig_del_cb);
-    dm_menu_subtitle (trace, 	"Base",		'B');
-    trace->menu.sig_base_pds = trace->menu.pds+1;
-    dm_menu_subentry_bases (trace, sig_base_cb);
+    dm_menu_subtitle (trace, 	"Radix",	'R');
+    trace->menu.sig_radix_pds = trace->menu.pds+1;
+    dm_menu_subentry_radixs (trace, sig_radix_cb);
     dm_menu_entry (trace, 	"Search...",	'S', "<Key>F:", "f/C-f", sig_search_cb);
     dm_menu_entry (trace, 	"Select...",	'e',	NULL, NULL,	sig_select_cb);
     dm_menu_entry (trace, 	"Cancel", 	'l',	"!<Key>Escape:", "esc",	cancel_all_events_cb);
@@ -843,10 +845,9 @@ Trace *create_trace (
     
     if (DTDEBUG) {
 	dm_menu_title (trace, "Debug", 'D');
-	dm_menu_entry	(trace, "Print Signal Info (Screen Only)", 'I', NULL, NULL,	debug_print_screen_traces_cb);
-	dm_menu_entry	(trace, "Print Signal States",	't', NULL, NULL,	debug_print_signal_states_cb);
-	dm_menu_entry	(trace, "Integrity Check",	'I', NULL, NULL,	debug_integrity_check_cb);
 	dm_menu_entry	(trace, "Toggle Print",		'P', NULL, NULL,	debug_toggle_print_cb);
+	dm_menu_entry	(trace, "Integrity Check",	'I', NULL, NULL,	debug_integrity_check_cb);
+	dm_menu_entry	(trace, "Print Signal Info (Screen Only)", 'I', NULL, NULL,	debug_print_screen_traces_cb);
 	dm_menu_entry	(trace, "Increase DebugTemp",	'+', NULL, NULL,	debug_increase_debugtemp_cb);
 	dm_menu_entry	(trace, "Decrease DebugTemp",	'-', NULL, NULL,	debug_decrease_debugtemp_cb);
     }

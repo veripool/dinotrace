@@ -84,14 +84,14 @@ typedef struct st_client {
     int		cmdnumber;		/* Serial number of this command, for debugging */
     char	name[MAXHOSTNAMELEN+10];	/* Name of the client */
     char	command[MAXCMDLEN];	/* Command being formed */
-} CLIENT;
+} Client_t;
 
 extern void gethostname (char *, int);
 
 /*** MAIN ********************************************************************/
 
 void socket_input_cb (
-    CLIENT *client,
+    Client_t *client,
     int *sock_client_ptr,
     XtInputId	*id_ptr)
 {
@@ -157,7 +157,7 @@ void socket_accept_cb (
     int	clen;			/* Client packet length */
     struct sockaddr_in sa_client;	/* Socket addresses */
     int		sock_server = *sock_server_ptr;
-    CLIENT *client;		/* Buffer and other client info */
+    Client_t *client;		/* Buffer and other client info */
 
     if (DTPRINT_SOCKET) printf ("In socket_accept_cb %d.\n", sock_server);
 
@@ -186,7 +186,7 @@ void socket_accept_cb (
     }
 
     /* Create buffer */
-    client = DNewCalloc (CLIENT);
+    client = DNewCalloc (Client_t);
     client->cmdptr = client->command;
     sprintf (client->name, "%s %d",
 	     inet_ntoa(sa_client.sin_addr),

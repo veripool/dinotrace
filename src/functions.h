@@ -241,12 +241,12 @@ extern void	cus_restore_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
 extern void	cus_reread_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
 
 /* dt_cursor.c routines */
-extern void	cur_add (DTime time, ColorNum color, CursorType_t type);
+extern void	cur_add (DTime time, ColorNum color, CursorType_t type, const char *note);
 extern void	cur_remove (DCursor *);
 extern void	cur_delete_of_type (CursorType_t type);
 extern DTime	cur_time_first (Trace *trace);
 extern DTime	cur_time_last (Trace *trace);
-extern void	cur_print (FILE *);
+extern void	cur_write (FILE *);
 extern char *	cur_examine_string (Trace *trace, DCursor *cursor_ptr);
 
 extern void	cur_add_cb (Widget w);
@@ -267,10 +267,9 @@ extern void	config_global_defaults (void);
 extern void	config_parse_geometry (char *, Geometry *);
 extern void	config_update_filenames (Trace *trace);
 extern void	config_read_socket (char *line, char *name, int cmdnum, Boolean_t eof);
-extern SignalState *find_signal_state (Trace *, char *);
+extern SignalState *signalstate_find (Trace *, char *);
 extern int	wildmat ();
 
-extern void	debug_print_signal_states_cb (Widget w);
 extern void	config_write_cb (Widget w);
 
 /* dt_grid.c routines */
@@ -284,12 +283,13 @@ extern void	grid_reset_cb (Widget w);
 extern void	sig_update_search (void);
 extern void	sig_free (Trace *trace, Signal *sig_ptr, Boolean_t select, Boolean_t recurse);
 extern void	sig_highlight_selected (int color);
-extern void	sig_base_selected (Base_t *base_ptr);
+extern void	sig_radix_selected (Radix_t *radix_ptr);
 extern void	sig_modify_enables (Trace *);
 extern void	sig_move_selected (Trace *new_trace, char *after_pattern);
 extern void	sig_rename_selected (char *new_name);
 extern void	sig_copy_selected (Trace *new_trace, char *after_pattern);
 extern void	sig_delete_selected (Boolean_t constant_flag, Boolean_t ignorexz);
+extern void	sig_note_selected (const char *note);
 extern void	sig_wildmat_select (Trace *, char *);
 extern void	sig_goto_pattern (Trace *, char *);
 extern void	sig_cross_preserve (Trace *trace);
@@ -303,12 +303,12 @@ extern void	sig_add_cb (Widget w);
 extern void	sig_mov_cb (Widget w);
 extern void	sig_copy_cb (Widget w);
 extern void	sig_del_cb (Widget w);
-extern void	sig_base_cb (Widget w);
+extern void	sig_radix_cb (Widget w);
 extern void	sig_add_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	sig_move_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	sig_copy_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	sig_delete_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
-extern void	sig_base_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	sig_radix_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	sig_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	sig_highlight_cb (Widget w);
 extern void	sig_select_cb (Widget w);
@@ -321,10 +321,10 @@ extern void	sig_search_apply_cb (Widget w, Trace *trace, XmSelectionBoxCallbackS
 extern void	val_minimize (Value_t *value_ptr);
 extern void	val_update_search (void);
 extern void	val_states_update (void);
-extern void	val_to_string (const Base_t *base_ptr, char *strg, const Value_t *value_ptr, Boolean_t display);
+extern void	val_to_string (const Radix_t *radix_ptr, char *strg, const Value_t *value_ptr, Boolean_t display);
 extern Boolean_t  val_equal (const Value_t *vptra, const Value_t *vptrb);
-extern void	val_bases_init (void);
-extern Base_t	*val_base_find (const char *name);
+extern void	val_radix_init (void);
+extern Radix_t	*val_radix_find (const char *name);
 
 extern void	val_annotate_cb (Widget w);
 extern void	val_annotate_ok_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
@@ -399,7 +399,7 @@ extern DCursor *time_to_cursor (DTime xtime);
 extern void	time_to_string (Trace *trace, char *strg, DTime ctime, Boolean_t relative);
 extern DTime 	time_units_to_multiplier (TimeRep_t timerep);
 extern char *	time_units_to_string (TimeRep_t timerep, Boolean_t showvalue);
-extern void	string_to_value (Base_t **base_pptr, const char *strg, Value_t *value_ptr);
+extern void	string_to_value (Radix_t **radix_pptr, const char *strg, Value_t *value_ptr);
 extern DTime	string_to_time (Trace *trace, char *strg);
 
 extern void	DManageChild (Widget w, Trace *trace, MCKeys_t keys);

@@ -63,12 +63,12 @@
 #	click_to_edge	ON | OFF
 #	cursor		ON | OFF
 #	refreshing	AUTO | MANUAL
-#	grid		ON | OFF	<grid_number>
-#	grid_align	<number> | ASSERTION | DEASSERTION	<grid_number>
-#	grid_resolution	<number> | AUTO | EDGE 	 <grid_number>
-#	grid_type	NORMAL | WIDE		 <grid_number>
-#	grid_signal	<signal_pattern> 	 <grid_number>
-#	grid_color	<color>		 	 <grid_number>
+#	grid		<grid_number>	ON | OFF	
+#	grid_align	<grid_number>	<number> | ASSERTION | DEASSERTION
+#	grid_resolution	<grid_number>	<number> | AUTO | EDGE 	 
+#	grid_type	<grid_number>	NORMAL | WIDE
+#	grid_signal	<grid_number>	<signal_pattern>
+#	grid_color	<grid_number>	<color>
 #	page_inc	4 | 2 | 1
 #	print_size	A | B | EPSPORT | EPSLAND
 #	rise_fall_time	<number>
@@ -82,6 +82,7 @@
 #	save_ordering	ON | OFF
 #	signal_states	<signal_pattern> = {<State>, <State>...}
 #	vector_separator "<char>"
+#	hierarchy_separator "<chars>"
 #       time_multiplier	<number>
 # Geometry/resources:
 #	open_geometry	<width>[%]x<height>[%]+<xoffset>[%]+<yoff>[%]
@@ -93,14 +94,15 @@
 #	signal_add	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
 #	signal_copy	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
 #	signal_move	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
+#	signal_radix	<signal_pattern> <HEX|BINARY|OCT|ASCII|DEC>
 #	signal_rename	<signal_pattern> <new_signal_name>	[<color>]
 #	signal_highlight <signal_pattern> <color> 
-#	signal_base	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
+#	signal_note	<signal_pattern> <note> 
 #	cursor_add	<time> <color>	[-USER]
 #	value_highlight <value>	<color>	[<signal_pattern>] [-CURSOR] [-VALUE]
 # Display changes:
-#	time_goto	<time>
 #	signal_goto	<signal_pattern>	(if not on screen, first match)
+#	time_goto	<time>
 #	resolution	<res>
 #	refresh
 #	annotate
@@ -128,6 +130,28 @@ static int config_line_num=0;
 static Boolean_t config_reading_socket;
 
 /**********************************************************************
+ * Utils
+ */
+
+void	config_error_ack (
+    Trace	*trace,
+    char	*message)
+{
+    char	newmessage[1000];
+
+    if (!config_report_errors) return;
+
+    strcpy (newmessage, message);
+    if (config_reading_socket) {
+	sprintf (newmessage + strlen(newmessage), "on command # %d from socket %s\n", config_line_num, config_file);
+    }
+    else {
+	sprintf (newmessage + strlen(newmessage), "on line %d of %s\n", config_line_num, config_file);
+    }
+    dino_error_ack (trace, newmessage);
+}
+
+/**********************************************************************
 *	READING FUNCTIONS
 **********************************************************************/
 
@@ -144,30 +168,66 @@ void config_get_line (
     config_line_num++;
 }
 
-int	config_read_signal (
+int	config_read_string (
+    Trace *trace,
     char *line,
     char *out)
 {
-    char *tp;
     int outlen=0;
+    Boolean_t quote = FALSE;
 
-    while (*line && !issigchr(*line)) {
-	line++;
-	outlen++;
+    while (*line && isspace(*line)) {
+	line++; outlen++;
     }
 
-    if (!*line) {
-	out[0]='\0';
-	return(outlen);
+    if (*line=='"') {
+	line++; outlen++;
+	quote = TRUE;
     }
 
-    /* extract signal */
-    strncpy(out, line, MAXSIGLEN);
-    out[MAXSIGLEN-1]='\0';
-    for (tp=out; *tp && issigchr(*tp); tp++) ;
-    *tp='\0';
+    while (*line && (quote ? *line!='"' : issigchr(*line))) {
+	if (*line == '\\') {
+	    line++;
+	    outlen++;
+	    switch (*line) {
+	    case '\0':
+		line--;
+		break;
+	    case 'n':
+		*out++ = '\n';
+		break;
+	    default:
+		*out++ = *line;
+	    }
+	}
+	else {
+	    *out++ = *line;
+	}
+	line++; outlen++;
+    }
+    *out++ = '\0';
 
-    return (strlen(out)+outlen);
+    if (quote) { 
+	if (*line == '"') {
+	    line++; outlen++;
+	} else {
+	    config_error_ack (trace, "Double quotes aren't terminated\n");
+	}
+    }
+    return (outlen);
+}
+
+int	config_read_pattern (
+    Trace	*trace,
+    char *line,
+    char *pattern)
+{
+    int outlen;
+    outlen = config_read_string (trace, line, pattern);
+    if (!pattern[0]) {
+        config_error_ack (trace, "Signal pattern name must not be null\n");
+    }
+    return (outlen);
 }
 
 int	config_read_state (
@@ -310,7 +370,7 @@ int wildmat(
 *	SUPPORT FUNCTIONS
 **********************************************************************/
 
-SignalState	*find_signal_state (
+SignalState	*signalstate_find (
     Trace	*trace,
     char *name)
 {
@@ -324,7 +384,7 @@ SignalState	*find_signal_state (
     return (NULL);
 }
 
-void	add_signal_state (
+void	signalstate_add (
     Trace	*trace,
     SignalState *info)
 {
@@ -357,7 +417,7 @@ void	add_signal_state (
     }
 }
 
-void	free_signal_states (void)
+void	signalstate_free (void)
 {
     SignalState *sstate_ptr, *last_ptr;
 
@@ -370,19 +430,23 @@ void	free_signal_states (void)
     global->signalstate_head = NULL;
 }
 
-void	debug_print_signal_states_cb (
-    Widget	w)
+void	signalstate_write (
+    FILE *writefp)
 {
     SignalState *sstate_ptr;
     int i;
 
-    sstate_ptr = global->signalstate_head;
-    while (sstate_ptr) {
-	printf("Signal %s, %d states:\n",sstate_ptr->signame, sstate_ptr->numstates);
-	for (i=0; i<MAXSTATENAMES; i++)
-	    if (sstate_ptr->statename[i][0])
-		printf ("\t%d=%s\n", i, sstate_ptr->statename[i]);
-	sstate_ptr = sstate_ptr->next;
+    fprintf (writefp, "\n## Signal States ##\n");
+    
+    for (sstate_ptr = global->signalstate_head; 
+	 sstate_ptr; sstate_ptr = sstate_ptr->next) {
+	printf("#signal_states %s {\n",sstate_ptr->signame);
+	for (i=0; i<MAXSTATENAMES; i++) {
+	    if (sstate_ptr->statename[i][0]) {
+		printf ("#\t%d=\"%s\",\n", i, sstate_ptr->statename[i]);
+	    }
+	}
+	printf("#\t}\n");
     }
     printf ("\n");
 }
@@ -432,24 +496,17 @@ void	config_parse_geometry (
 				geometry->xp?'%':'-', geometry->yp?'%':'-');
 }
 
-
-void	config_error_ack (
-    Trace	*trace,
-    char	*message)
+void	config_geometry_string (
+    Geometry	*geometry,
+    char *strg)
 {
-    char	newmessage[1000];
-
-    if (!config_report_errors) return;
-
-    strcpy (newmessage, message);
-    if (config_reading_socket) {
-	sprintf (newmessage + strlen(newmessage), "on command # %d from socket %s\n", config_line_num, config_file);
-    }
-    else {
-	sprintf (newmessage + strlen(newmessage), "on line %d of %s\n", config_line_num, config_file);
-    }
-    dino_error_ack (trace, newmessage);
+    sprintf (strg, "%d%sx%d%s+%d%s+%d%s\n",
+	     geometry->width,	geometry->widthp?"%":"",
+	     geometry->height,	geometry->heightp?"%":"", 
+	     geometry->x,	geometry->xp?"%":"",
+	     geometry->y,	geometry->xp?"%":"");
 }
+
 
 /**********************************************************************
 *	reading functions w/ error messages
@@ -464,12 +521,11 @@ int	config_read_on_off (
     char cmd[MAXSIGLEN];
     int outlen;
 
-    outlen = config_read_signal (line, cmd);
-    upcase_string (cmd);
+    outlen = config_read_string (trace, line, cmd);
 
-    if (!strcmp (cmd, "ON") || !strcmp (cmd, "1"))
+    if (!strcasecmp (cmd, "ON") || !strcmp (cmd, "1"))
 	*out = 1;
-    else if (!strcmp (cmd, "OFF") || !strcmp (cmd, "0"))
+    else if (!strcasecmp (cmd, "OFF") || !strcmp (cmd, "0"))
 	*out = 0;
     else {
 	sprintf (message, "Expected ON or OFF switch\n");
@@ -492,12 +548,12 @@ int	config_read_color (
 
     switch (*line) {
     case 'N': case 'n':
-	outlen = config_read_signal (line, cmd);
+	outlen = config_read_string (trace, line, cmd);
 	*color = global->highlight_color;
 	break;
     case 'C': case 'c':
 	/* Duplicate code in submenu_to_color */
-	outlen = config_read_signal (line, cmd);
+	outlen = config_read_string (trace, line, cmd);
 	if ((++global->highlight_color) > MAX_SRCH) global->highlight_color = 1;
 	*color = global->highlight_color;
 	break;
@@ -616,7 +672,7 @@ void	config_process_line_internal (
 	    if (eof) {
 		config_error_ack (trace, "Unexpected EOF during SIGNAL_STATES\n");
 	    }
-	    add_signal_state (trace, &newsigst);
+	    signalstate_add (trace, &newsigst);
 	    processing_sig_state = FALSE;
 	}
 	else {
@@ -629,7 +685,7 @@ void	config_process_line_internal (
 
 	/* Preprocessor #INCLUDE eventually */
 	/* extract command */
-	line += config_read_signal (line, cmd);
+	line += config_read_string (trace, line, cmd);
 	while (*line && isspace(*line)) line++;
 	upcase_string (cmd);
 
@@ -706,17 +762,17 @@ void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "GRID")) {
-	    line += config_read_on_off (trace, line, &value);
 	    line += config_read_grid (trace, line, &grid_ptr);
+	    line += config_read_on_off (trace, line, &value);
 	    if (grid_ptr && value >= 0) {
 		if (DTPRINT_CONFIG) printf ("Config: grid_vis=%d\n",value);
 		grid_ptr->visible = value;
 	    }
 	}
 	else if (!strcmp(cmd, "GRID_RESOLUTION")) {
-	    line += config_read_int (line, &value);
-	    if (isalpha(line[0])) { line += config_read_signal (line, pattern); }
 	    line += config_read_grid (trace, line, &grid_ptr);
+	    line += config_read_int (line, &value);
+	    if (isalpha(line[0])) { line += config_read_string (trace, line, pattern); }
 	    if (grid_ptr) {
 		if (value >= 1) {
 		    grid_ptr->period = value;
@@ -734,9 +790,9 @@ void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "GRID_ALIGN")) {
-	    line += config_read_int (line, &value);
-	    if (isalpha(line[0])) { line += config_read_signal (line, pattern); }
 	    line += config_read_grid (trace, line, &grid_ptr);
+	    line += config_read_int (line, &value);
+	    if (isalpha(line[0])) { line += config_read_string (trace, line, pattern); }
 	    if (grid_ptr) {
 		if (value >= 1) {
 		    grid_ptr->alignment = value;
@@ -754,9 +810,9 @@ void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "GRID_TYPE")) {
-	    line += config_read_int (line, &value);
-	    if (isalpha(line[0])) { line += config_read_signal (line, pattern); }
 	    line += config_read_grid (trace, line, &grid_ptr);
+	    line += config_read_int (line, &value);
+	    if (isalpha(line[0])) { line += config_read_string (trace, line, pattern); }
 	    if (grid_ptr) {
 		if (toupper(pattern[0])=='N')
 		    grid_ptr->wide_line = FALSE;
@@ -768,16 +824,16 @@ void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "GRID_SIGNAL")) {
-	    line += config_read_signal (line, pattern);
 	    line += config_read_grid (trace, line, &grid_ptr);
+	    line += config_read_string (trace, line, pattern);
 	    if (grid_ptr && *pattern) {
 		strcpy (grid_ptr->signal, pattern);
 	    }
 	}
 	else if (!strcmp(cmd, "GRID_COLOR")) {
 	    ColorNum color;
-	    line += config_read_color (trace, line, &color, TRUE);
 	    line += config_read_grid (trace, line, &grid_ptr);
+	    line += config_read_color (trace, line, &color, TRUE);
 	    if (grid_ptr && color>=0) {
 		grid_ptr->color = color;
 	    }
@@ -824,7 +880,7 @@ void	config_process_line_internal (
 	    if (DTPRINT_CONFIG) printf ("time_precision = %f\n", global->time_precision);
 	}
 	else if (!strcmp(cmd, "TIME_FORMAT")) {
-	    line += config_read_signal (line, cmd);
+	    line += config_read_string (trace, line, cmd);
 	    strcpy (global->time_format, cmd);
 	    if (DTPRINT_CONFIG) printf ("time_format = '%s'\n", global->time_format);
 	}
@@ -871,6 +927,12 @@ void	config_process_line_internal (
 	    }
 	    if (DTPRINT_CONFIG) printf ("File_format = %d\n", file_format);
 	}
+	else if (!strcmp(cmd, "HIERARCHY_SEPARATOR")) {
+	    line += config_read_string (trace, line, pattern);
+	    if (pattern[0]) {
+		trace->hierarchy_separator = pattern[0];
+	    }
+	}
 	else if (!strcmp(cmd, "VECTOR_SEPERATOR")	/* Backward compatible spelling! */
 		 || !strcmp(cmd, "VECTOR_SEPARATOR")) {
 	    if (*line=='"') line++;
@@ -894,11 +956,8 @@ void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
 	    ColorNum color;
-	    line += config_read_signal (line, pattern);
-	    if (!pattern[0]) {
-		config_error_ack (trace, "Signal_highlight signal name must not be null\n");
-	    }
-	    else {
+	    line += config_read_pattern (trace, line, pattern);
+	    if (pattern[0]) {
 		line += config_read_color (trace, line, &color, TRUE);
 		if (color >= 0) {
 		    sig_wildmat_select (NULL, pattern);
@@ -906,33 +965,36 @@ void	config_process_line_internal (
 		}
 	    }
 	}
-	else if (!strcmp(cmd, "SIGNAL_BASE")) {
-	    line += config_read_signal (line, pattern);
-	    if (!pattern[0]) {
-		config_error_ack (trace, "Signal_highlight signal name must not be null\n");
+	else if (!strcmp(cmd, "SIGNAL_NOTE")) {
+	    char pattern2[MAXSIGLEN];
+	    line += config_read_pattern (trace, line, pattern);
+	    line += config_read_string (trace, line, pattern2);
+	    if (pattern[0] && pattern2[0]) {
+	        sig_wildmat_select (NULL, pattern);
+	        sig_note_selected (pattern2);
 	    }
-	    else {
-		Base_t *base_ptr;
+	}
+	else if (!strcmp(cmd, "SIGNAL_RADIX")) {
+	    line += config_read_pattern (trace, line, pattern);
+	    if (pattern[0]) {
+		Radix_t *radix_ptr;
 		char strg[MAXSIGLEN];
-		line += config_read_signal (line, strg);
-		base_ptr = val_base_find (strg);
-		if (base_ptr==NULL) {
-		    config_error_ack (trace, "Undefined base name\n");
+		line += config_read_string (trace,line, strg);
+		radix_ptr = val_radix_find (strg);
+		if (radix_ptr==NULL) {
+		    config_error_ack (trace, "Undefined radix name\n");
 		} else {
 		    sig_wildmat_select (NULL, pattern);
-		    sig_base_selected (base_ptr	);
+		    sig_radix_selected (radix_ptr	);
 		}
 	    }
 	}
 	else if (!strcmp(cmd, "SIGNAL_ADD")) {
 	    char pattern2[MAXSIGLEN];
-	    line += config_read_signal (line, pattern);
-	    if (!pattern[0]) {
-		config_error_ack (trace, "Signal_Add signal name must not be null\n");
-	    }
-	    else {
+	    line += config_read_pattern (trace, line, pattern);
+	    if (pattern[0]) {
 		ColorNum color;
-		line += config_read_signal (line, pattern2);
+		line += config_read_string (trace, line, pattern2);
 		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (global->deleted_trace_head, pattern);
 		sig_move_selected (trace, pattern2);
@@ -943,13 +1005,10 @@ void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "SIGNAL_MOVE")) {
 	    char pattern2[MAXSIGLEN];
-	    line += config_read_signal (line, pattern);
-	    if (!pattern[0]) {
-		config_error_ack (trace, "Signal_Move signal name must not be null\n");
-	    }
-	    else {
+	    line += config_read_pattern (trace, line, pattern);
+	    if (pattern[0]) {
 		ColorNum color;
-		line += config_read_signal (line, pattern2);
+		line += config_read_pattern (trace, line, pattern2);
 		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (NULL, pattern);
 		sig_move_selected (trace, pattern2);
@@ -960,12 +1019,9 @@ void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "SIGNAL_RENAME")) {
 	    char pattern2[MAXSIGLEN];
-	    line += config_read_signal (line, pattern);
-	    line += config_read_signal (line, pattern2);
-	    if (!pattern[0] || !pattern2[0]) {
-		config_error_ack (trace, "Signal_Rename signal names must not be null\n");
-	    }
-	    else {
+	    line += config_read_pattern (trace, line, pattern);
+	    line += config_read_pattern (trace, line, pattern2);
+	    if (pattern[0] && pattern2[0]) {
 		ColorNum color;
 		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (NULL, pattern);
@@ -977,13 +1033,10 @@ void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "SIGNAL_COPY")) {
 	    char pattern2[MAXSIGLEN];
-	    line += config_read_signal (line, pattern);
-	    if (!pattern[0]) {
-		config_error_ack (trace, "Signal_Copy signal name must not be null\n");
-	    }
-	    else {
+	    line += config_read_pattern (trace, line, pattern);
+	    if (pattern[0]) {
 		ColorNum color;
-		line += config_read_signal (line, pattern2);
+		line += config_read_pattern (trace, line, pattern2);
 		line += config_read_color (trace, line, &color, FALSE);
 		sig_wildmat_select (NULL, pattern);
 		sig_copy_selected (trace, pattern2);
@@ -993,11 +1046,8 @@ void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "SIGNAL_DELETE")) {
-	    line += config_read_signal (line, pattern);
-	    if (!pattern[0]) {
-		config_error_ack (trace, "Signal_Delete signal name must not be null\n");
-	    }
-	    else {
+	    line += config_read_pattern (trace, line, pattern);
+	    if (pattern[0]) {
 		sig_wildmat_select (trace, pattern);
 		sig_delete_selected (TRUE, FALSE);
 	    }
@@ -1005,15 +1055,11 @@ void	config_process_line_internal (
 	else if (!strcmp(cmd, "SIGNAL_DELETE_CONSTANT")) {
 	    char flag[MAXSIGLEN];
 	    Boolean_t ignorexz = FALSE;
-	    line += config_read_signal (line, pattern);
-	    if (!pattern[0]) {
-		config_error_ack (trace, "Signal_Delete_Constant signal name must not be null\n");
-	    }
-	    else {
+	    line += config_read_pattern (trace, line, pattern);
+	    if (pattern[0]) {
 		do {
-		    line += config_read_signal (line, flag);
-		    upcase_string (flag);
-		    if (!strcmp(flag, "-IGNOREXZ")) ignorexz=TRUE;
+		    line += config_read_string (trace, line, flag);
+		    if (!strcasecmp(flag, "-IGNOREXZ")) ignorexz=TRUE;
 		} while (flag[0]);
 		sig_wildmat_select (trace, pattern);
 		sig_delete_selected (FALSE, ignorexz);
@@ -1024,22 +1070,21 @@ void	config_process_line_internal (
 	    ValSearch_t *vs_ptr;
 	    Boolean_t show_value=FALSE, add_cursor=FALSE;
 	    VSearchNum search_pos;
-	    line += config_read_signal (line, strg);
+	    line += config_read_string (trace, line, strg);
 	    line += config_read_color (trace, line, &search_pos, TRUE);
 	    search_pos--;
 	    if (search_pos >= 0) {
 		do {
-		    line += config_read_signal (line, flag);
-		    upcase_string (flag);
-		    if (!strcmp(flag, "-CURSOR")) add_cursor=TRUE;
-		    else if (!strcmp(flag, "-VALUE")) show_value=TRUE;
+		    line += config_read_string (trace, line, flag);
+		    if (!strcasecmp(flag, "-CURSOR")) add_cursor=TRUE;
+		    else if (!strcasecmp(flag, "-VALUE")) show_value=TRUE;
 		    else if (flag[0]) strcpy (signal, flag);
 		} while (flag[0]);
 		/* Add it */
 		vs_ptr = &global->val_srch[search_pos];
 		vs_ptr->color = (show_value) ? search_pos+1 : 0;
 		vs_ptr->cursor = (add_cursor) ? search_pos+1 : 0;
-		string_to_value (&vs_ptr->base, strg, &vs_ptr->value);
+		string_to_value (&vs_ptr->radix, strg, &vs_ptr->value);
 		strcpy (vs_ptr->signal, signal);
 		draw_needupd_val_search ();
 	    }
@@ -1047,17 +1092,19 @@ void	config_process_line_internal (
 	else if (!strcmp(cmd, "CURSOR_ADD")) {
 	    ColorNum color;
 	    DTime ctime;
-	    char strg[MAXSIGLEN],flag[MAXSIGLEN];
+	    char strg[MAXSIGLEN],flag[MAXSIGLEN],note[MAXSIGLEN];
+	    CursorType_t type = CONFIG;
 	    
+	    line += config_read_string (trace, line, strg);
+	    ctime = string_to_time (trace, strg);
 	    line += config_read_color (trace, line, &color, TRUE);
 	    if (color >= 0) {
-		ctime = string_to_time (trace, strg);
-		line += config_read_signal (line, strg);
-		line += config_read_signal (line, flag);
-		upcase_string (flag);
-		if (!strcmp(flag, "-USER"))
-		    cur_add (ctime, color, USER);
-		else cur_add (ctime, color, CONFIG);
+		do {
+		    line += config_read_string (trace, line, flag);
+		    if (!strcasecmp(flag, "-USER")) type=USER;
+		    else if (flag[0]) strcpy (note, flag);
+		} while (flag[0]);
+		cur_add (ctime, color, type, note);
 	    }
 	}
 	else if (!strcmp(cmd, "TIME_GOTO")) {
@@ -1065,7 +1112,7 @@ void	config_process_line_internal (
 	    char strg[MAXSIGLEN];
 	    DTime end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
 	    
-	    line += config_read_signal (line, strg);
+	    line += config_read_string (trace, line, strg);
 	    ctime = string_to_time (trace, strg);
 
 	    if ((ctime < global->time) || (ctime > end_time)) {
@@ -1078,7 +1125,7 @@ void	config_process_line_internal (
 	    DTime restime;
 	    char strg[MAXSIGLEN];
 	    
-	    line += config_read_signal (line, strg);
+	    line += config_read_string (trace, line, strg);
 	    restime = string_to_time (trace, strg);
 
 	    if (restime > 0) {
@@ -1086,12 +1133,9 @@ void	config_process_line_internal (
 	    }
 	}
 	else if (!strcmp(cmd, "SIGNAL_GOTO")) {
-	    line += config_read_signal (line, pattern);
-	    if (!pattern[0]) {
-		config_error_ack (trace, "Signal_Goto signal name must not be null\n");
-	    }
-	    else {
-		sig_goto_pattern (trace, pattern);
+	    line += config_read_pattern (trace, line, pattern);
+	    if (pattern[0]) {
+	        sig_goto_pattern (trace, pattern);
 	    }
 	}
 	else if (!strcmp(cmd, "REFRESH")) {
@@ -1119,7 +1163,7 @@ void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "SIGNAL_STATES")) {
 	    memset (&newsigst, 0, sizeof (SignalState));
-	    line += config_read_signal (line, newsigst.signame);
+	    line += config_read_pattern (trace, line, newsigst.signame);
 	    processing_sig_state = TRUE;
 	    /* if (DTPRINT) printf ("config_process_states  signal=%s\n", newsigst.signame); */
 	    goto re_process_line;
@@ -1304,6 +1348,8 @@ void config_write_file (
     Signal	*sig_ptr;
     int		grid_num;
     Grid	*grid_ptr;
+    int		i;
+    char	strg[MAXSIGLEN];
     
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Writing config file %s\n", filename);
     
@@ -1315,91 +1361,113 @@ void config_write_file (
 	return;
     }
 
-    fprintf (writefp, "! Customization Write by %s\n", DTVERSION);
-    fprintf (writefp, "! Created %s\n", date_string(0));
+    fprintf (writefp, "### Customization Write by %s\n", DTVERSION);
+    fprintf (writefp, "### Created %s\n", date_string(0));
 
-    fprintf (writefp, "\n! ** Global FLAGS **\n");
-    /* Debug and Print skipped */
-    fprintf (writefp, "!debug\t\t%s\n", DTDEBUG?"ON":"OFF");
-    fprintf (writefp, "!print\t\t%x\n", DTPRINT);
-    fprintf (writefp, "!refreshing\t%s\n", global->redraw_manually?"MANUAL":"AUTO");
-    fprintf (writefp, "save_enables\t%s\n", global->save_enables?"ON":"OFF");
-    fprintf (writefp, "save_ordering\t%s\n", global->save_ordering?"ON":"OFF");
-    fprintf (writefp, "click_to_edge\t%s\n", global->click_to_edge?"ON":"OFF");
-    fprintf (writefp, "page_inc\t%d\n", 
+    fprintf (writefp, "\n#### Global FLAGS ##\n");
+    fprintf (writefp, "#debug\t\t%s\n", DTDEBUG?"ON":"OFF");
+    fprintf (writefp, "#print\t\t%x\n", DTPRINT);
+    fprintf (writefp, "#refreshing\t%s\n", global->redraw_manually?"MANUAL":"AUTO");
+    fprintf (writefp, "#save_enables\t%s\n", global->save_enables?"ON":"OFF");
+    fprintf (writefp, "#save_ordering\t%s\n", global->save_ordering?"ON":"OFF");
+    fprintf (writefp, "#click_to_edge\t%s\n", global->click_to_edge?"ON":"OFF");
+    fprintf (writefp, "#page_inc\t%d\n", 
 	     global->pageinc==PAGEINC_QUARTER ? 4 : (global->pageinc==PAGEINC_HALF?2:1) );
-    fprintf (writefp, "print_size\t");
+    fprintf (writefp, "#print_size\t");
     switch (global->print_size) {
       case PRINTSIZE_A:		fprintf (writefp, "A\n");	break;
       case PRINTSIZE_B:		fprintf (writefp, "B\n");	break;
       case PRINTSIZE_EPSLAND:	fprintf (writefp, "EPSLAND\n");	break;
       case PRINTSIZE_EPSPORT:	fprintf (writefp, "EPSPORT\n");	break;
     }
+
+    config_geometry_string (&global->start_geometry, strg);
+    fprintf (writefp, "#start_geometry\t%s\n", strg);
+    config_geometry_string (&global->open_geometry, strg);
+    fprintf (writefp, "#open_geometry\t%s\n", strg);
+    config_geometry_string (&global->shrink_geometry, strg);
+    fprintf (writefp, "#shrink_geometry\t%s\n", strg);
+
     if (global->time_format[0])
-	fprintf (writefp, "time_format\t%s\n", global->time_format);
-    fprintf (writefp, "time_multiplier\t%d\n", global->tempest_time_mult);
-    fprintf (writefp, "time_precision\t%s\n", time_units_to_string (global->time_precision, TRUE));
+	fprintf (writefp, "#time_format\t%s\n", global->time_format);
+    fprintf (writefp, "#time_multiplier\t%d\n", global->tempest_time_mult);
+    fprintf (writefp, "#time_precision\t%s\n", time_units_to_string (global->time_precision, TRUE));
 
-    /*start_geometry*/
-    /*open_geometry*/
-    /*shrink_geometry*/
-    /*signal_states*/
-    /*signal_highlight*/
-    /*value_highlight*/
-    /*cursor_add*/
-    /*time & position*/
-
-    fprintf (writefp, "\n! ** Trace FLAGS **\n");
+    fprintf (writefp, "\n#### Trace FLAGS ##\n");
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
-	    fprintf (writefp, "!set_trace\t%s\n", trace->filename);
-	    fprintf (writefp, "file_format\t%s\n", filetypes[trace->fileformat].name);
-	    fprintf (writefp, "cursor\t\t%s\n", trace->cursor_vis?"ON":"OFF");
-	    fprintf (writefp, "signal_height\t%d\n", trace->sighgt);
-	    fprintf (writefp, "vector_separator\t\"%c\"\n", trace->vector_separator);
-	    fprintf (writefp, "rise_fall_time\t%d\n", trace->sigrf);
-	    fprintf (writefp, "time_rep\t%s\n", time_units_to_string (trace->timerep, TRUE));
+	    fprintf (writefp, "####set_trace\t%s\n", trace->filename);
+	    fprintf (writefp, "#file_format\t%s\n", filetypes[trace->fileformat].name);
+	    fprintf (writefp, "#cursor\t\t%s\n", trace->cursor_vis?"ON":"OFF");
+	    fprintf (writefp, "#signal_height\t%d\n", trace->sighgt);
+	    fprintf (writefp, "#vector_separator\t\"%c\"\n", trace->vector_separator);
+	    fprintf (writefp, "#hierarchy_separator\t\"%c\"\n", trace->hierarchy_separator);
+	    fprintf (writefp, "#rise_fall_time\t%d\n", trace->sigrf);
+	    fprintf (writefp, "#time_rep\t%s\n", time_units_to_string (trace->timerep, TRUE));
 	    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 		grid_ptr = &(trace->grid[grid_num]);
 
-		fprintf (writefp, "grid\t\t%s\t%d\n", grid_ptr->visible?"ON":"OFF", grid_num);
-		fprintf (writefp, "grid_resolution\t");
+		fprintf (writefp, "#grid\t\t%d\t%s\n", grid_num, grid_ptr->visible?"ON":"OFF");
+		fprintf (writefp, "#grid_type\t%d\t%s\n", grid_num, grid_ptr->wide_line?"WIDE":"NORMAL");
+		fprintf (writefp, "#grid_signal\t%d\t\"%s\"\n", grid_num, grid_ptr->signal);
+		fprintf (writefp, "#grid_color\t%d\t%d\n", grid_num, grid_ptr->color);
+		fprintf (writefp, "#grid_resolution\t%d\n", grid_num);
 		switch (grid_ptr->period_auto) {
-		  case PA_AUTO:		fprintf (writefp, "ASSERTION\t%d\n", grid_num);	break;
-		  default:		fprintf (writefp, "%d\t%d\n", grid_ptr->period, grid_num);	break;
+		  case PA_AUTO:		fprintf (writefp, "ASSERTION\n");	break;
+		  default:		fprintf (writefp, "%d\n", grid_ptr->period);	break;
 		}
-		fprintf (writefp, "grid_align\t");
+		fprintf (writefp, "#grid_align\t%d\t", grid_num);
 		switch (grid_ptr->align_auto) {
-		  case AA_ASS:		fprintf (writefp, "ASSERTION\t%d\n", grid_num);	break;
-		  case AA_DEASS:	fprintf (writefp, "DEASSERTION\t%d\n", grid_num);	break;
-		  default:		fprintf (writefp, "%d\t%d\n", grid_ptr->alignment, grid_num);	break;
+		  case AA_ASS:		fprintf (writefp, "ASSERTION\n");	break;
+		  case AA_DEASS:	fprintf (writefp, "DEASSERTION\n");	break;
+		  default:		fprintf (writefp, "%d\n", grid_ptr->alignment);	break;
 		}
 	    }
 	}
     }
 
-    fprintf (writefp, "\n! ** Global INFORMATION **\n");
-    cur_print (writefp);
+    fprintf (writefp, "\n#### Global INFORMATION ##\n");
+    fprintf (writefp, "\n## Value searches ##\n");
+    for (i=1; i<=MAX_SRCH; i++) {
+	ValSearch_t *vs_ptr = &global->val_srch[i-1];
+	char strg[MAXSIGLEN];
+	if (vs_ptr->color || vs_ptr->cursor) {
+	    val_to_string (vs_ptr->radix, strg, &vs_ptr->value, FALSE);
+	    fprintf (writefp, "#value_highlight %s %d \"%s\" %s %s\n",
+		     strg, i, vs_ptr->signal, 
+		     vs_ptr->color ? "-VALUE":"",
+		     vs_ptr->cursor ? "-CURSOR":"");
+	}
+    }
+
+    fprintf (writefp, "\n## Cursors ##\n");
+    cur_write (writefp);
     
-    fprintf (writefp, "\n! ** Trace INFORMATION **\n");
-    fprintf (writefp, "\n!  * Signal Highlighting *\n");
+    signalstate_write (writefp);
+    
+    fprintf (writefp, "\n#### Trace INFORMATION ##\n");
+    fprintf (writefp, "\n## Signal Highlighting, Commenting, etc #\n");
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
-	fprintf (writefp, "!set_trace %s\n", trace->filename);
+	fprintf (writefp, "###set_trace %s\n", trace->filename);
 	/* Save signal colors */
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	    if (sig_ptr->color && !sig_ptr->search) {
-		fprintf (writefp, "signal_highlight %d %s\n", sig_ptr->color, sig_ptr->signame);
+		fprintf (writefp, "#signal_highlight %s %d\n", sig_ptr->signame, sig_ptr->color);
+	    }
+	    if (sig_ptr->note) fprintf (writefp, "signal_note %s \"%s\"\n", sig_ptr->signame, sig_ptr->note);
+	    if (sig_ptr->radix != global->radixs[0]) {
+	        fprintf (writefp, "#signal_radix %s %s\n", sig_ptr->signame, sig_ptr->radix->name);
 	    }
 	}
     }
 
-    fprintf (writefp, "\n!  * Signal Ordering *\n");
+    fprintf (writefp, "\n#### Signal Ordering #\n");
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	fprintf (writefp, "!set_trace %s\n", trace->filename);
-	fprintf (writefp, "!signal_delete *\n");
+	fprintf (writefp, "###set_trace %s\n", trace->filename);
+	fprintf (writefp, "#signal_delete *\n");
 	/* Save signal colors */
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    fprintf (writefp, "!signal_add %s\n", sig_ptr->signame);
+	    fprintf (writefp, "#signal_add %s\n", sig_ptr->signame);
 	}
     }
 
@@ -1435,6 +1503,7 @@ void config_trace_defaults (
     trace->cursor_vis = TRUE;
     trace->sigrf = SIG_RF;
     trace->timerep = global->time_precision;
+    trace->hierarchy_separator = '.';
     trace->vector_separator = '[';
     trace->vector_endseparator = ']';
 
@@ -1444,7 +1513,7 @@ void config_trace_defaults (
 
 void config_global_defaults(void)
 {
-    free_signal_states ();
+    signalstate_free ();
     draw_needupd_val_states ();
     draw_needupd_sig_start ();
     

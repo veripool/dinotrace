@@ -320,7 +320,7 @@ void    remove_all_events (
     remove_event (ButtonPressMask, sig_copy_ev);
     remove_event (ButtonPressMask, sig_delete_ev);
     remove_event (ButtonPressMask, sig_highlight_ev);
-    remove_event (ButtonPressMask, sig_base_ev);
+    remove_event (ButtonPressMask, sig_radix_ev);
     
     /* remove all possible events due to nvalue options */ 
     remove_event (ButtonPressMask, val_examine_ev);
@@ -655,7 +655,7 @@ void    print_cptr (
     Value_t	*value_ptr)
 {
     char strg[1000];
-    val_to_string (global->bases[0], strg, value_ptr, FALSE);
+    val_to_string (global->radixs[0], strg, value_ptr, FALSE);
     if (CPTR_TIME(value_ptr)==EOT) {
 	printf ("%s at EOT\n", strg);
     }

@@ -358,8 +358,10 @@ void draw_trace (
     Trace	*trace)
 {         
     int cnt=0, cntd=0;
-    int ymdpt, yvalfntloc, ysigfntloc, yspace;
-    int xend, xsigrf;
+    int ymdpt;		/* Y Midpoint of signal, where Z line is */
+    int yvalfntloc, ysigfntloc, yspace;
+    int xend;
+    int xsigrf,xsigrfleft, xsigrfright;		/* X rise-fall time, left edge and right edge */
     int xleft, xright;
     uint_t numprt;			/* Number of signals printed out on screen */
     XSegment segs[MAXCNT+100];		/* Array of line segments to plot */
@@ -521,31 +523,36 @@ void draw_trace (
 	    else {SET_FOREGROUND (trace->xcolornums[color_value]);}
 
 	    /* Draw the transition lines */
+	    xsigrfleft = (xleft==global->xstart)?0:xsigrf;
+	    xsigrfright = (xright==xend)?0:xsigrf;
 	    if (dr_mask & DR_U) {
 		XPoint pts[10];
 		pts[0].x = xleft;		pts[0].y = ymdpt;
-		pts[1].x = xleft+xsigrf;	pts[1].y = ylow;
-		pts[2].x = xright-xsigrf;	pts[2].y = ylow;
+		pts[1].x = xleft+xsigrfleft;	pts[1].y = ylow;
+		pts[2].x = xright-xsigrfright;	pts[2].y = ylow;
 		pts[3].x = xright;		pts[3].y = ymdpt;
-		pts[4].x = xright-xsigrf;	pts[4].y = yhigh;
-		pts[5].x = xleft+xsigrf;	pts[5].y = yhigh;
+		pts[4].x = xright-xsigrfright;	pts[4].y = yhigh;
+		pts[5].x = xleft+xsigrfleft;	pts[5].y = yhigh;
 		pts[6].x = xleft;		pts[6].y = ymdpt;
 		XFillPolygon (global->display, trace->pixmap, trace->gc,
 			      pts, 7, Convex, CoordModeOrigin);
 		/* Don't need to draw lines, since we illed region */
 	    } else {
 		if (dr_mask & DR_LOW) {
-		    ADD_SEG (xleft, ymdpt, xleft+xsigrf, ylow);
-		    ADD_SEG (xleft+xsigrf, ylow,  xright-xsigrf, ylow);
-		    ADD_SEG (xright-xsigrf, ylow,  xright, ymdpt);
+		    if (xsigrfleft)
+			ADD_SEG (xleft, ymdpt, xleft+xsigrfleft, ylow);
+		    ADD_SEG (xleft+xsigrfleft, ylow,  xright-xsigrfright, ylow);
+		    if (xsigrfright)
+			ADD_SEG (xright-xsigrfright, ylow,  xright, ymdpt);
 		}
 		if (dr_mask & (DR_HIGH | DR_HIGHHIGH)) {
-		    ADD_SEG (xleft, ymdpt, xleft+xsigrf, yhigh);
-		    ADD_SEG (xleft+xsigrf, yhigh, xright-xsigrf, yhigh);
-		    ADD_SEG (xright-xsigrf, yhigh, xright, ymdpt);
-		    if (dr_mask & DR_HIGHHIGH) {
-			ADD_SEG (xleft+xsigrf, yhigh+1, xright-xsigrf, yhigh+1);
-		    }
+		    if (xsigrfleft)
+			ADD_SEG (xleft, ymdpt, xleft+xsigrfleft, yhigh);
+		    ADD_SEG (xleft+xsigrfleft, yhigh, xright-xsigrfright, yhigh);
+		    if (xsigrfright)
+			ADD_SEG (xright-xsigrfright, yhigh, xright, ymdpt);
+		    if (dr_mask & DR_HIGHHIGH)
+			ADD_SEG (xleft+xsigrfleft, yhigh+1, xright-xsigrfright, yhigh+1);
 		}
 		if (dr_mask & DR_Z) {
 		    ADD_SEG_DASH (xleft, ymdpt, xright, ymdpt);
@@ -553,17 +560,20 @@ void draw_trace (
 	    }
 
 	    /* Plot value */
-	    if (sig_ptr->bits
+	    if (sig_ptr->bits>1
 		&& cptr->siglw.stbits.state != STATE_U
 		&& cptr->siglw.stbits.state != STATE_Z
 		) {
-		uint_t value = cptr->number[0];
+		uint_t num0 = 0;
+		if (cptr->siglw.stbits.state != STATE_0) num0 = cptr->number[0];
 		/* Below evaluation left to right important to prevent error */
-		if ( (sig_ptr->decode != NULL) &&
-		    (value < sig_ptr->decode->numstates) &&
-		    (sig_ptr->decode->statename[value][0] != '\0')) {
-		    strcpy (strg, sig_ptr->decode->statename[value]);
-		    len = XTextWidth (global->value_font,strg,strlen (strg));
+		if ((cptr->siglw.stbits.state == STATE_B32
+		     || cptr->siglw.stbits.state == STATE_0) &&
+		    (sig_ptr->decode != NULL) &&
+		    (num0 < sig_ptr->decode->numstates) &&
+		    (sig_ptr->decode->statename[num0][0] != '\0')) {
+		    strcpy (strg, sig_ptr->decode->statename[num0]);
+		    len = XTextWidth (global->value_font,strg,strlen(strg));
 		    if ( len < xright-xleft-2 ) {
 			/* fits, don't try number */
 			goto state_plot;
@@ -571,7 +581,7 @@ void draw_trace (
 		}
 		if (cptr->siglw.stbits.state != STATE_0) {
 
-		    val_to_string (sig_ptr->base, strg, cptr, TRUE);
+		    val_to_string (sig_ptr->radix, strg, cptr, TRUE);
 
 		  state_plot:
 		    /* calculate positional parameters */
@@ -630,7 +640,10 @@ void draw_trace_signame (
     Dimension m_sig_width = XTextWidth (global->signal_font,"m",1);
     int truncchars;
 
-    if (NULL==(basename = strrchr (sig_ptr->signame, '.'))) {
+    basename = strrchr ((sig_ptr->signame_buspos ?
+			 sig_ptr->signame_buspos : sig_ptr->signame),
+			trace->hierarchy_separator);
+    if (NULL==basename) {
 	basename = sig_ptr->signame;
     }
 

@@ -561,7 +561,7 @@ void	fil_string_add_cptr (
     /* I set it anyways to get it into the cache */
     val_zero (&value);
 
-    if (sig_ptr->bits == 0) {
+    if (sig_ptr->bits<2) {
 	/* This branch not used for verilog, only Decsim */
 	/* scalar signal */  
 	switch ( *value_strg ) {
@@ -597,7 +597,7 @@ void	fil_string_add_cptr (
 	 *	    else	it's a U
 	 */
 	chr_or = chr_and = *value_strg;
-	len = sig_ptr->bits;
+	len = sig_ptr->bits-1;
 	for (cp = value_strg; cp <= (value_strg + len); cp++) {
 	    chr_or |= *cp; chr_and &= *cp;
 	}
@@ -637,7 +637,7 @@ void	fil_string_add_cptr (
 
 	default: /* 4-state mix */
 	    cp = value_strg;
-	    if (sig_ptr->bits <= 31 ) {
+	    if (sig_ptr->bits < 33 ) {
 		state = STATE_F32;
 		for (bitcnt=0; bitcnt <= (MIN (31,len)); bitcnt++, cp++) {
 		    value.number[0] = (value.number[0]<<1) | (*cp=='1') | (*cp=='z') | (*cp=='Z');
@@ -791,12 +791,12 @@ void fil_make_busses (
 	    /* Is a named bus, with <subscript> */
 	    if (not_tempest) {
 		sig_ptr->msb_index = atoi (bbeg);
-		sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits;
+		sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits + 1;
 	    }
 	    else {
-		sig_ptr->msb_index = atoi (bbeg) + sig_ptr->bit_index - sig_ptr->bits + 1;
+		sig_ptr->msb_index = atoi (bbeg) + sig_ptr->bit_index - sig_ptr->bits + 2;
 		sig_ptr->lsb_index = sig_ptr->msb_index;
-		sig_ptr->bits = 0;
+		sig_ptr->bits = 1;
 	    }
 	    /* Don't need to search for :'s, as the bits should already be computed */
 	    /* Mark this first digit, _, whatever as null (truncate the name) */
@@ -807,16 +807,16 @@ void fil_make_busses (
 	    if (*sep && *(sep+1)) sig_ptr->signame_buspos = sep+1;
 	}
 	else {
-	    if (sig_ptr->bits) {
+	    if (sig_ptr->bits>1) {
 		/* Is a unnamed bus */
 		if (not_tempest) {
-		    sig_ptr->msb_index = sig_ptr->bits;
+		    sig_ptr->msb_index = sig_ptr->bits - 1;
 		    sig_ptr->lsb_index = 0;
 		}
 		else {
 		    sig_ptr->msb_index = sig_ptr->bit_index;
 		    sig_ptr->lsb_index = sig_ptr->bit_index;
-		    sig_ptr->bits = 0;
+		    sig_ptr->bits = 1;
 		}
 	    }
 	    else {
@@ -876,16 +876,16 @@ void fil_make_busses (
 		/*	& are placed next to each other in the source */
 		/*	& not a tempest trace (because the bit ordering is backwards, <31:0> would look line 0:31 */
 		&& ((trace->fileformat != FF_TEMPEST)
-		    || (((bus_sig_ptr->file_pos) == (sig_ptr->file_pos + sig_ptr->bits + 1))
+		    || (((bus_sig_ptr->file_pos) == (sig_ptr->file_pos + sig_ptr->bits))
 			&& trace->vector_separator=='<'))
 		&& (trace->fileformat != FF_VERILOG
-		    || ((bus_sig_ptr->file_pos + bus_sig_ptr->bits + 1) == sig_ptr->file_pos))
+		    || ((bus_sig_ptr->file_pos + bus_sig_ptr->bits) == sig_ptr->file_pos))
 		&& ! (sig_ptr->file_type.flag.vector_msb)
 		/*	& not (verilog trace which had a signal already as a vector) */
 		&& ! (sig_ptr->file_type.flag.perm_vector || bus_sig_ptr->file_type.flag.perm_vector)) {
 
 		/* Can be bussed with previous signal */
-		bus_sig_ptr->bits += sig_ptr->bits + 1;
+		bus_sig_ptr->bits += sig_ptr->bits;
 		bus_sig_ptr->lsb_index = sig_ptr->lsb_index;
 		if (trace->fileformat == FF_TEMPEST) bus_sig_ptr->file_pos = sig_ptr->file_pos;
 
@@ -907,7 +907,7 @@ void fil_make_busses (
 	/* Change the name to include the vector subscripts */
 	if (sig_ptr->msb_index >= 0) {
 	    /* Add new vector info */
-	    if (sig_ptr->bits >= 1) {
+	    if (sig_ptr->bits >= 2) {
 		sprintf (sig_ptr->signame + strlen (sig_ptr->signame), "[%d:%d]",
 			 sig_ptr->msb_index, sig_ptr->lsb_index);
 	    }
@@ -924,13 +924,13 @@ void fil_make_busses (
 	(trace->numsig) ++;
 
 	/* Create the bussed name & type */
-	if (sig_ptr->bits < 1) {
+	if (sig_ptr->bits < 2) {
 	    sig_ptr->type = 0;
 	}
-	else if (sig_ptr->bits < 32) {
+	else if (sig_ptr->bits < 33) {
 	    sig_ptr->type = STATE_B32;
 	}
-	else if (sig_ptr->bits < 128) {
+	else if (sig_ptr->bits < 129) {
 	    sig_ptr->type = STATE_B128;
 	}
 
@@ -940,14 +940,14 @@ void fil_make_busses (
 
 	sig_ptr->value_mask[3] = sig_ptr->value_mask[2] = sig_ptr->value_mask[1] = sig_ptr->value_mask[0] = 0;
 
-	if (sig_ptr->bits >= 127) sig_ptr->value_mask[3] = 0xFFFFFFFF;
-	else if (sig_ptr->bits >= 96 ) sig_ptr->value_mask[3] = (0x7FFFFFFF >> (126-sig_ptr->bits));
-	else if (sig_ptr->bits >= 95 ) sig_ptr->value_mask[2] = 0xFFFFFFFF;
-	else if (sig_ptr->bits >= 64 ) sig_ptr->value_mask[2] = (0x7FFFFFFF >> (94-sig_ptr->bits));
-	else if (sig_ptr->bits >= 63 ) sig_ptr->value_mask[1] = 0xFFFFFFFF;
-	else if (sig_ptr->bits >= 32 ) sig_ptr->value_mask[1] = (0x7FFFFFFF >> (62-sig_ptr->bits));
-	else if (sig_ptr->bits >= 31 ) sig_ptr->value_mask[0] = 0xFFFFFFFF;
-	else sig_ptr->value_mask[0] = (0x7FFFFFFF >> (30-sig_ptr->bits));
+	if (sig_ptr->bits > 127) sig_ptr->value_mask[3] = 0xFFFFFFFF;
+	else if (sig_ptr->bits > 96 ) sig_ptr->value_mask[3] = (0x7FFFFFFF >> (127-sig_ptr->bits));
+	else if (sig_ptr->bits > 95 ) sig_ptr->value_mask[2] = 0xFFFFFFFF;
+	else if (sig_ptr->bits > 64 ) sig_ptr->value_mask[2] = (0x7FFFFFFF >> (95-sig_ptr->bits));
+	else if (sig_ptr->bits > 63 ) sig_ptr->value_mask[1] = 0xFFFFFFFF;
+	else if (sig_ptr->bits > 32 ) sig_ptr->value_mask[1] = (0x7FFFFFFF >> (63-sig_ptr->bits));
+	else if (sig_ptr->bits > 31 ) sig_ptr->value_mask[0] = 0xFFFFFFFF;
+	else sig_ptr->value_mask[0] = (0x7FFFFFFF >> (31-sig_ptr->bits));
 
 	if (sig_ptr->value_mask[3]) sig_ptr->value_mask[2] = 0xFFFFFFFF;
 	if (sig_ptr->value_mask[2]) sig_ptr->value_mask[1] = 0xFFFFFFFF;
@@ -961,7 +961,7 @@ void fil_make_busses (
 
 	/* Compute the ending position of this data (DECSIM_Binary) */
 	sig_ptr->file_end_pos = sig_ptr->file_pos
-	    + ((sig_ptr->file_type.flag.four_state) ? 2:1) * sig_ptr->bits;
+	    + ((sig_ptr->file_type.flag.four_state) ? 2:1) * (sig_ptr->bits-1);
 	
 	/* allocate the data storage memory */
 	sig_ptr->blocks = BLK_SIZE;
@@ -1054,7 +1054,7 @@ void fil_trace_end (
     /* Preserve file information */
     sig_cross_restore (trace);
 
-    /* Read .dino file stuff yet again to get signal_heighlights */
+    /* Read .dino file stuff yet again to get signal_highlights */
     /* Don't report errors, as they would pop up for a second time. */
     config_read_defaults (trace, FALSE);
 
@@ -1107,10 +1107,10 @@ void decsim_read_ascii_header (
 	/* allow extra space in case becomes vector - don't know size yet */
 	sig_ptr->signame = (char *)XtMalloc (20+header_lines);
 	sig_ptr->trace = trace;
-	sig_ptr->base = global->bases[0];
+	sig_ptr->radix = global->radixs[0];
 	sig_ptr->file_type.flags = 0;
 	sig_ptr->file_pos = col;
-	sig_ptr->bits = 0;	/* = buf->TRA$W_BITLEN; */
+	sig_ptr->bits = 1;	/* = buf->TRA$W_BITLEN; */
 
 	last_sig_ptr = sig_ptr;
     }
@@ -1184,7 +1184,7 @@ void decsim_read_ascii_header (
 	}
     }
 
-    XtFree (signame_array);
+    DFree (signame_array);
 }
 
 void decsim_read_ascii (
@@ -1319,7 +1319,7 @@ void decsim_read_ascii (
 
     if (sig_start_pos == sig_end_pos) {
 	dino_error_ack (trace,"No data in trace file");
-	XtFree (header_start);
+	DFree (header_start);
 	return;
     }
 
@@ -1383,7 +1383,12 @@ void decsim_read_ascii (
 	}
     }
 
-    XtFree (header_start);
+    if (chango_format) {
+	/* No timestamps, so include last line as valid data */
+	trace->end_time += 100;
+    }
+
+    DFree (header_start);
 
     /* Mark format as may have presumed binary */
     trace->fileformat = FF_DECSIM_ASCII;

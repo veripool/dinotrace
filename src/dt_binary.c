@@ -132,7 +132,7 @@ void	read_4state_to_value (
 
     /* Extract the values, HIGH 32 BITS */
     bit_pos = sig_ptr->file_pos;
-    for (bitcnt=96; bitcnt <= (MIN (127, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
+    for (bitcnt=96; bitcnt < (MIN (128, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
 	bitval = EXTRACT_4STATE (buf, bit_pos); 
 	if (bitval & 2) bitval ^= 1;	/* decsim 2=Z which is STATE_Z=3 */
 	bitval_and &= bitval; bitval_or |= bitval;
@@ -142,7 +142,7 @@ void	read_4state_to_value (
 
     /* Extract the values, UPPER MID 32 BITS */
     bit_pos = sig_ptr->file_pos;
-    for (bitcnt=64; bitcnt <= (MIN (95, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
+    for (bitcnt=64; bitcnt < (MIN (96, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
 	bitval = EXTRACT_4STATE (buf, bit_pos); 
 	if (bitval & 2) bitval ^= 1;	/* decsim 2=Z which is STATE_Z=3 */
 	bitval_and &= bitval; bitval_or |= bitval;
@@ -151,7 +151,7 @@ void	read_4state_to_value (
     }
 
     /* Extract the values LOWER MID 32 BITS */
-    for (bitcnt=32; bitcnt <= (MIN (63, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
+    for (bitcnt=32; bitcnt < (MIN (64, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
 	bitval = EXTRACT_4STATE (buf, bit_pos); 
 	if (bitval & 2) bitval ^= 1;	/* decsim 2=Z which is STATE_Z=3 */
 	bitval_and &= bitval; bitval_or |= bitval;
@@ -160,7 +160,7 @@ void	read_4state_to_value (
     }
 
     /* Extract the values LOW 32 BITS */
-    for (bitcnt=0; bitcnt <= (MIN (31, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
+    for (bitcnt=0; bitcnt < (MIN (32, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
 	bitval = EXTRACT_4STATE (buf, bit_pos); 
 	if (bitval & 2) bitval ^= 1;	/* decsim 2=Z which is STATE_Z=3 */
 	bitval_and &= bitval; bitval_or |= bitval;
@@ -198,25 +198,25 @@ void	read_2state_to_value (
 
     /* Extract the values, HIGH 32 BITS */
     bit_pos = sig_ptr->file_pos;
-    for (bitcnt=96; bitcnt <= (MIN (127, sig_ptr->bits)); bitcnt++, bit_pos++) {
+    for (bitcnt=96; bitcnt < (MIN (128, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	bitval = EXTRACT_2STATE (buf, bit_pos);
 	value_ptr->number[3] = (value_ptr->number[3]<<1) | bitval;
     }
 
     /* Extract the values, UPPER MID 32 BITS */
-    for (bitcnt=64; bitcnt <= (MIN (95, sig_ptr->bits)); bitcnt++, bit_pos++) {
+    for (bitcnt=64; bitcnt < (MIN (96, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	bitval = EXTRACT_2STATE (buf, bit_pos);
 	value_ptr->number[2] = (value_ptr->number[2]<<1) | bitval;
     }
 
     /* Extract the values LOWER MID 32 BITS */
-    for (bitcnt=32; bitcnt <= (MIN (63, sig_ptr->bits)); bitcnt++, bit_pos++) {
+    for (bitcnt=32; bitcnt < (MIN (64, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	bitval = EXTRACT_2STATE (buf, bit_pos);
 	value_ptr->number[1] = (value_ptr->number[1]<<1) | bitval;
     }
 
     /* Extract the values LOW 32 BITS */
-    for (bitcnt=0; bitcnt <= (MIN (31, sig_ptr->bits)); bitcnt++, bit_pos++) {
+    for (bitcnt=0; bitcnt < (MIN (32, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	bitval = EXTRACT_2STATE (buf, bit_pos);
 	value_ptr->number[0] = (value_ptr->number[0]<<1) | bitval;
     }
@@ -243,7 +243,7 @@ void	fil_decsim_binary_add_cptr (
     /* zero the value */
     val_zero (&value);
 
-    if (sig_ptr->bits == 0) {
+    if (sig_ptr->bits < 2) {
 	/* Single bit signal */
 	if (sig_ptr->file_type.flag.four_state == 0)
 	    state = EXTRACT_2STATE (buf, sig_ptr->file_pos)?STATE_1:STATE_0;
@@ -356,7 +356,7 @@ void decsim_read_binary (
 	      case tra$k_nfd:
 		sig_ptr = DNewCalloc (Signal);
 		sig_ptr->trace = trace;
-		sig_ptr->base = global->bases[0];
+		sig_ptr->radix = global->radixs[0];
 		sig_ptr->file_pos = buf->TRA$L_BITPOS;
 		/* if (DTPRINT_FILE) printf ("Reading signal format data, ptr=%d\n", sig_ptr); */
 
@@ -498,7 +498,7 @@ void	fil_tempest_binary_add_cptr (
     val_zero (&value);
 
     /* determine starting index and bit mask */
-    if (sig_ptr->bits == 0) {
+    if (sig_ptr->bits < 2) {
 	/* Single bit signal */
 	if (sig_ptr->file_type.flag.four_state == 0) {
 	    data_index = (sig_ptr->file_pos >> 5);
@@ -651,7 +651,7 @@ void tempest_read (
 	     */
 	    sig_ptr = DNewCalloc (Signal);
 	    sig_ptr->trace = trace;
-	    sig_ptr->base = global->bases[0];
+	    sig_ptr->radix = global->radixs[0];
 	    sig_ptr->forward = NULL;
 	    if (trace->firstsig==NULL) {
 		trace->firstsig = sig_ptr;
@@ -663,11 +663,11 @@ void tempest_read (
 	    }
 	    if (sigWidth>1) {
 		sig_ptr->bit_index = index;
-		sig_ptr->bits = sigWidth;	/* Special, will be decomposed */
+		sig_ptr->bits = sigWidth+1;	/* Special, will be decomposed */
 	    }
 	    else {
 		sig_ptr->bit_index = -1;
-		sig_ptr->bits = 0;
+		sig_ptr->bits = 1;
 	    }
 	    if ((unsigned)index == sigWidth-1) sig_ptr->file_type.flag.vector_msb = TRUE;
 	    sig_ptr->file_pos = sigOffset + index;

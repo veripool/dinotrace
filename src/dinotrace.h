@@ -108,10 +108,10 @@
 #define MAXSTATENAMES	512	/* Maximum number of state name translations */
 #define MAXVALUELEN	40	/* Maximum length of values or state names, 32hex digits + 4 sep + NULL */
 #define MAXGRIDS	4	/* Maximum number of grids */
-#define MAXBASES	10	/* Maximum number of number bases on menus */
+#define MAXRADIXS	10	/* Maximum number of number bases on menus */
 #define MAXSCREENWIDTH	5000	/* Maximum width of screen */
 #define MAXCFGFILES	5	/* Maximum number of config files */
-#define BASE_MAX_MENU	20	/* Maximum number of base menu entries */
+#define RADIX_MAX_MENU	20	/* Maximum number of radix menu entries */
 #define	MIN_GRID_RES	5	/* Minimum grid resolution, in pixels between grid lines */
 #define BLK_SIZE	512	/* Trace data block size (512 transitions/signal == 2K min/sig) */
 #define	CLICKCLOSE	20	/* Number of pixels that are "close" for click-to-edges */
@@ -140,7 +140,7 @@
 #define DC_SIG_COPY_1	3	/* XC_sb_right_arrow	Signal Copy (pick) */
 #define DC_SIG_DELETE	4	/* XC_hand1		Signal Delete */
 #define DC_SIG_HIGHLIGHT 10	/* XC_spraycan		Signal Highlight */
-#define DC_SIG_BASE	13	/* XC_dotbox		Signal Base */
+#define DC_SIG_RADIX	13	/* XC_dotbox		Signal Radix */
 #define DC_CUR_ADD	5	/* XC_center_ptr	Cursor Add */
 #define DC_CUR_MOVE	6	/* XC_sb_h_double_arrow	Cursor Move (drag) */
 #define DC_CUR_DELETE	7	/* XC_X_cursor		Cursor Delete */
@@ -165,7 +165,7 @@
 
 #define PDASH_HEIGHT	2	/* Heigth of primary dash, <= SIG_SPACE, in pixels */
 #define SDASH_HEIGHT	2	/* Heigth of primary dash, <= SIG_SPACE, in pixels */
-#define SIG_RF		1	/* Rise fall number of pixels */
+#define SIG_RF		2	/* Rise fall number of pixels */
 #define DELU	 	5	/* Delta distance for drawing U's */
 #define DELU2		10	/* 2x DELU */
 
@@ -278,9 +278,9 @@ typedef struct {
     Widget	pdsep[10];
     Widget	pdentry[22];
     Widget	pdentrybutton[72];
-    Widget	pdsubbutton[4+(MAX_SRCH+2)*5+BASE_MAX_MENU];
+    Widget	pdsubbutton[4+(MAX_SRCH+2)*5+RADIX_MAX_MENU];
     uint_t	sig_highlight_pds;
-    uint_t	sig_base_pds;
+    uint_t	sig_radix_pds;
     uint_t	cur_highlight_pds;
     uint_t	cur_add_pds;
     uint_t	val_highlight_pds;
@@ -430,6 +430,8 @@ typedef struct {
     Widget pulldown;
     Widget pulldownbutton[MAX_SRCH+1];
     Widget options;
+    Widget notetext;
+    Widget notelabel;
     Widget sep;
     Widget ok;
     Widget cancel;
@@ -503,27 +505,28 @@ typedef struct st_signalstate {
     char statename[MAXSTATENAMES][MAXVALUELEN];	/* Name for each state, nil=keep */
 } SignalState;
 
-/* These serve as both a index into the Base_t structure (if type < MAXBASE) */
-/* and also as a type within Base_t */
-/* This order MUST match the adding order in val_bases_init */
+/* These serve as both a index into the Radix_t structure (if type < MAXRADIX) */
+/* and also as a type within Radix_t */
+/* This order MUST match the adding order in val_radixs_init */
 typedef enum {
-    BASE_HEX_UN=0,
-    BASE_OCT_UN,
-    BASE_BIN_UN,
-    BASE_DEC_UN,
-    BASE_ASCII,
-    BASE_MAX		/* Number of bases, exclusive maximum */
-} BaseType_t;
+    RADIX_HEX_UN=0,
+    RADIX_OCT_UN,
+    RADIX_BIN_UN,
+    RADIX_DEC_UN,
+    RADIX_ASCII,
+    RADIX_REAL,
+    RADIX_MAX		/* Number of radixs, exclusive maximum */
+} RadixType_t;
 
-/* Base information structure (one per numeric base) */
+/* Radix information structure (one per numeric radix) */
 /* Signal states may be folded in here at some point */
-typedef struct st_base {
-    struct st_base	*next;		/* Forward link to next base */
+typedef struct st_radix {
+    struct st_radix	*next;		/* Forward link to next radix */
     char		*name;		/* Name for putting into menus */
     char		*prefix;	/* Prefix in front of values */
-    /*struct st_base	*fallback;	/ * Alternative base if can't fit width */
-    BaseType_t		type;		/* Type for printing */
-} Base_t;
+    /*struct st_radix	*fallback;	/ * Alternative radix if can't fit width */
+    RadixType_t		type;		/* Type for printing */
+} Radix_t;
 
 /* Signal LW: A integer broken down into control fields */
 /* 32/64/96/256 state signals have an additional 1, 2, or 3 LWs after this */
@@ -556,7 +559,7 @@ typedef struct {
     ColorNum	color;		/* Color number (index into trace->xcolornum) 0=OFF*/
     ColorNum	cursor;		/* Enable cursors, color or 0=OFF */
     Value_t	value;		/* Value to search for, (128 bit LW format) */
-    Base_t	*base;		/* Base user entered */
+    Radix_t	*radix;		/* Radix user entered */
     char	signal[MAXSIGLEN];	/* Signal to search for */
 } ValSearch_t;
 
@@ -581,6 +584,7 @@ typedef struct st_cursor {
     DTime		time;		/* Time cursor is placed at */
     ColorNum		color;		/* Color number (index into trace->xcolornum) */
     CursorType_t	type;		/* Type of cursor */
+    char		*note;		/* Information for user, or NULL */
 } DCursor; /* Not 'Cursor', as that's defined in X11.h */
 
 typedef struct {
@@ -612,6 +616,10 @@ struct st_signal {
     char		*signame;	/* Signal name */
     XmString		xsigname;	/* Signal name as XmString */
     char		*signame_buspos;/* Signal name portion where bus bits begin (INSIDE signame) */
+    char		*note;		/* Information for user, or NULL */
+
+    Radix_t		*radix;		/* Number radix represtation */
+    SignalState		*decode;	/* Pointer to decode information, NULL if none */
 
     ColorNum		color;		/* Signal line's Color number (index into trace->xcolornum) */
     ColorNum		search;		/* Number of search color is for, 0 = manual */
@@ -620,15 +628,12 @@ struct st_signal {
     Boolean_t		deleted_preserve; /* Preserve the deletion of this signal (not deleted because constant) */
     Boolean_t		preserve_done;	/* Preservation process has moved this signal to new link structure */
 
-    Base_t		*base;		/* Number base represtation */
-    SignalState		*decode;	/* Pointer to decode information, NULL if none */
-
     uint_t		type;		/* Type of signal, STATE_B32, _B64, etc */
     ulong_t		blocks;		/* Number of time data blocks allocated, in # of ints */
     int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20), -1=none */
     int			lsb_index;	/* Bit subscript of last index in a signal (<20:10> == 10), -1=none */
     int			bit_index;	/* Bit subscript of this bit, ignoring <>'s, tempest only */
-    int			bits;		/* Number of bits in a bus, 0=single */
+    int			bits;		/* Number of bits in a bus, 1=single */
     uint_t		file_pos;	/* Position of the bits in the file line */
     uint_t		file_end_pos;	/* Ending position of the bits in the file line */
 
@@ -706,8 +711,9 @@ struct st_trace {
     struct stat		filestat;	/* Information on the current file */
     uint_t		fileformat;	/* Type of trace file (see FF_*) */
     Boolean_t		loaded;		/* True if the filename is loaded in */
-    char		vector_separator;	/* Bus separator character, usually "<" */
-    char		vector_endseparator;	/* Bus ending separator character, usually ">" */
+    char		hierarchy_separator;	/* Hiearchy separator character, usually "." */
+    char		vector_separator;	/* Bus separator character, usually "[" */
+    char		vector_endseparator;	/* Bus ending separator character, usually "]" */
 
     uint_t		redraw_needed;	/* Need to refresh the screen when get a chance, TRD_* bit fielded */
 #define				TRD_REDRAW	0x1
@@ -743,7 +749,7 @@ typedef struct {
 
     Signal		*selected_sig;	/* Selected signal to move or add */
     Trace		*selected_trace; /* Selected signal's trace */
-    Base_t		*selected_base;	/* Selected base to change to */
+    Radix_t		*selected_radix;	/* Selected radix to change to */
     SignalList		*select_head;	/* Pointer to selected signal list head */
 
     DCursor		*cursor_head;	/* Pointer to first cursor */
@@ -823,7 +829,7 @@ typedef struct {
     DTime		click_time;	/* time clicked on for res_zoom_click */
     Grid		*click_grid;	/* grid being set by grid_align */
 
-    Base_t		*bases[BASE_MAX];	/* Base storage (standard types only) */
+    Radix_t		*radixs[RADIX_MAX];	/* Radix storage (standard types only) */
 
     Boolean_t		config_enable[MAXCFGFILES];/* Read in this config file */
     char		config_filename[MAXCFGFILES][MAXFNAMELEN];	/* Config files */

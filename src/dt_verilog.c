@@ -208,17 +208,16 @@ void	verilog_process_var (
     verilog_read_parameter (line, cmd);
     if (*cmd != '$' && strcmp(cmd, "[-1]")) strcat (signame, cmd);
     
-    if (!strncmp (type, "real", 4)) {
-	printf ("%%W, Reals not supported, signal %s ignored.\n", signame);
-	return;
-    }
-
     /* Allocate new signal structure */
     new_sig_ptr = DNewCalloc (Signal);
     new_sig_ptr->trace = trace;
-    new_sig_ptr->base = global->bases[0];
+    new_sig_ptr->radix = global->radixs[0];
+    if (!strncmp (type, "real", 4)) {
+	new_sig_ptr->radix = global->radixs[RADIX_REAL];
+    }
+
     new_sig_ptr->file_pos = VERILOG_ID_TO_POS(code);
-    new_sig_ptr->bits = bits - 1;
+    new_sig_ptr->bits = bits;
     new_sig_ptr->msb_index = 0;
     new_sig_ptr->lsb_index = 0;
 
@@ -286,7 +285,7 @@ void	verilog_womp_128s (
 	    sig_ptr->verilog_next = new_sig_ptr;
 
 	    /* How much to remove */
-	    chop = (sig_ptr->bits+1) % 128;
+	    chop = (sig_ptr->bits) % 128;
 	    if (chop==0) chop=128;
 	    /*printf ("chopping %d\n",chop);*/
 
@@ -295,8 +294,8 @@ void	verilog_womp_128s (
  	    new_sig_ptr->msb_index = sig_ptr->msb_index - chop;
   
   	    /* Shorten bits of old */
- 	    sig_ptr->bits = chop - 1;
- 	    sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits;
+ 	    sig_ptr->bits = chop;
+ 	    sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits + 1;
 
 	    /* Next is new guy, may be >> 128 also */
 	    sig_ptr = new_sig_ptr->backward;
@@ -345,7 +344,7 @@ void	verilog_process_definitions (
     /* Find the highest pos used */
     max_pos = 0;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	max_pos = MAX (max_pos, sig_ptr->file_pos + sig_ptr->bits);
+	max_pos = MAX (max_pos, sig_ptr->file_pos + sig_ptr->bits - 1);
     }
     
     /* Allocate space for one signal pointer for each of the possible codes */
@@ -363,7 +362,8 @@ void	verilog_process_definitions (
     /* The original is signal highest in hiearchy, OR first to occur if at the same level */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	for (pos = sig_ptr->file_pos; 
-	     pos <= sig_ptr->file_pos + ((sig_ptr->file_type.flag.perm_vector)?0:sig_ptr->bits);
+	     pos <= sig_ptr->file_pos
+		 + ((sig_ptr->file_type.flag.perm_vector)?0:(sig_ptr->bits-1));
 	     pos++) {
 	    pos_sig_ptr = signal_by_pos[pos];
 	    if (!pos_sig_ptr) {
@@ -415,7 +415,8 @@ void	verilog_process_definitions (
     memset (signal_by_pos, 0, sizeof (Signal *) * (max_pos + 1));
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	for (pos = sig_ptr->file_pos; 
-	     pos <= sig_ptr->file_pos + ((sig_ptr->file_type.flag.perm_vector)?0:sig_ptr->bits);
+	     pos <= sig_ptr->file_pos
+		 + ((sig_ptr->file_type.flag.perm_vector)?0:(sig_ptr->bits-1));
 	     pos++) {
 	    /* If already assigned, this is a signal that was womp_128ed. */
 	    if (!signal_by_pos[pos]) signal_by_pos[pos] = sig_ptr;
@@ -511,12 +512,11 @@ void	verilog_read_data (
 	    got_data = TRUE;
 
 	    verilog_read_parameter (line, code);
-	    sig_ptr = trace->firstsig;
 	    pos = VERILOG_ID_TO_POS(code);
 	    sig_ptr = signal_by_pos[ pos ];
 	    if (sig_ptr) {
 		/* printf ("\tsignal '%s'=%d %s  state %d\n", code, pos, sig_ptr->signame, state); */
-		if (sig_ptr->bits == 0) {
+		if (sig_ptr->bits < 2) {
 		    /* Not a vector.  This is easy */
 		    val_zero (&value);
 		    value.siglw.stbits.state = state;
@@ -524,7 +524,7 @@ void	verilog_read_data (
 		    fil_add_cptr (sig_ptr, &value, first_data);
 		}
 		else {	/* Unary signal made into a vector */
-		    register int bit = sig_ptr->bits - (pos - sig_ptr->file_pos); 
+		    register int bit = sig_ptr->bits - 1 - (pos - sig_ptr->file_pos); 
 		    /* Mark this for update at next time stamp */
 		    *(signal_update_array_last_pptr++) = sig_ptr;
 		    sig_ptr->file_value.siglw.stbits.state = STATE_F128;
@@ -548,20 +548,14 @@ void	verilog_read_data (
 	    break;
 
 	case 'b':
-	    if (first_data) {
-		trace->start_time = time;
-		trace->end_time = time;
-		first_data = FALSE;
-	    }
 	    got_data = TRUE;
 
 	    verilog_read_parameter (line, value_strg);
 	    verilog_read_parameter (line, code);
-	    sig_ptr = trace->firstsig;
 	    pos = VERILOG_ID_TO_POS(code);
 	    sig_ptr = signal_by_pos[ pos ];
 	    if (sig_ptr) {
-		if ((sig_ptr->bits == 0) || !sig_ptr->file_type.flag.perm_vector) {
+		if ((sig_ptr->bits < 2) || !sig_ptr->file_type.flag.perm_vector) {
 		    printf ("%%E, Vector decode on single-bit or non perm_vector signal on line %d of %s\n",
 			    verilog_line_num, current_file);
 		}
@@ -570,7 +564,7 @@ void	verilog_read_data (
 
 		    for (; sig_ptr; sig_ptr=sig_ptr->verilog_next) {
 			/* Verilog requires us to extend the value if it is too short */
-			len = (sig_ptr->bits+1) - strlen (value_strg);
+			len = (sig_ptr->bits) - strlen (value_strg);
 			if (len > 0) {
 			    /* This is rare, so not fast */
 			    /* 1's extend as 0's, x as x */
@@ -592,11 +586,11 @@ void	verilog_read_data (
 			}
 
 			/* Store the file information */
-			/* if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %s  value %s\n", code, pos, sig_ptr->signame, value_strg); */
+			/*if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %d %s  value %s\n", code, pos, time, sig_ptr->signame, value_strg);*/
 			fil_string_add_cptr (sig_ptr, value_strg, time, first_data);
 
 			/* Push string past this signal's bits */
-			value_strg += sig_ptr->bits+1;
+			value_strg += sig_ptr->bits;
 		    }
 		}
 	    }
@@ -620,15 +614,31 @@ void	verilog_read_data (
 		got_time = TRUE;
 		trace->start_time = time;
 	    }
-	    else {
-		trace->end_time = time;
-	    }
+	    trace->end_time = time;
 	    break;
 
+	case 'r':	/* Real number */
+	    verilog_read_parameter (line, value_strg);
+	    verilog_read_parameter (line, code);
+	    pos = VERILOG_ID_TO_POS(code);
+	    sig_ptr = signal_by_pos[ pos ];
+	    if (sig_ptr && sig_ptr->bits == 64) {
+		double dnum = atof (value_strg);
+		val_zero (&value);
+		if (dnum==0) value.siglw.stbits.state = STATE_0;
+		else {
+		    value.siglw.stbits.state = STATE_B128;
+		    *((double*)(&value.number[0])) = dnum;
+		}
+		value.time = time;
+		fil_add_cptr (sig_ptr, &value, first_data);
+	    }
+	    
+	    break;
+	    
 	    /* Things to ignore, uncommon */
 	case '\n':
 	case '$':	/* Command, $end, $dump, etc (ignore) */
-	case 'r':	/* Real number */
 	    break;
 
 	default:

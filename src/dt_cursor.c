@@ -61,6 +61,13 @@
 
 /****************************** UTILITIES ******************************/
 
+void    cur_free (
+    DCursor	*csr_ptr)	/* Cursor to remove */
+{
+    DFree (csr_ptr->note);
+    DFree (csr_ptr);
+}
+
 void    cur_remove (
     /* Cursor is removed from list, but not freed! */
     DCursor	*csr_ptr)	/* Cursor to remove */
@@ -90,7 +97,8 @@ void    cur_remove (
 void cur_add (
     DTime	ctime,
     ColorNum	color,
-    CursorType_t	type)
+    CursorType_t	type,
+    const char *note)
 {
     DCursor *new_csr_ptr;
     DCursor *prev_csr_ptr, *csr_ptr;
@@ -101,6 +109,7 @@ void cur_add (
     new_csr_ptr->time = ctime;
     new_csr_ptr->color = color;
     new_csr_ptr->type = type;
+    if (note && note[0]) new_csr_ptr->note = strdup(note);
 
     prev_csr_ptr = NULL;
     for (csr_ptr = global->cursor_head;
@@ -115,10 +124,11 @@ void cur_add (
 	    csr_ptr->time = ctime;
 	    csr_ptr->color = color;
 	    csr_ptr->type = type;
+	    if (note && note[0]) csr_ptr->note = strdup(note);
 	}
 	/* else Don't go over existing user one */
 	/* Don't need new structure */
-	DFree (new_csr_ptr);
+	cur_free (new_csr_ptr);
     }
     else {
 	/* Insert into first position? */
@@ -146,12 +156,12 @@ void cur_delete_of_type (
 	csr_ptr = csr_ptr->next;
 	if (new_csr_ptr->type==type) {
 	    cur_remove (new_csr_ptr);
-	    DFree (new_csr_ptr);
+	    cur_free (new_csr_ptr);
 	}
     }
 }
 
-void cur_print (FILE *writefp)
+void cur_write (FILE *writefp)
 {
     DCursor	*csr_ptr;
     char strg[MAXTIMELEN];
@@ -230,6 +240,10 @@ char *cur_examine_string (
 	break;
     case SEARCHOLD:
     }
+    if (csr_ptr->note) {
+        strcat (strg, csr_ptr->note);
+        strcat (strg, "\n");
+    }
     return (strg);
 }
 	
@@ -289,7 +303,7 @@ void    cur_clr_cb (
     while ( global->cursor_head ) {
 	csr_ptr = global->cursor_head;
 	global->cursor_head = csr_ptr->next;
-	DFree (csr_ptr);
+	cur_free (csr_ptr);
     }
     
     /* cancel the button actions */
@@ -330,7 +344,7 @@ void    cur_add_ev (
     if (time<0) return;
     
     /* make the cursor */
-    cur_add (time, global->highlight_color, USER);
+    cur_add (time, global->highlight_color, USER, NULL);
     
     draw_all_needed ();
 }
@@ -430,8 +444,8 @@ void    cur_move_ev (
     
     /* remove, change time, and add back the cursor */
     cur_remove (csr_ptr);
-    cur_add (time, csr_ptr->color, USER);
-    XtFree ((char *)csr_ptr);
+    cur_add (time, csr_ptr->color, USER, csr_ptr->note);
+    cur_free (csr_ptr);
     
     draw_all_needed ();
 }
@@ -451,7 +465,7 @@ void    cur_delete_ev (
     
     /* delete the cursor */
     cur_remove (csr_ptr);
-    DFree (csr_ptr);
+    cur_free (csr_ptr);
     
     draw_all_needed ();
 }

@@ -118,6 +118,7 @@ void sig_free (
 		DFree (del_sig_ptr->bptr);
 		DFree (del_sig_ptr->signame);
 		DFree (del_sig_ptr->xsigname);
+		DFree (del_sig_ptr->note);
 	    }
 	    DFree (del_sig_ptr);
 	}
@@ -456,7 +457,7 @@ void    sig_print_names (
     }
     
     /* Don't do a integrity check here, as sometimes all links aren't ready! */
-    /* print_signal_states (trace); */
+    /* signalstates_dump (trace); */
 }
 
 /****************************** CONFIG FUNCTIONS ******************************/
@@ -480,18 +481,18 @@ void    sig_highlight_selected (
     draw_all_needed ();
 }
 
-void    sig_base_selected (
-    Base_t	*base_ptr)
+void    sig_radix_selected (
+    Radix_t	*radix_ptr)
 {
     Signal	*sig_ptr;
     SignalList	*siglst_ptr;
     
-    if (DTPRINT_ENTRY) printf ("In sig_base_selected\n");
+    if (DTPRINT_ENTRY) printf ("In sig_radix_selected\n");
     
     for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
 	sig_ptr = siglst_ptr->signal;
 	/* Change the color */
-	sig_ptr->base = base_ptr;
+	sig_ptr->radix = radix_ptr;
     }
 
     draw_all_needed ();
@@ -591,6 +592,22 @@ void    sig_delete_selected (
 }
 
 
+void    sig_note_selected (
+    const char *note)
+{
+    Signal	*sig_ptr;
+    SignalList	*siglst_ptr;
+    
+    if (DTPRINT_ENTRY) printf ("In sig_note_selected\n");
+
+    for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
+	sig_ptr = siglst_ptr->signal;
+	sig_ptr->note = strdup (note);
+    }
+    /*draw_all_needed (); not visible, so don't bother*/
+}
+
+
 void    sig_goto_pattern (
     Trace	*trace,
     char	*pattern)
@@ -653,8 +670,12 @@ char *sig_examine_string (
 
     strcpy (strg, sig_ptr->signame);
 
-    sprintf (strg2, "\nBase: %s\n", sig_ptr->base->name);
+    sprintf (strg2, "\nRadix: %s\n", sig_ptr->radix->name);
     strcat (strg, strg2);
+    if (sig_ptr->note) {
+        strcat (strg, sig_ptr->note);
+        strcat (strg, "\n");
+    }
 	
     /* Debugging information */
     if (DTDEBUG) {
@@ -809,20 +830,20 @@ void    sig_del_cb (
     add_event (ButtonPressMask, sig_delete_ev);
 }
 
-void    sig_base_cb (
+void    sig_radix_cb (
     Widget	w)
 {
     Trace *trace = widget_to_trace(w);
-    int basenum = submenu_to_color (trace, w, trace->menu.sig_base_pds);
-    if (DTPRINT_ENTRY) printf ("In sig_base_cb - trace=%p basenum=%d\n",trace, basenum);
+    int radixnum = submenu_to_color (trace, w, trace->menu.sig_radix_pds);
+    if (DTPRINT_ENTRY) printf ("In sig_radix_cb - trace=%p radixnum=%d\n",trace, radixnum);
     
     /* Grab color number from the menu button pointer */
-    global->selected_base = global->bases[basenum];
+    global->selected_radix = global->radixs[radixnum];
 
     /* process all subsequent button presses as signal deletions */ 
     remove_all_events (trace);
-    set_cursor (trace, DC_SIG_BASE);
-    add_event (ButtonPressMask, sig_base_ev);
+    set_cursor (trace, DC_SIG_RADIX);
+    add_event (ButtonPressMask, sig_radix_ev);
 }
 
 void    sig_highlight_cb (
@@ -1186,21 +1207,21 @@ void    sig_highlight_ev (
 }
 
 
-void    sig_base_ev (
+void    sig_radix_ev (
     Widget	w,
     Trace	*trace,
     XButtonPressedEvent	*ev)
 {
     Signal	*sig_ptr;
     
-    if (DTPRINT_ENTRY) printf ("In sig_base_ev - trace=%p\n",trace);
+    if (DTPRINT_ENTRY) printf ("In sig_radix_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
     
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr) return;
     
-    /* Change the base */
-    sig_ptr->base = global->selected_base;
+    /* Change the radix */
+    sig_ptr->radix = global->selected_radix;
 
     draw_all_needed ();
 }
@@ -1874,6 +1895,8 @@ void sig_cross_restore (
     /* Free information for the preserved trace */
     free_data (global->preserved_trace);
     DFree (global->preserved_trace);
+
+    if (DTDEBUG) debug_integrity_check_cb (NULL);
 }
 
 

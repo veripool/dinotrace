@@ -840,7 +840,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		
 	    case STATE_B32: {
 		uint_t num = cptr->number[0];
-		val_to_string (sig_ptr->base, vstrg, cptr, TRUE);
+		val_to_string (sig_ptr->radix, vstrg, cptr, TRUE);
 
 		/* Below evaluation left to right important to prevent error */
 		if ( (sig_ptr->decode != NULL) &&
@@ -859,7 +859,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	    case STATE_B128:
 		if ( xloc > xend ) xloc = xend;
 
-		val_to_string (sig_ptr->base, vstrg, cptr, TRUE);
+		val_to_string (sig_ptr->radix, vstrg, cptr, TRUE);
 
 		fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
 		break;
