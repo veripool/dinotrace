@@ -422,6 +422,9 @@ typedef struct st_signal {
     struct st_signal	*forward;	/* Forward link to next signal */
     struct st_signal	*backward;	/* Backward link to previous signal */
 
+    SIGNAL_LW		*bptr;		/* begin of time data ptr */
+    SIGNAL_LW		*cptr;		/* current time data ptr */
+
     struct st_signal	*copyof;	/* Link to signal this is copy of (or NULL) */
     struct st_trace	*trace;		/* Trace signal belongs to (originally) */
     /* struct st_signal	*verilog_copyof; / * Copy of another verilog signal (which has own data) */
@@ -433,6 +436,7 @@ typedef struct st_signal {
     ColorNum		color;		/* Signal line's Color number (index into trace->xcolornum) */
     ColorNum		search;		/* Number of search color is for, 0 = manual */
 
+    Boolean		selected;	/* Signal has been selected by the pattern matcher */
     Boolean		srch_ena;	/* Searching is enabled */
 
     int			type;		/* Type of signal, STATE_B32, _B64, etc */
@@ -458,9 +462,6 @@ typedef struct st_signal {
 	    } flag;
 	int		flags;
 	}		file_type;	/* File specific type of trace, two/fourstate, etc */
-
-    SIGNAL_LW		*bptr;		/* begin of time data ptr */
-    SIGNAL_LW		*cptr;		/* current time data ptr */
 
     unsigned int	value_mask[3];	/* Value Mask with 1s in bits that are to be set */
     unsigned int	pos_mask;	/* Mask to translate file positions */
