@@ -285,7 +285,7 @@ void never_just_to_avoid_unused (void) {
 
 #ifdef VMS
 void decsim_read_binary (
-    Trace	*trace,
+    Trace_t	*trace,
     int		read_fd)
 {
     static struct bintrarec *buf, *last_buf;
@@ -295,7 +295,7 @@ void decsim_read_binary (
     int		len;
     int		next_different_lw_pos;	/* LW pos with different value than last time slice */
     int		time;
-    Signal	*sig_ptr,*last_sig_ptr;
+    Signal_t	*sig_ptr,*last_sig_ptr;
     int		max_lw_pos=0;		/* Maximum position in buf that has trace data */
     DTime_t	time_divisor;
 
@@ -589,7 +589,7 @@ static uint_t bin_read_little_uint_t32 (int read_fd)
 }
 
 void tempest_read (
-    Trace	*trace,
+    Trace_t	*trace,
     int		read_fd)
 {
     uint_t	status;
@@ -603,8 +603,8 @@ void tempest_read (
     uint_t	i,j;
     uint_t	pad_len;
     uint_t	time, last_time=EOT;
-    register	Signal	*sig_ptr=NULL;
-    Signal	*last_sig_ptr=NULL;
+    Signal_t	*sig_ptr=NULL;
+    Signal_t	*last_sig_ptr=NULL;
     int 	index;
     Boolean_t	verilator_xor_format;
 

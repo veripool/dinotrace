@@ -219,9 +219,9 @@
 extern char *	help_message (void);
 
 /* dt_dispmgr.c */
-extern Trace *	create_trace (int xs, int ys, int xp, int yp);
-extern Trace *	trace_create_split_window (Trace *trace);
-extern Trace *	malloc_trace (void);
+extern Trace_t *create_trace (int xs, int ys, int xp, int yp);
+extern Trace_t *trace_create_split_window (Trace_t *trace);
+extern Trace_t *malloc_trace (void);
 extern void	init_globals (void);
 extern void	create_globals (int argc, char **argv, Boolean_t sync);
 extern void	set_cursor (int cursor_num);
@@ -233,15 +233,15 @@ extern void	trace_clear_cb (Widget w);
 extern void	trace_exit_cb (Widget w);
 
 /* dt_customize.c routines */
-extern void	cus_dialog_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
-extern void	cus_read_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackStruct *cb);
-extern void	cus_read_ok_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackStruct *cb);
-extern void	cus_ok_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
-extern void	cus_apply_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
-extern void	cus_restore_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
-extern void	cus_reread_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	cus_dialog_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
+extern void	cus_read_cb (Widget w, Trace_t *trace, XmFileSelectionBoxCallbackStruct *cb);
+extern void	cus_read_ok_cb (Widget w, Trace_t *trace, XmFileSelectionBoxCallbackStruct *cb);
+extern void	cus_ok_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
+extern void	cus_apply_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
+extern void	cus_restore_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
+extern void	cus_reread_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
 extern void	cus_write_cb (Widget w);
-extern void	cus_write_ok_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackStruct *cb);
+extern void	cus_write_ok_cb (Widget w, Trace_t *trace, XmFileSelectionBoxCallbackStruct *cb);
 
 /* dt_cursor.c routines */
 extern DCursor_t *cur_add (DTime_t time, ColorNum_t color, CursorType_t type, const char *note);
@@ -251,10 +251,10 @@ extern void     cur_move (DCursor_t *csr_ptr, DTime_t new_time);
 extern void	cur_delete (DCursor_t *csr_ptr);
 extern void	cur_delete_of_type (CursorType_t type);
 extern void	cur_free (DCursor_t *csr_ptr);
-extern DTime_t	cur_time_first (const Trace *trace);
-extern DTime_t	cur_time_last (const Trace *trace);
+extern DTime_t	cur_time_first (const Trace_t *trace);
+extern DTime_t	cur_time_last (const Trace_t *trace);
 extern void	cur_write (FILE *, char *c);
-extern char *	cur_examine_string (Trace *trace, DCursor_t *cursor_ptr);
+extern char *	cur_examine_string (Trace_t *trace, DCursor_t *cursor_ptr);
 extern void	cur_step (DTime_t step);
 
 extern void	cur_add_cb (Widget w);
@@ -265,72 +265,72 @@ extern void	cur_clr_cb (Widget w);
 extern void	cur_step_fwd_cb (Widget w);
 extern void	cur_step_back_cb (Widget w);
 extern void	cur_highlight_cb (Widget w);
-extern void	cur_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	cur_highlight_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern void     cur_highlight (DCursor_t *csr_ptr, ColorNum_t color);
-extern void	cur_add_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
-extern void	cur_move_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
-extern void	cur_delete_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	cur_add_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
+extern void	cur_move_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
+extern void	cur_delete_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern DCursor_t *cur_id_to_cursor (int id);
 
 /* dt_config.c routines */
-extern void	config_read_defaults (Trace *trace, Boolean_t);
-extern void	config_read_file (Trace *trace, char *, Boolean_t, Boolean_t);
-extern void	config_trace_defaults (Trace *);
+extern void	config_read_defaults (Trace_t *trace, Boolean_t);
+extern void	config_read_file (Trace_t *trace, char *, Boolean_t, Boolean_t);
+extern void	config_trace_defaults (Trace_t *);
 extern void	config_global_defaults (void);
 extern void	config_parse_geometry (char *, Geometry_t *);
-extern void	config_update_filenames (Trace *trace);
+extern void	config_update_filenames (Trace_t *trace);
 extern void	config_read_socket (char *line, char *name, int cmdnum, Boolean_t eof);
-extern void	config_write_file (Trace *trace, char *filename);
-extern SignalState_t *signalstate_find (const Trace *, const char *);
+extern void	config_write_file (Trace_t *trace, char *filename);
+extern SignalState_t *signalstate_find (const Trace_t *, const char *);
 
 /* dt_grid.c routines */
-extern DTime_t	grid_primary_period (const Trace *trace);
-extern void	grid_calc_autos (Trace *trace);
-extern char *	grid_examine_string (Trace *trace, Grid_t *grid_ptr, DTime_t time);
+extern DTime_t	grid_primary_period (const Trace_t *trace);
+extern void	grid_calc_autos (Trace_t *trace);
+extern char *	grid_examine_string (Trace_t *trace, Grid_t *grid_ptr, DTime_t time);
 
 extern void	grid_customize_cb (Widget w);
 extern void	grid_reset_cb (Widget w);
 
 /* dt_signal.c routines */
 extern void	sig_update_search (void);
-extern void	sig_free (Trace *trace, Signal *sig_ptr, Boolean_t select, Boolean_t recurse);
+extern void	sig_free (Trace_t *trace, Signal_t *sig_ptr, Boolean_t select, Boolean_t recurse);
 extern void	sig_highlight_selected (int color);
 extern void	sig_radix_selected (Radix_t *radix_ptr);
-extern void	sig_modify_enables (Trace *);
-extern void	sig_move_selected (Trace *new_trace, const char *after_pattern);
+extern void	sig_modify_enables (Trace_t *);
+extern void	sig_move_selected (Trace_t *new_trace, const char *after_pattern);
 extern void	sig_rename_selected (const char *new_name);
-extern void	sig_copy_selected (Trace *new_trace, const char *after_pattern);
+extern void	sig_copy_selected (Trace_t *new_trace, const char *after_pattern);
 extern void	sig_delete_selected (Boolean_t constant_flag, Boolean_t ignorexz);
 extern void	sig_note_selected (const char *note);
-extern void	sig_wildmat_select (Trace *, const char *pattern);
-extern void	sig_goto_pattern (Trace *, const char *pattern);
-extern void	sig_cross_preserve (Trace *trace);
-extern void	sig_cross_restore (Trace *trace) ;
-extern char *	sig_basename (const Trace *trace, const Signal *sig_ptr);
-extern Signal *	sig_find_signame (const Trace *trace, const char *signame);
-extern Signal *	sig_wildmat_signame (const Trace *trace, const char *signame);
-extern void	sig_print_names (Trace *trace);
-extern char *	sig_examine_string (const Trace *trace, const Signal *sig_ptr);
+extern void	sig_wildmat_select (Trace_t *, const char *pattern);
+extern void	sig_goto_pattern (Trace_t *, const char *pattern);
+extern void	sig_cross_preserve (Trace_t *trace);
+extern void	sig_cross_restore (Trace_t *trace) ;
+extern char *	sig_basename (const Trace_t *trace, const Signal_t *sig_ptr);
+extern Signal_t *sig_find_signame (const Trace_t *trace, const char *signame);
+extern Signal_t *sig_wildmat_signame (const Trace_t *trace, const char *signame);
+extern void	sig_print_names (Trace_t *trace);
+extern char *	sig_examine_string (const Trace_t *trace, const Signal_t *sig_ptr);
 
 extern void	sig_add_cb (Widget w);
 extern void	sig_mov_cb (Widget w);
 extern void	sig_copy_cb (Widget w);
 extern void	sig_del_cb (Widget w);
 extern void	sig_radix_cb (Widget w);
-extern void	sig_add_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
-extern void	sig_move_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
-extern void	sig_copy_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
-extern void	sig_delete_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
-extern void	sig_radix_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
-extern void	sig_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	sig_add_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
+extern void	sig_move_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
+extern void	sig_copy_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
+extern void	sig_delete_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
+extern void	sig_radix_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
+extern void	sig_highlight_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern void	sig_highlight_cb (Widget w);
 extern void	sig_highlight_keep_cb (Widget w);
 extern void	sig_highlight_clear_cb (Widget w);
 extern void	sig_select_cb (Widget w);
 extern void	sig_cancel_cb (Widget w);
 extern void	sig_search_cb (Widget w);
-extern void	sig_search_ok_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
-extern void	sig_search_apply_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	sig_search_ok_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	sig_search_apply_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
 
 /* dt_value.c routines */
 extern void	val_minimize (Value_t *value_ptr);
@@ -342,20 +342,20 @@ extern void	val_radix_init (void);
 extern Radix_t	*val_radix_find (const char *name);
 
 extern void	val_annotate_cb (Widget w);
-extern void	val_annotate_ok_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
-extern void	val_annotate_apply_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
-extern void	val_annotate_do_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	val_annotate_ok_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
+extern void	val_annotate_apply_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
+extern void	val_annotate_do_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
 extern void	val_examine_cb (Widget w);
-extern void	val_examine_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	val_examine_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern void	val_search_cb (Widget w);
-extern void	val_search_ok_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
-extern void	val_search_apply_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	val_search_ok_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	val_search_apply_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
 extern void	val_highlight_cb (Widget w);
-extern void	val_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	val_highlight_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 
 /* dt_print routines */
-extern void	print_internal (Trace *trace);
-extern void	print_reset  (Trace *trace);
+extern void	print_internal (Trace_t *trace);
+extern void	print_reset  (Trace_t *trace);
 
 extern void	print_dialog_cb (Widget w);
 extern void	print_reset_cb  (Widget w);
@@ -364,28 +364,28 @@ extern void	print_req_cb (Widget w);
 extern void	print_range_sensitives_cb (Widget w, RangeWidgets_t *range_ptr, XmSelectionBoxCallbackStruct *cb);
 
 /* dt_binary.c routines */
-extern void	tempest_read (Trace *trace, int read_fd);
-extern void	decsim_read_binary (Trace *trace, int read_fd);
+extern void	tempest_read (Trace_t *trace, int read_fd);
+extern void	decsim_read_binary (Trace_t *trace, int read_fd);
 
 /* dt_ascii.c routines */
-extern void	ascii_string_add_cptr (Signal *sig_ptr, const char *value_strg, DTime_t time, Boolean_t nocheck);
-extern void	ascii_read (Trace *trace, int read_fd, FILE *decsim_z_readfp);
+extern void	ascii_string_add_cptr (Signal_t *sig_ptr, const char *value_strg, DTime_t time, Boolean_t nocheck);
+extern void	ascii_read (Trace_t *trace, int read_fd, FILE *decsim_z_readfp);
 
 /* dt_file.c routines */
-extern void	fil_read (Trace *trace);
-extern void	free_data (Trace *trace);
-extern void	fil_make_busses (Trace *trace, Boolean_t not_tempest);
-extern void	fil_trace_end (Trace *trace);
-extern void 	fil_select_set_pattern (Trace *trace, Widget dialog, char *pattern);
+extern void	fil_read (Trace_t *trace);
+extern void	free_data (Trace_t *trace);
+extern void	fil_make_busses (Trace_t *trace, Boolean_t not_tempest);
+extern void	fil_trace_end (Trace_t *trace);
+extern void 	fil_select_set_pattern (Trace_t *trace, Widget dialog, char *pattern);
 #ifndef fil_add_cptr
-extern void	fil_add_cptr (Signal *sig_ptr, Value_t *value_ptr, Boolean_t nocheck);
+extern void	fil_add_cptr (Signal_t *sig_ptr, Value_t *value_ptr, Boolean_t nocheck);
 #endif
 
-extern void	fil_format_option_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
-extern void	fil_ok_cb (Widget w, Trace *trace, XmFileSelectionBoxCallbackStruct *cb);
-extern void	trace_read_cb (Widget w, Trace *trace);
-extern void	trace_reread_all_cb (Widget w, Trace *trace);
-extern void	trace_reread_cb (Widget w, Trace *trace);
+extern void	fil_format_option_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	fil_ok_cb (Widget w, Trace_t *trace, XmFileSelectionBoxCallbackStruct *cb);
+extern void	trace_read_cb (Widget w, Trace_t *trace);
+extern void	trace_reread_all_cb (Widget w, Trace_t *trace);
+extern void	trace_reread_cb (Widget w, Trace_t *trace);
 extern void	help_cb (Widget w);
 extern void	help_trace_cb (Widget w);
 extern void	help_doc_cb (Widget w);
@@ -398,8 +398,8 @@ extern void	fgets_dynamic (char **line_pptr, uint_t *length_ptr, FILE *readfp);
 extern int	wildmat (const char *s, const char *p);
 extern void	upcase_string (char *tp);
 extern void	file_directory (char *strg);
-extern void	ok_apply_cancel (OkApplyWidgets_t *wid_ptr, Widget, Widget, XtCallbackProc, Trace*, 
-				 XtCallbackProc, Trace*, XtCallbackProc, Trace*, XtCallbackProc, Trace*);
+extern void	ok_apply_cancel (OkApplyWidgets_t *wid_ptr, Widget, Widget, XtCallbackProc, Trace_t*, 
+				 XtCallbackProc, Trace_t*, XtCallbackProc, Trace_t*, XtCallbackProc, Trace_t*);
 extern char *	extract_first_xms_segment (XmString);
 extern char *	date_string (time_t time_num);
 extern void	dinodisk_directory (char *filename);
@@ -407,33 +407,33 @@ extern void	dinodisk_directory (char *filename);
 extern char *	strdup (const char *);
 #endif
 
-extern void	new_time (Trace *);
-extern void	get_geometry (Trace *trace);
-extern void	get_data_popup (Trace *trace, char *string, int type);
-extern void	print_sig_info (Signal *sig_ptr);
-extern Trace *	widget_to_trace (Widget w);
-extern Value_t *value_at_time (Signal *sig_ptr, DTime_t ctime);
-extern DTime_t	posx_to_time (Trace *trace, Position x);
-extern DTime_t	posx_to_time_edge (Trace *trace, Position x, Position y);
-extern Signal *	posy_to_signal (Trace *trace, Position y);
-extern Grid_t *	posx_to_grid (Trace *trace, Position x, DTime_t *time_ptr);
-extern DCursor_t *posx_to_cursor (Trace *trace, Position x);
+extern void	new_time (Trace_t *);
+extern void	get_geometry (Trace_t *trace);
+extern void	get_data_popup (Trace_t *trace, char *string, int type);
+extern void	print_sig_info (Signal_t *sig_ptr);
+extern Trace_t *widget_to_trace (Widget w);
+extern Value_t *value_at_time (Signal_t *sig_ptr, DTime_t ctime);
+extern DTime_t	posx_to_time (Trace_t *trace, Position x);
+extern DTime_t	posx_to_time_edge (Trace_t *trace, Position x, Position y);
+extern Signal_t *posy_to_signal (Trace_t *trace, Position y);
+extern Grid_t *	posx_to_grid (Trace_t *trace, Position x, DTime_t *time_ptr);
+extern DCursor_t *posx_to_cursor (Trace_t *trace, Position x);
 extern DCursor_t *time_to_cursor (DTime_t xtime);
-extern void	time_to_string (Trace *trace, char *strg, DTime_t ctime, Boolean_t relative);
+extern void	time_to_string (Trace_t *trace, char *strg, DTime_t ctime, Boolean_t relative);
 extern double   time_to_cyc_num (DTime_t time);
 extern DTime_t	cyc_num_to_time (double cyc_num);
 extern DTime_t 	time_units_to_multiplier (TimeRep_t timerep);
 extern char *	time_units_to_string (TimeRep_t timerep, Boolean_t showvalue);
 extern void	string_to_value (Radix_t **radix_pptr, const char *strg, Value_t *value_ptr);
-extern DTime_t	string_to_time (Trace *trace, char *strg);
+extern DTime_t	string_to_time (Trace_t *trace, char *strg);
 
-extern void	DManageChild (Widget w, Trace *trace, MCKeys_t keys);
+extern void	DManageChild (Widget w, Trace_t *trace, MCKeys_t keys);
 extern void	add_event (int type, void (*callback)());
-extern void	remove_all_events (Trace *trace);
-extern void	change_title (Trace *trace);
-extern void	dino_message_ack (Trace *trace, int type, char *msg);
+extern void	remove_all_events (Trace_t *trace);
+extern void	change_title (Trace_t *trace);
+extern void	dino_message_ack (Trace_t *trace, int type, char *msg);
 extern XmString	string_create_with_cr (const char *);
-extern ColorNum_t submenu_to_color (Trace *trace, Widget, int);
+extern ColorNum_t submenu_to_color (Trace_t *trace, Widget, int);
 extern int	option_to_number (Widget w, Widget *entry0_ptr, int maxnumber);
 
 extern void	cancel_all_events_cb (Widget w);
@@ -441,17 +441,17 @@ extern void	unmanage_cb (Widget w, Widget tag, XmAnyCallbackStruct *cb);
 extern void	debug_print_screen_traces_cb (Widget w);
 
 /* dt_window routines */
-extern void	vscroll_new (Trace *trace, int inc);
-extern void	new_res (Trace *trace, float res_new);
-extern void	win_full_res (Trace *trace);
+extern void	vscroll_new (Trace_t *trace, int inc);
+extern void	new_res (Trace_t *trace, float res_new);
+extern void	win_full_res (Trace_t *trace);
 
-extern void	win_expose_cb (Widget w, Trace *trace);
-extern void	win_resize_cb (Widget w, Trace *trace);
-extern void	win_refresh_cb (Widget w, Trace *trace);
+extern void	win_expose_cb (Widget w, Trace_t *trace);
+extern void	win_resize_cb (Widget w, Trace_t *trace);
+extern void	win_refresh_cb (Widget w, Trace_t *trace);
 extern void	win_goto_cb (Widget w);
-extern void	win_goto_option_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
-extern void	win_goto_ok_cb (Widget w, Trace *trace, XmSelectionBoxCallbackStruct *cb);
-extern void	win_goto_cancel_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
+extern void	win_goto_option_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	win_goto_ok_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
+extern void	win_goto_cancel_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
 extern void	win_chg_res_cb (Widget w);
 extern void	win_begin_cb (Widget w);
 extern void	win_end_cb (Widget w);
@@ -460,7 +460,7 @@ extern void	win_dec_res_cb (Widget w);
 extern void	win_full_res_cb (Widget w);
 extern void	win_zoom_res_cb (Widget w);
 extern void	win_namescroll_change_cb (Widget w);
-extern void	res_zoom_click_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
+extern void	res_zoom_click_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern void	debug_toggle_print_cb (Widget w);
 extern void	debug_integrity_check_cb (Widget w);
 extern void	debug_increase_debugtemp_cb (Widget w);
@@ -489,8 +489,8 @@ extern void	draw_scroll_hook_cb_expose (void);
 extern Pixmap	icon_dinos (void);
 
 /* dt_verilog */
-extern void	verilog_read (Trace *trace, int read_fd);
-extern void	verilog_womp_128s (Trace *);
+extern void	verilog_read (Trace_t *trace, int read_fd);
+extern void	verilog_womp_128s (Trace_t *);
 
 /* SimView Hooks */
 extern void	simview_init (char *cmdlinearg);

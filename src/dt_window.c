@@ -217,11 +217,11 @@ void win_namescroll_change_cb (
 /* Vertically scroll + or - inc lines */
 
 void vscroll_new (
-    Trace	*trace,
+    Trace_t	*trace,
     int 	inc)	/* Lines to move, signed, +1, -1, or +- n */
 {
-    uint_t		signum;
-    Signal		*sig_ptr;
+    uint_t	signum;
+    Signal_t	*sig_ptr;
 
     if (DTPRINT_ENTRY) printf ("in vscroll_new inc=%d start=%d\n",inc,trace->numsigstart);
 

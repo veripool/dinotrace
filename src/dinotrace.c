@@ -103,7 +103,7 @@ int    main (
     uint_t	i;
     Boolean_t	sync = FALSE;
     Boolean_t	opened_a_file = FALSE;
-    Trace	*trace;
+    Trace_t	*trace;
     
     /* Create global structure */
     init_globals ();

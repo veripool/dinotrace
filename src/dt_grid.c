@@ -101,10 +101,10 @@ DTime_t	grid_primary_period (
 /****************************** AUTO GRIDS ******************************/
 
 static void	grid_calc_auto (
-    Trace	*trace,
+    Trace_t	*trace,
     Grid_t	*grid_ptr)
 {
-    Signal	*sig_ptr;
+    Signal_t	*sig_ptr;
     Value_t	*cptr;
     int		rise1=0, rise2=0;
     int		fall1=0, fall2=0;

@@ -70,7 +70,7 @@ int fil_line_num=0;
 #pragma inline (ascii_string_add_cptr)
 void	ascii_string_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
-    Signal	*sig_ptr,
+    Signal_t	*sig_ptr,
     const char	*value_strg,
     DTime_t	time,
     Boolean_t	nocheck)		/* don't compare against previous data */
@@ -200,7 +200,7 @@ void	ascii_string_add_cptr (
 /****************************** DECSIM ASCII ******************************/
 
 static void decsim_read_ascii_header (
-    Trace	*trace,
+    Trace_t	*trace,
     char	*header_start,
     char	*data_begin_ptr,
     int		sig_start_pos,
@@ -208,7 +208,7 @@ static void decsim_read_ascii_header (
     int		header_lines)
 {
     int		line,col;
-    Signal	*sig_ptr,*last_sig_ptr=NULL;
+    Signal_t	*sig_ptr,*last_sig_ptr=NULL;
     char	*line_ptr, *tmp_ptr;
     char	*signame_array;
     Boolean_t	hit_name_block, past_name_block, no_names;
@@ -221,7 +221,7 @@ static void decsim_read_ascii_header (
     /* Make a signal structure for each signal */
     trace->firstsig = NULL;
     for ( col=sig_start_pos; col < sig_end_pos; col++) {
-	sig_ptr = DNewCalloc (Signal);
+	sig_ptr = DNewCalloc (Signal_t);
 
 	/* initialize all the pointers that aren't NULL */
 	if (trace->firstsig==NULL) {
@@ -318,14 +318,14 @@ static void decsim_read_ascii_header (
 }
 
 void ascii_read (
-    Trace	*trace,
+    Trace_t	*trace,
     int		read_fd,
     FILE	*decsim_z_readfp)	/* Only pre-set if FF_DECSIM_Z */
 {
     FILE	*readfp;
     Boolean_t	first_data;
     char	*line_in;
-    Signal	*sig_ptr;
+    Signal_t	*sig_ptr;
     long	time_stamp;
     char	*pchar;
     DTime_t	time_divisor;
