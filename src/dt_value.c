@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dinotrace.c --- main routine and documentation
+ * DESCRIPTION: Dinotrace source: value-at-a-time decoding
  *
  * This file is part of Dinotrace.  
  *

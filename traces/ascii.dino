@@ -1,3 +1,5 @@
+# DESCRIPTION: Dinotrace trace example: ASCII format trace
+
 # This file is decsim, change formats before reading it
 file_format decsim
 vector_seperator "["

@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_binary.c --- CCLI tempest trace reading
+ * DESCRIPTION: Dinotrace source: CCLI tempest trace reading
  *
  * This file is part of Dinotrace.  
  *

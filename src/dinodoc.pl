@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl
 # $Id$
 #*****************************************************************************
-# dinodoc.pl --- convert documentation text file to header file
+# DESCRIPTION: Dinotrace make: convert documentation text file to header file
 # 
 # This file is part of Dinotrace.  
 # 

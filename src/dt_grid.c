@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_grid.c --- grid drawing and requestors
+ * DESCRIPTION: Dinotrace source: grid drawing and requestors
  *
  * This file is part of Dinotrace.  
  *

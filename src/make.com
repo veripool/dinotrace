@@ -1,5 +1,6 @@
+$! DESCRIPTION: Sub-make for VMS builds
 $!	
-$! This com file will compule and link together the obj's necessary to
+$! This com file will compile and link together the obj's necessary to
 $! create a DINOTRACE executable. This should will work on systems running
 $! VMS version 5.1 or better.
 $!

@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_cursor.c --- cursor requestors, events, etc
+ * DESCRIPTION: Dinotrace source: cursor requestors, events, etc
  *
  * This file is part of Dinotrace.
  *

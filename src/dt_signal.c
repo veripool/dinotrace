@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_signal.c --- signal handling, searching, etc
+ * DESCRIPTION: Dinotrace source: signal handling, sarching, etc
  *
  * This file is part of Dinotrace.  
  *

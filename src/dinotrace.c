@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dinotrace.c --- main routine and documentation
+ * DESCRIPTION: Dinotrace source: main routine and documentation
  *
  * This file is part of Dinotrace.  
  *

@@ -1,7 +1,7 @@
 #ifdef VMS
 /* $Id$ */
 /******************************************************************************
- * bintradef.h --- DECSIM binary trace format reading
+ * DESCRIPTION: Dinotrace source: DECSIM binary trace format reading
  *
  * This file is part of Dinotrace.  
  *

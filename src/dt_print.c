@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_printscreen.c --- postscript output routines
+ * DESCRIPTION: Dinotrace source: postscript output routines
  *
  * This file is part of Dinotrace.  
  *

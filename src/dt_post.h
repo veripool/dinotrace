@@ -1,6 +1,6 @@
 /* $Id$ */
 /******************************************************************************
- * dt_post.h --- postscript header 
+ * DESCRIPTION: Dinotrace source: postscript header 
  *
  * This file is part of Dinotrace.  
  *

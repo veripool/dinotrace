@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_verilog.c --- Verilog dump file reading
+ * DESCRIPTION: Dinotrace source: Verilog dump file reading
  *
  * This file is part of Dinotrace.  
  *

@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_window.c --- window scrolling, etc
+ * DESCRIPTION: Dinotrace source: window scrolling, etc
  *
  * This file is part of Dinotrace.  
  *

@@ -1,6 +1,6 @@
 /* $Id$ */
 /******************************************************************************
- * functions.h --- Dinotrace functions and callback externs
+ * DESCRIPTION: Dinotrace source: Dinotrace functions and callback externs
  *
  * This file is part of Dinotrace.  
  *

@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_draw.c --- screen trace drawing
+ * DESCRIPTION: Dinotrace source: screen trace drawing
  *
  * This file is part of Dinotrace.  
  *

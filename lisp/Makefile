@@ -1,4 +1,5 @@
 #$Id$
+#DESCRIPTION: Dinotrace Lisp: Makefile for installing LISP sources
 
 all:
 #	Nothing needs to be done; just install

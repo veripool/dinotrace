@@ -1,3 +1,5 @@
+$ ! DESCRIPTION: Sub-make for VMS builds
+$ !
 $ ! VMS command file to recompile a .C file which needs recompilation.
 $ ! This is a .C files that has no .OBJ file or that is newer
 $ ! than the corresponding .OBJ file.  This file is self contained

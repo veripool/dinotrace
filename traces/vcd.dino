@@ -1,3 +1,5 @@
+# DESCRIPTION: Dinotrace trace example: Verilog VCD format trace
+
 # This file is verilog
 file_format verilog
 vector_seperator "["

@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_customize.c --- customization requestor
+ * DESCRIPTION: Dinotrace source: customization requestor
  *
  * This file is part of Dinotrace.  
  *

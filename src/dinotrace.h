@@ -1,6 +1,6 @@
 /* $Id$ */
 /******************************************************************************
- * dinotrace.h --- structure definitions
+ * DESCRIPTION: Dinotrace source: structure definitions
  *
  * This file is part of Dinotrace.  
  *

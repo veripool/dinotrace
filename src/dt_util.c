@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_util.c --- misc utilities
+ * DESCRIPTION: Dinotrace source: misc utilities
  *
  * This file is part of Dinotrace.  
  *

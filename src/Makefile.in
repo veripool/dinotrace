@@ -1,6 +1,6 @@
 # $Id$
 #*****************************************************************************
-# src/Makefile.pl --- Makefile pre-configure version, for dinotrace source
+# DESCRIPTION: Dinotrace make: Makefile pre-configure version
 # 
 # This file is part of Dinotrace.  
 # 

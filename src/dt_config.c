@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_config.c --- configuration file reading
+ * DESCRIPTION: Dinotrace source: configuration file reading
  *
  * This file is part of Dinotrace.  
  *

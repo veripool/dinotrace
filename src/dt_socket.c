@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_socket.c --- socket interface to command engine
+ * DESCRIPTION: Dinotrace source: socket interface to command engine
  *
  * This file is part of Dinotrace.  
  *

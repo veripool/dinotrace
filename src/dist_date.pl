@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl
 # $Id$
 #*****************************************************************************
-# dist_date.pl --- create header file with compilation date in it
+# DESCRIPTION: Dinotrace make: create header file with compilation date in it
 # 
 # This file is part of Dinotrace.  
 # 

@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_icon.c --- create Dinotrace icon
+ * DESCRIPTION: Dinotrace source: create Dinotrace icon
  *
  * This file is part of Dinotrace.  
  *

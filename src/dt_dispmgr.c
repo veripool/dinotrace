@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_dispmgr.c --- display manager, main window
+ * DESCRIPTION: Dinotrace source: display manager, main window
  *
  * This file is part of Dinotrace.  
  *

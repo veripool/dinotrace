@@ -1,6 +1,6 @@
 #ident "$Id$"
 /******************************************************************************
- * dt_ascii.c --- ascii trace file reading
+ * DESCRIPTION: Dinotrace source: ascii trace file reading
  *
  * This file is part of Dinotrace.  
  *

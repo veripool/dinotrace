@@ -1,3 +1,5 @@
+# DESCRIPTION: Dinotrace trace example: Tempest format trace
+
 # This file is tempest, change formats before reading it
 file_format tempest
 vector_separator "<"
