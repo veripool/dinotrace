@@ -36,7 +36,8 @@ Download the latest package from that site, and decompress.
 @item
 Dinotrace requires the Motif Widget set.  If your system doesn't include
 Motif, a public domain version, LessTif, is available at
-@uref{ftp://ftp.lesstif.org}.
+@uref{ftp://ftp.lesstif.org}.  Version 0.89.0 or newer is required for
+this release.
 
 @item
 For best results, you should have perl installed on the system.
@@ -263,8 +264,8 @@ Look for Dinotrace's source code in directory @var{dir}.  Usually
 @node NT Installation,  , Unix Installation
 @section NT Installation
 
-Dinotrace can be built for Windows 95 and Windows NT under the Cygwin32
-environment.
+Dinotrace can be built for Windows 95, Windows 98 and Windows NT under
+the Cygwin32 environment.
 
 @subsection Binary Installation
 
@@ -273,23 +274,47 @@ packages need to be installed under NT to provide X11 services.
 
 @enumerate
 @item
-Install Cygwin32, a sharewear package that provides the BASH shell and
+Install Cygwin32, a shareware package that provides the BASH shell and
 Unix utilities.  It is available at
-@uref{http://www.cygnus.com/misc/gnu-win32/}.  Dinotrace is known to
-work with Cygwin Beta 19,
-@uref{ftp://go.cygnus.com/pub/ftp.cygnus.com/gnu-win32/gnu-win32-b19/cdk.exe}.
+@uref{http://sourceware.cygnus.com/cygwin/}.  Dinotrace is known to
+work with Cygwin Beta 20.1,
+
+@enumerate
+@item
 After downloading, click on the executable and install, preferably
-accepting the default location of @file{C:/Cygnus/B19}.
+accepting the default location of @file{C:/Cygnus/B20}.
+@item
+As in the Cygwin readme, be sure to setup ld.exe and sh.exe:
+@example
+mkdir /bin
+cp /Cygnus/B20/cygwin-b20/H-i586-cygwin/bin/ld.exe /bin
+cp /Cygnus/B20/cygwin-b20/H-i586-cygwin/bin/sh.exe /bin
+@end example
+@end enumerate
 
 @item
-Install X11, a port that works with Cygwin32 and provides X11R6.3 is
-available at
-@uref{ftp://ftp.franken.de/pub/win32/develop/gnuwin32/cygwin32/packages/X11R6.3/}.
+Install LessTIF and X11R6.4.  A port that works with Cygwin32 and
+provides X11R6.4 is available at
+@uref{http://sourceware.cygnus.com/cygwin/}.  At last count it was
+called something like @file{x11r6.4-cygwin-b20.1.tar.gz}.
+
+@enumerate
+@item
+After downloading, enter the cygwin shell.
+@item
 Gunzip the file and UN tar @emph{while in} /usr.  This will create a
-/usr/X11R6.3 directory.  Do not move it, even though the documentation
+/usr/X11R6.4 directory.  Do not move it, even though the documentation
 suggests you can, this directory is hard-coded in the X11 executables.
-Add /usr/X11R6.3/bin to your PATH, using the Control Panel/System/Enviornment
-requester.
+@example
+cd /usr
+gunzip x11r6.4-cygwin-b20.1.tar.gz
+tar xvf x11r6.4-cygwin-b20.1.tar.gz
+@end example
+
+@item
+Add /usr/X11R6.4/bin to your PATH, using the Control
+Panel/System/Enviornment requester.
+@end enumerate
 
 @item
 Obtain a X11 server.  If you're using Unix you probably already have the
@@ -303,7 +328,13 @@ Download the Dinotrace kit, if not done previously.
 @item
 Set your X11 Display.  If you'll only be using it locally, 
 use the Control Panel/System/Enviornment requester to add a DISPLAY
-environment variable with the value localhost:0.0
+environment variable with the value :0.0
+
+Or, in the cygwin shell before each run of Dinotrace do
+@example
+DISPLAY=:0.0
+export DISPLAY
+@end example
 
 @item
 Reboot or restart the shells to pick up the new environment variables.
@@ -312,6 +343,11 @@ Reboot or restart the shells to pick up the new environment variables.
 The Dinotrace executable should work, it's under
 @file{bin/dinotrace-i386-pc-cygwin32.exe}  Make a shortcut to the executable
 or add it to your path.
+
+@item
+There are known problems in LessTif from looking at network drives in the
+Dinotrace File Open requestor.  You may want to specify trace files on the
+command line instead of using the requestor.
 
 @item
 Finally, see the Dinotrace manual for configuring Dinotrace for your site.
