@@ -56,6 +56,7 @@
  *****************************************************************************/
 
 #include "dinotrace.h"
+#include <errno.h>
 
 #include "functions.h"
 #include "bintradef.h"
@@ -578,6 +579,34 @@ static void	fil_tempest_binary_add_cptr (
       value.number[0]);*/
 }
 
+static int bin_read (int fd, void *buf, size_t size)
+{
+    int got_tot = 0;
+    int remaining = size;
+    if (size <= 0) return 0;
+    do {
+	int got_this = read (fd, buf, remaining);
+	if (got_this>0) {
+	    got_tot += got_this;
+	    ((char *)buf) += got_this;
+            remaining -= got_this;
+	} else if (got_this < 0) {
+	    if (errno != EAGAIN && errno != EINTR) {
+		/* read failed, presume error */
+                printf("Read failed in bin_read (%i, -, %i)\n", fd,  (int)size);
+                perror("dinotrace");
+		break;
+	    } else {
+                got_this = 0;
+            }
+	} else {
+	    /* end-of-file */
+	    break;
+        }
+    } while (got_tot < size);
+    return (got_tot);
+}
+
 static uint_t bin_read_little_uint_t32 (int read_fd)
     /* Read a little endian 32 bit uint_t, correct to internal representation */
 {
@@ -585,7 +614,7 @@ static uint_t bin_read_little_uint_t32 (int read_fd)
     uint_t	littledata;
     uint_t	naturaldata;
 
-    status = read (read_fd, &littledata, 4);
+    status = bin_read (read_fd, &littledata, 4);
     /* Actually it's ANTILITTLE, but it's a symetric function */
     naturaldata = LITTLEENDIANIZE32 (littledata);
     return (naturaldata);
@@ -609,7 +638,7 @@ void tempest_read (
     Boolean_t	verilator_xor_format;
 
     /* Read the file identification block */
-    status = read (read_fd, chardata, 4);
+    status = bin_read (read_fd, chardata, 4);
     chardata[4]='\0';
     verilator_xor_format = !strncmp (chardata,"BX",2);
     if (!status || (!strncmp (chardata,"BT",2) && !strncmp (chardata,"BX",2) )) {
@@ -643,7 +672,7 @@ void tempest_read (
 	sigOffset = bin_read_little_uint_t32 (read_fd);
 	sigWidth  = bin_read_little_uint_t32 (read_fd);
 	sigChars  = bin_read_little_uint_t32 (read_fd);
-	status = read (read_fd, chardata, sigChars);
+	status = bin_read (read_fd, chardata, sigChars);
 	chardata[sigChars] = '\0';
 	
 	if (DTPRINT_FILE) {
@@ -681,7 +710,7 @@ void tempest_read (
 
 	/* Read the pad bits */
 	pad_len = (sigChars%8) ? 8 - (sigChars%8) : 0;
-	status = read (read_fd, chardata, pad_len);
+	status = bin_read (read_fd, chardata, pad_len);
     }
 
     /* Make the busses */
@@ -701,7 +730,7 @@ void tempest_read (
     while (1) {
 	/* Read a row of data */
 	if (verilator_xor_format) {
-	    status = read (read_fd, data_xor, numBitsRowPad/8);
+	    status = bin_read (read_fd, data_xor, numBitsRowPad/8);
 	    if (status < numBitsRowPad/8) break;	/* End of data */
 
 	    /* Un-exor the data */
@@ -714,7 +743,7 @@ void tempest_read (
 	}
 	else {
 	    /* Regular format */
-	    status = read (read_fd, data, numBitsRowPad/8);
+	    status = bin_read (read_fd, data, numBitsRowPad/8);
 	    if (status < numBitsRowPad/8) break;	/* End of data */
 
 	    /* Correct endianization */
