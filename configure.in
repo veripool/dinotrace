@@ -21,6 +21,8 @@ AC_SUBST(CONFIG_DATE_STRG)
 AC_DEFINE_UNQUOTED(CONFIG_DATE_STRG,"$CONFIG_DATE_STRG")
 
 dnl Checks for programs.
+dnl CFLAGS generally has a low optimization and -g.  Annoying, and too slow.
+dnl This may need to be changed to support other compilers
 CFLAGS="-O2 -g -Wall -DDEBUG"
 CFLAGS="-O3"
 AC_PROG_CC
