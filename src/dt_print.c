@@ -516,6 +516,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
     char strg[32];
     unsigned int value;
     CURSOR *csr_ptr;			/* Current cursor being printed */
+    int unstroked=0;		/* Number commands not stroked */
     
     if (DTPRINT_ENTRY) printf ("In ps_draw - filename=%s, printtime=%d sig=%s\n",trace->filename, printtime, sig_ptr->signame);
     
@@ -597,7 +598,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		value = *((unsigned int *)cptr+1);
 		/* Below evaluation left to right important to prevent error */
 		if ( (sig_ptr->decode != NULL) &&
-		    (value<MAXSTATENAMES) &&
+		    (value < sig_ptr->decode->numstates) &&
 		    (sig_ptr->decode->statename[value][0] != '\0')) {
 		    strcpy (strg, sig_ptr->decode->statename[value]);
 		    }
@@ -637,6 +638,12 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	      default: printf ("Error: State=%d\n",cptr->sttime.state); break;
 		} /* end switch */
 	    
+	    if (unstroked++ > 400) {
+		/* Must stroke every so often to avoid overflowing printer stack */
+		fprintf (psfile,"currentpoint stroke MT\n");
+		unstroked=0;
+		}
+
 	    cptr += sig_ptr->lws;
 	    }
 	} /* end of FOR */
