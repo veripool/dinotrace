@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Save cursor notes in Customize save files.  [Thomas Dmukauskas]
 
+****	Fix segfault when using grid timerep without grid. [Scott Venier]
+
 * Dinotrace 9.1n 10/22/2004
 
 ****	Fix slow file reading with >128 bit __en signals. [Ta-Chung Chang]

@@ -86,7 +86,7 @@ DTime_t	grid_primary_period (
     int		grid_num;
     const Grid_t	*grid_ptr;
     DTime_t	step;
-    step = 0;
+    step = 1;  /* Don't return 0, might get div by zero */
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 	grid_ptr = &(trace->grid[grid_num]);
 	if (grid_ptr->visible) {
