@@ -7,13 +7,15 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-* Changes in Dinotrace *********
+* Changes in Dinotrace 9.1h  08/30/2002
 
 ***	Save_duplicates is now on by default.
 
 ****	Fixed several bugs when save_duplicates is enabled.
 
 ****	Updated Windows install.  [Greg Loxtercamp]
+
+****	Fixed coredump reading wide ascii traces.  [Vitaly Oratovsky]
 
 
 * Changes in Dinotrace 9.1g  01/24/2002

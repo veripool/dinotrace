@@ -63,7 +63,7 @@
 
 int fil_line_num=0;
 
-#define FIL_SIZE_INC	1024	/* Characters to increase length by */
+#define FIL_SIZE_INC	2048	/* Characters to increase length by */
 
 /****************************** UTILITIES ******************************/
 
@@ -332,7 +332,7 @@ void ascii_read (
     }
 
     /* Make the buffer */
-    header_length = FIL_SIZE_INC - 4; 	/* -4 for saftey room */
+    header_length = FIL_SIZE_INC;
     header_start = (char *)XtMalloc (FIL_SIZE_INC);
     header_ptr = header_start;
 
@@ -367,11 +367,9 @@ void ascii_read (
 	    base_chars_left--;
 	}
 	/* Get more space if needed */
-	if (header_ptr - header_start > header_length) {
-	    long header_size;
-
+	if (header_ptr - header_start > header_length-4/*slop*/) {
+	    long header_size = header_ptr - header_start;
 	    header_length += FIL_SIZE_INC;
-	    header_size = header_ptr - header_start;
 	    header_start = (char *)XtRealloc (header_start, header_length);
 	    header_ptr = header_size + header_start;
 	}
