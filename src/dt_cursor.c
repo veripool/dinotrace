@@ -221,8 +221,6 @@ void    cur_highlight_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    int i;
-
     if (DTPRINT_ENTRY) printf ("In cur_highlight_cb - trace=%d\n",trace);
     
     /* remove any previous events */
@@ -303,7 +301,7 @@ void    cur_move_ev (w, trace, ev)
 	{
 	/* wait for next event */
 	XNextEvent (XtDisplay (trace->work),&event);
-	
+
 	/* if the pointer moved, erase previous line and draw new one */
 	if (event.type == MotionNotify)
 	    {
@@ -325,10 +323,21 @@ void    cur_move_ev (w, trace, ev)
 	if (event.type == ConfigureNotify) win_resize_cb (0,trace);
 	
 	/* button released - calculate cursor position and leave the loop */
-	if (event.type == ButtonRelease) {
+	if (event.type == ButtonRelease || event.type == ButtonPress) {
+	    /* ButtonPress in case user is freaking out, some strange X behavior caused the ButtonRelease to be lost */
 	    eb = (XButtonReleasedEvent *)&event;
 	    time = posx_to_time_edge (trace, eb->x, eb->y);
 	    break;
+	    }
+
+	if (global->redraw_needed && !XtAppPending (global->appcontext)) {
+	    /* change the GC function back to its default */
+	    xgcv.function = GXcopy;
+	    XChangeGC (global->display,trace->gc,GCFunction,&xgcv);
+	    draw_perform();
+	    /* change the GC function to drag the cursor */
+	    xgcv.function = GXinvert;
+	    XChangeGC (global->display,trace->gc,GCFunction,&xgcv);
 	    }
 	}
     
