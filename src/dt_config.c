@@ -1484,7 +1484,7 @@ void config_write_file (
 	    ValSearch_t *vs_ptr = &global->val_srch[i-1];
 	    char strg[MAXSIGLEN];
 	    if (vs_ptr->color || vs_ptr->cursor) {
-		val_to_string (vs_ptr->radix, strg, &vs_ptr->value, 0, FALSE);
+		val_to_string (vs_ptr->radix, strg, &vs_ptr->value, 0, FALSE, TRUE);
 		fprintf (writefp, "%svalue_highlight %s %d \"%s\" %s %s\n",c,
 			 strg, i, vs_ptr->signal, 
 			 vs_ptr->color ? "-VALUE":"",

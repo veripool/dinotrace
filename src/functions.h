@@ -340,7 +340,8 @@ extern void	sig_search_apply_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbac
 extern void	val_minimize (Value_t *value_ptr, Signal_t *sig_ptr);
 extern void	val_update_search (void);
 extern void	val_states_update (void);
-extern void	val_to_string (const Radix_t *radix_ptr, char *strg, const Value_t *value_ptr, int width, Boolean_t display);
+extern void	val_to_string (const Radix_t *radix_ptr, char *strg, const Value_t *value_ptr, int width,
+			       Boolean_t display, Boolean_t dropleading);
 extern Boolean_t  val_equal (const Value_t *vptra, const Value_t *vptrb);
 extern void	val_radix_init (void);
 extern Radix_t	*val_radix_find (const char *name);

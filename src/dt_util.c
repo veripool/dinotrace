@@ -825,7 +825,7 @@ void    print_cptr (
     Value_t	*value_ptr)
 {
     char strg[1000];
-    val_to_string (global->radixs[0], strg, value_ptr, 0, FALSE);
+    val_to_string (global->radixs[0], strg, value_ptr, 0, FALSE, FALSE);
     if (CPTR_TIME(value_ptr)==EOT) {
 	printf ("%s at EOT\n", strg);
     }

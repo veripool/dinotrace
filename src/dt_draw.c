@@ -636,7 +636,7 @@ static void draw_signal (
 	    if (cptr->siglw.stbits.state != STATE_0
 		&& cptr->siglw.stbits.state != STATE_1) {
 		
-		val_to_string (sig_ptr->radix, strg, cptr, sig_ptr->bits, TRUE);
+		val_to_string (sig_ptr->radix, strg, cptr, sig_ptr->bits, TRUE, FALSE);
 		
 	      state_plot:
 		{

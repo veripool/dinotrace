@@ -11,6 +11,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ****	Fix File Reread with identically named signals.
 
+****	Fix dropping of 0s on signals > 32 bits. [Jason Mancini]
+
 ****	Fix coredump on read and GCC 3.2.  [Jason Mancini]
 
 * Changes in Dinotrace 9.1i  03/07/2003
