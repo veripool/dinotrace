@@ -171,7 +171,9 @@ void set_cursor (
 {
     Trace	*trace;			/* Display information */
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	XDefineCursor (global->display, trace->wind, global->xcursors[cursor_num]);
+	if (trace->wind) {
+	    XDefineCursor (global->display, trace->wind, global->xcursors[cursor_num]);
+	}
     }
     XmSetMenuCursor (global->display, global->xcursors[cursor_num]);
     last_set_cursor_num = cursor_num;

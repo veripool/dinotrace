@@ -1199,6 +1199,7 @@ void config_read_file (
     char line[1000];
     struct stat		newstat;	/* New status on the reread file*/
     int	read_fd;
+    int		prev_cursor;
     
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Reading config file %s\n", filename);
 
@@ -1237,6 +1238,9 @@ void config_read_file (
 	return;
     }
     
+    prev_cursor = last_set_cursor ();
+    set_cursor (DC_BUSY);
+
     config_line_num=0;
     config_file = filename;
     config_reading_socket = FALSE;
@@ -1250,6 +1254,7 @@ void config_read_file (
     config_process_eof (trace);
 
     fclose (readfp);
+    set_cursor (prev_cursor);
 }
 
 /**********************************************************************
