@@ -259,13 +259,15 @@ static void	verilog_process_var (
     char	basename[10000];
     int		t, len;
     char	code[10];
+    char	*refer;
 
     /*
       $var reg       5 :    r [4:0] $end
-      $var reg   5 : 2 x    r [4:0] $end
+      $var reg   5 : 2 x    r [4:0] $end		<<<< shows a range
       $var wire      1 v&   Z [-1] $end			<<<<< ignore [-1]
       $var wire      1 R    addr_h [6] $end
       $var reg       1 !    clk  $end
+      $var reg      11 "    count[10:0] $end
       $var reg      11 "    count [10:0] $end
       $var real     64 /$   ad_off_delay $end
     */
@@ -281,18 +283,25 @@ static void	verilog_process_var (
     /* read next token */
     /* if token == ":", msb and lsb are given */
     cmd = verilog_gettok();
+    refer = NULL;
     if(!strcmp(cmd, ":")) {
 	msb = bits;
 
 	/* Read lsb */
 	cmd = verilog_gettok();
-	lsb = atoi (cmd);
+	if (isdigit(cmd[0])) {
+	    lsb = atoi (cmd);
+	    bits = msb - lsb + 1;
  
-	bits = msb - lsb + 1;
- 
-	/* Read <identifier_code>  (uses chars 33-126 = '!' - '~') */
-	cmd = verilog_gettok();
-	strcpy (code, cmd);
+	    /* Read <identifier_code>  (uses chars 33-126 = '!' - '~') */
+	    cmd = verilog_gettok();
+	    strcpy (code, cmd);
+	} else {
+	    /* Faked us out, : is the identifier code */
+	    strcpy(code, ":");
+	    /* We read what should have been the reference */
+	    refer = cmd;
+	}
     }
     else { /* must have been identifier */
 	strcpy(code, cmd);
@@ -306,9 +315,11 @@ static void	verilog_process_var (
     }
     
     /* Read <reference> */
-    cmd = verilog_gettok();
+    if (refer==NULL) refer = verilog_gettok();
     strcpy (signame, basename);
-    strcat (signame, cmd);
+    strcat (signame, refer);
+
+    /* Read vector or $end */
     cmd = verilog_gettok();
     if (*cmd != '$' && strcmp(cmd, "[-1]")) {
 	/* Add vector to signal */

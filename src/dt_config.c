@@ -1310,8 +1310,6 @@ void config_read_socket (
 
 void config_update_filenames (Trace_t *trace)
 {
-    char *pchar;
-
     if (DTPRINT_ENTRY) printf ("In config_update_filenames\n");
 	
     global->config_filename[3][0] = '\0';
@@ -1326,9 +1324,14 @@ void config_update_filenames (Trace_t *trace)
 
     /* Same file as trace, but .dino extension */
     if (trace->dfile.filename != '\0') {
+	char *slash;
+	char *pchar;
 	strcpy (global->config_filename[4], trace->dfile.filename);
-	if ((pchar=strrchr(global->config_filename[4],'.')) != NULL )
+	slash = strrchr (global->config_filename[4],'/');
+	if (slash==NULL) slash = global->config_filename[4];
+	while ((pchar=strrchr(slash,'.')) != NULL) {
 	    *pchar = '\0';
+	}
 	strcat (global->config_filename[4], ".dino");
     }
 }
