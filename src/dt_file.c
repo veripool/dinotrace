@@ -1146,7 +1146,6 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
     sig_end_pos = t - data_begin_ptr;
 
     /* Skip more spaces */
-    /* Nore
     while (*t && isspace(*t)) t++;
     if (isalnum (*t) || *t=='?') {
 	/* Found second digit, as in the 1 in: " 0000 1" */
