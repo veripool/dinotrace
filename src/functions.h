@@ -130,7 +130,7 @@ extern void sig_goto_pattern (TRACE *, char *);
 extern void sig_cross_preserve (TRACE *);
 extern void sig_cross_restore (TRACE *);
 #if defined(VMS) || defined(mips)
-extern char *strdup(s);
+extern char *strdup(char *);
 #endif
     
 /* dt_value.c routines */
