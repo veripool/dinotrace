@@ -696,6 +696,7 @@ struct st_signal {
     uint_t		file_code;	/* Code for signal in file (verilog) */
     uint_t		file_pos;	/* Position of the bits in the file line */
     uint_t		file_end_pos;	/* Ending position of the bits in the file line */
+    Boolean_t		file_copy;	/* Copyof made automatically by file read */
     union sig_file_type_u file_type;	/* File specific type of signal, two/fourstate, etc */
     uint_t		value_mask[4];	/* Value Mask with 1s in bits that are to be set */
     uint_t		pos_mask;	/* Mask to translate file positions */

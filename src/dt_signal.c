@@ -251,6 +251,7 @@ Signal_t *sig_replicate (
     if (sig_ptr->copyof)
 	new_sig_ptr->copyof = sig_ptr->copyof;
     else new_sig_ptr->copyof = sig_ptr;
+    new_sig_ptr->file_copy = FALSE;
 
     return (new_sig_ptr);
 }
@@ -2060,16 +2061,14 @@ void sig_cross_restore (
 	    for (old_sig_ptr = global->preserved_trace->firstsig; old_sig_ptr; old_sig_ptr = old_sig_ptr->forward) {
 		if (    (old_sig_ptr->trace == global->preserved_trace)	/* Sig from old trace */
 		    &&  (trace_ptr != global->preserved_trace) ) {	/* Not in old trace */
-		    if (old_sig_ptr->copyof) {
-			/* Copy to other */
-			if (NULL != (new_sig_ptr = old_sig_ptr->new_trace_sig)) {
+		    if (NULL != (new_sig_ptr = old_sig_ptr->new_trace_sig)) {
+			if (old_sig_ptr->copyof && !old_sig_ptr->file_copy) {
+			    /* Copy to other */
 			    if (DTPRINT_PRESERVE) printf ("Preserve: Please copy-to-other %s\n", old_sig_ptr->signame);
 			    sig_copy (trace, new_sig_ptr, trace_ptr, old_sig_ptr);
 			}
-		    }
-		    else {
-			/* Move to other */
-			if (NULL != (new_sig_ptr = old_sig_ptr->new_trace_sig)) {
+			else {
+			    /* Move to other */
 			    if (DTPRINT_PRESERVE) printf ("Preserve: Please move-to-other %s\n", old_sig_ptr->signame);
 			    sig_move (trace, new_sig_ptr, trace_ptr, old_sig_ptr);
 			}

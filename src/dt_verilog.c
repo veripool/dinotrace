@@ -662,6 +662,7 @@ static void	verilog_process_definitions (
 		    if (global->save_duplicates
 			&& sig_ptr->bits == pos_sig_ptr->bits) {
 			sig_ptr->copyof = pos_sig_ptr;
+			sig_ptr->file_copy = TRUE;
 			/*printf ("Dup %s\t  %s\n", pos_sig_ptr->signame, sig_ptr->signame);*/
 		    } else {
 			sig_free (trace, sig_ptr, FALSE, FALSE); sig_ptr=NULL;
