@@ -1,15 +1,19 @@
 !
 ! dinotrace.dino
 !
+!	! Comment
 !	page_inc	4 | 2 | 1
 !	rise_fall_time	Number
 !	signal_height	Number
 !	grid		ON | OFF
 !	grid_align	Number | ASSERTION | DEASSERTION
 !	grid_resolution	Number | AUTO
+!	time_rep	NS | CYCLE
+!	file_format	DECSIM | TEMPEST
 !	cursor		ON | OFF
-!	signal_states	Signal_Name = {State, State, State}
 !	debug		ON | OFF
+!	vector_seperator "<char>"
+!	signal_states	Signal_Name = {State, State, State}
 !
 
 grid on
@@ -20,6 +24,8 @@ cursor on
 signal_height 20
 page_inc 1
 rise_fall_time 2
+vector_seperator "<"
+!file_format DECSIM	!<- Overrides command line if not commented out
 !
 ! EV4 Cycle requests
 signal_states *cpucreq*<2:0> = {

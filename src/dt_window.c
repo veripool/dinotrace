@@ -593,8 +593,9 @@ void    win_goto_ok_cb(w,trace,cb)
 	    - (int)((trace->width-global->xstart)/global->res/2);
 	
 	/* Limit time extent */
-	if ( time > trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res) ) {
-	    time = trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res);
+	/* V6.3 bug - Don't subtract the window length */
+	if ( time > trace->end_time ) {
+	    time = trace->end_time;
 	    }
 	if ( time < trace->start_time ) {
 	    time = trace->start_time;

@@ -196,9 +196,14 @@ void init_globals ()
     global->goto_color = -1;
 
     for (i=0; i<MAX_SRCH; i++) {
-	global->srch[i].color = global->srch[i].cursor =
-	    global->srch[i].value[0] = global->srch[i].value[1] =
-		global->srch[i].value[2] = 0;
+	/* Value */
+	global->val_srch[i].color = global->val_srch[i].cursor =
+	    global->val_srch[i].value[0] = global->val_srch[i].value[1] =
+		global->val_srch[i].value[2] = 0;
+
+	/* Signal */
+	global->sig_srch[i].color = 0;
+	global->sig_srch[i].string[0] = '\0';
 	}
     }
 
@@ -430,10 +435,12 @@ TRACE *create_trace (xs,ys,xp,yp)
     trace->menu_close = trace->menu.pdentrybutton[pd];
     dt_menu_entry	("Clear",	'l',	trace_clear_cb);
     dt_menu_entry	("Exit", 	'x',	trace_exit_cb);
+
     dt_menu_title ("Customize", 'u');
     dt_menu_entry	("Change",	'C',	cus_dialog_cb);
     dt_menu_entry	("ReRead",	'e',	cus_reread_cb);
     dt_menu_entry	("Restore",	'R',	cus_restore_cb);
+
     dt_menu_title ("Cursor", 'C');
     dt_menu_subtitle	("Add",		'A');
     trace->menu.cur_add_pds = pds+1;
@@ -448,25 +455,25 @@ TRACE *create_trace (xs,ys,xp,yp)
     for (i=0; i<=MAX_SRCH; i++) {
 	dt_menu_subentry_c	(trace->xcolornums[i], cur_highlight_cb);
 	}
-
     dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
+
     dt_menu_title ("Grid", 'G');
     dt_menu_entry	("Res",	 	'R',	grid_res_cb);
     dt_menu_entry	("Align",	'A',	grid_align_cb);
     dt_menu_entry	("Reset",	's',	grid_reset_cb);
     dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
+
     dt_menu_title ("Signal", 'S');
     dt_menu_entry	("Add",		'A',	sig_add_cb);
     dt_menu_entry	("Move",	'M',	sig_mov_cb);
     dt_menu_entry	("Copy",	'C',	sig_copy_cb);
-    dt_menu_entry	("Delete",	'D',	 sig_del_cb);
-    /* dt_menu_entry	("Search",	'S',	val_search_cb); */
+    dt_menu_entry	("Delete",	'D',	sig_del_cb);
+    dt_menu_entry	("Search",	'S',	sig_search_cb);
     dt_menu_subtitle	("Highlight",	'H');
     trace->menu.sig_highlight_pds = pds+1;
     for (i=0; i<=MAX_SRCH; i++) {
 	dt_menu_subentry_c	(trace->xcolornums[i], sig_highlight_cb);
 	}
-
     /* dt_menu_entry	("Reset", 	'R',	sig_reset_cb); */
     dt_menu_entry	("Cancel", 	'l',	cancel_all_events);
 
@@ -657,6 +664,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     trace->custom.customize = NULL;
     trace->signal.add = NULL;
     trace->signal.search = NULL;
+    trace->value.search = NULL;
     trace->prntscr.customize = NULL;
     trace->prompt_popup = NULL;
     trace->fileselect = NULL;

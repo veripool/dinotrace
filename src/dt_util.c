@@ -335,9 +335,9 @@ void  get_file_name( trace )
     /* Directory is global information */
     strcpy (mask, global->directory);
     
-    if ( trace_format == DECSIM )
+    if ( file_format == FF_DECSIM )
 	pattern = "*.tra";
-    else if ( trace_format == HLO_TEMPEST )
+    else if ( file_format == FF_TEMPEST )
 	pattern = "*.bt";
     
     strcat (mask, pattern);
@@ -595,24 +595,22 @@ void    print_sig_names(w,trace)
     Widget		w;
     TRACE	*trace;
 {
-    int		i;
-    short	*pbus;
-    
-    printf("There are %d signals in this trace.\n",trace->numsig);
-    printf("Num:\tType:\tName:\n");
-    
-    for (i=0; i< trace->numsig; i++)
-	{
-	printf("%d)\t\t%s\n",i,(*(trace->signame)).array[i]);
+    SIGNAL	*sig_ptr;
+
+    if (DTPRINT) printf ("In print_sig_names\n");
+
+    printf ("  Number of signals = %d\n", trace->numsig);
+
+    /* loop thru each signal */
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	printf (" Sig '%s'  ty=%d inc=%d index=%d btyp=%d bpos=%d bits=%d\n",
+		sig_ptr->signame, sig_ptr->type, sig_ptr->inc,
+		sig_ptr->index,
+		sig_ptr->file_type, sig_ptr->file_pos, sig_ptr->bits
+		);
 	}
     
-    printf("Bus array: trace->bus[]=");
-    pbus = trace->bus;
-    for (i=0; i< trace->numsig; i++) {
-	printf("%d|",*(pbus+i));
-	}
-    
-    print_signal_states (trace);
+    /* print_signal_states (trace); */
     }
 
 void    print_all_traces(w,trace)

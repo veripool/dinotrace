@@ -34,7 +34,8 @@
 #include "dinotrace.h"
 #include "callbacks.h"
 
-extern void draw_hscroll ();
+extern void draw_hscroll(),
+    draw_vscroll();
 
 /*
  *
@@ -266,8 +267,8 @@ void draw(trace)
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch[i].value[2]==value ) ) {
-			    srch_this_color = global->srch[i].color;
+			if ( ( global->val_srch[i].value[2]==value ) ) {
+			    srch_this_color = global->val_srch[i].color;
 			    break;
 			    }
 			}
@@ -288,9 +289,9 @@ void draw(trace)
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch[i].value[2]== *((unsigned int *)cptr+2) )
-			    && ( global->srch[i].value[1]== *((unsigned int *)cptr+1) ) ) {
-			    srch_this_color = global->srch[i].color;
+			if ( ( global->val_srch[i].value[2]== *((unsigned int *)cptr+2) )
+			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+1) ) ) {
+			    srch_this_color = global->val_srch[i].color;
 			    break;
 			    }
 			}
@@ -313,10 +314,10 @@ void draw(trace)
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch[i].value[2]== *((unsigned int *)cptr+3) )
-			    && ( global->srch[i].value[1]== *((unsigned int *)cptr+2) )
-			    && ( global->srch[i].value[0]== *((unsigned int *)cptr+1) ) ) {
-			    srch_this_color = global->srch[i].color;
+			if ( ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
+			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
+			    && ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) ) ) {
+			    srch_this_color = global->val_srch[i].color;
 			    break;
 			    }
 			}
@@ -485,57 +486,11 @@ void draw(trace)
 
     /* Draw the scroll bar */
     draw_hscroll (trace);
+    draw_vscroll (trace);
     
     /* Back to default color */
     XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
     } /* End of DRAW */
-
-
-void	draw_hscroll (trace)
-    TRACE *trace;
-    /* Draw on the horizontal scroll bar - needs guts of the ScrollBarWidget */
-{
-    int y1,y2,x1,xbase,xmax,slider_x1,slider_x2;
-    float xscale;
-    CURSOR *csr_ptr;			/* Current cursor being printed */
-
-    if (!trace->loaded || (trace->end_time == trace->start_time)) return;
-
-    /* initial the y colors for drawing */
-    y1 = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_y;
-    y2 = y1 + ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_height;
-    slider_x1 = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_x;
-    slider_x2 = slider_x1 + ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_width;
-    xbase = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_x;
-    xmax = xbase + ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_width;
-    xscale =
-	(float)((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_width	/* sc width */
-	/ (float)(trace->end_time - trace->start_time);		/* range of times */
-
-    /* Blank area to either side of slider */
-    XSetForeground (global->display, trace->gc,
-		    ((XmScrollBarRec *)trace->hscroll)->scrollBar.trough_color );
-    XFillRectangle(global->display, XtWindow (trace->hscroll), trace->gc,
-		   xbase, y1, slider_x1 - xbase, y2-y1);
-    XFillRectangle(global->display, XtWindow (trace->hscroll), trace->gc,
-		   slider_x2, y1, xmax - slider_x2 , y2-y1);
-
-    if ( trace->cursor_vis ) {
-	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
-	    /* draw the cursor */
-	    x1 = xbase + xscale * (csr_ptr->time - trace->start_time);
-
-	    /* Don't plot if it would overwrite the slider */
-	    if ((x1 < slider_x1) || (x1 > slider_x2)) {
-		/* Change color */
-		XSetForeground (global->display, trace->gc, trace->xcolornums[csr_ptr->color]);
-
-		XDrawLine(global->display, XtWindow (trace->hscroll),
-			  trace->gc, x1,y1,x1,y2);
-		}
-	    }
-	}
-    }
 
 
 void	update_globals ()
@@ -550,7 +505,7 @@ void	update_globals ()
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
 	    for (sig_ptr = (SIGNAL *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-		for (t1=sig_ptr->signame; *t1==' '; t1++);
+		t1=sig_ptr->signame;
 		if (strncmp (t1, "%NET.",5)==0) t1+=5;
 		/* if (DTPRINT) printf("Signal = '%s'  xstart=%d\n",t1,xstarttemp); */
 		if (xstarttemp < XTextWidth(trace->text_font,t1,strlen(t1)))
@@ -582,111 +537,109 @@ void redraw_all (trace)
 
 
 /**********************************************************************
- *	update_search
+ *	Scroll bar hacks (dependent on Motif internals)
  **********************************************************************/
 
-void	update_search ()
+void	draw_hscroll (trace)
+    TRACE *trace;
+    /* Draw on the horizontal scroll bar - needs guts of the ScrollBarWidget */
 {
-    TRACE	*trace;
-    SIGNAL	*sig_ptr;
-    SIGNAL_LW	*cptr;
-    int		found, cursorize;
-    register int i;
-    CURSOR	*csr_ptr,*new_csr_ptr;
+    int ymin,ymax,x1,xmin,xmax,slider_xmin,slider_xmax;
+    float xscale;
+    CURSOR *csr_ptr;			/* Current cursor being printed */
 
-    if (DTPRINT) printf("In update_search\n");
+    if (!trace->loaded || (trace->end_time == trace->start_time)) return;
 
-    /* Mark all cursors that are a result of a search as old (-1) */
-    for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
-	if (csr_ptr->search) csr_ptr->search = -1;
-	}
+    /* initial the y colors for drawing */
+    xmin = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_x;
+    xmax = xmin + ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_width;
+    ymin = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_y;
+    ymax = ymin + ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_height;
+    slider_xmin = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_x;
+    slider_xmax = slider_xmin + ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_width;
+    xscale =
+	(float)((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_width	/* sc width */
+	/ (float)(trace->end_time - trace->start_time);		/* range of times */
 
-    for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	/* don't do anything if no file is loaded */
-	if (!trace->loaded) continue;
-	
-	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    if (sig_ptr->inc == 1) {
-		/* Single bit signal, don't search for values */
-		continue;
+    /* Blank area to either side of slider */
+    XSetForeground (global->display, trace->gc,
+		    ((XmScrollBarRec *)trace->hscroll)->scrollBar.trough_color );
+    XFillRectangle(global->display, XtWindow (trace->hscroll), trace->gc,
+		   xmin, ymin, slider_xmin - xmin, ymax-ymin);
+    XFillRectangle(global->display, XtWindow (trace->hscroll), trace->gc,
+		   slider_xmax, ymin, xmax - slider_xmax , ymax-ymin);
+
+    if ( trace->cursor_vis ) {
+	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
+	    /* draw the cursor */
+	    x1 = xmin + xscale * (csr_ptr->time - trace->start_time);
+
+	    /* Don't plot if it would overwrite the slider */
+	    if ((x1 < slider_xmin) || (x1 > slider_xmax)) {
+		/* Change color */
+		XSetForeground (global->display, trace->gc, trace->xcolornums[csr_ptr->color]);
+
+		XDrawLine(global->display, XtWindow (trace->hscroll),
+			  trace->gc, x1,ymin,x1,ymax);
 		}
-	    
-	    found=0;
-	    cursorize=0;
-	    cptr = (SIGNAL_LW *)(sig_ptr)->bptr;
-	    
-	    for (; (cptr->time != EOT); cptr += sig_ptr->inc) {
-		switch (cptr->state) {
-		  case STATE_B32:
-		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch[i].value[2]== *((unsigned int *)cptr+1) )
-			    && ( global->srch[i].value[1] == 0) 
-			    && ( global->srch[i].value[0] == 0) ) {
-			    found |= ( global->srch[i].color != 0) ;
-			    if ( global->srch[i].cursor != 0) cursorize = global->srch[i].cursor;
-			    break;
-			    }
-			}
-		    break;
-		    
-		  case STATE_B64:
-		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch[i].value[2]== *((unsigned int *)cptr+2) )
-			    && ( global->srch[i].value[1]== *((unsigned int *)cptr+1) )
-			    && ( global->srch[i].value[0] == 0) ) {
-			    found |= ( global->srch[i].color != 0) ;
-			    if ( global->srch[i].cursor != 0) cursorize = global->srch[i].cursor;
-			    break;
-			    }
-			}
-		    break;
-		    
-		  case STATE_B96:
-		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch[i].value[2]== *((unsigned int *)cptr+3) )
-			    && ( global->srch[i].value[1]== *((unsigned int *)cptr+2) )
-			    && ( global->srch[i].value[0]== *((unsigned int *)cptr+1) ) ) {
-			    found |= ( global->srch[i].color != 0) ;
-			    if ( global->srch[i].cursor != 0) cursorize = global->srch[i].cursor;
-			    break;
-			    }
-			}
-		    break;
-		    } /* switch */
+	    }
+	}
+    }
 
-		if (cursorize) {
-		    if (NULL != (csr_ptr = time_to_cursor(cptr->time))) {
-			if (csr_ptr->search == -1) {
-			    /* mark the old cursor as new so won't be deleted */
-			    csr_ptr->search = cursorize;
-			    }
-			}
-		    else {
-			/* Make new cursor at this location */
-			csr_ptr = (CURSOR *)XtMalloc(sizeof(CURSOR));
-			csr_ptr->time = cptr->time;
-			csr_ptr->color = cursorize;
-			csr_ptr->search = cursorize;
-			add_cursor (csr_ptr);
-			}
-		    cursorize = 0;
-		    }
 
-		} /* for cptr */
-	    
-	    sig_ptr->srch_ena = found;
-	    if (found && DTPRINT) printf ("Signal %s matches search string.\n", sig_ptr->signame);
-	    
-	    } /* for sig */
-	} /* for trace */
+void	draw_vscroll (trace)
+    TRACE *trace;
+    /* Draw on the vertical scroll bar - needs guts of the ScrollBarWidget */
+{
+    int ymin,ymax,y1,xmin,xmax,slider_ymin,slider_ymax;
+    int i;
+    float yscale;
+    SIGNAL	*sig_ptr;
 
-    /* Deleate all old cursors */
-    for (csr_ptr = global->cursor_head; csr_ptr; ) {
-	new_csr_ptr = csr_ptr;
-	csr_ptr = csr_ptr->next;
-	if (new_csr_ptr->search==-1) {
-	    remove_cursor (new_csr_ptr);
-	    XtFree (new_csr_ptr);
+    if (DTPRINT) printf("In draw_vscroll\n");
+
+    /* initial the y colors for drawing */
+    xmin = ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_x;
+    xmax = xmin + ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_width;
+    ymin = ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_y;
+    ymax = ymin + ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_height;
+    slider_ymin = ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_y;
+    slider_ymax = slider_ymin + ((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_height;
+
+    /*
+    if (DTPRINT) printf(">>X %d - %d   Y %d - %d  Sli %d - %d\n", 
+			xmin,xmax,ymin,ymax,slider_ymin,slider_ymax);
+			*/
+
+    /* Blank area to either side of slider */
+    XSetForeground (global->display, trace->gc,
+		    ((XmScrollBarRec *)trace->vscroll)->scrollBar.trough_color );
+    XFillRectangle(global->display, XtWindow (trace->vscroll), trace->gc,
+		   xmin, ymin, xmax - xmin, slider_ymin - ymin);
+    XFillRectangle(global->display, XtWindow (trace->vscroll), trace->gc,
+		   xmin, slider_ymax, xmax - xmin, ymax - slider_ymax);
+
+    if (!trace->loaded || (trace->numsigvis >= trace->numsig) || !trace->numsig) return;
+
+    yscale =
+	(float)((XmScrollBarRec *)trace->vscroll)->scrollBar.slider_area_height	/* sc height */
+	    / (float)(trace->numsig);		/* number of signals */
+
+    for (sig_ptr = trace->firstsig, i=0; sig_ptr; sig_ptr = sig_ptr->forward, i++) {
+	if (sig_ptr->color && ((i < trace->numsigstart) ||
+			       (i >= ( trace->numsigstart + trace->numsigvis)))) {
+	    y1 = ymin + yscale * i;
+
+	    /* If plotting it would overwrite the slider move it to one side or the other */
+	    if (y1 < slider_ymax && y1 > slider_ymin) {
+		if ((y1 - slider_ymin) < ((slider_ymax - slider_ymin ) / 2))
+		    y1 = slider_ymin - 1;	/* Adjust up */
+		else y1 = slider_ymax + 1;	/* Adjust down */
+		}
+	    /* Change color */
+	    XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
+	    XDrawLine(global->display, XtWindow (trace->vscroll),
+		      trace->gc, xmin,y1,xmax,y1);
 	    }
 	}
     }

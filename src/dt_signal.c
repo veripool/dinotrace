@@ -149,6 +149,34 @@ SIGNAL *replicate_signal (trace, sig_ptr)
     return (new_sig_ptr);
     }
 
+void	sig_update_search ()
+{
+    TRACE	*trace;
+    SIGNAL	*sig_ptr;
+    register int i;
+
+    if (DTPRINT) printf("In sig_update_search\n");
+
+    /* Search every trace for the signals */
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+
+	/* See what signals match the search and highlight as appropriate */
+	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	    if (sig_ptr->color && sig_ptr->search) {
+		sig_ptr->color = sig_ptr->search = 0;
+		}
+	    for (i=0; i<MAX_SRCH; i++) {
+		if (!sig_ptr->color &&
+		    global->sig_srch[i].color &&
+		    wildmat (sig_ptr->signame, global->sig_srch[i].string)) {
+		    sig_ptr->search = i;
+		    sig_ptr->color = global->sig_srch[i].color;
+		    }
+		}
+	    }
+	}
+    }
+
 /****************************** MENU OPTIONS ******************************/
 
 void    sig_add_cb(w,trace,cb)
@@ -333,6 +361,161 @@ void    sig_reset_cb(w,trace,cb)
     XtUnmanageChild(trace->signal.add);
     
     /* ADD RESET CODE !!! */
+    }
+
+
+void    sig_search_cb(w,trace,cb)
+    Widget		w;
+    TRACE	*trace;
+    XmSelectionBoxCallbackStruct *cb;
+{
+    int		i;
+    int		y=10;
+    
+    if (DTPRINT) printf("In sig_search_cb - trace=%d\n",trace);
+    
+    if (!trace->signal.search) {
+	XtSetArg(arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple ("Signal Search Requester") );
+	XtSetArg(arglist[2], XmNwidth, 500);
+	XtSetArg(arglist[3], XmNheight, 400);
+	trace->signal.search = XmCreateBulletinBoardDialog(trace->work,"search",arglist,4);
+	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Color"));
+	XtSetArg(arglist[1], XmNx, 5);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.label1 = XmCreateLabel(trace->signal.search,"label1",arglist,3);
+	XtManageChild(trace->signal.label1);
+	
+	y += 15;
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Sig"));
+	XtSetArg(arglist[1], XmNx, 5);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.label4 = XmCreateLabel(trace->signal.search,"label4",arglist,3);
+	XtManageChild(trace->signal.label4);
+	
+	XtSetArg(arglist[0], XmNlabelString,
+		 XmStringCreateSimple("Search value, *? are wildcards" ));
+	XtSetArg(arglist[1], XmNx, 60);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.label3 = XmCreateLabel(trace->signal.search,"label3",arglist,3);
+	XtManageChild(trace->signal.label3);
+	
+	y += 25;
+
+	for (i=0; i<MAX_SRCH; i++) {
+	    /* enable button */
+	    XtSetArg(arglist[0], XmNx, 15);
+	    XtSetArg(arglist[1], XmNy, y);
+	    XtSetArg(arglist[2], XmNselectColor, trace->xcolornums[i+1]);
+	    XtSetArg(arglist[3], XmNlabelString, XmStringCreateSimple (""));
+	    trace->signal.enable[i] = XmCreateToggleButton(trace->signal.search,"togglen",arglist,4);
+	    XtManageChild(trace->signal.enable[i]);
+
+	    /* create the file name text widget */
+	    XtSetArg(arglist[0], XmNrows, 1);
+	    XtSetArg(arglist[1], XmNcolumns, 30);
+	    XtSetArg(arglist[2], XmNx, 60);
+	    XtSetArg(arglist[3], XmNy, y);
+	    XtSetArg(arglist[4], XmNresizeHeight, FALSE);
+	    XtSetArg(arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
+	    trace->signal.text[i] = XmCreateText(trace->signal.search,"textn",arglist,6);
+	    XtAddCallback(trace->signal.text[i], XmNactivateCallback, sig_search_ok_cb, trace);
+	    XtManageChild(trace->signal.text[i]);
+	    
+	    y += 40;
+	    }
+
+	y+= 15;
+
+	/* Create OK button */
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(" OK ") );
+	XtSetArg(arglist[1], XmNx, 10);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.ok = XmCreatePushButton(trace->signal.search,"ok",arglist,3);
+	XtAddCallback(trace->signal.ok, XmNactivateCallback, sig_search_ok_cb, trace);
+	XtManageChild(trace->signal.ok);
+	
+	/* create apply button */
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Apply") );
+	XtSetArg(arglist[1], XmNx, 70);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.apply = XmCreatePushButton(trace->signal.search,"apply",arglist,3);
+	XtAddCallback(trace->signal.apply, XmNactivateCallback, sig_search_apply_cb, trace);
+	XtManageChild(trace->signal.apply);
+	
+	/* create cancel button */
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Cancel") );
+	XtSetArg(arglist[1], XmNx, 140);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.cancel = XmCreatePushButton(trace->signal.search,"cancel",arglist,3);
+	XtAddCallback(trace->signal.cancel, XmNactivateCallback, sig_search_cancel_cb, trace);
+	XtManageChild(trace->signal.cancel);
+	}
+    
+    /* Copy settings to local area to allow cancel to work */
+    for (i=0; i<MAX_SRCH; i++) {
+	/* Update with current search enables */
+	XtSetArg (arglist[0], XmNset, (global->sig_srch[i].color != 0));
+	XtSetValues (trace->signal.enable[i], arglist, 1);
+
+	/* Update with current search values */
+	XmTextSetString (trace->signal.text[i], global->sig_srch[i].string);
+	}
+
+    /* manage the popup on the screen */
+    XtManageChild(trace->signal.search);
+    }
+
+void    sig_search_ok_cb(w,trace,cb)
+    Widget				w;
+    TRACE			*trace;
+    XmSelectionBoxCallbackStruct *cb;
+{
+    char		*strg;
+    int			i;
+
+    if (DTPRINT) printf("In sig_search_ok_cb - trace=%d\n",trace);
+
+    for (i=0; i<MAX_SRCH; i++) {
+	/* Update with current search enables */
+	if (XmToggleButtonGetState (trace->signal.enable[i]))
+	    global->sig_srch[i].color = i+1;
+	else global->sig_srch[i].color = 0;
+	
+	/* Update with current search values */
+	strg = XmTextGetString (trace->signal.text[i]);
+	strcpy (global->sig_srch[i].string, strg);
+	}
+    
+    XtUnmanageChild(trace->signal.search);
+
+    sig_update_search ();
+
+    /* redraw the display */
+    redraw_all (trace);
+    }
+
+void    sig_search_apply_cb(w,trace,cb)
+    Widget				w;
+    TRACE			*trace;
+    XmSelectionBoxCallbackStruct *cb;
+{
+    if (DTPRINT) printf("In sig_search_apply_cb - trace=%d\n",trace);
+
+    sig_search_ok_cb (w,trace,cb);
+    sig_search_cb (w,trace,cb);
+    }
+
+void    sig_search_cancel_cb(w,trace,cb)
+    Widget			w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    if (DTPRINT) printf("In sig_search_cancel_cb - trace=%d\n",trace);
+    
+    /* unmanage the popup on the screen */
+    XtUnmanageChild(trace->signal.search);
     }
 
 /****************************** EVENTS ******************************/
@@ -520,16 +703,6 @@ void    sig_delete_ev(w,trace,ev)
 		       sig_ptr->xsigname, 0 );
 	}
     
-    /*
-    printf("ev->y=%d numsig=%d numsigvis=%d\n",
-	   ev->y,trace->numsig,trace->numsigvis);
-    sig_ptr = global->delsig;
-    while (sig_ptr) {
-	printf(" %s\n",sig_ptr->signame);
-	sig_ptr = sig_ptr->forward;
-	}
-    */
-
     /* redraw the screen */
     redraw_all (trace);
     }
@@ -549,6 +722,7 @@ void    sig_highlight_ev(w,trace,ev)
     
     /* Change the color */
     sig_ptr->color = global->highlight_color;
+    sig_ptr->search = 0;
 
     /* redraw the screen */
     redraw_all (trace);

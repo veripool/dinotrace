@@ -97,6 +97,112 @@ void    string_to_value (trace, strg, cptr)
 	}
     }
 
+void	val_update_search ()
+{
+    TRACE	*trace;
+    SIGNAL	*sig_ptr;
+    SIGNAL_LW	*cptr;
+    int		found, cursorize;
+    register int i;
+    CURSOR	*csr_ptr,*new_csr_ptr;
+
+    if (DTPRINT) printf("In val_update_search\n");
+
+    /* Mark all cursors that are a result of a search as old (-1) */
+    for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
+	if (csr_ptr->search) csr_ptr->search = -1;
+	}
+
+    /* Search every trace for the value, mark the signal if it has it to speed up displaying */
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	/* don't do anything if no file is loaded */
+	if (!trace->loaded) continue;
+	
+	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	    if (sig_ptr->inc == 1) {
+		/* Single bit signal, don't search for values */
+		continue;
+		}
+	    
+	    found=0;
+	    cursorize=0;
+	    cptr = (SIGNAL_LW *)(sig_ptr)->bptr;
+	    
+	    for (; (cptr->time != EOT); cptr += sig_ptr->inc) {
+		switch (cptr->state) {
+		  case STATE_B32:
+		    for (i=0; i<MAX_SRCH; i++) {
+			if ( ( global->val_srch[i].value[2]== *((unsigned int *)cptr+1) )
+			    && ( global->val_srch[i].value[1] == 0) 
+			    && ( global->val_srch[i].value[0] == 0) ) {
+			    found |= ( global->val_srch[i].color != 0) ;
+			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
+			    break;
+			    }
+			}
+		    break;
+		    
+		  case STATE_B64:
+		    for (i=0; i<MAX_SRCH; i++) {
+			if ( ( global->val_srch[i].value[2]== *((unsigned int *)cptr+2) )
+			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+1) )
+			    && ( global->val_srch[i].value[0] == 0) ) {
+			    found |= ( global->val_srch[i].color != 0) ;
+			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
+			    break;
+			    }
+			}
+		    break;
+		    
+		  case STATE_B96:
+		    for (i=0; i<MAX_SRCH; i++) {
+			if ( ( global->val_srch[i].value[2]== *((unsigned int *)cptr+3) )
+			    && ( global->val_srch[i].value[1]== *((unsigned int *)cptr+2) )
+			    && ( global->val_srch[i].value[0]== *((unsigned int *)cptr+1) ) ) {
+			    found |= ( global->val_srch[i].color != 0) ;
+			    if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
+			    break;
+			    }
+			}
+		    break;
+		    } /* switch */
+
+		if (cursorize) {
+		    if (NULL != (csr_ptr = time_to_cursor(cptr->time))) {
+			if (csr_ptr->search == -1) {
+			    /* mark the old cursor as new so won't be deleted */
+			    csr_ptr->search = cursorize;
+			    }
+			}
+		    else {
+			/* Make new cursor at this location */
+			csr_ptr = (CURSOR *)XtMalloc(sizeof(CURSOR));
+			csr_ptr->time = cptr->time;
+			csr_ptr->color = cursorize;
+			csr_ptr->search = cursorize;
+			add_cursor (csr_ptr);
+			}
+		    cursorize = 0;
+		    }
+
+		} /* for cptr */
+	    
+	    sig_ptr->srch_ena = found;
+	    if (found && DTPRINT) printf ("Signal %s matches search string.\n", sig_ptr->signame);
+	    
+	    } /* for sig */
+	} /* for trace */
+
+    /* Delete all old cursors */
+    for (csr_ptr = global->cursor_head; csr_ptr; ) {
+	new_csr_ptr = csr_ptr;
+	csr_ptr = csr_ptr->next;
+	if (new_csr_ptr->search==-1) {
+	    remove_cursor (new_csr_ptr);
+	    XtFree (new_csr_ptr);
+	    }
+	}
+    }
 
 /****************************** MENU OPTIONS ******************************/
 
@@ -259,8 +365,8 @@ void    val_examine_popup (trace, x, y, ev)
 	    sprintf (strg2, "Bits %d   Index %d  Srch_ena %d\n",
 		     sig_ptr->bits, sig_ptr->index, sig_ptr->srch_ena);
 	    strcat (strg, strg2);
-	    sprintf (strg2, "Binary_type %d   Binary_Pos %d\n",
-		     sig_ptr->binary_type, sig_ptr->binary_pos);
+	    sprintf (strg2, "File_type %d   File_Pos %d\n",
+		     sig_ptr->file_type, sig_ptr->file_pos);
 	    strcat (strg, strg2);
 	    }
 	
@@ -359,44 +465,44 @@ void    val_search_cb(w,trace,cb)
     
     if (DTPRINT) printf("In val_search_cb - trace=%d\n",trace);
     
-    if (!trace->signal.search) {
+    if (!trace->value.search) {
 	XtSetArg(arglist[0], XmNdefaultPosition, TRUE);
-	XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple ("Search Requester") );
+	XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple ("Value Search Requester") );
 	XtSetArg(arglist[2], XmNwidth, 500);
 	XtSetArg(arglist[3], XmNheight, 400);
-	trace->signal.search = XmCreateBulletinBoardDialog(trace->work,"search",arglist,4);
+	trace->value.search = XmCreateBulletinBoardDialog(trace->work,"search",arglist,4);
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Color"));
 	XtSetArg(arglist[1], XmNx, 5);
 	XtSetArg(arglist[2], XmNy, y);
-	trace->signal.label1 = XmCreateLabel(trace->signal.search,"label1",arglist,3);
-	XtManageChild(trace->signal.label1);
+	trace->value.label1 = XmCreateLabel(trace->value.search,"label1",arglist,3);
+	XtManageChild(trace->value.label1);
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Place"));
 	XtSetArg(arglist[1], XmNx, 60);
 	XtSetArg(arglist[2], XmNy, y);
-	trace->signal.label2 = XmCreateLabel(trace->signal.search,"label2",arglist,3);
-	XtManageChild(trace->signal.label2);
+	trace->value.label2 = XmCreateLabel(trace->value.search,"label2",arglist,3);
+	XtManageChild(trace->value.label2);
 	
 	y += 15;
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Value"));
 	XtSetArg(arglist[1], XmNx, 5);
 	XtSetArg(arglist[2], XmNy, y);
-	trace->signal.label4 = XmCreateLabel(trace->signal.search,"label4",arglist,3);
-	XtManageChild(trace->signal.label4);
+	trace->value.label4 = XmCreateLabel(trace->value.search,"label4",arglist,3);
+	XtManageChild(trace->value.label4);
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Cursor"));
 	XtSetArg(arglist[1], XmNx, 60);
 	XtSetArg(arglist[2], XmNy, y);
-	trace->signal.label5 = XmCreateLabel(trace->signal.search,"label5",arglist,3);
-	XtManageChild(trace->signal.label5);
+	trace->value.label5 = XmCreateLabel(trace->value.search,"label5",arglist,3);
+	XtManageChild(trace->value.label5);
 	
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple
 		 ( (trace->busrep == HBUS)? "Search value in HEX":"Search value in OCTAL" ) );
 	XtSetArg(arglist[1], XmNx, 140);
 	XtSetArg(arglist[2], XmNy, y);
-	trace->signal.label3 = XmCreateLabel(trace->signal.search,"label3",arglist,3);
-	XtManageChild(trace->signal.label3);
+	trace->value.label3 = XmCreateLabel(trace->value.search,"label3",arglist,3);
+	XtManageChild(trace->value.label3);
 	
 	y += 25;
 
@@ -406,16 +512,16 @@ void    val_search_cb(w,trace,cb)
 	    XtSetArg(arglist[1], XmNy, y);
 	    XtSetArg(arglist[2], XmNselectColor, trace->xcolornums[i+1]);
 	    XtSetArg(arglist[3], XmNlabelString, XmStringCreateSimple (""));
-	    trace->signal.enable[i] = XmCreateToggleButton(trace->signal.search,"togglen",arglist,4);
-	    XtManageChild(trace->signal.enable[i]);
+	    trace->value.enable[i] = XmCreateToggleButton(trace->value.search,"togglen",arglist,4);
+	    XtManageChild(trace->value.enable[i]);
 
 	    /* enable button */
 	    XtSetArg(arglist[0], XmNx, 70);
 	    XtSetArg(arglist[1], XmNy, y);
 	    XtSetArg(arglist[2], XmNselectColor, trace->xcolornums[i+1]);
 	    XtSetArg(arglist[3], XmNlabelString, XmStringCreateSimple (""));
-	    trace->signal.cursor[i] = XmCreateToggleButton(trace->signal.search,"cursorn",arglist,4);
-	    XtManageChild(trace->signal.cursor[i]);
+	    trace->value.cursor[i] = XmCreateToggleButton(trace->value.search,"cursorn",arglist,4);
+	    XtManageChild(trace->value.cursor[i]);
 
 	    /* create the file name text widget */
 	    XtSetArg(arglist[0], XmNrows, 1);
@@ -424,9 +530,9 @@ void    val_search_cb(w,trace,cb)
 	    XtSetArg(arglist[3], XmNy, y);
 	    XtSetArg(arglist[4], XmNresizeHeight, FALSE);
 	    XtSetArg(arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
-	    trace->signal.text[i] = XmCreateText(trace->signal.search,"textn",arglist,6);
-	    XtAddCallback(trace->signal.text[i], XmNactivateCallback, val_search_ok_cb, trace);
-	    XtManageChild(trace->signal.text[i]);
+	    trace->value.text[i] = XmCreateText(trace->value.search,"textn",arglist,6);
+	    XtAddCallback(trace->value.text[i], XmNactivateCallback, val_search_ok_cb, trace);
+	    XtManageChild(trace->value.text[i]);
 	    
 	    y += 40;
 	    }
@@ -437,44 +543,44 @@ void    val_search_cb(w,trace,cb)
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(" OK ") );
 	XtSetArg(arglist[1], XmNx, 10);
 	XtSetArg(arglist[2], XmNy, y);
-	trace->signal.ok = XmCreatePushButton(trace->signal.search,"ok",arglist,3);
-	XtAddCallback(trace->signal.ok, XmNactivateCallback, val_search_ok_cb, trace);
-	XtManageChild(trace->signal.ok);
+	trace->value.ok = XmCreatePushButton(trace->value.search,"ok",arglist,3);
+	XtAddCallback(trace->value.ok, XmNactivateCallback, val_search_ok_cb, trace);
+	XtManageChild(trace->value.ok);
 	
 	/* create apply button */
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Apply") );
 	XtSetArg(arglist[1], XmNx, 70);
 	XtSetArg(arglist[2], XmNy, y);
-	trace->signal.apply = XmCreatePushButton(trace->signal.search,"apply",arglist,3);
-	XtAddCallback(trace->signal.apply, XmNactivateCallback, val_search_apply_cb, trace);
-	XtManageChild(trace->signal.apply);
+	trace->value.apply = XmCreatePushButton(trace->value.search,"apply",arglist,3);
+	XtAddCallback(trace->value.apply, XmNactivateCallback, val_search_apply_cb, trace);
+	XtManageChild(trace->value.apply);
 	
 	/* create cancel button */
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Cancel") );
 	XtSetArg(arglist[1], XmNx, 140);
 	XtSetArg(arglist[2], XmNy, y);
-	trace->signal.cancel = XmCreatePushButton(trace->signal.search,"cancel",arglist,3);
-	XtAddCallback(trace->signal.cancel, XmNactivateCallback, val_search_cancel_cb, trace);
-	XtManageChild(trace->signal.cancel);
+	trace->value.cancel = XmCreatePushButton(trace->value.search,"cancel",arglist,3);
+	XtAddCallback(trace->value.cancel, XmNactivateCallback, val_search_cancel_cb, trace);
+	XtManageChild(trace->value.cancel);
 	}
     
     /* Copy settings to local area to allow cancel to work */
     for (i=0; i<MAX_SRCH; i++) {
 	/* Update with current search enables */
-	XtSetArg (arglist[0], XmNset, (global->srch[i].color != 0));
-	XtSetValues (trace->signal.enable[i], arglist, 1);
+	XtSetArg (arglist[0], XmNset, (global->val_srch[i].color != 0));
+	XtSetValues (trace->value.enable[i], arglist, 1);
 
 	/* Update with current cursor enables */
-	XtSetArg (arglist[0], XmNset, (global->srch[i].cursor != 0));
-	XtSetValues (trace->signal.cursor[i], arglist, 1);
+	XtSetArg (arglist[0], XmNset, (global->val_srch[i].cursor != 0));
+	XtSetValues (trace->value.cursor[i], arglist, 1);
 
 	/* Update with current search values */
-	value_to_string (trace, strg, global->srch[i].value);
-	XmTextSetString (trace->signal.text[i], strg);
+	value_to_string (trace, strg, global->val_srch[i].value);
+	XmTextSetString (trace->value.text[i], strg);
 	}
 
     /* manage the popup on the screen */
-    XtManageChild(trace->signal.search);
+    XtManageChild(trace->value.search);
     }
 
 void    val_search_ok_cb(w,trace,cb)
@@ -489,29 +595,29 @@ void    val_search_ok_cb(w,trace,cb)
 
     for (i=0; i<MAX_SRCH; i++) {
 	/* Update with current search enables */
-	if (XmToggleButtonGetState (trace->signal.enable[i]))
-	    global->srch[i].color = i+1;
-	else global->srch[i].color = 0;
+	if (XmToggleButtonGetState (trace->value.enable[i]))
+	    global->val_srch[i].color = i+1;
+	else global->val_srch[i].color = 0;
 	
 	/* Update with current cursor enables */
-	if (XmToggleButtonGetState (trace->signal.cursor[i]))
-	    global->srch[i].cursor = i+1;
-	else global->srch[i].cursor = 0;
+	if (XmToggleButtonGetState (trace->value.cursor[i]))
+	    global->val_srch[i].cursor = i+1;
+	else global->val_srch[i].cursor = 0;
 	
 	/* Update with current search values */
-	strg = XmTextGetString (trace->signal.text[i]);
-	string_to_value (trace, strg, global->srch[i].value);
+	strg = XmTextGetString (trace->value.text[i]);
+	string_to_value (trace, strg, global->val_srch[i].value);
 
 	if (DTPRINT) {
 	    char strg2[40];
-	    value_to_string (trace, strg2, global->srch[i].value);
-	    printf ("Search %d) %d   '%s' -> '%s'\n", i, global->srch[i].color, strg, strg2);
+	    value_to_string (trace, strg2, global->val_srch[i].value);
+	    printf ("Search %d) %d   '%s' -> '%s'\n", i, global->val_srch[i].color, strg, strg2);
 	    }
 	}
     
-    XtUnmanageChild(trace->signal.search);
+    XtUnmanageChild(trace->value.search);
 
-    update_search ();
+    val_update_search ();
 
     /* redraw the display */
     redraw_all (trace);
@@ -536,6 +642,6 @@ void    val_search_cancel_cb(w,trace,cb)
     if (DTPRINT) printf("In val_search_cancel_cb - trace=%d\n",trace);
     
     /* unmanage the popup on the screen */
-    XtUnmanageChild(trace->signal.search);
+    XtUnmanageChild(trace->value.search);
     }
 

@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V6.3"
+#define DTVERSION	"Dinotrace V6.4Beta"
 
 #pragma member_alignment
 
@@ -125,9 +125,9 @@
 extern int	DTDEBUG,		/* Debugging mode */
 		DTPRINT;		/* Information printing mode */
 
-#define	DECSIM		1
-#define	HLO_TEMPEST	2
-extern int		trace_format;	/* Type of trace to support */
+#define	FF_DECSIM	1
+#define	FF_TEMPEST	2
+extern int		file_format;	/* Type of trace to support */
 
 extern char		message[100];		/* generic string for messages */
 
@@ -190,6 +190,7 @@ typedef struct {
     Widget b1;
     Widget b2;
     Widget b3;
+    Widget format_label, format_radio, format_decsim, format_tempest;
     } CUSTOM_DATA;
 
 typedef struct {
@@ -212,12 +213,23 @@ typedef struct {
     Widget label1, label2, label3;
     Widget label4, label5;
     Widget enable[MAX_SRCH];
-    Widget cursor[MAX_SRCH];
     Widget text[MAX_SRCH];
     Widget ok;
     Widget apply;
     Widget cancel;
     } SIGNAL_WDGTS;
+
+typedef struct {
+    Widget search;
+    Widget label1, label2, label3;
+    Widget label4, label5;
+    Widget enable[MAX_SRCH];
+    Widget cursor[MAX_SRCH];
+    Widget text[MAX_SRCH];
+    Widget ok;
+    Widget apply;
+    Widget cancel;
+    } VALUE_WDGTS;
 
 typedef struct {
     Widget popup;
@@ -250,16 +262,18 @@ typedef struct st_signal_lw {
     } SIGNAL_LW;
 #define EOT	0x1FFFFFFF	/* SIGNAL_LW End of time indicator if in .time */
 
-typedef struct {
-    char array[MAXSIGLEN];
-    } SIGNALNAMES;
-
-/* Cursor information structure */
-typedef struct st_search {
+/* Value searching structure */
+typedef struct st_valsearch {
     int			color;		/* Color number (index into trace->xcolornum) 0=OFF*/
     int			cursor;		/* Enable cursors, color or 0=OFF */
     int			value[3];	/* Value to search for, (96 bit LW format) */
-    } SEARCH;
+    } VALSEARCH;
+
+/* Signal searching structure */
+typedef struct st_sigsearch {
+    int			color;		/* Color number (index into trace->xcolornum) 0=OFF*/
+    int			string[MAXSIGLEN];	/* Signal to search for */
+    } SIGSEARCH;
 
 /* Cursor information structure (one per cursor) */
 typedef struct st_cursor {
@@ -282,18 +296,19 @@ typedef struct st_signal {
 
     char		*signame;	/* Signal name */
     XmString		xsigname;	/* Signal name as XmString */
-    int			color;		/* Color number (index into trace->xcolornum) */
+    int			color;		/* Signal line's Color number (index into trace->xcolornum) */
+    int			search;		/* Number of search color is for, 0 = manual */
 
     int			srch_ena;	/* Searching is enabled */
 
-    int			type;
+    int			type;		/* Type of signal, STATE_B32, _B64, etc */
     SIGNALSTATE		*decode;	/* Pointer to decode information, NULL if none */
     int			inc;		/* Number of LWs in a SIGNAL_LW record */
     int			index;		/* Bit subscript of first index in a signal (<10:20> == 10) */
     int			blocks;		/* Number of time data blocks */
     int			bits;		/* Number of bits in a bus, 0=single */
-    int			binary_type;	/* type of trace if binary, two/fourstate */
-    int			binary_pos;	/* position of bits in binary trace */
+    int			file_type;	/* File specific type of trace, two/fourstate, etc */
+    int			file_pos;	/* Position of the bits in the file line */
     int			*bptr;		/* begin of time data ptr */
     int			*cptr;		/* current time data ptr */
     } SIGNAL;
@@ -328,6 +343,7 @@ typedef struct st_trace {
     SIGNAL_WDGTS	signal;
     EXAMINE_WDGTS	examine;
     GOTOS_WDGTS		gotos;
+    VALUE_WDGTS		value;
     Widget		customize;	/* Customization widget */
     Widget		fileselect;	/* File selection widget */
     Widget		toplevel;	/* Top level shell */
@@ -336,6 +352,7 @@ typedef struct st_trace {
 
     char		filename[200];	/* Current file */
     int			loaded;		/* True if the filename is loaded in */
+    char		vector_seperator;	/* Seperator character, usually "<" */
 
     int			width;		/* Screen width */
     int			height;		/* Screen height */
@@ -356,9 +373,6 @@ typedef struct st_trace {
     int			numpag;		/* Number of pages in dt_printscreen */
     int			bsized;		/* True if b-sized printing in dt_printscreen */
 
-    SIGNALNAMES		*signame;
-    short int		*bus;
-
     int			start_time;	/* Time of beginning of trace */
     int			end_time;	/* Time of ending of trace */
 
@@ -375,7 +389,9 @@ typedef struct {
 
     CURSOR		*cursor_head;	/* Pointer to first cursor */
 
-    SEARCH		srch[MAX_SRCH];	/* Color to highlight with (0=none/normal) */
+    VALSEARCH		val_srch[MAX_SRCH];	/* Value search information */
+
+    SIGSEARCH		sig_srch[MAX_SRCH];	/* Signal search information */
 
     XtAppContext	appcontext;	/* X App context */
     Display		*display;	/* X display pointer */

@@ -36,7 +36,7 @@
 
 int		DTDEBUG=FALSE,		/* Debugging mode */
 		DTPRINT=FALSE;		/* Information printing mode */
-int		trace_format=DECSIM;	/* Type of trace to support */
+int		file_format=FF_DECSIM;	/* Type of trace to support */
 char		message[100];		/* generic string for messages */
 XGCValues	xgcv;
 Arg		arglist[20];
@@ -63,7 +63,7 @@ int    main(argc, argv)
 	    }
         else if ( !strcmp(argv[i], "-tempest") )
 	    {
-            trace_format = HLO_TEMPEST;
+            file_format = FF_TEMPEST;
 	    }
         else if ( !strcmp(argv[i], "-siz") )
 	    {
@@ -107,6 +107,9 @@ int    main(argc, argv)
     /* create the main dialog window */
     trace = create_trace (x_siz,y_siz,x_pos,y_pos);
     
+    /* Load config options (such as file_format) */
+    config_read_defaults (trace);
+
     /* Load up the file on the command line, if any */
     if (start_filename != NULL) {
 	XSync(global->display,0);

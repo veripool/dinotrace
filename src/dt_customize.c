@@ -140,16 +140,37 @@ void cus_dialog_cb(w,trace,cb)
 	trace->custom.ttimecyc = XmCreateToggleButton(trace->custom.rtime,"ttimecyc",arglist,1);
 	XtManageChild(trace->custom.ttimecyc);
 	
+	/* Create FILE FORMAT */
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("File Format"));
+	XtSetArg(arglist[1], XmNx, 300);
+	XtSetArg(arglist[2], XmNy, 190);
+	trace->custom.format_label = XmCreateLabel(trace->custom.customize,"fmtlabel",arglist,3);
+	XtManageChild(trace->custom.format_label);
+	
+	XtSetArg(arglist[0], XmNx, 300);
+	XtSetArg(arglist[1], XmNy, 220);
+	XtSetArg(arglist[2], XmNspacing, 2);
+	trace->custom.format_radio = XmCreateRadioBox(trace->custom.customize,"fmtradio",arglist,3);
+	XtManageChild(trace->custom.format_radio);
+	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Decsim"));
+	trace->custom.format_decsim = XmCreateToggleButton(trace->custom.format_radio,"fmtdec",arglist,1);
+	XtManageChild(trace->custom.format_decsim);
+	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Tempest CCLI"));
+	trace->custom.format_tempest = XmCreateToggleButton(trace->custom.format_radio,"fmttmp",arglist,1);
+	XtManageChild(trace->custom.format_tempest);
+	
 	/* Create signal height slider */
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Signal Height"));
 	XtSetArg(arglist[1], XmNx, 180);
-	XtSetArg(arglist[2], XmNy, 200);
+	XtSetArg(arglist[2], XmNy, 190);
 	trace->custom.sighgt_label = XmCreateLabel(trace->custom.customize,"sighgtlabel",arglist,3);
 	XtManageChild(trace->custom.sighgt_label);
 	
 	XtSetArg(arglist[0], XmNshowValue, 1);
 	XtSetArg(arglist[1], XmNx, 180);
-	XtSetArg(arglist[2], XmNy, 230);
+	XtSetArg(arglist[2], XmNy, 220);
 	XtSetArg(arglist[3], XmNwidth, 100);
 	XtSetArg(arglist[4], XmNminimum, 15);
 	XtSetArg(arglist[5], XmNmaximum, 50);
@@ -229,6 +250,11 @@ void cus_dialog_cb(w,trace,cb)
     XtSetValues(trace->custom.ttimens,arglist,1);
     XtSetArg(arglist[0], XmNset, (trace->timerep==TIMEREP_CYC));
     XtSetValues(trace->custom.ttimecyc,arglist,1);
+    
+    XtSetArg(arglist[0], XmNset, (file_format==FF_DECSIM));
+    XtSetValues(trace->custom.format_decsim,arglist,1);
+    XtSetArg(arglist[0], XmNset, (file_format==FF_TEMPEST));
+    XtSetValues(trace->custom.format_tempest,arglist,1);
     
     XtSetArg(arglist[0], XmNvalue, trace->sighgt);
     XtSetValues(trace->custom.s1,arglist,1);
@@ -326,6 +352,10 @@ void	cus_ok_cb(w,trace,cb)
 	trace->pageinc = FPAGE;
     else trace->pageinc = HPAGE;
     
+    if (XmToggleButtonGetState (trace->custom.format_decsim))
+	file_format = FF_DECSIM;
+    else file_format = FF_TEMPEST;
+
     /* hide the customize window */
     XtUnmanageChild(trace->custom.customize);
     

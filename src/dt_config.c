@@ -229,15 +229,12 @@ static int wildStar(s, p)
     }
 
 int wildmat(s, p)
-    register char	*s;
-    register char	*p;
+    register char	*s;	/* Buffer */
+    register char	*p;	/* Pattern */
 {
-    /* Skip leading spaces on source signal */
-    while (*s==' ') s++;
-
     for ( ; *p; s++, p++) {
 	if (*p!='*') {
-	    if (toupper(*s) != toupper(*p))
+	    if (toupper(*s) != toupper(*p)  && *p != '?')
 		return(FALSE);
 	    }
 	else {
@@ -272,7 +269,7 @@ void	add_signal_state (trace, info)
 {
     SIGNALSTATE *new;
 
-    new = (SIGNALSTATE *)(malloc (sizeof(SIGNALSTATE)));
+    new = (SIGNALSTATE *)(XtMalloc (sizeof(SIGNALSTATE)));
     memcpy ((void *)new, (void *)info, sizeof(SIGNALSTATE));
     new->next = trace->signalstate_head;
     trace->signalstate_head = new;
@@ -281,13 +278,13 @@ void	add_signal_state (trace, info)
 void	free_signal_states (trace)
     TRACE	*trace;
 {
-    SIGNALSTATE *sig_ptr, *last_ptr;
+    SIGNALSTATE *sstate_ptr, *last_ptr;
 
-    sig_ptr = trace->signalstate_head;
-    while (sig_ptr) {
-	last_ptr = sig_ptr->next;
-	free (sig_ptr);
-	sig_ptr = last_ptr;
+    sstate_ptr = trace->signalstate_head;
+    while (sstate_ptr) {
+	last_ptr = sstate_ptr->next;
+	XtFree (sstate_ptr);
+	sstate_ptr = last_ptr;
 	}
     trace->signalstate_head = NULL;
     }
@@ -295,16 +292,16 @@ void	free_signal_states (trace)
 void	print_signal_states (trace)
     TRACE	*trace;
 {
-    SIGNALSTATE *sig_ptr;
+    SIGNALSTATE *sstate_ptr;
     int i;
 
-    sig_ptr = trace->signalstate_head;
-    while (sig_ptr) {
-	printf("Signal %s:\n",sig_ptr->signame);
+    sstate_ptr = trace->signalstate_head;
+    while (sstate_ptr) {
+	printf("Signal %s:\n",sstate_ptr->signame);
 	for (i=0; i<MAXSTATENAMES; i++)
-	    if (sig_ptr->statename[i][0])
-		printf ("\t%d=%s", i, sig_ptr->statename[i]);
-	sig_ptr = sig_ptr->next;
+	    if (sstate_ptr->statename[i][0])
+		printf ("\t%d=%s", i, sstate_ptr->statename[i]);
+	sstate_ptr = sstate_ptr->next;
 	}
     printf ("\n");
     }
@@ -396,6 +393,7 @@ void	config_process_line (trace, line, readfp)
     /* Preprocessor #INCLUDE eventually */
     /* extract command */
     line += config_read_signal (line, cmd);
+    while (*line && isspace(*line)) line++;
     upcase_string (cmd);
 
     /* if (DTPRINT) printf ("Cmd='%s'\n",cmd); */
@@ -516,16 +514,45 @@ void	config_process_line (trace, line, readfp)
 	}
     else if (!strcmp(cmd, "TIME_REP")) {
 	value = trace->timerep;
-	if (toupper(line[0])=='N')
-		trace->timerep = TIMEREP_NS;
-	    else if (toupper(line[0])=='C')
-		trace->timerep = TIMEREP_CYC;
-	    else {
-		sprintf (message, "timerep must be NS or CYCLE\non line %d of %s\n",
-			 line_num, current_file);
-		dino_error_ack(trace,message);
-		}
+	switch (toupper(line[0])) {
+	  case 'N':
+	    trace->timerep = TIMEREP_NS;
+	    break;
+	  case 'C':
+	    trace->timerep = TIMEREP_CYC;
+	    break;
+	  default:
+	    sprintf (message, "timerep must be NS or CYCLE\non line %d of %s\n",
+		     line_num, current_file);
+	    dino_error_ack(trace,message);
+	    }
 	if (DTPRINT) printf ("timerep = %d\n", trace->timerep);
+	}
+    else if (!strcmp(cmd, "FILE_FORMAT")) {
+	switch (toupper(line[0])) {
+	  case 'D':
+	    file_format = FF_DECSIM;
+	    break;
+	  case 'T':
+	    file_format = FF_TEMPEST;
+	    break;
+	  default:
+	    if (DTPRINT) printf ("%%E, File_Format must be DECSIM or TEMPEST on config line %d\n", line_num);
+	    sprintf (message, "File_Format must be DECSIM or TEMPEST\non line %d of %s\n",
+		     line_num, current_file);
+	    dino_error_ack(trace,message);
+	    }
+	if (DTPRINT) printf ("File_format = %d\n", file_format);
+	}
+    else if (!strcmp(cmd, "VECTOR_SEPERATOR")) {
+	if (*line=='"') line++;
+	if (*line && *line!='"') {
+	    trace->vector_seperator = line[0];
+	    }
+	else {
+	    trace->vector_seperator = '\0';
+	    }
+	if (DTPRINT) printf ("Vector_seperator = '%c'\n", trace->vector_seperator);
 	}
     else if (!strcmp(cmd, "SIGNAL_STATES")) {
 	config_process_states (trace, line, readfp);
@@ -626,7 +653,8 @@ void config_read_defaults(trace)
 
     /* Apply the statenames */
     update_signal_states (trace);
-    update_search ();
+    val_update_search ();
+    sig_update_search ();
     }
 
 /**********************************************************************
@@ -648,6 +676,7 @@ void config_restore_defaults(trace)
     trace->sigrf = SIG_RF;
     trace->pageinc = FPAGE;
     trace->timerep = TIMEREP_NS;
+    trace->vector_seperator = '<';
 
     update_signal_states (trace);
     }

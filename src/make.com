@@ -1,5 +1,6 @@
 $ qual := """"""
 $ if p1 .eqs. "DEBUG" then qual := '/debug'
+$ if p2 .eqs. "DEBUG" then qual := '/debug /noopt=(noinline,nodisjoint)'
 $ recomp   DINOTRACE		 'qual'	dinotrace.h callbacks.h
 $ recomp   DT_VALUE		 'qual'	dinotrace.h callbacks.h
 $ recomp   DT_CONFIG		 'qual'	dinotrace.h callbacks.h

@@ -46,6 +46,7 @@ extern void
 extern void
     config_read_defaults(), config_read_file(), upcase_string();
 extern SIGNALSTATE *find_signal_state();
+extern int	wildmat();
     
 /* dt_grid.c routines */
 extern void
@@ -57,19 +58,28 @@ extern void
     sig_add_cb(), sig_add_ev(), sig_mov_cb(), sig_move_ev(),
     sig_del_cb(), sig_delete_ev(), sig_copy_cb(), sig_copy_ev(),
     sig_highlight_cb(), sig_highlight_ev(), sig_reset_cb(), 
-    sig_selected_cb(), sig_ok_cb(), sig_cancel_cb();
+    sig_selected_cb(), sig_ok_cb(), sig_cancel_cb(),
+    sig_examine_cb(), sig_examine_ev(),
+    sig_search_cb(), sig_search_ok_cb(), sig_search_cancel_cb(),
+    sig_search_apply_cb(),
+    sig_update_search();
     
 /* dt_value.c routines */
 extern void
     val_examine_cb(), val_examine_ev(),
     val_search_cb(), val_search_ok_cb(), val_search_cancel_cb(),
-    val_search_apply_cb();
+    val_search_apply_cb(),
+    val_update_search();
     
 /* dt_printscreen routines */
 extern void
     ps_print(), ps_print_all(), ps_cancel(), ps_numpag(), ps_dialog(), 
     ps_hit_return(), ps_reset();
     
+/* dt_binary.c routines */
+extern void
+    read_make_busses();
+
 /* dt_file.c routines */
 extern void
     quit(), 

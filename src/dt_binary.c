@@ -1,4 +1,29 @@
+/******************************************************************************
+ *
+ * Filename:
+ *     dt_binary.c
+ *
+ * Subsystem:
+ *     Dinotrace
+ *
+ * Version:
+ *     Dinotrace V6.0
+ *
+ * Author:
+ *     Wilson Snyder
+ *
+ * Abstract:
+ *	Binary trace support
+ *
+ * Modification History:
+ *     WPS	15-Jan-93	Added binary trace support
+ *
+ */
+
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
 
 #ifdef VMS
 #include <file.h>
@@ -10,6 +35,7 @@
 #include <Xm/Xm.h>
 
 #include "dinotrace.h"
+#include "callbacks.h"
 #include "bintradef.h"
 
 
@@ -40,7 +66,6 @@ void read_decsim(trace)
     int 	first_data=TRUE;	/* True till first data is loaded */
     int		len;
     int		time;
-    char	*t1;
     SIGNAL		*sig_ptr,*last_sig_ptr;
     int		eof_next=FALSE;
 
@@ -108,8 +133,8 @@ void read_decsim(trace)
 
 		/**** TYPE: End Of Signal Section ****/
 	      case tra$k_nss:
-		read_binary_make_busses(trace);
-		if (DTPRINT) read_trace_dump(trace);
+		read_make_busses(trace);
+		if (DTPRINT) print_sig_names(NULL, trace);
 		break;
 
 		/**** TYPE: Unknown ****/
@@ -126,8 +151,8 @@ void read_decsim(trace)
 	      case tra$k_nfd:
 		sig_ptr = (SIGNAL *)XtMalloc(sizeof(SIGNAL));
 		memset (sig_ptr, 0, sizeof (SIGNAL));
-		sig_ptr->binary_type = buf->TRA$B_DATTYP;
-		sig_ptr->binary_pos = buf->TRA$L_BITPOS;
+		sig_ptr->file_type = buf->TRA$B_DATTYP;
+		sig_ptr->file_pos = buf->TRA$L_BITPOS;
 		sig_ptr->bits = 0;	/* = buf->TRA$W_BITLEN; */
 		sig_ptr->index = 0;
 		/* if (DTPRINT) printf ("Reading signal format data, ptr=%d\n", sig_ptr); */
@@ -143,12 +168,8 @@ void read_decsim(trace)
 		/* if (DTPRINT) printf ("Reading signal name data, ptr=%d\n", sig_ptr); */
 		len = MIN (buf->TRA$W_NODNAMLEN, MAXSIGLEN);
 		
-		/* Must drop leading spaces! */
-		for (t1=buf->TRA$T_NODNAMSTR; *t1==' ' && len>0; t1++)
-		    len--;
-
-		sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space incase becomes vector */
-		strncpy(sig_ptr->signame, t1, len);
+		sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
+		strncpy(sig_ptr->signame, buf->TRA$T_NODNAMSTR, len);
 		sig_ptr->signame[len] = '\0';
 		
 		last_sig_ptr = sig_ptr;
@@ -205,11 +226,46 @@ void read_decsim(trace)
 
 
 /* Take the list of signals and make it into a list of busses */
-read_binary_make_busses (trace)
+void read_make_busses (trace)
     TRACE	*trace;
 {
-    SIGNAL		*sig_ptr,*bus_sig_ptr;	/* ptr to signal which is being bussed */
+    SIGNAL	*sig_ptr;	/* ptr to current signal (lower bit number) */
+    SIGNAL	*bus_sig_ptr;	/* ptr to signal which is being bussed (upper bit number) */
     char *bbeg, *bcol, *bnew, *sbeg, *tbeg;
+
+    /* Drop leading and trailing spaces in the signal name */
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	/* Drop leading spaces */
+	for (bbeg=sig_ptr->signame; isspace(*bbeg); bbeg++);
+	strcpy (sig_ptr->signame, bbeg);	/* side effects */
+	/* Drop trailing spaces */
+	for (bbeg = sig_ptr->signame + strlen(sig_ptr->signame) - 1;
+	     (bbeg >= sig_ptr->signame) && isspace (*bbeg);
+	     bbeg--)
+	    *bbeg = '\0';
+	}
+
+    /* Use the seperator character to make signals into decsim format */
+    /* IE signal_1 becomes signal<1> if the seperator is _ */
+    if (trace->vector_seperator != '<') {
+	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	    if (trace->vector_seperator != '\0') {
+		tbeg = strrchr (sig_ptr->signame, trace->vector_seperator);
+		if (tbeg && isdigit(*(tbeg+1))) {
+		    sprintf (tbeg, "<%d>", atoi (tbeg+1));
+		    }
+		}
+	    else {
+		for (tbeg = sig_ptr->signame + strlen (sig_ptr->signame) - 1;
+		     (tbeg > sig_ptr->signame) && isdigit (*tbeg);
+		     tbeg --) ;
+		tbeg++;
+		if (isdigit (*tbeg)) {
+		    sprintf (tbeg, "<%d>", atoi (tbeg));
+		    }
+		}
+	    }
+	}
 
     /* Vectorize signals */
     bus_sig_ptr = NULL;
@@ -217,6 +273,7 @@ read_binary_make_busses (trace)
 	/* Setup index */
 	tbeg = strchr (sig_ptr->signame,'<');
 	if (tbeg) sig_ptr->index = atoi(tbeg+1);
+	else sig_ptr->index = sig_ptr->bits;
 
 	/* Start on 2nd signal, see if can merge with previous signal */
 	if (bus_sig_ptr) {
@@ -254,7 +311,8 @@ read_binary_make_busses (trace)
 	bus_sig_ptr = sig_ptr;
 	}
     
-    /* Calculate numsig, last_sig_ptr, and allocate cptrs */
+    /* Calculate numsig */
+    /* and allocate SIGNAL's cptr, bptr, blocks, inc, type */
     trace->numsig = 0;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	/* Calc numsig, last_sig_ptr */
@@ -285,7 +343,7 @@ read_binary_make_busses (trace)
 	}
     }
 
-#pragma inline (read_2state_to_value, read_4state_to_value)
+#pragma inline (read_4state_to_value)
 int	read_4state_to_value (sig_ptr, buf, value)
     SIGNAL	*sig_ptr;
     char *buf;
@@ -297,7 +355,7 @@ int	read_4state_to_value (sig_ptr, buf, value)
     value[0] = value[1] = value[2] = 0;
 
     /* Preset the state to be based upon first bit (to speed things up) */
-    switch (EXTRACT_4STATE(buf, sig_ptr->binary_pos)) {
+    switch (EXTRACT_4STATE(buf, sig_ptr->file_pos)) {
       case 0:
       case 1:	state = STATE_0;	break;	/* Value */
       case 2:	state = STATE_Z;	break;
@@ -305,7 +363,7 @@ int	read_4state_to_value (sig_ptr, buf, value)
 	}
 
     /* Extract the values, HIGH 32 BITS */
-    bit_pos = sig_ptr->binary_pos;
+    bit_pos = sig_ptr->file_pos;
     for (bitcnt=64; bitcnt <= (MIN(95, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
 	switch (EXTRACT_4STATE(buf, bit_pos)) {
 	  case 0:
@@ -366,22 +424,22 @@ int	read_4state_to_value (sig_ptr, buf, value)
     if (state == STATE_0 && (0==strcmp (sig_ptr->signame, "%NET.MEMRASL<8:0>"))) {
 	unsigned long *byte, p, b;
 
-	p = sig_ptr->binary_pos + 14;
+	p = sig_ptr->file_pos + 14;
 	byte = buf + (p>>3);	
 	p = p & 7;		
 	b = (*byte >> p) & 3;	
 
-	printf ("Pos %d Final Val = %d, real %c mine %c%c%c%c%c%c%c%c\n", sig_ptr->binary_pos +14,
+	printf ("Pos %d Final Val = %d, real %c mine %c%c%c%c%c%c%c%c\n", sig_ptr->file_pos +14,
 		value[0],
 		("01ZU")[b],
-		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->binary_pos + 0))],
-		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->binary_pos + 2))],
-		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->binary_pos + 4))],
-		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->binary_pos + 8))],
-		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->binary_pos + 10))],
-		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->binary_pos + 12))],
-		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->binary_pos + 14))],
-		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->binary_pos + 16))]
+		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->file_pos + 0))],
+		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->file_pos + 2))],
+		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->file_pos + 4))],
+		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->file_pos + 8))],
+		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->file_pos + 10))],
+		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->file_pos + 12))],
+		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->file_pos + 14))],
+		("01ZU")[(EXTRACT_4STATE (buf, sig_ptr->file_pos + 16))]
 		);
 	}
 	*/
@@ -406,6 +464,7 @@ int	read_4state_to_value (sig_ptr, buf, value)
 	}
     }
 
+#pragma inline (read_2state_to_value)
 int	read_2state_to_value (sig_ptr, buf, value)
     SIGNAL	*sig_ptr;
     char *buf;
@@ -416,7 +475,7 @@ int	read_2state_to_value (sig_ptr, buf, value)
     value[0] = value[1] = value[2] = 0;
 
     /* Extract the values, HIGH 32 BITS */
-    bit_pos = sig_ptr->binary_pos;
+    bit_pos = sig_ptr->file_pos;
     for (bitcnt=64; bitcnt <= (MIN(95, sig_ptr->bits)); bitcnt++, bit_pos++) {
 	value[2] = (value[2]<<1) + (EXTRACT_2STATE(buf, bit_pos));
 	}
@@ -483,10 +542,10 @@ read_binary_time (trace, buf, time, flag )
        
 	if (sig_ptr->bits == 0) {
 	    /* Single bit signal */
-	    if ( sig_ptr->binary_type == tra$k_twosta )
-		state = EXTRACT_2STATE(buf, sig_ptr->binary_pos)?STATE_1:STATE_0;
+	    if ( sig_ptr->file_type == tra$k_twosta )
+		state = EXTRACT_2STATE(buf, sig_ptr->file_pos)?STATE_1:STATE_0;
 	    else {
-		switch (EXTRACT_4STATE(buf, sig_ptr->binary_pos)) {
+		switch (EXTRACT_4STATE(buf, sig_ptr->file_pos)) {
 		  case 0: state = STATE_0; break;
 		  case 1: state = STATE_1; break;
 		  case 2: state = STATE_Z; break;
@@ -507,7 +566,7 @@ read_binary_time (trace, buf, time, flag )
 	    }
 	else {
 	    /* Multibit signal */
-	    if ( sig_ptr->binary_type == tra$k_twosta )
+	    if ( sig_ptr->file_type == tra$k_twosta )
 		state = read_2state_to_value (sig_ptr, buf, value);
 	    else state = read_4state_to_value (sig_ptr, buf, value);
 	    
