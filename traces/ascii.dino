@@ -1,0 +1,32 @@
+# This file is decsim, change formats before reading it
+file_format decsim
+vector_seperator "["
+
+# Align grid to clock signal
+# Aligning to the first signal is the default.  We'll just change the color
+grid_color	0	4
+
+# Any signal with ASCII in the name should be displayed as ascii
+signal_radix *ascii* ascii
+
+# Decode state machine signal
+signal_states state* = {
+    0=zero , 1=one , 2=two ,
+    3=three, "four",
+    };
+
+# Highlight the one bit signal
+signal_highlight onebit 4
+
+# Make four be bright too
+value_highlight 'h4 5
+
+# Add a couple of cursors
+cursor_add 433 7 -USER "Demonstration cursor added in ascii.dino"
+
+# Comment the signal names
+signal_note clk "Clock signal\nGrid is syncronized to first signal"
+signal_note vec* "Vector signal\nNote all ones is a wide high\nAlso note that the U's are sometimes mixed U/Z"
+signal_note onebit "Single bit signal"
+signal_note _ascii* "Vector displayed as ascii"
+signal_note state* "Vector broken into state values"

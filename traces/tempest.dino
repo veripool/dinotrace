@@ -1,0 +1,3 @@
+# This file is tempest, change formats before reading it
+file_format tempest
+vector_seperator "<"
