@@ -626,7 +626,6 @@ void tempest_read (
 {
     uint_t	status;
     uint_t	numBytes,numRows,numBitsRow,numBitsRowPad;
-    char	chardata[1024];
     uint_t	*data;
     uint_t	*data_xor;
     Boolean_t	first_data;
@@ -636,6 +635,7 @@ void tempest_read (
     uint_t	time, last_time=EOT;
     Signal_t	*sig_ptr=NULL;
     Boolean_t	verilator_xor_format;
+    char	chardata[4096];
 
     /* Read the file identification block */
     status = bin_read (read_fd, chardata, 4);
@@ -672,6 +672,12 @@ void tempest_read (
 	sigOffset = bin_read_little_uint_t32 (read_fd);
 	sigWidth  = bin_read_little_uint_t32 (read_fd);
 	sigChars  = bin_read_little_uint_t32 (read_fd);
+	if (sigChars >= sizeof(chardata)) {
+ 	    sprintf (message, "Signal name too long (=%d): Trace may be corrupt.\n", sigChars);
+ 	    dino_error_ack(trace, message);
+ 	    return;
+	} 
+
 	status = bin_read (read_fd, chardata, sigChars);
 	chardata[sigChars] = '\0';
 	

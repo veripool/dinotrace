@@ -716,7 +716,7 @@ static void fil_mark_cptr_end (
 	if (!sig_ptr->copyof) {
 	    /* Must be a cptr which has the same time as the last time on the screen */
 	    /* If none exists, create it */
-	    if (sig_ptr->cptr->siglw.number || sig_ptr->cptr!=sig_ptr->bptr) {
+	    if (sig_ptr->cptr && (sig_ptr->cptr->siglw.number || sig_ptr->cptr!=sig_ptr->bptr)) {
 		Value_t	*cptr = sig_ptr->cptr;
 		if (CPTR_TIME(cptr) != trace->end_time) {
 		    val_copy (&value, sig_ptr->cptr);
