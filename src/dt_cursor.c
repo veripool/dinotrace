@@ -19,7 +19,6 @@
  *     AAG	22-Aug-90	Base Level V4.1
  *     AAG	29-Apr-91	Use X11, added button event variable for Ultrix
  *				 support
- *
  */
 
 

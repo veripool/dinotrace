@@ -22,7 +22,8 @@
  *     AAG	22-Aug-90	Base Level V4.1
  *     AAG	20-Nov-90	Added code to support siz, pos, and res options
  *     AAG	29-Apr-91	Use X11 for Ultrix support
- *
+ *     WPS	03-Jan-93	Default grid_res of 40, sighgt 20 for our project
+ *				Additional gadget support, title in icon
  */
 
 
@@ -39,10 +40,11 @@
 
 
 void
-create_display(argc,argv,xs,ys,xp,yp,res)
-int		argc;
-char		**argv;
-int		xs,ys,xp,yp,res;
+create_display(argc,argv,xs,ys,xp,yp,res,start_filename)
+    int		argc;
+    char		**argv;
+    int		xs,ys,xp,yp,res;
+    char *start_filename;
 {
     char	title[24],data[10],string[20];
     int		fore,back,pd=0,pde=0,i;
@@ -57,6 +59,7 @@ int		xs,ys,xp,yp,res;
 
     /*** create toplevel widget ***/
     toplevel = XtInitialize(DTVERSION, "", NULL, 0, &argc, argv);
+    change_title (ptr);
 
     /*
      * Editor's Note: Thanks go to Sally C. Barry, former employee of DEC,
@@ -114,6 +117,13 @@ int		xs,ys,xp,yp,res;
 	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
                         ptr->menu.pulldownmenu[pde], "", arglist, 2);
 
+	/*** create 'File' pulldown widget 'ReRead' ***/ 
+	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("ReRead") );
+	rerd_tr_cb[0].tag = (int)ptr;
+	XtSetArg(arglist[1], DwtNactivateCallback, rerd_tr_cb);
+	ptr->menu.pulldown[pd++] = DwtPushButtonCreate( 
+                        ptr->menu.pulldownmenu[pde], "", arglist, 2);
+
 	/*** create 'File' pulldown widget 'Clear' ***/        
 	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Clear") );
 	clr_tr_cb[0].tag = (int)ptr;
@@ -148,20 +158,38 @@ int		xs,ys,xp,yp,res;
                         ptr->menu.pulldownmenu[pde], "", arglist, 2);
 
 	/*** create 'Customize' pulldown widget 'Read' ***/
+    /*
 	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Read") );
 	custom_cb[2].tag = (int)ptr;
 	XtSetArg(arglist[1], DwtNactivateCallback, custom_cb+2);
 	XtSetArg(arglist[2], DwtNsensitive, FALSE);
-	ptr->menu.pulldown[pd++] = DwtPushButtonCreate(
-                        ptr->menu.pulldownmenu[pde], "", arglist, 3);
+        ptr->menu.pulldown[pd++] =
+	    DwtPushButtonCreate (ptr->menu.pulldownmenu[pde], "", arglist, 3);
+	    */
 
-	/*** create 'Customize' pulldown widget 'Save' ***/
+	/*** create 'Customize' pulldown widget 'ReRead' ***/
+	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("ReRead") );
+	custom_cb[26].tag = (int)ptr;
+	XtSetArg(arglist[1], DwtNactivateCallback, custom_cb+26);
+        ptr->menu.pulldown[pd++] =
+	    DwtPushButtonCreate (ptr->menu.pulldownmenu[pde], "", arglist, 2);
+
+        /*** create 'Customize' pulldown widget 'Save' ***/
+    /*
 	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Save") );
 	custom_cb[4].tag = (int)ptr;
 	XtSetArg(arglist[1], DwtNactivateCallback, custom_cb+4);
 	XtSetArg(arglist[2], DwtNsensitive, FALSE);
 	ptr->menu.pulldown[pd++] = DwtPushButtonCreate(
                         ptr->menu.pulldownmenu[pde], "", arglist, 3);
+			*/
+
+	/*** create 'Customize' pulldown widget 'Restore' ***/
+	XtSetArg(arglist[0], DwtNlabel, DwtLatin1String("Restore") );
+	custom_cb[24].tag = (int)ptr;
+	XtSetArg(arglist[1], DwtNactivateCallback, custom_cb+24);
+	ptr->menu.pulldown[pd++] = DwtPushButtonCreate(
+                        ptr->menu.pulldownmenu[pde], "", arglist, 2);
 
 	/*** increment pulldownentry count ***/
 	pde++;
@@ -397,7 +425,7 @@ int		xs,ys,xp,yp,res;
 	/*** increment pulldownentry count ***/
 	pde++;
 
-#ifdef DEBUG
+    if (DTDEBUG) {
 	/*** create 'Debug' pulldownmenu widget ***/
 	ptr->menu.pulldownmenu[pde] = DwtMenuPulldownCreate(ptr->menu.menu,
 		"",NULL,0);
@@ -436,7 +464,7 @@ int		xs,ys,xp,yp,res;
 
 	/*** increment pulldownentry count ***/
 	pde++;
-#endif
+	}
 
     /*** manage all menubar pulldown widgets ***/
     for (i=0;i<pd;i++)
@@ -463,7 +491,11 @@ int		xs,ys,xp,yp,res;
     XtSetArg(arglist[4], DwtNtoBottomCallback, hsc_bot_cb);
     hsc_top_cb[0].tag = (int)ptr;
     XtSetArg(arglist[5], DwtNtoTopCallback, hsc_top_cb);
-    ptr->hscroll = DwtScrollBarCreate( ptr->main, "", arglist, 6);
+    hsc_pginc_cb[0].tag = (int)ptr;
+    XtSetArg(arglist[6], DwtNpageIncCallback, hsc_pginc_cb);
+    hsc_pgdec_cb[0].tag = (int)ptr;
+    XtSetArg(arglist[7], DwtNpageDecCallback, hsc_pgdec_cb);
+    ptr->hscroll = DwtScrollBarCreate( ptr->main, "", arglist, 8);
     XtManageChild(ptr->hscroll);
 
     /****************************************
@@ -480,7 +512,11 @@ int		xs,ys,xp,yp,res;
     XtSetArg(arglist[4], DwtNtoBottomCallback, vsc_bot_cb);
     vsc_top_cb[0].tag = (int)ptr;
     XtSetArg(arglist[5], DwtNtoTopCallback, vsc_top_cb);
-    ptr->vscroll = DwtScrollBarCreate( ptr->main, "", arglist, 6);
+    vsc_pginc_cb[0].tag = (int)ptr;
+    XtSetArg(arglist[6], DwtNpageIncCallback, vsc_pginc_cb);
+    vsc_pgdec_cb[0].tag = (int)ptr;
+    XtSetArg(arglist[7], DwtNpageDecCallback, vsc_pgdec_cb);
+    ptr->vscroll = DwtScrollBarCreate( ptr->main, "", arglist, 8);
     XtManageChild(ptr->vscroll);
 
     /****************************************
@@ -523,23 +559,23 @@ int		xs,ys,xp,yp,res;
  	XtSetArg(arglist[0], DwtNadbRightAttachment, DwtAttachWidget);
 	XtSetArg(arglist[1], DwtNadbRightWidget, ptr->command.reschg_but);
 	XtSetArg(arglist[2], DwtNadbRightOffset, 2);
-	inc_res_cb[0].tag = (int)ptr;
-	XtSetArg(arglist[3], DwtNactivateCallback, inc_res_cb );
-	XtSetArg(arglist[4], DwtNwidth, 35);
-	ptr->command.resinc_but = DwtPushButtonCreate(ptr->command.command, "",
-	    arglist, 5);
-	XtManageChild(ptr->command.resinc_but);
-
-	/*** create resolution increase button in command region ***/
-	XtSetArg(arglist[0], DwtNadbLeftAttachment, DwtAttachWidget);
-	XtSetArg(arglist[1], DwtNadbLeftWidget, ptr->command.reschg_but);
-	XtSetArg(arglist[2], DwtNadbLeftOffset, 2);
 	dec_res_cb[0].tag = (int)ptr;
 	XtSetArg(arglist[3], DwtNactivateCallback, dec_res_cb );
 	XtSetArg(arglist[4], DwtNwidth, 35);
 	ptr->command.resdec_but = DwtPushButtonCreate(ptr->command.command, "",
 	    arglist, 5);
 	XtManageChild(ptr->command.resdec_but);
+
+	/*** create resolution increase button in command region ***/
+	XtSetArg(arglist[0], DwtNadbLeftAttachment, DwtAttachWidget);
+	XtSetArg(arglist[1], DwtNadbLeftWidget, ptr->command.reschg_but);
+	XtSetArg(arglist[2], DwtNadbLeftOffset, 2);
+	inc_res_cb[0].tag = (int)ptr;
+	XtSetArg(arglist[3], DwtNactivateCallback, inc_res_cb );
+	XtSetArg(arglist[4], DwtNwidth, 35);
+	ptr->command.resinc_but = DwtPushButtonCreate(ptr->command.command, "",
+	    arglist, 5);
+	XtManageChild(ptr->command.resinc_but);
 
     /****************************************
     * create the work area window
@@ -581,16 +617,13 @@ int		xs,ys,xp,yp,res;
     ptr->time = 0;
     ptr->pageinc = FPAGE;
     ptr->busrep = HBUS;
-    ptr->xstart = 100;
+    ptr->xstart = 200;
     ptr->ystart = 40;
-    ptr->sighgt = 25;
-    ptr->numpag = 1;
-    ptr->sigrf = SIG_RF;
-    ptr->cursor_vis = TRUE;
-    ptr->grid_vis = TRUE;
-    ptr->grid_res = 100;
-    ptr->grid_align = 0;
     ptr->separator = 0;
+
+    ptr->signalstate_head = NULL;
+    config_restore_defaults (ptr);
+
     XGetGeometry( XtDisplay(toplevel), XtWindow(ptr->work), &x1, &x1,
 	&x1, &x2, &x1, &x1, &x1);
     ptr->res = ((float)(x2-ptr->xstart))/(float)res;
@@ -647,8 +680,15 @@ int		xs,ys,xp,yp,res;
     XPutImage(ptr->disp,right_arrow,ptr->gc,&ximage,0,0,0,0,arrow_width,arrow_height);
 
     XtSetArg(arglist[0], DwtNbackgroundPixmap, left_arrow);
-    XtSetValues(ptr->command.resinc_but,arglist,1);
+    XtSetValues(ptr->command.resdec_but,arglist,1);
 
     XtSetArg(arglist[0], DwtNbackgroundPixmap, right_arrow);
-    XtSetValues(ptr->command.resdec_but,arglist,1);
-}
+    XtSetValues(ptr->command.resinc_but,arglist,1);
+
+    /* Load up the file on the command line, if any */
+    if (start_filename != NULL) {
+	XSync(ptr->disp,0);
+	strcpy (ptr->filename, start_filename);
+	cb_fil_read (ptr);
+	}
+    }

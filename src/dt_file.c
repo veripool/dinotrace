@@ -24,6 +24,7 @@
  *     AAG	 8-Jul-91	Added read_HLO_TEMPEST
  *     AAG	 7-Feb-92	Corrected calculation of pad bits when reading
  *				 tempest file format
+ *     WPS	 5-Jan-93	Made xstart be calculated from signal widths
  *
  */
 
@@ -44,11 +45,11 @@ void
 read_DECSIM(ptr)
 DISPLAY_SB	*ptr;
 {
-FILE			*f_ptr;
-short int		len,*pshort;
-char			inline[MAX_SIG+10],tmp[MAX_SIG+10],*t1,*t2,*t3,sp8[9];  
-int			i,j,k,val,state,INIT,DONE,ZBUS;
-SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
+    FILE		*f_ptr;
+    short int		len,*pshort;
+    char		inline[MAX_SIG+10],tmp[MAX_SIG+10],*t1,*t2,*t3,sp8[9];  
+    int			i,j,k,val,state,INIT,DONE,ZBUS;
+    SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
 
     /* initialize the string to 8 spaces */
     for (i=0;i<8;i++)
@@ -60,52 +61,53 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
     if ( f_ptr == NULL )
     {
 	if (DTPRINT) printf("Can't Find File %s\n", ptr->filename);
-	dino_message_ack(ptr,"Can't open file");
+	sprintf(message,"Can't open file %s",ptr->filename);
+	dino_message_ack(ptr, message);
 	ptr->filename[0] = '\0';
 	return;
     }
 
-/* Check if header lines are present - if so, ignore */
+    /* Check if header lines are present - if so, ignore */
 
     fgets(inline,MAX_SIG,f_ptr);
     while ( strncmp(&inline[1],sp8,8) )
       fgets(inline,MAX_SIG+10,f_ptr);
 
-/* INLINE contains 1st signal line - use for signal number */
+    /* INLINE contains 1st signal line - use for signal number */
 
     ptr->numsig = strlen(&inline[9]) - 1;
 
-/* Allocate memory for signames - assume array[numsig][MAXSIGLEN] */
+    /* Allocate memory for signames - assume array[numsig][MAXSIGLEN] */
 
     if ( !(ptr->signame = (SIGNALNAMES *)malloc(ptr->numsig * MAXSIGLEN)) )
     {
-	printf("Can't allocate memory for signal names.\n");
+    if (DTPRINT) printf("Can't allocate memory for signal names.\n");
 	dino_message_ack(ptr,"Can't allocate memory for signal names.");
 	return;
     }
 
-/* allocate memory for bus array - one short per signal */
+    /* allocate memory for bus array - one short per signal */
 
     if ( !(ptr->bus = (short *)malloc(ptr->numsig * sizeof(short))) )
     {
-	printf("Can't allocate memory for bus.\n");
+    if (DTPRINT) printf("Can't allocate memory for bus.\n");
 	dino_message_ack(ptr,"Can't allocate memory for bus.");
 	return;
     }
 
-/* initialize bus array to zero */
+    /* initialize bus array to zero */
 
     pshort = ptr->bus;
     for (i=0; i<ptr->numsig; i++)
 	*(pshort+i) = 0;
 
-/* initialize cursor array to zero */
+    /* initialize cursor array to zero */
 
     ptr->numcursors = 0;
     for (i=0; i<MAX_CURSORS; i++)
 	ptr->cursors[i] = 0;
 
-/* Read Signal Names Into Structure */
+    /* Read Signal Names Into Structure */
 
     k=0;
     while ( inline[0] == '!' )
@@ -125,12 +127,13 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
     fgets(inline,MAX_SIG+10,f_ptr);
     }
 
-/* Add EOS delimiter to each signal name */
+    /* Add EOS delimiter to each signal name */
 
-    for ( i=0; i < ptr->numsig; i++)
+    for ( i=0; i < ptr->numsig; i++) {
       (*(ptr->signame)).array[i][k] = '\0';
+      }
 
-/* Calculate the bus array */
+    /* Calculate the bus array */
 
     if ( TRUE )
 	{
@@ -157,26 +160,26 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
 	}
     }
 
-/* adjust numsig accounting for any busses present */
+    /* adjust numsig accounting for any busses present */
 
     pshort = ptr->bus;
     for (i=0; i<ptr->numsig; i++)
         ptr->numsig -= *(pshort+i);
 
-/* adjust numsig if a separator is present in the trace file */
+    /* adjust numsig if a separator is present in the trace file */
 
     if (ptr->separator)
 	ptr->numsig -= (int)(ptr->numsig+1)/2;
 
-/* Get first line of trace data */
+    /* Get first line of trace data */
 
     if ( !fgets(inline,MAX_SIG+10,f_ptr) )
     {
 	dino_message_ack(ptr,"No data in trace file");
         return;
     }
-
-/* Allocate 1 block of memory to each signal initially */
+    
+    /* Allocate 1 block of memory to each signal initially */
 
     ptr->sig.backward = NULL;
     last_sig_ptr = (SIGNAL_SB *)ptr;
@@ -198,7 +201,7 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
 	tmp_sig_ptr->gc = 0;
 	if ( !(tmp_sig_ptr->bptr = (int *)malloc(BLK_SIZE)) )
 	{
-	    printf("Can't allocate memory for signal data.\n");
+	    if (DTPRINT) printf("Can't allocate memory for signal data.\n");
 	    dino_message_ack(ptr,"Can't allocate memory for signal data.");
 	    return;
 	}
@@ -207,7 +210,7 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
 	last_sig_ptr = tmp_sig_ptr;
     }
 
-/* make SIGNAL_SB signame point to correct signal name */
+    /* make SIGNAL_SB signame point to correct signal name */
 
     pshort = ptr->bus;
     tmp_sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
@@ -234,6 +237,7 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
 	    tmp_sig_ptr->inc = (*pshort < 32) ? 2 : (*pshort < 64) ? 3 : 4;
 	    tmp_sig_ptr->type = (*pshort < 32) ? STATE_B32 :
 				(*pshort < 64) ? STATE_B64 : STATE_B96;
+	    for (t1=tmp_sig_ptr->signame; *t1==' '; t1++);
 	    tmp_sig_ptr->ind_s = 0;
 	    tmp_sig_ptr->ind_e = 0;
 	    j += *pshort;
@@ -243,8 +247,7 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
 	tmp_sig_ptr = (SIGNAL_SB *)tmp_sig_ptr->forward;
     }
 
-/* Load initial data into structure unconditionally */
-
+    /* Load initial data into structure unconditionally */
     check_input(inline);
     cvd2d(ptr, inline, ptr->bus, NOCHECK );
     ptr->start_time = atoi(inline);
@@ -252,8 +255,7 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
 
     DONE = FALSE;
 
-/* Loop to read trace data and reformat */
-
+    /* Loop to read trace data and reformat */
     while (!DONE)
     {
 	/* If next line is EOF then this is the last line */
@@ -271,7 +273,7 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
         	strcpy(tmp, inline);
         	cvd2d(ptr, inline, ptr->bus, CHECK );
         	ptr->end_time = atoi(inline);
-        	if (DTPRINT) printf("end_time=%d\n",ptr->end_time);
+        	/* if (DTPRINT) printf("end_time=%d\n",ptr->end_time); */
             }
             else
 	    {
@@ -281,8 +283,7 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
 
     }
 
-/* re-initialize the cptr's to the bptr's */
-
+    /* re-initialize the cptr's to the bptr's */
     tmp_sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
     for (i=0; i < ptr->numsig; i++)
     {
@@ -290,16 +291,14 @@ SIGNAL_SB		*tmp_sig_ptr,*last_sig_ptr;
 	tmp_sig_ptr = (SIGNAL_SB *)tmp_sig_ptr->forward;
     }
 
-/* close the file */
-
+    /* close the file */
     fclose(f_ptr);
-}
+    }
 
-void
-cvb2d(str,len,value)
-char		*str;
-int		len;
-int		*value;
+void cvb2d(str,len,value)
+    char		*str;
+    int		len;
+    int		*value;
 {
     int i,num,cnt=0,exp=0;
 
@@ -323,10 +322,10 @@ int		*value;
 }
 
 cvd2d(ptr, line, bus, flag )
-DISPLAY_SB	*ptr;
-char		line[MAX_SIG];
-short		*bus;
-int		flag;
+    DISPLAY_SB	*ptr;
+    char		line[MAX_SIG];
+    short		*bus;
+    int		flag;
 {
     int		time,state,value[3],i,j=0,prev=0,inc;
     char	zarr[97];
@@ -345,7 +344,7 @@ int		flag;
     /* compute the time for this line */
     time = atoi(line);
 
-    if (DTPRINT) printf("time=%d\n",time);
+    /* if (DTPRINT) printf("time=%d\n",time); */
 
     /* adjust pointer into trace if separator is present in trace file */
     if (ptr->separator) j++;
@@ -390,24 +389,24 @@ int		flag;
 	    /* add if states !=, or if both are a bus and values != */
 
 
-/*************************DEBUG CONDITIONAL STATEMENT****************
-if ( flag != CHECK )
-    printf("1\n");
-if ( (*(SIGNAL_LW *)((sig_ptr->cptr)-sig_ptr->inc)).state != state )
-    printf("2\n");
-if ( state == STATE_B32 && (*((sig_ptr->cptr)-1)) != value[0] ) 
-    printf("3\n");
-if ( state == STATE_B64 && ( (*((sig_ptr->cptr)-2)) != value[0]
+	    /*************************DEBUG CONDITIONAL STATEMENT****************
+	    if ( flag != CHECK )
+		printf("1\n");
+	    if ( (*(SIGNAL_LW *)((sig_ptr->cptr)-sig_ptr->inc)).state != state )
+		printf("2\n");
+	    if ( state == STATE_B32 && (*((sig_ptr->cptr)-1)) != value[0] ) 
+		printf("3\n");
+	    if ( state == STATE_B64 && ( (*((sig_ptr->cptr)-2)) != value[0]
 					||
-			     (*((sig_ptr->cptr)-1)) != value[1] ) )
-    printf("4\n");
-if ( state == STATE_B96 && ( (*((sig_ptr->cptr)-3)) != value[0]
+					(*((sig_ptr->cptr)-1)) != value[1] ) )
+		printf("4\n");
+	    if ( state == STATE_B96 && ( (*((sig_ptr->cptr)-3)) != value[0]
 					||
-			     (*((sig_ptr->cptr)-2)) != value[1]
+					(*((sig_ptr->cptr)-2)) != value[1]
 					||
-			     (*((sig_ptr->cptr)-1)) != value[2] ) )
-    printf("5\n");
-********************************************************************/
+					(*((sig_ptr->cptr)-1)) != value[2] ) )
+		printf("5\n");
+	    ********************************************************************/
 
  	    if ( ( flag != CHECK )
 			||
@@ -455,7 +454,7 @@ if ( state == STATE_B96 && ( (*((sig_ptr->cptr)-3)) != value[0]
 		    break;
 
 		default:
-		    printf("Error: Bad sig_ptr->type=%d\n",sig_ptr->type);
+		    if (DTPRINT) printf("Error: Bad sig_ptr->type=%d\n",sig_ptr->type);
 		}
             }
 	}
@@ -468,7 +467,8 @@ if ( state == STATE_B96 && ( (*((sig_ptr->cptr)-3)) != value[0]
 		case '1': state = STATE_1; break;
 		case 'U': state = STATE_U; break;
 		case 'Z': state = STATE_Z; break;
-		default: printf("Unknown State: %c\n",line[9+j]);
+		default: 
+		  if (DTDEBUG) printf("Unknown State: %c\n",line[9+j]);
 	    }
 	    j++;
 	    if (ptr->separator) j++;
@@ -486,8 +486,8 @@ if ( state == STATE_B96 && ( (*((sig_ptr->cptr)-3)) != value[0]
 	    (*(SIGNAL_LW *)(sig_ptr->cptr)).time = EOT;
 
         sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
-    } /* end for */
-}
+	} /* end for */
+    }
 
 
 check_input(string)
@@ -495,30 +495,25 @@ check_input(string)
 {
     char	*pchar;
 
-    while ( (pchar=strchr(string,'#')) != 0 )
-    {
+    while ( (pchar=strchr(string,'#')) != 0 ) {
 	*pchar = '\0';
 	strcat(string,pchar+2);
+	}
     }
 
-    return;
-}
 
-
-
-void
-read_HLO_TEMPEST(ptr)
-DISPLAY_SB	*ptr;
+void read_HLO_TEMPEST(ptr)
+    DISPLAY_SB	*ptr;
 {
-int		f_ptr,status;
-int		numBytes,numRows,numBitsRow,numBitsRowPad;
-int		sigChars,sigFlags,sigOffset,sigWidth;
-short int	len,*pshort;
-char		chardata[128],*env;
-unsigned int	data[128];
-int		i,j,k,val,state,INIT,DONE,ZBUS;
-int		pad_len;
-SIGNAL_SB	*sig_ptr,*last_sig_ptr;
+    int		f_ptr,status;
+    int		numBytes,numRows,numBitsRow,numBitsRowPad;
+    int		sigChars,sigFlags,sigOffset,sigWidth;
+    short int	len,*pshort;
+    char		chardata[128],*env;
+    unsigned int	data[128];
+    int		i,j,k,val,state,INIT,DONE,ZBUS;
+    int		pad_len;
+    SIGNAL_SB	*sig_ptr,*last_sig_ptr;
 
     /*
     ** Set the debugging variables
@@ -533,7 +528,8 @@ SIGNAL_SB	*sig_ptr,*last_sig_ptr;
     if ( f_ptr == -1 )
     {
 	if (DTPRINT) printf("Can't Open File %s\n", ptr->filename);
-	dino_message_ack(ptr,"Can't open file");
+	sprintf(message,"Can't open file %s",ptr->filename);
+	dino_message_ack(ptr, message);
 	ptr->filename[0] = '\0';
 	return;
     }
@@ -562,12 +558,12 @@ SIGNAL_SB	*sig_ptr,*last_sig_ptr;
     status = read(f_ptr, &numBitsRow, 4);
     status = read(f_ptr, &numBitsRowPad, 4);
 
-if (env != NULL)
-{
+    if (env != NULL)
+	{
     chardata[4]='\0';
     printf("File Sig=%s Bytes=%d Signals=%d Rows=%d Bits/Row=%d Bits/Row(pad)=%d\n",
 	chardata,numBytes,ptr->numsig,numRows,numBitsRow,numBitsRowPad);
-}
+    }
 
     /*
     ** Allocate memory for signames - assume array[numsig][MAXSIGLEN]
@@ -595,12 +591,12 @@ if (env != NULL)
 	status = read(f_ptr, chardata, sigChars);
 	chardata[sigChars] = '\0';
 
-if (env != NULL)
-{
-    printf("sigFlags=%d sigOffset=%d sigWidth=%d sigChars=%d\n",
-	    sigFlags,sigOffset,sigWidth,sigChars);
-    printf("sigName=%s\n",chardata);
-}
+	if (env != NULL)
+	    {
+	    printf("sigFlags=%d sigOffset=%d sigWidth=%d sigChars=%d\n",
+		   sigFlags,sigOffset,sigWidth,sigChars);
+	    printf("sigName=%s\n",chardata);
+	    }
 
 	/*
 	** Allocate memory for a signal description block
@@ -685,11 +681,11 @@ if (env != NULL)
 	else
 	    ptr->end_time = time;
 
-if (env != NULL)
-{
-    printf("time=%d\n",time);
-    printf("data=%s\n",(char *)data);
-}
+	if (env != NULL)
+	    {
+	    printf("time=%d\n",time);
+	    printf("data=%s\n",(char *)data);
+	    }
 
 	/*
 	** For each signal, the trace value is extracted - the width is
@@ -869,5 +865,75 @@ if (env != NULL)
     ** Close the file
     */
     close(f_ptr);
-}
+    }
 
+/**********************************************************************
+*	update_signal_states
+**********************************************************************/
+
+void	update_signal_states (ptr)
+    DISPLAY_SB	*ptr;
+{
+    SIGNAL_SB *sig_ptr;
+    SIGNAL_LW	*cptr;
+    int rise1=0, fall1=0, rise2=0, fall2=0, period;
+    int			xstarttemp;
+    char *t1;
+
+    if (DTPRINT) printf("In update_signal_states\n");
+
+    /* don't do anything if no file is loaded */
+    if (ptr->filename[0] == '\0') return;
+
+    sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
+    while (sig_ptr) {
+	if (NULL != (sig_ptr->decode = find_signal_state (ptr, sig_ptr->signame))) {
+	    if (DTPRINT) printf("Signal %s is patterned\n",sig_ptr->signame);
+	    }
+	/* else if (DTPRINT) printf("Signal %s  no pattern\n",sig_ptr->signame); */
+	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
+	}
+
+    /* Determine period, rise point and fall point of first signal */
+    cptr = (SIGNAL_LW *)((SIGNAL_SB *)ptr->sig.forward)->cptr;
+    /* Skip first one, as is not representative of period */
+    if ( cptr->time != 0x1FFFFFFF) cptr++;
+    while( cptr->time != 0x1FFFFFFF) {
+	if (cptr->state == STATE_1) {
+	    if (!rise1) rise1 = cptr->time;
+	    else if (!rise2) rise2 = cptr->time;
+	    }
+	if (cptr->state == STATE_0) {
+	    if (!fall1) fall1 = cptr->time;
+	    else if (!fall2) fall2 = cptr->time;
+	    }
+	cptr++;
+	}
+    
+    /* Set defaults based on changes */
+    if (ptr->grid_res_auto==GRID_AUTO_ASS) {
+	if (rise1 < rise2)	ptr->grid_res = rise2 - rise1;
+	else if (fall1 < fall2) ptr->grid_res = fall2 - fall1;
+	}
+    if (ptr->grid_align_auto==GRID_AUTO_ASS && rise1)
+	ptr->grid_align = rise1 % ptr->grid_res;
+    if (ptr->grid_align_auto==GRID_AUTO_DEASS && fall1)
+	ptr->grid_align = fall1 % ptr->grid_res;
+    if (DTPRINT) printf ("align=%d %d %d\n", ptr->grid_align_auto
+			 ,GRID_AUTO_DEASS, fall1);
+    if (DTPRINT) printf ("rise1=%d, fall1=%d, rise2=%d, fall2=%d, res=%d, align=%d\n",
+			 rise1, fall1, rise2, fall2, ptr->grid_res, ptr->grid_align);
+
+    /* Calculate xstart from longest signal name */
+    xstarttemp=XSTART_MIN;
+    sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
+    while (sig_ptr) {
+	for (t1=sig_ptr->signame; *t1==' '; t1++);
+	if (strncmp (t1, "%NET.",5)==0) t1+=5;
+	if (DTPRINT) printf("Signal = '%s'  xstart=%d\n",t1,xstarttemp);
+	if (xstarttemp < XTextWidth(ptr->text_font,t1,strlen(t1)))
+	  xstarttemp = XTextWidth(ptr->text_font,t1,strlen(t1));
+	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
+	}
+    ptr->xstart = xstarttemp + XSTART_MARGIN;
+    }

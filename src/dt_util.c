@@ -25,7 +25,7 @@
  *     AAG	 8-Jul-91	Adding call to read hlo binary trace files,
  *				 added XSync after unmanaging file select
  *				 window, fixed vscroll 'Value' parameter
- *
+ *     WPS	 8-Jan-92	Added new_time gadget controls
  */
 
 
@@ -79,56 +79,59 @@ DISPLAY_SB		*ptr;
 }
 
 new_time(ptr)
-DISPLAY_SB *ptr;
+    DISPLAY_SB *ptr;
 {
-int		i,inc;
-short		*pshort;
-SIGNAL_SB	*sig_ptr;
+    int		i,inc;
+    short		*pshort;
+    SIGNAL_SB	*sig_ptr;
 
-    if ( ptr->time > ptr->end_time - (int)((ptr->width-XMARGIN-ptr->xstart)/ptr->res) )
-    {
+    if ( ptr->time > ptr->end_time - (int)((ptr->width-XMARGIN-ptr->xstart)/ptr->res) ) {
         if (DTPRINT) printf("At end of trace...\n");
         ptr->time = ptr->end_time - (int)((ptr->width-XMARGIN-ptr->xstart)/ptr->res);
-    }
+	}
 
-    if ( ptr->time < ptr->start_time )
-    {
+    if ( ptr->time < ptr->start_time ) {
         if (DTPRINT) printf("At beginning of trace...\n");
         ptr->time = ptr->start_time;
-    }
+	}
 
     pshort = ptr->bus;
     sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
 
-    for (i=0; i<ptr->numsig-ptr->numsigdel; i++)
-    {
+    for (i=0; i<ptr->numsig-ptr->numsigdel; i++) {
+	/*
+	if (DTPRINT)
+	    printf("next time=%d\n",(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time);
+	    */
 
-if (DTPRINT)
-  printf("next time=%d\n",(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time);
-
-        if ( ptr->time >= (*(SIGNAL_LW *)(sig_ptr->cptr)).time )
-	{
-            while (ptr->time>(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time)
-	    {
+        if ( ptr->time >= (*(SIGNAL_LW *)(sig_ptr->cptr)).time ) {
+            while (ptr->time>(*(SIGNAL_LW *)((sig_ptr->cptr)+sig_ptr->inc)).time) {
 		(sig_ptr->cptr)+=sig_ptr->inc;
+		}
 	    }
-	}
-	else
-        {
-            while (ptr->time < (*(SIGNAL_LW *)(sig_ptr->cptr)).time)
-	    {
+	else {
+            while (ptr->time < (*(SIGNAL_LW *)(sig_ptr->cptr)).time) {
                 (sig_ptr->cptr)-=sig_ptr->inc;
-            }
-        }
+		}
+	    }
 
-/* increment to next signal */
+	/* increment to next signal */
+	
+	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
+	}
 
-    sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
+    /* Update scroll-bar */
+    XtSetArg(arglist[0],DwtNvalue,ptr->time);
+    XtSetValues(ptr->hscroll,arglist,1);
+
+    /* Update window */
+    XClearWindow(ptr->disp, ptr->wind);
+    draw(ptr);
+    drawsig(ptr);
     }
-}
 
 get_geometry( ptr )
-DISPLAY_SB	*ptr;
+    DISPLAY_SB	*ptr;
 {
     int		temp,x,y,width,height,dret,max_y;
 
@@ -139,6 +142,7 @@ DISPLAY_SB	*ptr;
     ptr->height = height;
 
     /* calulate the number of signals possibly visible on the screen */
+    /* same calculation in get_geometry */
     max_y = (int)((ptr->height-ptr->ystart)/ptr->sighgt);
     ptr->numsigvis = MIN(ptr->numsig - ptr->numsigdel - ptr->sigstart,max_y);
 
@@ -146,10 +150,9 @@ DISPLAY_SB	*ptr;
     if ( ptr->numcursors > 0 &&
 	 ptr->cursor_vis &&
 	 ptr->numsigvis > 1 &&
-	 ptr->numsigvis >= max_y )
-    {
+	 ptr->numsigvis >= max_y ) {
 	ptr->numsigvis--;
-    }
+	}
 
     XtSetArg(arglist[0], DwtNminValue, ptr->start_time);
     XtSetArg(arglist[1], DwtNmaxValue, ptr->end_time);
@@ -167,11 +170,8 @@ DISPLAY_SB	*ptr;
     XtSetArg(arglist[4], DwtNshown,ptr->numsigvis); 
     XtSetValues(ptr->vscroll, arglist, 5);
 
-    if (DTPRINT)
-    {
-	printf("In get_geometry\n");
-	printf("x=%d y=%d width=%d height=%d\n",x,y,width,height);
-    }
+    if (DTPRINT) printf("In get_geometry: x=%d y=%d width=%d height=%d\n",
+			x,y,width,height);
 }
 
 static DwtCallback fil_ok_cb[2] =
@@ -190,21 +190,26 @@ void
 get_file_name( ptr )
 DISPLAY_SB	*ptr;
 {
+    char mask[200], *pchar;
+
     if (DTPRINT) printf("In get_file_name ptr=%d\n",ptr);
 
-    if (!ptr->fileselect)
-    {
+    if (!ptr->fileselect) {
+	strcpy (mask, ptr->filename);
+	file_directory (mask);
+	if ( trace_format == DECSIM )
+	    strcat (mask, "*.tra");
+	else if ( trace_format == HLO_TEMPEST )
+	    strcat (mask, "*.bt");
+
 	fil_ok_cb[0].tag = (int)ptr;
 	fil_can_cb[0].tag = (int)ptr;
 	XtSetArg(arglist[0], DwtNactivateCallback, fil_ok_cb);
 	XtSetArg(arglist[1], DwtNcancelCallback, fil_can_cb);
-	if ( trace_format == DECSIM )
-	    XtSetArg(arglist[2], DwtNdirMask, DwtLatin1String("*.tra") );
-	else if ( trace_format == HLO_TEMPEST )
-	    XtSetArg(arglist[2], DwtNdirMask, DwtLatin1String("*.bt") );
+	XtSetArg(arglist[2], DwtNdirMask, DwtLatin1String(mask) );
 	XtSetArg(arglist[3], DwtNdirectionRToL, TRUE);
 	XtSetArg(arglist[4], DwtNdefaultPosition, TRUE);
-	XtSetArg(arglist[5], DwtNcols, 50);
+	XtSetArg(arglist[5], DwtNtextCols, 50);
 	ptr->fileselect = DwtFileSelectionCreate( ptr->main, "", arglist, 6);
 
 	XSync(ptr->disp,0);
@@ -222,7 +227,7 @@ DISPLAY_SB	*ptr;
 DwtFileSelectionCallbackStruct *reason;
 {
     int d,status,charset,direction,language,rendition;
-    char *tmp, title[300];
+    char *tmp;
     DwtCompStringContext context;
 
     if (DTPRINT) printf("In cb_fil_ok ptr=%d\n",ptr);
@@ -252,11 +257,20 @@ DwtFileSelectionCallbackStruct *reason;
 	printf("failure (InitNext)\n");
     }
 
-    sprintf(ptr->filename,"%s",tmp);
+    strcpy (ptr->filename,tmp);
 
     XtFree(tmp);
 
     if (DTPRINT) printf("In cb_fil_ok Filename=%s\n",ptr->filename);
+    cb_fil_read (ptr);
+    }
+
+
+void
+cb_fil_read(ptr)
+DISPLAY_SB	*ptr;
+{
+    if (DTPRINT) printf("In cb_fil_read ptr=%d filename=%s\n",ptr,ptr->filename);
 
     /*
     ** Read in the trace file using the format selected by the user
@@ -266,20 +280,17 @@ DwtFileSelectionCallbackStruct *reason;
     else if (trace_format == HLO_TEMPEST)
 	read_HLO_TEMPEST(ptr);
 
-    /*
-    ** Change the name on title bar to filename
-    */
-    sprintf(title,DTVERSION);
-    strcat(title," - ");
-    strcat(title,ptr->filename);
-    XtSetArg(arglist[0], DwtNtitle, title);
-    XtSetValues(toplevel,arglist,1);
+    /* Change the name on title bar to filename */
+    change_title (ptr);
 
     /*
     ** Clear the number of deleted signals and the starting signal
     */
     ptr->numsigdel = 0;
     ptr->sigstart = 0;
+
+    /* get applicable config files */
+    config_read_defaults (ptr);
 
     /*
     ** Clear the window and draw the screen with the new file
@@ -562,6 +573,18 @@ char		*msg;
     return;
 }
 
+/* Put up message and wait for acknowledgement */
+/*
+void 
+dino_message_ack_hold(ptr,msg)
+    DISPLAY_SB	*ptr;
+    char	*msg;
+{
+    dino_message_ack(ptr,msg);
+     
+    }
+*/
+
 void 
 dino_message_ack(ptr,msg)
 DISPLAY_SB	*ptr;
@@ -660,13 +683,12 @@ DISPLAY_SB	*ptr;
 
     printf("Bus array: ptr->bus[]=");
     pbus = ptr->bus;
-    for (i=0; i< ptr->numsig; i++)
-    {
+    for (i=0; i< ptr->numsig; i++) {
 	printf("%d|",*(pbus+i));
-    }
+	}
 
-    
-}
+    print_signal_states (ptr);
+    }
 
 void
 print_all_traces(w,ptr)
@@ -753,3 +775,60 @@ DISPLAY_SB	*ptr;
 	}
     }
 }
+
+
+/* Keep only the directory portion of a file spec */
+void file_directory (strg)
+    char *strg;
+{
+    char *pchar;
+
+    if ((pchar=strrchr(strg,']')) != NULL )
+	*(pchar+1) = '\0';
+    else
+	if ((pchar=strrchr(strg,':')) != NULL )
+	    *(pchar+1) = '\0';
+    else
+	strg[0] = '\0';
+    }
+
+
+void change_title(ptr)
+    DISPLAY_SB	*ptr;
+{
+    char title[300],icontitle[300],*pchar;
+
+    /*
+    ** Change the name on title bar to filename
+    */
+    strcpy(title,DTVERSION);
+    if (ptr->filename[0]!='\0') {
+	strcat(title," - ");
+	strcat(title,ptr->filename);
+	}
+
+    /* For icon title drop extension and directory */
+    if (ptr->filename[0]!='\0') {
+	strcpy (icontitle, ptr->filename);
+	if ((pchar=strrchr(ptr->filename,']')) != NULL )
+	    strcpy (icontitle, pchar+1);
+	else
+	    if ((pchar=strrchr(ptr->filename,':')) != NULL )
+		strcpy (icontitle, pchar+1);
+	if ((pchar=strchr(icontitle,'.')) != NULL )
+	    *(pchar) = '\0';
+	if ((pchar=strchr(icontitle,';')) != NULL )
+	    *(pchar) = '\0';
+	/* Tack on the version number */
+	if ((pchar=strrchr(ptr->filename,';')) != NULL )
+	    strcat (icontitle, pchar);
+	}
+    else {
+	strcpy(icontitle, DTVERSION);
+	}
+    
+    XtSetArg(arglist[0], DwtNtitle, title);
+    XtSetArg(arglist[1], DwtNiconName, icontitle);
+    XtSetValues(toplevel,arglist,2);
+    }
+

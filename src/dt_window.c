@@ -21,6 +21,7 @@
  *				 casts for Ultrix support
  *     AAG	 9-Jul-91	Fixed sigstart on vscroll inc/dec/drag and
  *				 added get_geom call
+ *     WPS	 8-Jan-92	Added pageinc and unitdec routines
  */
 
 
@@ -44,15 +45,16 @@ DISPLAY_SB		*ptr;
     /* free bus array */
     if (ptr->bus != NULL)
 	free(ptr->bus);
+    ptr->bus = NULL;
 
     /* free signal array */
     if (ptr->signame != NULL)
 	free(ptr->signame);
+    ptr->signame = NULL;
 
     /* loop and free signal data and each signal structure */
     sig_ptr = (SIGNAL_SB *)ptr->sig.forward;
-    for (i=0;i<ptr->numsig-ptr->numsigdel;i++)
-    {
+    for (i=0;i<ptr->numsig-ptr->numsigdel;i++) {
 	/* free the signal data */
 	if (sig_ptr->bptr != NULL)
 	    free(sig_ptr->bptr);
@@ -63,10 +65,12 @@ DISPLAY_SB		*ptr;
 	/* free the signal structure */
 	if (tmp_sig_ptr != NULL)
 	    free(tmp_sig_ptr);
+	}
+    ptr->sig.forward = NULL;
+    ptr->sig.backward = NULL;
+    ptr->numsig = 0;
+    ptr->numsigdel = 0;
     }
-
-    return;
-}
 
 void
 clear_display(w,ptr)
@@ -85,14 +89,9 @@ DISPLAY_SB		*ptr;
 
     /* clear the name from DISPLAY_SB */
     ptr->filename[0] = '\0';
-    ptr->numsig = 0;
 
     /* change the name on title bar back to the ptr */
-    sprintf(title,DTVERSION);
-    XtSetArg(arglist[0], DwtNtitle, title);
-    XtSetValues(toplevel,arglist,1);
-
-    return;
+    change_title (ptr);
 }
 
 void
@@ -174,10 +173,9 @@ DISPLAY_SB		*ptr;
     drawsig( ptr );
 }
 
-void
-cb_read_trace(w,ptr)
-Widget			w;
-DISPLAY_SB		*ptr;
+void cb_read_trace(w,ptr)
+    Widget			w;
+    DISPLAY_SB		*ptr;
 {
     char	*filename;
 
@@ -188,8 +186,32 @@ DISPLAY_SB		*ptr;
 
     /* get the filename */
     get_file_name(ptr);
+    }
 
-}
+void cb_reread_trace(w,ptr)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+{
+    char *semi;
+
+    if (ptr->filename[0]=='\0')
+	cb_read_trace(w,ptr);
+    else {
+	if (DTPRINT) printf("In cb_reread_trace - ptr=%d file=%s\n",ptr,ptr->filename);
+
+	/* Drop ;xxx */
+	if (semi = strchr(ptr->filename,';'))
+	    *semi = '\0';
+
+	if (DTPRINT) printf("In cb_reread_trace - rereading file=%s\n",ptr->filename);
+
+	/* free all previous memory */
+	free_data(ptr);
+
+	/* read the filename */
+	cb_fil_read(ptr);
+	}
+    }
 
 void
 quit(w,ptr,cb)
@@ -206,15 +228,34 @@ DwtAnyCallbackStruct	*cb;
     exit(1);
 }
 
-void
-hscroll_unitinc(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtScrollBarCallbackStruct *cb;
+void hscroll_unitinc(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
 {
-    if (DTPRINT) printf("In hscroll_unitinc - ptr=%d\n",ptr);
+    if (DTPRINT) printf("In hscroll_unitinc - ptr=%d  old_time=%d",ptr,ptr->time);
+    ptr->time += ptr->grid_res;
+    if (DTPRINT) printf(" new time=%d\n",ptr->time);
 
-    if (DTPRINT) printf("old_time=%d",ptr->time);
+    new_time(ptr);
+    }
+
+void hscroll_unitdec(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
+{
+    if (DTPRINT) printf("In hscroll_unitdec - ptr=%d  old_time=%d",ptr,ptr->time);
+    ptr->time -= ptr->grid_res;
+    new_time(ptr);
+    }
+
+void hscroll_pageinc(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
+{
+    if (DTPRINT) printf("In hscroll_pageinc - ptr=%d  old_time=%d",ptr,ptr->time);
 
     if ( ptr->pageinc == QPAGE )
 	ptr->time += (int)(((ptr->width-ptr->xstart)/ptr->res)/4);
@@ -223,24 +264,17 @@ DwtScrollBarCallbackStruct *cb;
     else if ( ptr->pageinc == FPAGE )
 	ptr->time += (int)((ptr->width-ptr->xstart)/ptr->res);
 
-    if (DTPRINT) printf(" new_time=%d\n",ptr->time);
+    if (DTPRINT) printf(" new time=%d\n",ptr->time);
 
     new_time(ptr);
+    }
 
-    XClearWindow(ptr->disp, ptr->wind);
-    draw(ptr);
-    drawsig(ptr);
-}
-
-void
-hscroll_unitdec(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtScrollBarCallbackStruct *cb;
+void hscroll_pagedec(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
 {
-    if (DTPRINT) printf("In hscroll_unitdec - ptr=%d\n",ptr);
-
-    if (DTPRINT) printf("old_time=%d",ptr->time);
+    if (DTPRINT) printf("In hscroll_pagedec - ptr=%d  old_time=%d",ptr,ptr->time);
 
     if ( ptr->pageinc == QPAGE )
 	ptr->time -= (int)(((ptr->width-ptr->xstart)/ptr->res)/4);
@@ -249,20 +283,15 @@ DwtScrollBarCallbackStruct *cb;
     else if ( ptr->pageinc == FPAGE )
 	ptr->time -= (int)((ptr->width-ptr->xstart)/ptr->res);
 
-    if (DTPRINT) printf(" new_time=%d\n",ptr->time);
+    if (DTPRINT) printf(" new time=%d\n",ptr->time);
 
     new_time(ptr);
+    }
 
-    XClearWindow(ptr->disp, ptr->wind);
-    draw(ptr);
-    drawsig(ptr);
-}
-
-void
-hscroll_drag(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtScrollBarCallbackStruct *cb;
+void hscroll_drag(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
 {
     int inc;
 
@@ -274,87 +303,104 @@ DwtScrollBarCallbackStruct *cb;
     ptr->time = inc;
 
     new_time(ptr);
+    }
 
-    XClearWindow(ptr->disp, ptr->wind);
-    drawsig(ptr);
-    draw(ptr);
-
-}
-
-void
-hscroll_bot(w,ptr,cb)
-Widget		w;
-DISPLAY_SB	*ptr;
-DwtScrollBarCallbackStruct *cb;
+void hscroll_bot(w,ptr,cb)
+    Widget		w;
+    DISPLAY_SB	*ptr;
+    DwtScrollBarCallbackStruct *cb;
 {
     if (DTPRINT) printf("In hscroll_bot ptr=%d\n",ptr);
-}
+    }
 
-void
-hscroll_top(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtScrollBarCallbackStruct *cb;
+void hscroll_top(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
 {
     if (DTPRINT) printf("In hscroll_top ptr=%d\n",ptr);
-}
-
-void
-vscroll_unitinc(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtScrollBarCallbackStruct *cb;
-{
-    SIGNAL_SB	*tptr;
-
-    if (DTPRINT) printf("In vscroll_unitinc - ptr=%d\n",ptr);
-
-    tptr = (SIGNAL_SB *)ptr->startsig;
-
-    if (DTPRINT) printf("ptr->startsig->forward=%x\n",tptr->forward);
-
-    if ( tptr->forward != NULL )
-    {
-	ptr->sigstart++;
-	ptr->startsig = tptr->forward;
-	get_geometry(ptr);
-        XClearWindow(ptr->disp, ptr->wind);
-        draw(ptr);
-	drawsig(ptr);
     }
-}
 
-void
-vscroll_unitdec(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtScrollBarCallbackStruct *cb;
+/* Vertically scroll + or - inc lines */
+
+void vscroll_new(ptr,inc)
+    DISPLAY_SB		*ptr;
+    int inc;
 {
     SIGNAL_SB	*tptr,*ttptr;
-
-    if (DTPRINT) printf("In vscroll_unitdec - ptr=%d\n",ptr);
-
+    
     tptr = (SIGNAL_SB *)ptr->startsig;
     ttptr = (SIGNAL_SB *)tptr->backward;
 
-    if (DTPRINT) printf("ptr->startsig->backward=%x\n",tptr->backward);
-
-    if ( ttptr->backward != NULL )
-    {
+    while ((inc > 0) &&  (tptr->forward != NULL)) {
+	ptr->sigstart++;
+	ptr->startsig = tptr->forward;
+	tptr = (SIGNAL_SB *)ptr->startsig;
+	inc--;
+	}
+    
+    while ((inc < 0) &&  (ttptr->backward != NULL)) {
 	ptr->sigstart--;
 	ptr->startsig = tptr->backward;
-	get_geometry(ptr);
-        XClearWindow(ptr->disp, ptr->wind);
-        draw(ptr);
-	drawsig(ptr);
+	tptr = (SIGNAL_SB *)ptr->startsig;
+	ttptr = (SIGNAL_SB *)tptr->backward;
+	inc++;
+	}
+    
+    get_geometry(ptr);
+    XClearWindow(ptr->disp, ptr->wind);
+    draw(ptr);
+    drawsig(ptr);
     }
-}
 
-void
-vscroll_drag(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtScrollBarCallbackStruct *cb;
+void vscroll_unitinc(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
+{
+    vscroll_new (ptr, 1);
+    }
+
+void vscroll_unitdec(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
+{
+    vscroll_new (ptr, -1);
+    }
+
+void vscroll_pageinc(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
+{
+    vscroll_new (ptr, ptr->numsigvis);
+    }
+
+void vscroll_pagedec(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
+{
+    int sigs;
+
+    /* Not numsigvis because may not be limited by screen size */
+    sigs = (int)((ptr->height-ptr->ystart)/ptr->sighgt);
+
+    if ( ptr->numcursors > 0 &&
+	 ptr->cursor_vis &&
+	 ptr->numsigvis > 1 &&
+	 ptr->numsigvis >= sigs ) {
+	sigs--;
+	}
+
+    vscroll_new (ptr, -sigs);
+    }
+
+void vscroll_drag(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtScrollBarCallbackStruct *cb;
 {
     int		inc,diff,p;
     SIGNAL_SB	*tptr;
@@ -367,27 +413,13 @@ DwtScrollBarCallbackStruct *cb;
     if (DTPRINT) printf("inc=%d\n",inc);
 
     /*
-    ** The inc value is the new location of the scroll bar, therefore
-    ** sigstart must be updated to reflect the new position
-    */
-    ptr->sigstart = inc;
-
-    /*
     ** The sig pointer is reset to the start and the loop will set
-    ** it to the siganl that inc represents
+    ** it to the signal that inc represents
     */
+    ptr->sigstart = 0;
     ptr->startsig = ptr->sig.forward;
-    for(p=0; p<inc; p++)
-    {
-	tptr = (SIGNAL_SB *)ptr->startsig;
-	ptr->startsig = tptr->forward;
+    vscroll_new (ptr, inc);
     }
-
-    get_geometry(ptr);
-    XClearWindow(ptr->disp, ptr->wind);
-    drawsig(ptr);
-    draw(ptr);
-}
 
 void
 vscroll_bot(w,ptr,cb)
@@ -485,13 +517,7 @@ DISPLAY_SB	*ptr;
     if (DTPRINT) printf("In cb_start ptr=%d\n",ptr);
     ptr->time = ptr->start_time;
     new_time(ptr);
-    XClearWindow(ptr->disp, ptr->wind);
-    draw(ptr);
-    drawsig(ptr);
-
-    XtSetArg(arglist[0],DwtNvalue,ptr->time);
-    XtSetValues(ptr->hscroll,arglist,1);
-}
+    }
 
 void
 cb_end(w, ptr )
@@ -501,10 +527,4 @@ DISPLAY_SB	*ptr;
     if (DTPRINT) printf("In cb_end ptr=%d\n",ptr);
     ptr->time = ptr->end_time - (int)((ptr->width-XMARGIN-ptr->xstart)/ptr->res);
     new_time(ptr);
-    XClearWindow(ptr->disp, ptr->wind);
-    draw(ptr);
-    drawsig(ptr);
-
-    XtSetArg(arglist[0],DwtNvalue,ptr->time);
-    XtSetValues(ptr->hscroll,arglist,1);
-}
+    }

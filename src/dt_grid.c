@@ -72,6 +72,8 @@ DwtAnyCallbackStruct	*cb;
     ptr->grid_align = 0;
     ptr->grid_res = 100;
 
+    update_signal_states (ptr);
+
     /* cancel the button actions */
     remove_all_events(ptr);
 

@@ -18,6 +18,7 @@
  *     AAG	28-Jul-89	Original Version
  *     AAG	22-Aug-90	Base Level V4.1
  *     AAG	29-Apr-91	Use X11 for Ultrix support
+ *     WPS	11-Jan-93	Changed signal margin, scrunched bottom
  *
  */
 
@@ -244,11 +245,10 @@ DwtAnyCallbackStruct	*cb;
 	ns = (int)((ptr->width - ptr->xstart)/ptr->res);
 
 	/* output the page header macro */
-	fprintf(psfile,"%d %d %d %d (%s) (%s) %d PAGEHDR\n",
+	fprintf(psfile,"(%d-%d) %d (%s) (%s) %d PAGEHDR\n",
 	    ptr->time + ns,                                  /* end time */
 	    ptr->time,					     /* start time */
 	    ns,						     /* resolution */
-	    ptr->numsigvis,                                  /* num signals */
 	    date.dsc$a_pointer,                              /* time & date */
 	    ptr->filename,                                   /* filename */
 	    i+1);                                            /* page number */
@@ -268,13 +268,10 @@ DwtAnyCallbackStruct	*cb;
 	{
 	    /* increment to next page */
 	    ptr->time += ns;
-	    new_time(ptr);
 
 	    /* redraw the display */
 	    get_geometry(ptr);
-	    XClearWindow(ptr->disp,ptr->wind);
-	    draw(ptr);
-	    drawsig(ptr);
+	    new_time(ptr);
 	}
 
     }
@@ -303,13 +300,10 @@ DwtAnyCallbackStruct	*cb;
 
     /* reset the drawing back to the beginning */
     ptr->time = ptr->start_time;
-    new_time(ptr);
 
     /* redraw the display */
     get_geometry(ptr);
-    XClearWindow(ptr->disp,ptr->wind);
-    draw(ptr);
-    drawsig(ptr);
+    new_time(ptr);
 
     /* calculate ns per page */
     ns = (int)((ptr->width - ptr->xstart)/ptr->res);
@@ -357,6 +351,7 @@ FILE		*psfile;
     SIGNAL_LW *cptr,*nptr;
     SIGNAL_SB *tmp_sig_ptr;
     char tmp[32];
+    unsigned int value;
 
     if (DTPRINT) printf("In draw - filename=%s\n",ptr->filename);
 
@@ -429,10 +424,20 @@ FILE		*psfile;
                     break;
 
 	        case STATE_B32: if ( xloc > xend ) xloc = xend;
-		    if (ptr->busrep == HBUS)
-                      sprintf(tmp,"%X",*((unsigned int *)cptr+1));
-		    else if (ptr->busrep == OBUS)
-                      sprintf(tmp,"%o",*((unsigned int *)cptr+1));
+		    value = *((unsigned int *)cptr+1);
+		    /* Below evaluation left to right important to prevent error */
+		    if ( (tmp_sig_ptr->decode != NULL) &&
+			(value>=0 && value<MAXSTATENAMES) &&
+			(tmp_sig_ptr->decode->statename[value][0] != '\0')) {
+			strcpy (tmp, tmp_sig_ptr->decode->statename[value]);
+			}
+		    else {
+			if (ptr->busrep == HBUS)
+			    sprintf(tmp,"%X", value);
+			else if (ptr->busrep == OBUS)
+			    sprintf(tmp,"%o", value);
+			}
+
 		    fprintf(psfile,"%d (%s) STATE_B32\n",xloc,tmp);
                     break;
 
@@ -598,11 +603,10 @@ FILE		*psfile;
     tmp_sig_ptr = ptr->startsig;
 
     /* loop thru all the visible signals */
-    for (i=0;i<ptr->numsigvis;i++)
-    {
+    for (i=0;i<ptr->numsigvis;i++) {
 	/* calculate the location to start drawing the signal name */
-	x1 = ptr->xstart - XTextWidth(ptr->text_font,tmp_sig_ptr->signame,
-		strlen(tmp_sig_ptr->signame)) - 10;
+	x1 = ptr->xstart - 105;
+	/* printf ("x1=%d, xstart=%d, %s\n",x1,ptr->xstart, tmp_sig_ptr->signame); */
 
 	/* calculate the y location to draw the signal name and draw it */
 	y1 = ptr->height - ptr->ystart - c * ptr->sighgt - SIG_SPACE;

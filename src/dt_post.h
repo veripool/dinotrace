@@ -1,6 +1,7 @@
 
 char dinopost[] = "%\n\
 % Allen Gallotta May-90 DINO.POST\n\
+% Modified 1/4/93 by snyder@ricks.enet.dec.com\n\
 % Contains Postscript Header and Routines for DINOTRACE\n\
 %\n\
 /MT {moveto} def		% define MT\n\
@@ -26,7 +27,7 @@ char dinopost[] = "%\n\
   /Helvetica-BoldOblique findfont 30 scalefont setfont % choose large font\n\
   1 setlinecap 1 setlinejoin 1 setlinewidth            % set line char\n\
 \n\
-  20 20 MT (Dinotrace V4.1) true charpath stroke   % draw logo\n\
+  20 20 MT (Dinotrace V5.0) true charpath stroke   % draw logo\n\
   650 20 MT (Page ) true charpath		   % draw PAGE\n\
   3 string cvs true charpath stroke		   % draw page number\n\
 \n\
@@ -35,12 +36,9 @@ char dinopost[] = "%\n\
 \n\
   250 40 MT (File: ) show 100 string cvs show\n\
   250 30 MT (Date: ) show 25 string cvs show\n\
-  250 20 MT (Page Size: A) show\n\
-  250 10 MT (Digital Equipment Corporation Confidential) show\n\
-  530 40 MT (Number of Signals: ) show 8 string cvs show\n\
+  250 20 MT (Digital Equipment Corporation Confidential) show\n\
   530 30 MT (Resolution: ) show 10 string cvs show ( ns/page) show\n\
-  530 20 MT (Start Time: ) show 10 string cvs show\n\
-  530 10 MT (End Time: ) show 10 string cvs show\n\
+  530 20 MT (Time: ) show 10 string cvs show\n\
   stroke /Times-Roman findfont 8 scalefont setfont\n\
   } def\n\
 \n\
@@ -54,7 +52,7 @@ char dinopost[] = "%\n\
 /RIGHTSHOW      % right justify the signal names adj=(x2-x1-stringwidth)\n\
 { dup stringwidth pop   % get width of string\n\
   100 XADJ 5 sub        % calculate right edge of text position\n\
-  currentpoint pop sub  % get starting location of text and sub\n\
+%  currentpoint pop sub  % patched WPS - get starting location of text and sub\n\
   exch sub              % subtract stringwidth\n\
   0 rmoveto show        % adjust strating location of text and show\n\
 } def \n\

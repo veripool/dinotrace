@@ -86,8 +86,7 @@ DwtAnyCallbackStruct *cb;
 	XtSetArg(arglist[2],DwtNy, 50);
 	custom_cb[6].tag = FPAGE;
 	XtSetArg(arglist[3],DwtNarmCallback, custom_cb+6);
-	XtSetArg(arglist[4],DwtNvalue, TRUE);
-	ptr->custom.tpage3 = DwtToggleButtonCreate(ptr->custom.rpage,"",arglist,5);
+	ptr->custom.tpage3 = DwtToggleButtonCreate(ptr->custom.rpage,"",arglist,4);
 	XtManageChild(ptr->custom.tpage3);
 
 	/* Create radio box for bus representation */
@@ -129,8 +128,7 @@ DwtAnyCallbackStruct *cb;
 	XtSetArg(arglist[2],DwtNy, 50);
 	custom_cb[8].tag = HBUS;
 	XtSetArg(arglist[3],DwtNarmCallback, custom_cb+8);
-	XtSetArg(arglist[4],DwtNvalue, TRUE);
-	ptr->custom.tbus4 = DwtToggleButtonCreate(ptr->custom.rbus,"",arglist,5);
+	ptr->custom.tbus4 = DwtToggleButtonCreate(ptr->custom.rbus,"",arglist,4);
 	XtManageChild(ptr->custom.tbus4);
 
 	/* Create signal height slider */
@@ -152,8 +150,7 @@ DwtAnyCallbackStruct *cb;
 	XtSetArg(arglist[2],DwtNy, 75);
 	custom_cb[12].tag = (int)ptr;
 	XtSetArg(arglist[3],DwtNvalueChangedCallback, custom_cb+12);
-	XtSetArg(arglist[4],DwtNvalue, TRUE);
-	ptr->custom.rfwid = DwtToggleButtonCreate(ptr->custom.customize,"",arglist,5);
+	ptr->custom.rfwid = DwtToggleButtonCreate(ptr->custom.customize,"",arglist,4);
 	XtManageChild(ptr->custom.rfwid);
 
 	/* Create grid state on/off button */
@@ -162,8 +159,7 @@ DwtAnyCallbackStruct *cb;
 	XtSetArg(arglist[2],DwtNy, 85);
 	custom_cb[14].tag = (int)ptr;
 	XtSetArg(arglist[3],DwtNvalueChangedCallback, custom_cb+14);
-	XtSetArg(arglist[4],DwtNvalue, TRUE);
-	ptr->custom.grid_state = DwtToggleButtonCreate(ptr->custom.customize,"",arglist,5);
+	ptr->custom.grid_state = DwtToggleButtonCreate(ptr->custom.customize,"",arglist,4);
 	XtManageChild(ptr->custom.grid_state);
 
 	/* Create cursor state on/off button */
@@ -172,8 +168,7 @@ DwtAnyCallbackStruct *cb;
 	XtSetArg(arglist[2],DwtNy, 95);
 	custom_cb[16].tag = (int)ptr;
 	XtSetArg(arglist[3],DwtNvalueChangedCallback, custom_cb+16);
-	XtSetArg(arglist[4],DwtNvalue, TRUE);
-	ptr->custom.cursor_state = DwtToggleButtonCreate(ptr->custom.customize,"",arglist,5);
+	ptr->custom.cursor_state = DwtToggleButtonCreate(ptr->custom.customize,"",arglist,4);
 	XtManageChild(ptr->custom.cursor_state);
 
 	/* Create OK button */
@@ -208,22 +203,94 @@ DwtAnyCallbackStruct *cb;
 
     }
 
-    XtManageChild(ptr->custom.customize);
-}
+    /* Update with current custom values */
+    XtSetArg(arglist[0],DwtNvalue, (curptr->pageinc==4));
+    XtSetValues(ptr->custom.tpage1,arglist,1);
+    XtSetArg(arglist[0],DwtNvalue, (curptr->pageinc==2));
+    XtSetValues(ptr->custom.tpage2,arglist,1);
+    XtSetArg(arglist[0],DwtNvalue, (curptr->pageinc==1));
+    XtSetValues(ptr->custom.tpage3,arglist,1);
 
-void
-cus_read_cb(w,ptr,cb)
-Widget			w;
-DISPLAY_SB		*ptr;
-DwtAnyCallbackStruct	*cb;
+    XtSetArg(arglist[0],DwtNvalue, (curptr->busrep==OBUS));
+    XtSetValues(ptr->custom.tbus3,arglist,1);
+    XtSetArg(arglist[0],DwtNvalue, (curptr->busrep==HBUS));
+    XtSetValues(ptr->custom.tbus4,arglist,1);
+
+    XtSetArg(arglist[0],DwtNvalue, ptr->grid_vis);
+    XtSetValues(ptr->custom.grid_state,arglist,1);
+
+    XtSetArg(arglist[0], DwtNvalue, curptr->sighgt);
+    XtSetValues(ptr->custom.s1,arglist,1);
+
+    XtSetArg(arglist[0],DwtNvalue, curptr->sigrf);
+    XtSetValues(ptr->custom.rfwid,arglist,1);
+
+    XtSetArg(arglist[0],DwtNvalue, ptr->grid_vis);
+    XtSetValues(ptr->custom.grid_state,arglist,1);
+
+    XtSetArg(arglist[0],DwtNvalue, ptr->cursor_vis);
+    XtSetValues(ptr->custom.cursor_state,arglist,1);
+
+    /* Do it */
+    XtManageChild(ptr->custom.customize);
+    }
+
+
+void cus_read_cb(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtAnyCallbackStruct	*cb;
 {
     if (DTPRINT) printf("in cus_read_cb ptr=%d\n",ptr);
 
     /* create popup to get filename */
-    get_data_popup(ptr,"Custom File To Read",IO_READCUSTOM);
+    /*
+      get_data_popup(ptr,"Custom File To Read",IO_READCUSTOM);
+      */
 
-    return;
-}
+    config_read_file (ptr, "DINO$DISK:DINOTRACE.DINO", 0);
+
+    /* Reformat and refresh */
+    get_geometry(ptr);
+    XClearWindow(ptr->disp, ptr->wind);
+    draw(ptr);
+    drawsig(ptr);
+    }
+
+void cus_reread_cb(w,ptr,cb)
+    Widget			w;
+    DISPLAY_SB		*ptr;
+    DwtAnyCallbackStruct	*cb;
+{
+    if (DTPRINT) printf("in cus_reread_cb ptr=%d\n",ptr);
+
+    config_read_defaults (ptr);
+
+    /* Reformat and refresh */
+    get_geometry(ptr);
+    XClearWindow(ptr->disp, ptr->wind);
+    draw(ptr);
+    drawsig(ptr);
+    }
+
+void
+cus_restore_cb(w,ptr,cb)
+Widget			w;
+DISPLAY_SB		*ptr;
+DwtAnyCallbackStruct	*cb;
+{
+    if (DTPRINT) printf("in cus_restore_cb ptr=%d\n",ptr);
+
+    config_restore_defaults (ptr);
+
+    /* do the default thing */
+
+    /* redraw the display */
+    get_geometry(ptr);
+    XClearWindow(ptr->disp,ptr->wind);
+    draw(ptr);
+    drawsig(ptr);
+    }
 
 void
 cus_save_cb(w,ptr,cb)

@@ -91,9 +91,10 @@ DISPLAY_SB	*ptr;
     int c=0,i,j,k=2,d,cnt,adj,ymdpt,inc,xt,yt,xloc,xend,du,len,mid,yfntloc,max_y;
     XPoint Pts[5000];
     float iff,xlocf,xtimf;
-    char tmp[32];
-    SIGNAL_LW *cptr,*nptr;
+    char tmp[MAXSTATELEN+16];
+    register SIGNAL_LW *cptr,*nptr;
     SIGNAL_SB *tmp_sig_ptr;
+    unsigned int value;
 
     if (DTPRINT) printf("In draw - filename=%s\n",ptr->filename);
 
@@ -150,37 +151,38 @@ DISPLAY_SB	*ptr;
 	    xloc = nptr->time * ptr->res - adj;
 
 	    /* Determine what the state of the signal is and build transition */
-	    switch( cptr->state )
-	    {
-	        case STATE_0: if ( xloc > xend ) xloc = xend;
-                    Pts[cnt+1].x = Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y = y2;
-                    Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y2;
-                    break;
-
-	        case STATE_1: if ( xloc > xend ) xloc = xend;
-                    Pts[cnt+1].x = Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y = y1;
-                    Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y1;
-                    break;
-
-	        case STATE_U:
-		    Pts[cnt+1].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y=ymdpt;
-		    cnt++;
-                    if ( xloc > xend ) xloc = xend;
-		    if ( xloc - Pts[cnt].x < DELU2)
+	    switch( cptr->state ) {
+	      case STATE_0:
+		if ( xloc > xend ) xloc = xend;
+		Pts[cnt+1].x = Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y = y2;
+		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y2;
+		break;
+		
+	      case STATE_1:
+		if ( xloc > xend ) xloc = xend;
+		Pts[cnt+1].x = Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y = y1;
+		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y1;
+		break;
+		
+	      case STATE_U:
+		Pts[cnt+1].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y=ymdpt;
+		cnt++;
+		if ( xloc > xend ) xloc = xend;
+		if ( xloc - Pts[cnt].x < DELU2)
 		    {
-            	      du = xloc - Pts[cnt].x;
-                      Pts[cnt+1].x=Pts[cnt].x+du/2;  Pts[cnt+1].y = y2;
-                      Pts[cnt+2].x=Pts[cnt].x+du; Pts[cnt+2].y = ymdpt;
-                      Pts[cnt+3].x=Pts[cnt].x+du/2;  Pts[cnt+3].y = y1;
-                      Pts[cnt+4].x=Pts[cnt].x;       Pts[cnt+4].y = ymdpt;
-                      Pts[cnt+5].x=Pts[cnt].x+du/2;  Pts[cnt+5].y = y1;
-                      Pts[cnt+6].x=Pts[cnt].x+du; Pts[cnt+6].y = ymdpt;
-                      cnt += 6;
+		    du = xloc - Pts[cnt].x;
+		    Pts[cnt+1].x=Pts[cnt].x+du/2;  Pts[cnt+1].y = y2;
+		    Pts[cnt+2].x=Pts[cnt].x+du; Pts[cnt+2].y = ymdpt;
+		    Pts[cnt+3].x=Pts[cnt].x+du/2;  Pts[cnt+3].y = y1;
+		    Pts[cnt+4].x=Pts[cnt].x;       Pts[cnt+4].y = ymdpt;
+		    Pts[cnt+5].x=Pts[cnt].x+du/2;  Pts[cnt+5].y = y1;
+		    Pts[cnt+6].x=Pts[cnt].x+du; Pts[cnt+6].y = ymdpt;
+		    cnt += 6;
 		    }
-		    else
+		else
 		    {
-                      while ( Pts[cnt].x < xloc - DELU )
-		      {
+		    while ( Pts[cnt].x < xloc - DELU )
+			{
                         Pts[cnt+1].x=Pts[cnt].x+DELU;  Pts[cnt+1].y = y2;
                         Pts[cnt+2].x=Pts[cnt].x+DELU2; Pts[cnt+2].y = ymdpt;
                         Pts[cnt+3].x=Pts[cnt].x+DELU;  Pts[cnt+3].y = y1;
@@ -188,109 +190,125 @@ DISPLAY_SB	*ptr;
                         Pts[cnt+5].x=Pts[cnt].x+DELU;  Pts[cnt+5].y = y1;
                         Pts[cnt+6].x=Pts[cnt].x+DELU2; Pts[cnt+6].y = ymdpt;
                         cnt += 6;
-                      }
+			}
 		    }
-		    Pts[cnt].x = Pts[cnt-4].x = xloc;
-                    cnt -= 2;
-                    break;
-
-	        case STATE_Z: if ( xloc > xend ) xloc = xend;
-                    Pts[cnt+1].x = Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y = ymdpt;
-                    Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = ymdpt;
-                    break;
-
-	        case STATE_B32: if ( xloc > xend ) xloc = xend;
-                    Pts[cnt+1].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y=y2;
-                    Pts[cnt+2].x=xloc-ptr->sigrf;       Pts[cnt+2].y=y2;
-                    Pts[cnt+3].x=xloc;                  Pts[cnt+3].y=ymdpt;
-                    Pts[cnt+4].x=xloc-ptr->sigrf;       Pts[cnt+4].y=y1;
-                    Pts[cnt+5].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+5].y=y1;
-                    Pts[cnt+6].x=Pts[cnt].x;            Pts[cnt+6].y=ymdpt;
-                    Pts[cnt+7].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+7].y=y1;
-                    Pts[cnt+8].x=xloc-ptr->sigrf;       Pts[cnt+8].y=y1;
-                    Pts[cnt+9].x=xloc;                  Pts[cnt+9].y=ymdpt;
+		Pts[cnt].x = Pts[cnt-4].x = xloc;
+		cnt -= 2;
+		break;
+		
+	      case STATE_Z:
+		if ( xloc > xend ) xloc = xend;
+		Pts[cnt+1].x = Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y = ymdpt;
+		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = ymdpt;
+		break;
+		
+	      case STATE_B32:
+		if ( xloc > xend ) xloc = xend;
+		Pts[cnt+1].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y=y2;
+		Pts[cnt+2].x=xloc-ptr->sigrf;       Pts[cnt+2].y=y2;
+		Pts[cnt+3].x=xloc;                  Pts[cnt+3].y=ymdpt;
+		Pts[cnt+4].x=xloc-ptr->sigrf;       Pts[cnt+4].y=y1;
+		Pts[cnt+5].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+5].y=y1;
+		Pts[cnt+6].x=Pts[cnt].x;            Pts[cnt+6].y=ymdpt;
+		Pts[cnt+7].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+7].y=y1;
+		Pts[cnt+8].x=xloc-ptr->sigrf;       Pts[cnt+8].y=y1;
+		Pts[cnt+9].x=xloc;                  Pts[cnt+9].y=ymdpt;
+		
+		value = *((unsigned int *)cptr+1);
+		
+		/* Below evaluation left to right important to prevent error */
+		if ( (tmp_sig_ptr->decode != NULL) &&
+		    (value>=0 && value<MAXSTATENAMES) &&
+		    (tmp_sig_ptr->decode->statename[value][0] != '\0')) {
+		    strcpy (tmp, tmp_sig_ptr->decode->statename[value]);
+		    }
+		else {
 		    if (ptr->busrep == HBUS)
-                      sprintf(tmp,"%X",*((unsigned int *)cptr+1));
+			sprintf(tmp,"%X", value);
 		    else if (ptr->busrep == OBUS)
-                      sprintf(tmp,"%o",*((unsigned int *)cptr+1));
-
-		    /* calculate positional parameters */
-                    mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
- 		    len = XTextWidth(ptr->text_font,tmp,strlen(tmp));
-
-		    /* write the bus value if it fits */
- 		    if ( xloc-Pts[cnt].x >= len + 2 )
-		    {
-                	XDrawString(XtDisplay(toplevel), XtWindow( ptr->work),
-                            ptr->gc, mid-len/2, y2-yfntloc, tmp, strlen(tmp) );
+			sprintf(tmp,"%o", value);
 		    }
-                    cnt += 7;
-                    break;
-
-	        case STATE_B64: if ( xloc > xend ) xloc = xend;
-                    Pts[cnt+1].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y=y2;
-                    Pts[cnt+2].x=xloc-ptr->sigrf;       Pts[cnt+2].y=y2;
-                    Pts[cnt+3].x=xloc;                  Pts[cnt+3].y=ymdpt;
-                    Pts[cnt+4].x=xloc-ptr->sigrf;       Pts[cnt+4].y=y1;
-                    Pts[cnt+5].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+5].y=y1;
-                    Pts[cnt+6].x=Pts[cnt].x;            Pts[cnt+6].y=ymdpt;
-                    Pts[cnt+7].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+7].y=y1;
-                    Pts[cnt+8].x=xloc-ptr->sigrf;       Pts[cnt+8].y=y1;
-                    Pts[cnt+9].x=xloc;                  Pts[cnt+9].y=ymdpt;
-		    if (ptr->busrep == HBUS)
-                      sprintf(tmp,"%X %08X",*((unsigned int *)cptr+1),
-					  *((unsigned int *)cptr+2));
-		    else if (ptr->busrep == OBUS)
-                      sprintf(tmp,"%o %o",*((unsigned int *)cptr+1),
-					  *((unsigned int *)cptr+2));
-
-		    /* calculate positional parameters */
-                    mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
- 		    len = XTextWidth(ptr->text_font,tmp,strlen(tmp));
-
-		    /* write the bus value if it fits */
- 		    if ( xloc-Pts[cnt].x >= len + 2 )
+		
+		/* calculate positional parameters */
+		mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
+		len = XTextWidth(ptr->text_font,tmp,strlen(tmp));
+		
+		/* write the bus value if it fits */
+		if ( xloc-Pts[cnt].x >= len + 2 )
 		    {
-                	XDrawString(XtDisplay(toplevel), XtWindow( ptr->work),
-                            ptr->gc, mid-len/2, y2-yfntloc, tmp, strlen(tmp) );
+		    XDrawString(XtDisplay(toplevel), XtWindow( ptr->work),
+				ptr->gc, mid-len/2, y2-yfntloc, tmp, strlen(tmp) );
 		    }
-                    cnt += 7;
-                    break;
-
-	        case STATE_B96: if ( xloc > xend ) xloc = xend;
-                    Pts[cnt+1].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y=y2;
-                    Pts[cnt+2].x=xloc-ptr->sigrf;       Pts[cnt+2].y=y2;
-                    Pts[cnt+3].x=xloc;                  Pts[cnt+3].y=ymdpt;
-                    Pts[cnt+4].x=xloc-ptr->sigrf;       Pts[cnt+4].y=y1;
-                    Pts[cnt+5].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+5].y=y1;
-                    Pts[cnt+6].x=Pts[cnt].x;            Pts[cnt+6].y=ymdpt;
-                    Pts[cnt+7].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+7].y=y1;
-                    Pts[cnt+8].x=xloc-ptr->sigrf;       Pts[cnt+8].y=y1;
-                    Pts[cnt+9].x=xloc;                  Pts[cnt+9].y=ymdpt;
-		    if (ptr->busrep == HBUS)
-                      sprintf(tmp,"%X %08X %08X",*((unsigned int *)cptr+1),
-					         *((unsigned int *)cptr+2),
-					         *((unsigned int *)cptr+2));
-		    else if (ptr->busrep == OBUS)
-                      sprintf(tmp,"%o %o %o",*((unsigned int *)cptr+1),
-					     *((unsigned int *)cptr+2),
-					     *((unsigned int *)cptr+2));
-
-		    /* calculate positional parameters */
-                    mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
- 		    len = XTextWidth(ptr->text_font,tmp,strlen(tmp));
-
-		    /* write the bus value if it fits */
- 		    if ( xloc-Pts[cnt].x >= len + 2 )
+		cnt += 7;
+		break;
+		
+	      case STATE_B64:
+		if ( xloc > xend ) xloc = xend;
+		Pts[cnt+1].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y=y2;
+		Pts[cnt+2].x=xloc-ptr->sigrf;       Pts[cnt+2].y=y2;
+		Pts[cnt+3].x=xloc;                  Pts[cnt+3].y=ymdpt;
+		Pts[cnt+4].x=xloc-ptr->sigrf;       Pts[cnt+4].y=y1;
+		Pts[cnt+5].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+5].y=y1;
+		Pts[cnt+6].x=Pts[cnt].x;            Pts[cnt+6].y=ymdpt;
+		Pts[cnt+7].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+7].y=y1;
+		Pts[cnt+8].x=xloc-ptr->sigrf;       Pts[cnt+8].y=y1;
+		Pts[cnt+9].x=xloc;                  Pts[cnt+9].y=ymdpt;
+		if (ptr->busrep == HBUS)
+		    sprintf(tmp,"%X %08X",*((unsigned int *)cptr+1),
+			    *((unsigned int *)cptr+2));
+		else if (ptr->busrep == OBUS)
+		    sprintf(tmp,"%o %o",*((unsigned int *)cptr+1),
+			    *((unsigned int *)cptr+2));
+		
+		/* calculate positional parameters */
+		mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
+		len = XTextWidth(ptr->text_font,tmp,strlen(tmp));
+		
+		/* write the bus value if it fits */
+		if ( xloc-Pts[cnt].x >= len + 2 )
 		    {
-                	XDrawString(XtDisplay(toplevel), XtWindow( ptr->work),
-                            ptr->gc, mid-len/2, y2-yfntloc, tmp, strlen(tmp) );
+		    XDrawString(XtDisplay(toplevel), XtWindow( ptr->work),
+				ptr->gc, mid-len/2, y2-yfntloc, tmp, strlen(tmp) );
 		    }
-                    cnt += 7;
-                    break;
-
-	        default: printf("Error: State=%d\n",cptr->state); break;
-	    } /* end switch */
+		cnt += 7;
+		break;
+		
+	      case STATE_B96:
+		if ( xloc > xend ) xloc = xend;
+		Pts[cnt+1].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+1].y=y2;
+		Pts[cnt+2].x=xloc-ptr->sigrf;       Pts[cnt+2].y=y2;
+		Pts[cnt+3].x=xloc;                  Pts[cnt+3].y=ymdpt;
+		Pts[cnt+4].x=xloc-ptr->sigrf;       Pts[cnt+4].y=y1;
+		Pts[cnt+5].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+5].y=y1;
+		Pts[cnt+6].x=Pts[cnt].x;            Pts[cnt+6].y=ymdpt;
+		Pts[cnt+7].x=Pts[cnt].x+ptr->sigrf; Pts[cnt+7].y=y1;
+		Pts[cnt+8].x=xloc-ptr->sigrf;       Pts[cnt+8].y=y1;
+		Pts[cnt+9].x=xloc;                  Pts[cnt+9].y=ymdpt;
+		if (ptr->busrep == HBUS)
+		    sprintf(tmp,"%X %08X %08X",*((unsigned int *)cptr+1),
+			    *((unsigned int *)cptr+2),
+			    *((unsigned int *)cptr+2));
+		else if (ptr->busrep == OBUS)
+		    sprintf(tmp,"%o %o %o",*((unsigned int *)cptr+1),
+			    *((unsigned int *)cptr+2),
+			    *((unsigned int *)cptr+2));
+		
+		/* calculate positional parameters */
+		mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
+		len = XTextWidth(ptr->text_font,tmp,strlen(tmp));
+		
+		/* write the bus value if it fits */
+		if ( xloc-Pts[cnt].x >= len + 2 )
+		    {
+		    XDrawString(XtDisplay(toplevel), XtWindow( ptr->work),
+				ptr->gc, mid-len/2, y2-yfntloc, tmp, strlen(tmp) );
+		    }
+		cnt += 7;
+		break;
+		
+	      default:
+		printf("Error: State=%d\n",cptr->state); break;
+		} /* end switch */
 
 	    cnt += 2;
 	    cptr += tmp_sig_ptr->inc;

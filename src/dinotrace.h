@@ -20,13 +20,16 @@
  *     AAG	 6-Nov-90	Added screen global and changed version to 4.2
  *     AAG	 9-Jul-91	Changed to version 4.3, added trace format
  *				 support
+ *     WPS	 4-Jan-93	Version 5.0
  *
  */
 
+#define DTVERSION	"Dinotrace V5.0"
 
-#define DTVERSION	"Dinotrace V4.3"
-
-#define MAXSIGLEN 64
+#define MAXSIGLEN 128		/* Maximum length of signal names */
+#define MAXFNAMELEN 128		/* Maximum length of file names */
+#define MAXSTATENAMES 64	/* Maximum number of state name translations */
+#define MAXSTATELEN  32		/* Maximum number of state name translations */
 #define MAX_SIG  512
 #define MAX_CURSORS  64
 #define	MIN_GRID_RES 512.0
@@ -35,6 +38,7 @@
 #define NOCHECK    1
 #define NOCHECKEND 2
 
+/* All of the states a signal can be in (have only 3 bits so 0-7) */
 #define STATE_0   0
 #define STATE_1   1
 #define STATE_U   2
@@ -42,6 +46,10 @@
 #define STATE_B32 4
 #define STATE_B64 5
 #define STATE_B96 6
+
+/* Grid Automatic flags */
+#define GRID_AUTO_ASS	-2
+#define GRID_AUTO_DEASS	-1
 
 #define PS_START_Y	600
 
@@ -68,6 +76,9 @@
 #define IO_RES		3
 #define IO_READCUSTOM	4
 #define IO_SAVECUSTOM	5
+
+#define XSTART_MIN	50		/* Min Start X pos of signals on display (read_DECSIM) */
+#define XSTART_MARGIN	10		/* Additional added fudge factor for xstart */
 
 #define DIALOG_WIDTH	75
 #define DIALOG_HEIGHT	50
@@ -101,10 +112,18 @@ Widget	toplevel,main_wid,custom_wid,main_menu_wid,
 
 Pixmap  dpm,bdpm,left_arrow,right_arrow;
 
+/* 5.0: Structure for each signal-state assignment */
+typedef struct struct_signalstate {
+    struct struct_signalstate *next;	/* Next structure in a linked list */
+    char signame[MAXSIGLEN];		/* Signal name to translate, Nil = wildcard */
+    char statename[MAXSTATENAMES][MAXSTATELEN];	/* Name for each state, nil=keep */
+    };
+typedef struct struct_signalstate SIGNALSTATE;
+
 typedef struct {
     unsigned int state:3;
     unsigned int time:29;
-} SIGNAL_LW;
+    } SIGNAL_LW;
 
 typedef struct {
     char array[][MAXSIGLEN];
@@ -114,7 +133,7 @@ typedef struct {
     Widget menu;
     Widget pulldownmenu[10];
     Widget pulldownentry[10];
-    Widget pulldown[50];
+    Widget pulldown[53];
 } MENU_WDGTS;
 
 typedef struct {
@@ -192,6 +211,7 @@ typedef struct {
     int	 		*backward;
     char		*signame;
     int			type;
+    SIGNALSTATE		*decode;
     int			inc;
     int			ind_s,ind_e;
     int			blocks;
@@ -222,27 +242,29 @@ typedef struct {
     PS_DATA		prntscr;
     PS_DATA		signal;
     Widget		customize;
-    Widget		fileselect;
-    char		filename[100];
+    Widget		fileselect;		/* File selection widget */
+    char		filename[200];
     int			*startsig;		/* ptr to SIGNAL_SB */
     int			*delsig;		/* ptr to SIGNAL_SB */
-    float		res;
+    float		res;		/* Resolution of graph width */
     int			width;
     int			height;
     int			inc;
     int			numsig;
     int			numsigvis;
     int			numsigdel;
-    int			xstart;
-    int			ystart;
-    int			sighgt;
+    int			xstart;		/* Start X pos of signals on display (read_DECSIM) */
+    int			ystart;		/* Start Y pos of signals on display (dispmgr) */
+    int			sighgt;		/* Height of signals (customize) */
     int			sigrf;
-    int			sigstart; /* signal to start displaying */
+    int			sigstart;	/* signal to start displaying */
     int			pageinc;
     int			busrep;
     int			cursor_vis;
     int			grid_vis;
+    int			grid_res_auto;
     int			grid_res;
+    int			grid_align_auto;
     int			grid_align;
     SIGNALNAMES		*signame;
     SIGNAL_LW		*(*bptr)[];    /* begin ptr */
@@ -258,7 +280,9 @@ typedef struct {
     int			cursors[MAX_CURSORS];
     XFontStruct		*text_font;
     int			numpag;
-} DISPLAY_SB;
+
+    SIGNALSTATE		*signalstate_head;
+    } DISPLAY_SB;
 
 DISPLAY_SB	*ptr;
 
