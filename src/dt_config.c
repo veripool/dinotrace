@@ -551,7 +551,7 @@ void	config_process_line_internal (trace, line, eof)
 		DTPRINT=value;
 		}
 	    else {
-		config_error_ack (trace, "Print must be set ON or OFF\n");
+		config_error_ack (trace, "Print must be set ON, OFF, or > 0\n");
 		}
 	    if (DTPRINT) printf ("Config: DTPRINT=0x%x\n",value);
 	    }
@@ -729,7 +729,17 @@ void	config_process_line_internal (trace, line, eof)
 	    else {
 		trace->vector_seperator = '\0';
 		}
-	    if (DTPRINT_CONFIG) printf ("Vector_seperator = '%c'\n", trace->vector_seperator);
+	    /* Take a stab at the ending character */
+	    switch (trace->vector_seperator) {
+	      case '`':	trace->vector_endseperator = '\''; break;
+	      case '(':	trace->vector_endseperator = ')'; break;
+	      case '[':	trace->vector_endseperator = ']'; break;
+	      case '{':	trace->vector_endseperator = '}'; break;
+	      case '<':	trace->vector_endseperator = '>'; break;
+	      default:  trace->vector_endseperator = trace->vector_seperator; break;	/* a wild guess SIG$20:1$? */
+		}
+	    if (DTPRINT_CONFIG) printf ("Vector_seperator = '%c'  End='%c'\n", 
+					trace->vector_seperator, trace->vector_endseperator);
 	    }
 	else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
 	    char pattern[MAXSIGLEN];
@@ -1120,6 +1130,7 @@ void config_restore_defaults(trace)
     trace->sigrf = SIG_RF;
     trace->timerep = global->time_precision;
     trace->vector_seperator = '<';
+    trace->vector_endseperator = '>';
 
     update_signal_states (trace);
     }

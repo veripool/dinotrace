@@ -256,7 +256,7 @@ void	sig_update_search ()
 		if (!sig_ptr->color &&
 		    global->sig_srch[i].color &&
 		    wildmat (sig_ptr->signame, global->sig_srch[i].string)) {
-		    sig_ptr->search = i;
+		    sig_ptr->search = i+1;
 		    sig_ptr->color = global->sig_srch[i].color;
 		    }
 		}

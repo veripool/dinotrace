@@ -458,6 +458,7 @@ void read_make_busses (trace, not_tempest)
     char	*sep;		/* seperator position */
     int		pos;
     char	sepchar;
+    char	postbusstuff[MAXSIGLEN];
 
     if (DTPRINT_ENTRY) printf ("In read_make_busses\n");
     if (DTPRINT_BUSSES) print_sig_names (NULL, trace);
@@ -490,6 +491,8 @@ void read_make_busses (trace, not_tempest)
 		}
 	    }
 	
+	/* Extract the bit subscripts from the name of the signal */
+	sig_ptr->signame_buspos = 0;	/* Presume nothing after the vector */
 	if (sep && isdigit (*(bbeg))) {
 	    /* Is a named bus, with <subscript> */
 	    if (not_tempest) {
@@ -502,7 +505,12 @@ void read_make_busses (trace, not_tempest)
 		sig_ptr->bits = 0;
 		}
 	    /* Don't need to search for :'s, as the bits should already be computed */
-	    *sep = '\0';
+	    /* Mark this first digit, _, whatever as null (truncate the name) */
+	    *sep++ = '\0';
+	    /* Hunt for the end of the vector */
+	    while (*sep && *sep!=trace->vector_endseperator) sep++;
+	    /* Remember if there is stuff after the vector */
+	    if (*sep && *(sep+1)) sig_ptr->signame_buspos = sep+1;
 	    }
 	else {
 	    if (sig_ptr->bits) {
@@ -557,24 +565,24 @@ void read_make_busses (trace, not_tempest)
 	if (bus_sig_ptr) {
 	    /* Combine signals with same base name, if */
 	    /*  are a vector */
-	    /* 	& have subscripts that are different by 1  (<20:10> and <9:5> are seperated by 10-9=1) */
-	    /*  & the result would have < 96 bits */
-	    /*	& are placed next to each other in the source */
-	    /*	& not a tempest trace (because the bit ordering is backwards, <31:0> would look line 0:31 */
-	    /*	& not (verilog trace which had a signal already as a vector) */
 	    if (sig_ptr->msb_index >= 0
 		&& !strcmp (sig_ptr->signame, bus_sig_ptr->signame)
+		/*  & the result would have < 96 bits */
 		&& (ABS(bus_sig_ptr->msb_index - sig_ptr->lsb_index) < 96 )
+		/* 	& have subscripts that are different by 1  (<20:10> and <9:5> are seperated by 10-9=1) */
 		&& ( ((bus_sig_ptr->msb_index >= sig_ptr->lsb_index)
 		      && ((bus_sig_ptr->lsb_index - 1) == sig_ptr->msb_index))
 		    || ((bus_sig_ptr->msb_index <= sig_ptr->lsb_index)
 			&& ((bus_sig_ptr->lsb_index + 1) == sig_ptr->msb_index)))
+		/*	& are placed next to each other in the source */
+		/*	& not a tempest trace (because the bit ordering is backwards, <31:0> would look line 0:31 */
 		&& ((trace->fileformat != FF_TEMPEST)
 		    || (((bus_sig_ptr->file_pos) == (sig_ptr->file_pos + sig_ptr->bits + 1))
 			&& trace->vector_seperator=='<'))
 		&& (trace->fileformat != FF_VERILOG
 		    || ((bus_sig_ptr->file_pos + bus_sig_ptr->bits + 1) == sig_ptr->file_pos))
 		&& ! (sig_ptr->file_type.flag.vector_msb)
+		/*	& not (verilog trace which had a signal already as a vector) */
 		&& ! (sig_ptr->file_type.flag.perm_vector || bus_sig_ptr->file_type.flag.perm_vector)) {
 
 		/* Can be bussed with previous signal */
@@ -594,8 +602,12 @@ void read_make_busses (trace, not_tempest)
     /* and allocate SIGNAL's cptr, bptr, blocks, inc, type */
     trace->numsig = 0;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	/* Stash the characters after the bus name */
+	if (sig_ptr->signame_buspos) strcpy (postbusstuff, sig_ptr->signame_buspos);
+
 	/* Change the name to include the vector subscripts */
 	if (sig_ptr->msb_index >= 0) {
+	    /* Add new vector info */
 	    if (sig_ptr->bits >= 1) {
 		sprintf (sig_ptr->signame + strlen (sig_ptr->signame), "<%d:%d>",
 			 sig_ptr->msb_index, sig_ptr->lsb_index);
@@ -605,6 +617,9 @@ void read_make_busses (trace, not_tempest)
 			 sig_ptr->msb_index);
 		}
 	    }
+
+	/* Restore the characters after the bus name */
+	if (sig_ptr->signame_buspos) strcat (sig_ptr->signame, postbusstuff);
 
 	/* Calc numsig, last_sig_ptr */
 	(trace->numsig) ++;

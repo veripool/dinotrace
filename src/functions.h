@@ -69,7 +69,9 @@ extern char	*help_message();
 
 /* dt_dispmgr.c */
 extern TRACE	*create_trace();
+extern TRACE	*trace_create_split_window();
 extern TRACE	*malloc_trace();
+extern TRACE	*open_trace();
 extern void
     trace_open_cb(), trace_close_cb(), trace_exit_cb(), trace_clear_cb(),
     init_globals(), create_globals(),

@@ -428,6 +428,7 @@ typedef struct st_signal {
 
     char		*signame;	/* Signal name */
     XmString		xsigname;	/* Signal name as XmString */
+    char		*signame_buspos;/* Signal name portion where bus bits begin (INSIDE signame) */
     ColorNum		color;		/* Signal line's Color number (index into trace->xcolornum) */
     ColorNum		search;		/* Number of search color is for, 0 = manual */
 
@@ -531,7 +532,8 @@ typedef struct st_trace {
     struct stat		filestat;	/* Information on the current file */
     int			fileformat;	/* Type of trace file (see FF_*) */
     Boolean		loaded;		/* True if the filename is loaded in */
-    char		vector_seperator;	/* Seperator character, usually "<" */
+    char		vector_seperator;	/* Bus seperator character, usually "<" */
+    char		vector_endseperator;	/* Bus ending seperator character, usually ">" */
 
     int			redraw_needed;	/* Need to refresh the screen when get a chance, 0=NO, 1=YES, 2=Expose Only */
     Position		width;		/* Screen width */

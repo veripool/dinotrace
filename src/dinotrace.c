@@ -67,9 +67,8 @@ int    main (argc, argv)
 {
     int		i;
     Boolean	sync = FALSE;
-    char	*start_filename = NULL;
+    Boolean	opened_a_file = FALSE;
     TRACE	*trace;
-    int		benchmark = FALSE;
     
     /* Create global structure */
     global = XtNew (GLOBAL);
@@ -80,62 +79,80 @@ int    main (argc, argv)
     init_globals ();
 
     /* Parse parameters */
-    for (i=1; i<argc; i++)  {
-        if ( !strcmp (argv[i], "-debug") ) {
-            DTDEBUG = TRUE;
+#define shift {argv[i][0]='\0'; ++i; }
+    for (i=1; i<argc; )  {
+	/*printf ("Arg %d of %d: '%s'\n", i, argc, argv[i]);*/
+	if (argv[i][0]!='-') {
+	    /* Filename */
+	    i++;
 	    }
-        else if ( !strcmp (argv[i], "-print") ) {
-	    if (isdigit(argv[i+1][0])) {
-		sscanf (argv[++i], "%x", & DTPRINT );
+	else {
+	    /* Switch */
+	    if ( !strcmp (argv[i], "-debug") ) {
+		DTDEBUG = TRUE;
 		}
-	    else DTPRINT = -1;
-	    }
-        else if ( !strcmp (argv[i], "-benchmark") ) {
-            benchmark = TRUE;
-	    }
-        else if ( !strcmp (argv[i], "-tempest") ) {
-            file_format = FF_TEMPEST;
-	    }
-        else if ( !strcmp (argv[i], "-decsim")
-		 || !strcmp (argv[i], "-decsim_z") ) {
-            file_format = FF_DECSIM;
-	    }
-        else if ( !strcmp (argv[i], "-verilog") ) {
-            file_format = FF_VERILOG;
-	    }
-        else if ( !strcmp (argv[i], "-sync") ) {
-            sync = TRUE;
-	    }
-        else if ( !strcmp (argv[i], "-geometry") ) {
-	    config_parse_geometry (argv[++i], & (global->start_geometry));
-	    }
-        else if ( !strcmp (argv[i], "-siz") ) {
-            sscanf (argv[++i], "%hd", & (global->start_geometry.width) );
-            sscanf (argv[++i], "%hd", & (global->start_geometry.height) );
-	    }
-        else if ( !strcmp (argv[i], "-pos") ) {
-            sscanf (argv[++i], "%hd", & (global->start_geometry.x) );
-            sscanf (argv[++i], "%hd", & (global->start_geometry.y) );
-	    }
-        else if ( !strcmp (argv[i], "-res") ) {
-	    float res;
-
-            sscanf (argv[++i],"%f",&res);
-	    global->res = RES_SCALE/ (float)res;
-	    global->res_default = FALSE;
-	    }
-        else if ( !strcmp (argv[i], "-noconfig") ) {
-	    global->suppress_config = TRUE;
-	    }
-        else if ( argv[i][0]!='-' && argc== (i+1)) {
-	    start_filename = argv[i];
-	    }
-        else {
-            printf ("Invalid %s Option: %s\n", DTVERSION, argv[i]);
-            printf ("DINOTRACE\t[-debug] [-print] [-tempest] [-screen #] [-siz # #]\n");
-            printf ("\t\t[-pos # #] [-res #]   file_name\n");
-            printf ("\n%s\n", help_message ());
-            exit (-1);
+	    else if ( !strcmp (argv[i], "-print") ) {
+		if ((i+1)<argc && isdigit(argv[i+1][0])) {
+		    shift;
+		    sscanf (argv[i], "%x", & DTPRINT );
+		    }
+		else DTPRINT = -1;
+		}
+	    else if ( !strcmp (argv[i], "-tempest") ) {
+		file_format = FF_TEMPEST;
+		}
+	    else if ( !strcmp (argv[i], "-decsim")
+		     || !strcmp (argv[i], "-decsim_z") ) {
+		file_format = FF_DECSIM;
+		}
+	    else if ( !strcmp (argv[i], "-verilog") ) {
+		file_format = FF_VERILOG;
+		}
+	    else if ( !strcmp (argv[i], "-sync") ) {
+		sync = TRUE;
+		}
+	    else if ( !strcmp (argv[i], "-geometry") && (i+1)<argc ) {
+		shift;
+		config_parse_geometry (argv[i], & (global->start_geometry));
+		}
+	    else if ( !strcmp (argv[i], "-siz") && (i+2)<argc ) {
+		shift;
+		sscanf (argv[i], "%hd", & (global->start_geometry.width) );
+		shift;
+		sscanf (argv[i], "%hd", & (global->start_geometry.height) );
+		}
+	    else if ( !strcmp (argv[i], "-pos") && (i+2)<argc ) {
+		shift;
+		sscanf (argv[i], "%hd", & (global->start_geometry.x) );
+		shift;
+		sscanf (argv[i], "%hd", & (global->start_geometry.y) );
+		}
+	    else if ( !strcmp (argv[i], "-res") && (i+1)<argc ) {
+		float res;
+		
+		shift;
+		sscanf (argv[i],"%f",&res);
+		global->res = RES_SCALE/ (float)res;
+		global->res_default = FALSE;
+		}
+	    else if ( !strcmp (argv[i], "-noconfig") ) {
+		global->suppress_config = TRUE;
+		}
+	    else {
+		printf ("Invalid %s Option: %s\n", DTVERSION, argv[i]);
+		printf ("\n%s\n\n", help_message ());
+		printf ("DINOTRACE\t[-switches...]  [trace_name] [trace_name] ...\n");
+		printf ("Switches:\n");
+		printf ("\tDebug:\t-debug\t\tEnable debugging menus.\n");
+		printf ("\t\t-print value\tPrint debugging information.\n");
+		printf ("\tFormat:\t-decsim\t\tRead traces in DECSIM format.\n");
+		printf ("\t\t-tempest\tRead traces in Tempest format.\n");
+		printf ("\t\t-verilog\tRead traces in Verilog format.\n");
+		printf ("\tConfig:\t-noconfig\tSkip reading global config files.\n");
+		printf ("\tX-11:\t-geometry XxY+x+y  Specify starting geometry.\n\n");
+		exit (-1);
+		}
+	    shift;
 	    }
 	}
     
@@ -179,41 +196,35 @@ See the Help menu for more information.");
 	}
 #endif
 
-    /* Load up the file on the command line, if any */
-    if (start_filename != NULL) {
-	XSync (global->display,0);
-	strcpy (trace->filename, start_filename);
-	fil_read_cb (trace);
-	}
-
     draw_all_needed (trace);
 
-    if (!benchmark) {
-	/* loop forever */
-	/*This code ~= XtAppMainLoop (global->appcontext);*/
-	while (1) {
-	    XEvent event;
-
-	    if (global->redraw_needed && !XtAppPending (global->appcontext)) {
-		draw_perform();
+    /* Load up the file on the command line, if any */
+    /* Parse filenames */
+    for (i=1; i<argc; i++)  {
+	if ( argv[i][0] && argv[i][0] != '-' ) {
+	    if (! opened_a_file) {
+		opened_a_file = TRUE;
 		}
-
-	    XtAppNextEvent (global->appcontext, &event);
-	    XtDispatchEvent (&event);
+	    else {
+		trace = trace_create_split_window (trace);
+		}
+	    XSync (global->display,0);
+	    strcpy (trace->filename, argv[i]);
+	    fil_read_cb (trace);
 	    }
 	}
-    else {
-	int t;
 
-	file_format = FF_TEMPEST;
-	strcpy (trace->filename, "../benchmark.bt");
-	fil_read_cb (trace);
-	fil_read_cb (trace);
-	fil_read_cb (trace);
-	for (t=1; t<100; t++) {
-	    draw_all_needed (trace);
-	    draw_perform ();
+    /* loop forever */
+    /*This code ~= XtAppMainLoop (global->appcontext);*/
+    while (1) {
+	XEvent event;
+
+	if (global->redraw_needed && !XtAppPending (global->appcontext)) {
+	    draw_perform();
 	    }
+
+	XtAppNextEvent (global->appcontext, &event);
+	XtDispatchEvent (&event);
 	}
 
     return(0);	/* to please lint */

@@ -127,16 +127,15 @@ void set_menu_closes ()
 	}
     }
 
-void trace_open_cb (w,trace,cb)
-    Widget		w;
+/* Split the current trace, return new trace */
+TRACE *trace_create_split_window (trace)
     TRACE		*trace;
-    XmAnyCallbackStruct	*cb;
 {
     Position x,y,width,height;
     Position new_x,new_y,new_width,new_height;
     TRACE	*trace_new;
 
-    if (DTPRINT_ENTRY) printf ("In trace_open - trace=%d\n",trace);
+    if (DTPRINT_ENTRY) printf ("In trace_open_split_window - trace=%d\n",trace);
 
     /* Get orignal sizes */
     XtSetArg (arglist[0], XmNheight,&height);
@@ -171,6 +170,20 @@ void trace_open_cb (w,trace,cb)
     else	new_height = global->open_geometry.height;
     if (DTPRINT_DISPLAY) printf ("New size: %dx%d+%d+%d\n", new_width, new_height, new_x, new_y);
     trace_new = create_trace (new_width, new_height, new_x, new_y);
+
+    return (trace_new);
+    }
+
+void trace_open_cb (w,trace,cb)
+    Widget		w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    Position x,y,width,height;
+    Position new_x,new_y,new_width,new_height;
+    TRACE	*trace_new;
+
+    trace_new = trace_create_split_window (trace);
 
     /* Ask for a file in the new window */
     XSync (global->display,0);
