@@ -283,6 +283,18 @@ static Signal_t* sig_find_signame_start (
     return (NULL);
 }
 
+/* Returns Signal or NULL if not found, starting at specified signal
+going backwards */
+static Signal_t* sig_find_signame_start_backward (
+    Signal_t* start_sig_ptr,
+    const char*       signame)
+{
+    Signal_t* sig_ptr;
+    for (sig_ptr = start_sig_ptr; sig_ptr; sig_ptr = sig_ptr->backward) {
+	if (!strcmp (sig_ptr->signame, signame)) return (sig_ptr);
+    }
+    return (NULL);
+}
 
 /* Returns Signal or NULL if not found */
 Signal_t* sig_find_signame (
@@ -2429,7 +2441,7 @@ void sig_modify_enables (
 	    /* Start search right before this signal, in case there are duplicate signames */
 	    base_sig_ptr = en_sig_ptr;
 	    if (base_sig_ptr->backward) base_sig_ptr=base_sig_ptr->backward;
-	    base_sig_ptr = sig_find_signame_start (base_sig_ptr, nonenablename);
+	    base_sig_ptr = sig_find_signame_start_backward (base_sig_ptr, nonenablename);
 	    if (!base_sig_ptr) base_sig_ptr = sig_find_signame (trace, nonenablename);
 
 	    /* Point to next signal, as we will be deleting several, */

@@ -7,6 +7,10 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.*****
+
+****	Fix slow file reading with >128 bit __en signals. [Ta-Chung Chang]
+
 * Changes in Dinotrace 9.1m 04/21/2004
 
 ***	Fix duplicate and embeded __en cosmos signals. [Krishna Rangan]
