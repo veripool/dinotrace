@@ -17,6 +17,7 @@
  * Modification History:
  *     WPS	20-Jun-93	Created from dt_signal.c
  */
+static char rcsid[] = "$Id$";
 
 
 #include <stdio.h>

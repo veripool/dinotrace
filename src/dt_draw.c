@@ -24,6 +24,7 @@
  *     WPS	01-Jan-93	V5.0 signal_states support
  *     WPS	15-Feb-93	V5.2 print number if state doesn't fit
  */
+static char rcsid[] = "$Id$";
 
 #include <stdio.h>
 #include <sys/types.h>

@@ -25,6 +25,7 @@
  *     WPS	03-Jan-93	Default grid_res of 40, sighgt 20 for our project
  *				Additional gadget support, title in icon
  */
+static char rcsid[] = "$Id$";
 
 #include <stdio.h>
 #include <stdlib.h>

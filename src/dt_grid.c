@@ -20,6 +20,7 @@
  *     AAG	29-Apr-91	Use X11 for Ultrix support
  *
  */
+static char rcsid[] = "$Id$";
 
 #include <stdio.h>
 #include <sys/types.h>

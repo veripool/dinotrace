@@ -22,6 +22,7 @@
  *     AAG	29-Apr-91	Use X11 for Ultrix support
  *     WPS	11-Mar-93	Fixed move_signal ->backward being null bug
  */
+static char rcsid[] = "$Id$";
 
 
 #include <stdio.h>

@@ -22,6 +22,7 @@
  *     WPS	19-Mar-93	Conversion to Motif
  *
  */
+static char rcsid[] = "$Id$";
 
 #include <sys/types.h>
 #include <sys/stat.h>

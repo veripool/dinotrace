@@ -19,6 +19,7 @@
  *     WPS	15-Jan-93	Added binary trace support
  *
  */
+static char rcsid[] = "$Id$";
 
 #include <stdio.h>
 #include <string.h>

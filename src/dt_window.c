@@ -24,6 +24,7 @@
  *     WPS	 8-Jan-93	Added pageinc and unitdec routines
  *     WPS	15-Feb-93	Added zoom, full, new_res routines
  */
+static char rcsid[] = "$Id$";
 
 #include <sys/types.h>
 #include <sys/stat.h>
