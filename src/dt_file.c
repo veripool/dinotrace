@@ -51,9 +51,13 @@ static char rcsid[] = "$Id$";
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
+#include <Xm/Text.h>
+#include <Xm/MessageB.h>
+#include <Xm/SelectioB.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
+#include "dinodoc.h"
 
 int fil_line_num=0;
 
@@ -337,6 +341,48 @@ void help_trace_cb (w,trace,cb)
 
     dino_information_ack (trace, msg);
     }
+
+
+void help_doc_cb (w,trace,cb)
+    Widget		w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    XmString	xsout;
+
+    if (DTPRINT_ENTRY) printf ("in help_doc_cb\n");
+
+    /* May be called before the window was opened, if so ignore the help_doc */
+    if (!trace->work) return;
+
+    /* create the widget if it hasn't already been */
+    if (!trace->help_doc) {
+	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
+	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Dinotrace Documentation") );
+	trace->help_doc = XmCreateInformationDialog (trace->work, "info", arglist, 2);
+	XtAddCallback (trace->help_doc, XmNokCallback, unmanage_cb, trace->help_doc);
+	XtUnmanageChild ( XmMessageBoxGetChild (trace->help_doc, XmDIALOG_CANCEL_BUTTON));
+	XtUnmanageChild ( XmMessageBoxGetChild (trace->help_doc, XmDIALOG_HELP_BUTTON));
+
+	/* create string w/ seperators */
+	/*xsout = string_create_with_cr (dinodoc);*/
+
+	/* create the file name text widget */
+	XtSetArg (arglist[0], XmNrows, 40);
+	XtSetArg (arglist[1], XmNcolumns, 80);
+	XtSetArg (arglist[2], XmNeditable, FALSE);
+	XtSetArg (arglist[3], XmNvalue, dinodoc);
+	XtSetArg (arglist[4], XmNscrollVertical, TRUE);
+	XtSetArg (arglist[5], XmNeditMode, XmMULTI_LINE_EDIT);
+	XtSetArg (arglist[6], XmNscrollHorizontal, FALSE);
+	trace->help_doc_text = XmCreateScrolledText (trace->help_doc,"textn",arglist,7);
+
+	XtManageChild (trace->help_doc_text);
+    }
+
+    /* manage the widget */
+    XtManageChild (trace->help_doc);
+}
 
 #pragma inline (fil_string_add_cptr)
 void	fil_string_add_cptr (sig_ptr, value_strg, time, nocheck)

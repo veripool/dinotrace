@@ -765,6 +765,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     dm_menu_title (trace, "Help", 'H');
     dm_menu_entry (trace, 	"On Version",	'V',	NULL, NULL,	help_cb);
     dm_menu_entry (trace, 	"On Trace",	'T',	NULL, NULL,	help_trace_cb);
+    dm_menu_entry (trace, 	"On Documentation",	'D',	NULL, NULL,	help_doc_cb);
     XtSetArg (arglist[0], XmNmenuHelpWidget, trace->menu.pdmenubutton[trace->menu.pde]);
     XtSetValues (trace->menu.menu, arglist, 1);
 

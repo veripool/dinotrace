@@ -228,7 +228,7 @@ extern void
     read_make_busses(),
     fil_string_to_value(),
     decsim_read_ascii(), 
-    read_trace_end(), help_cb(), help_trace_cb();
+    read_trace_end(), help_cb(), help_trace_cb(), help_doc_cb();
 extern void fgets_dynamic ();
 #ifndef fil_add_cptr
 extern void fil_add_cptr();

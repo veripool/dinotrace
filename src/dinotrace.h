@@ -559,6 +559,8 @@ typedef struct st_trace {
     Widget		prompt_popup;	/* Data popup widget */
     int			prompt_type;	/* Type of data popup widget */
     Widget		message;	/* Message (error/warn/etc) widget */
+    Widget		help_doc;	/* Help documentation */
+    Widget		help_doc_text;	/* Help documentation */
 
     char		filename[MAXFNAMELEN];	/* Current file */
     char		printname[MAXFNAMELEN];	/* Print filename */
