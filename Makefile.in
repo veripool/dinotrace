@@ -164,6 +164,8 @@ install: all info installdirs install-info
 	@echo ""
 	@echo "*** Lisp files not installed, you may want to"
 	@echo "*** cd lisp ; make install"
+	@echo ""
+	@echo "Type 'setenv DISPLAY :0.0' then 'dinotrace' to test."
 
 # Don't cd, to avoid breaking install-sh references.
 install-info: info installdirs
