@@ -608,6 +608,99 @@ void    ps_reset (w,trace,cb)
 #endif
     }
 
+void ps_draw_grid (trace, psfile, printtime, grid_ptr, draw_numbers)
+    TRACE	*trace;
+    FILE	*psfile;
+    DTime	printtime;	/* Time to start on */
+    GRID	*grid_ptr;		/* Grid information */
+    Boolean	draw_numbers;		/* Whether to print the times or not */
+{ 
+    char 	strg[MAXSTATELEN+16];	/* String value to print out */
+    int		end_time;
+    DTime	xtime;
+    Position	x2;			/* Coordinate of current time */
+    Position	yl,yh,yt;		/* Starting and ending points */
+
+    if (grid_ptr->period < 1) grid_ptr->period = 1;	/* Prevents round-down to 0 causing infinite loop */
+
+    /* Is the grid too small or invisible?  If so, skip it */
+    if ((! grid_ptr->visible) || ((grid_ptr->period * global->res) < MIN_GRID_RES)) {
+	return;
+    }
+
+    /* set the line attributes as the specified dash pattern */
+    fprintf (psfile,"stroke\n[%d YTRN %d YTRN] 0 setdash\n",SIG_SPACE/2, trace->sighgt - SIG_SPACE/2);
+    
+    /* Start to left of right edge */
+    xtime = printtime;
+    end_time = printtime + (( trace->width - XMARGIN - global->xstart) / global->res);
+
+    /* Move starting point to the right to hit where a grid line is aligned */
+    xtime = ((xtime / grid_ptr->period) * grid_ptr->period) + (grid_ptr->alignment % grid_ptr->period);
+
+    /* If possible, put one grid line inside the signal names */
+    if (((grid_ptr->period * global->res) < 0)
+	&& (xtime >= grid_ptr->period)) {
+	xtime -= grid_ptr->period;
+    }
+
+    /* Other coordinates */
+    yt = trace->height - 20;
+    yl = trace->sighgt;
+    yh = trace->height - trace->ystart + SIG_SPACE/4;
+
+    /* Start grid */
+    fprintf (psfile,"%d %d %d START_GRID\n", yh, yl, yt-10);
+
+    /* Loop through grid times */
+    for ( ; xtime <= end_time; xtime += grid_ptr->period) {
+	x2 = ( ((xtime) - printtime) * global->res + global->xstart );	/* Similar to TIME_TO_XPOS (xtime) */
+
+	/* compute the time value and draw it if it fits */
+	if (draw_numbers) {
+	    time_to_string (trace, strg, xtime, FALSE);
+	}
+	else {
+	    strg[0] = '\0';
+	}
+
+	/* Draw if space, centered on grid line */
+	fprintf (psfile,"%d (%s) GRID\n", x2, strg);
+    }
+}
+
+void ps_draw_grids (trace, psfile, printtime)
+    TRACE	*trace;
+    FILE	*psfile;
+    DTime	printtime;
+{           
+    int		grid_num;
+    GRID	*grid_ptr;
+    GRID	*grid_smallest_ptr;
+
+    /* WARNING, major weedyness follows: */
+    /* Determine which grid has the smallest period and only plot it's lines. */
+    /* If we don't do this, labels may overlap */
+
+    grid_smallest_ptr = &(trace->grid[0]);
+    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
+	grid_ptr = &(trace->grid[grid_num]);
+	if ( grid_ptr->visible
+	    && ((grid_ptr->period * global->res) >= MIN_GRID_RES)	/* not too small */
+	    && (grid_ptr->period < grid_smallest_ptr->period) ) {
+	    grid_smallest_ptr = grid_ptr;
+	}
+    }
+
+
+    /* Draw each grid */
+    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
+	grid_ptr = &(trace->grid[grid_num]);
+	ps_draw_grid (trace, psfile, printtime, grid_ptr, (grid_ptr == grid_smallest_ptr ) );
+    }
+}
+
+
 void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
     TRACE	*trace;
     FILE	*psfile;
@@ -622,7 +715,6 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
     char vstrg[32];
     unsigned int value;
     int unstroked=0;		/* Number commands not stroked */
-    int		grid_num;
     
     if (DTPRINT_ENTRY) printf ("In ps_draw - filename=%s, printtime=%d sig=%s\n",trace->filename, printtime, sig_ptr->signame);
     
@@ -756,9 +848,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	} /* end of FOR */
     
     /* Draw grids */
-    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
-	ps_draw_grid (trace, psfile, printtime, &(trace->grid[grid_num]));
-    }
+    ps_draw_grids (trace, psfile, printtime);
 
     /* draw the cursors if they are visible */
     ps_draw_cursors (trace, psfile, printtime);
@@ -838,67 +928,10 @@ void ps_draw_cursors (trace, psfile, printtime)
 
 		    x2 = csr_ptr->prev->time * global->res - adj;
 		    time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
-		    fprintf (psfile,"%d %d %d (%s) CURSOR_DELTA\n", x1, x2, y2+5, strg);
+		    fprintf (psfile,"%d %d %d (%s) CURSOR_DELTA\n", x1, x2, y2+7, strg);
 		}
 	    }
 	}
     }
 }
-
-void ps_draw_grid (trace, psfile, printtime, grid_ptr)
-    TRACE	*trace;
-    FILE	*psfile;
-    DTime	printtime;	/* Time to start on */
-    GRID	*grid_ptr;		/* Grid information */
-{ 
-    char 	strg[MAXSTATELEN+16];	/* String value to print out */
-    int		end_time;
-    DTime	xtime;
-    Position	x2;			/* Coordinate of current time */
-    Position	yl,yh,yt;		/* Starting and ending points */
-
-    if (grid_ptr->period < 1) grid_ptr->period = 1;	/* Prevents round-down to 0 causing infinite loop */
-
-    /* Is the grid too small or invisible?  If so, skip it */
-    if ((! grid_ptr->visible) || ((grid_ptr->period * global->res) < MIN_GRID_RES)) {
-	return;
-    }
-
-    /* set the line attributes as the specified dash pattern */
-    fprintf (psfile,"stroke\n[%d YTRN %d YTRN] 0 setdash\n",SIG_SPACE/2, trace->sighgt - SIG_SPACE/2);
-    
-    /* Start to left of right edge */
-    xtime = printtime;
-    end_time = printtime + (( trace->width - XMARGIN - global->xstart) / global->res);
-
-    /* Move starting point to the right to hit where a grid line is aligned */
-    xtime = ((xtime / grid_ptr->period) * grid_ptr->period) + (grid_ptr->alignment % grid_ptr->period);
-
-    /* If possible, put one grid line inside the signal names */
-    if (((grid_ptr->period * global->res) < 0)
-	&& (xtime >= grid_ptr->period)) {
-	xtime -= grid_ptr->period;
-    }
-
-    /* Other coordinates */
-    yt = trace->height - 20;
-    yl = trace->sighgt;
-    yh = trace->height - trace->ystart + SIG_SPACE/4;
-
-    /* Start grid */
-    fprintf (psfile,"%d %d %d START_GRID\n", yh, yl, yt-10);
-
-    /* Loop through grid times */
-    for ( ; xtime <= end_time; xtime += grid_ptr->period) {
-	x2 = ( ((xtime) - printtime) * global->res + global->xstart );	/* Similar to TIME_TO_XPOS (xtime) */
-
-	/* compute the time value and draw it if it fits */
-	time_to_string (trace, strg, xtime, FALSE);
-
-	/* Draw if space, centered on grid line */
-	fprintf (psfile,"%d (%s) GRID\n", x2, strg);
-    }
-}
-
-
 
