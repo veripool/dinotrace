@@ -7,7 +7,7 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-* Changes in Dinotrace *****
+* Changes in Dinotrace 9.1j 03/22/2003
 
 ****	When window is resized, keep same percentage of trace visible.
 
