@@ -455,6 +455,7 @@ static void	verilog_process_var (
     int		msb = 0, lsb = 0;
     char	signame[10000];
     char	basename[10000];
+    char 	str[2];
     int		t;
     char	code[10];
     char	*refer;
@@ -510,9 +511,11 @@ static void	verilog_process_var (
       
     /* Signal name begins with the present scope */
     basename[0] = '\0';
+    str[0] = trace->dfile.hierarchy_separator;
+    str[1] = '\0';
     for (t=0; t<scope_level; t++) {
 	strcat (basename, scopes[t]);
-	strcat (basename, ".");
+	strcat (basename, str);
     }
     
     /* Read <reference> */
