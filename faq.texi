@@ -43,7 +43,7 @@
 @titlepage
 @title Dinotrace FAQ
 @subtitle @value{UPDATED}
-@author Wilson Snyder   <@email{wsnyder@@world.std.com}>
+@author Wilson Snyder   <@email{wsnyder@@wsnyder.org}>
 @end titlepage
 
 This is a list of frequently asked questions (FAQ) for Dinotrace users.
@@ -51,7 +51,7 @@ A hypertext version is available on the web at
 @uref{http://www.veripool.com/dinotrace/faq.html}.
 
 Please send updates and corrections to the FAQ to
-@code{wsnyder@@world.std.com}.
+@code{wsnyder@@wsnyder.org}.
 
 @c ======================================================================
 @chapter General Questions
@@ -81,7 +81,7 @@ water is murky if embeding Dinotrace.)
 @section Where should I report bugs and other problems with Dinotrace?
 
 Currently the author is tracking bugs; contact
-@email{wsnyder@@world.std.com}.  There is a Anti-Spam filter on this
+@email{wsnyder@@wsnyder.org}.  There is a Anti-Spam filter on this
 account, so be sure you have a valid return address to meet the filter's
 challenge.
 

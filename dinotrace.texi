@@ -60,7 +60,7 @@
 @ifinfo
 This file documents the Dinotrace package for viewing signal waveforms.
 
-Copyright (C) 2000 by Wilson Snyder. @email{wsnyder@@world.std.com}
+Copyright (C) 2000 by Wilson Snyder. @email{wsnyder@@wsnyder.org}
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -92,7 +92,7 @@ by the author.
 @subtitle Signal Waveform Tracing
 @subtitle for Dinotrace @value{VERSION}
 @subtitle @value{UPDATED}
-@author Wilson Snyder, @email{wsnyder@@world.std.com}
+@author Wilson Snyder, @email{wsnyder@@wsnyder.org}
 
 @page
 @vskip 0pt plus 1filll
@@ -125,7 +125,7 @@ For the latest version, please see
 @uref{http://www.veripool.com/dinotrace}
 
 Please feel free to send comments and suggestions to
-@email{wsnyder@@world.std.com} or @email{wsnyder@@iname.com}.  If you install this
+@email{wsnyder@@wsnyder.org} or @email{wsnyder@@iname.com}.  If you install this
 tool, please also send mail so that I can inform you of new
 releases.
 
@@ -2658,7 +2658,7 @@ files @file{ERRORS_SSM.TRA} and @file{ERRORS_CSR.TRA}.
 This chapter describes bug reporting and the known bugs in the current
 version.
 
-Please report bugs to @email{wsnyder@@world.std.com}
+Please report bugs to @email{wsnyder@@wsnyder.org}
 
 The following bugs are known to exist:
 
