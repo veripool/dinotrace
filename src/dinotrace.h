@@ -219,6 +219,7 @@ typedef enum {
 } TraceSel_t;
 
 /* Time representation enums */
+#define TIMEREP_FS 0.001
 #define TIMEREP_PS 1.0
 #define TIMEREP_NS 1000.0
 #define TIMEREP_US 1000000.0
@@ -347,7 +348,7 @@ typedef struct {
 typedef struct {
     Widget dialog;
     Widget page_menu, page_option, page_item[3];
-    Widget time_menu, time_option, time_item[4];
+    Widget time_menu, time_option, time_item[5];
     Widget sighgt_label;
     Widget s1;
     Widget rfwid;

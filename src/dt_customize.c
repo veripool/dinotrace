@@ -135,21 +135,25 @@ void cus_dialog_cb (
 	/* Create radio box for time representation */
 	trace->custom.time_menu = XmCreatePulldownMenu (trace->custom.dialog,"time",arglist,0);
 
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Picoseconds"));
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Femtoseconds"));
 	trace->custom.time_item[0] = XmCreatePushButton (trace->custom.time_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.time_item[0], trace, MC_NOKEYS);
 	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Nanoseconds"));
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Picoseconds"));
 	trace->custom.time_item[1] = XmCreatePushButton (trace->custom.time_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.time_item[1], trace, MC_NOKEYS);
 	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Microseconds"));
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Nanoseconds"));
 	trace->custom.time_item[2] = XmCreatePushButton (trace->custom.time_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.time_item[2], trace, MC_NOKEYS);
 	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Grid #0 Cycles") );
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Microseconds"));
 	trace->custom.time_item[3] = XmCreatePushButton (trace->custom.time_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.time_item[3], trace, MC_NOKEYS);
+	
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Grid #0 Cycles") );
+	trace->custom.time_item[4] = XmCreatePushButton (trace->custom.time_menu,"rpage",arglist,1);
+	DManageChild (trace->custom.time_item[4], trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Time represented in") );
 	XtSetArg (arglist[1], XmNsubMenuId, trace->custom.time_menu);
@@ -252,12 +256,14 @@ void cus_dialog_cb (
 
     if (global->timerep == TIMEREP_PS)
 	XtSetArg (arglist[0], XmNmenuHistory, trace->custom.time_item[0]);
-    else if (global->timerep == TIMEREP_NS)
+    else if (global->timerep == TIMEREP_FS)
 	XtSetArg (arglist[0], XmNmenuHistory, trace->custom.time_item[1]);
-    else if (global->timerep == TIMEREP_US)
+    else if (global->timerep == TIMEREP_NS)
 	XtSetArg (arglist[0], XmNmenuHistory, trace->custom.time_item[2]);
-    else
+    else if (global->timerep == TIMEREP_US)
 	XtSetArg (arglist[0], XmNmenuHistory, trace->custom.time_item[3]);
+    else
+	XtSetArg (arglist[0], XmNmenuHistory, trace->custom.time_item[4]);
     XtSetValues (trace->custom.time_option, arglist, 1);
 
     XtSetArg (arglist[0], XmNvalue, global->sighgt);
@@ -326,13 +332,15 @@ void	cus_ok_cb (
 
     XtSetArg (arglist[0], XmNmenuHistory, &clicked);
     XtGetValues (trace->custom.time_option, arglist, 1);
-    if (clicked == trace->custom.time_item[3])
+    if (clicked == trace->custom.time_item[4])
 	global->timerep = TIMEREP_CYC;
-    else if (clicked == trace->custom.time_item[2])
+    else if (clicked == trace->custom.time_item[3])
 	global->timerep = TIMEREP_US;
-    else if (clicked == trace->custom.time_item[1])
+    else if (clicked == trace->custom.time_item[2])
 	global->timerep = TIMEREP_NS;
-    else global->timerep = TIMEREP_PS;
+    else if (clicked == trace->custom.time_item[1])
+	global->timerep = TIMEREP_PS;
+    else global->timerep = TIMEREP_FS;
 
     XtSetArg (arglist[0], XmNmenuHistory, &clicked);
     XtGetValues (trace->custom.page_option, arglist, 1);

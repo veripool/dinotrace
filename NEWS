@@ -7,6 +7,11 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.0l  8/30/2000
+
+**	Added support for femtosecond Verilog timescales [Derek Bosch]
+
+
 * Changes in Dinotrace 9.0k  7/17/2000
 
 ****	Fixed bug with $comment after $enddefinitions. [Harunobu Miyashita]
@@ -31,7 +36,7 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 	Now, it looks at the smallest time step in the trace, and uses that
 	as a guess at the timescale. [Pani Kodandapani]
 
-****	Builds on FreeBSD.  [Dan McMahill]
+****	Builds on NetBSD.  [Dan McMahill]
 
 
 * Changes in Dinotrace 9.0g  1/17/2000

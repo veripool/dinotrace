@@ -74,8 +74,8 @@
 #	rise_fall_time	<number>
 #	signal_height	<number>
 #	time_format	%0.6lf | %0.6lg | "" 
-#	time_precision	US | NS | PS
-#	time_rep	<number> | US | NS | PS | CYCLE
+#	time_precision	US | NS | PS | FS
+#	time_rep	<number> | US | NS | PS | FS | CYCLE
 # File Format:
 #	file_format	DECSIM | TEMPEST | VERILOG
 #	save_enables	ON | OFF
@@ -751,12 +751,13 @@ static void	config_process_line_internal (
 	      case 'N':	global->timerep = TIMEREP_NS;	break;
 	      case 'U':	global->timerep = TIMEREP_US;	break;
 	      case 'P':	global->timerep = TIMEREP_PS;	break;
+	      case 'F':	global->timerep = TIMEREP_FS;	break;
 	      case 'C':	global->timerep = TIMEREP_CYC;	break;
 	      case '0': case '1': case '2': case '3': case '4':
 	      case '5': case '6': case '7': case '8': case '9': case '.':
 		global->timerep = atof(line);	break;
 	      default:
-		config_error_ack (trace, "Time_Rep must be PS, NS, US, or CYCLE\n");
+		config_error_ack (trace, "Time_Rep must be FS, PS, NS, US, or CYCLE\n");
 	    }
 	    if (DTPRINT_CONFIG) printf ("timerep = %f\n", global->timerep);
 	}
@@ -765,8 +766,9 @@ static void	config_process_line_internal (
 	      case 'N':	global->time_precision = TIMEREP_NS;	break;
 	      case 'U':	global->time_precision = TIMEREP_US;	break;
 	      case 'P':	global->time_precision = TIMEREP_PS;	break;
+	      case 'F':	global->time_precision = TIMEREP_FS;	break;
 	      default:
-		config_error_ack (trace, "Time_Precision must be PS, NS, or US\n");
+		config_error_ack (trace, "Time_Precision must be FS, PS, NS, or US\n");
 	    }
 	    if (DTPRINT_CONFIG) printf ("time_precision = %f\n", global->time_precision);
 	}

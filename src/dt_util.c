@@ -1369,6 +1369,7 @@ char *time_units_to_string (
 
     /* Can't switch as not a integral expression. */
     if (timerep==TIMEREP_CYC)		return ("cycles");
+    if (timerep==TIMEREP_FS)		return ("fs");
     if (timerep==TIMEREP_PS)		return ("ps");
     if (timerep==TIMEREP_US)		return ("us");
     if (timerep==TIMEREP_NS)		return ("ns");

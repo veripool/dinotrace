@@ -68,7 +68,7 @@ static char *current_file="";
 #define MAXSCOPES 100
 static char	scopes[MAXSCOPES][MAXSIGLEN];
 static int	scope_level;
-static DTime_t	time_divisor, time_scale;
+static double	time_scale;
 
 static int	verilog_fd;
 static char	*verilog_text = NULL;
@@ -219,6 +219,8 @@ static void	verilog_read_timescale (
     Trace_t	*trace)
 {
     char *line = verilog_gettok();
+    /*time_scale is global*/
+
     time_scale = atol (line);
     while (isdigit (*line)) line++;
     if (!*line) line = verilog_gettok();	/* Allow '10 ns' */
@@ -235,6 +237,8 @@ static void	verilog_read_timescale (
     case 'p':
 	break;
     case 'f':
+	time_scale = 0.001;
+	break;
     default:
 	sprintf (message,"Unknown time scale unit '%c' on line %d of %s\n",
 		 *line, verilog_line_num, current_file);
@@ -811,9 +815,14 @@ static void	verilog_read_data (
     char	*scratchline;
     char	*scratchline2;
     double	dnum; 
-    double	time_mult = ((double)time_scale / (double)time_divisor);
+    double	time_mult;
+    double	time_divisor;
 
     if (DTPRINT_ENTRY) printf ("In verilog_read_data (max_bits = %d)\n", verilog_max_bits);
+
+    /* Compute time scales */
+    time_divisor = global->time_precision;
+    time_mult = ((double)time_scale / (double)time_divisor);
 
     time = 0;
     scratchline = (char *)XtMalloc(100+verilog_max_bits);
@@ -947,12 +956,12 @@ static void	verilog_read_data (
 		char msg[1000];
 		told_wrap = TRUE;
 		dino_warning_ack (trace, "Time has wrapped dinotrace's integer size.\nTry increasing Timescale.");
-		printf ("Time out %d  Time in %d  TS %d  TD %d\n", time, atol(line), time_scale, time_divisor);
+		printf ("Time out %d  Time in %d  TS %g  TD %d\n", time, atol(line), time_scale, time_divisor);
 	    }
 	    trace->end_time = time;
 	    if (DTPRINT_FILE) {
 		printf ("Time %d start %d first %d got %d  ", time, trace->start_time, first_data, got_data);
-		printf (" %ld * ( %d / %d )\n", atol(line), time_scale, time_divisor);
+		printf (" %ld * ( %g / %g )\n", atol(line), time_scale, time_divisor);
 	    }
 	    break;
 
@@ -1065,8 +1074,7 @@ void verilog_read (
     Trace_t	*trace,
     int		read_fd)
 {
-    time_divisor = time_units_to_multiplier (global->time_precision);
-    time_scale = time_divisor;
+    time_scale = time_units_to_multiplier (global->time_precision);
 
     /* Signal description data */
     trace->firstsig = NULL;
