@@ -45,7 +45,7 @@ Perl is available from @uref{http://www.perl.org}
 
 @item
 This kit includes a optional interface for GNU Emacs.  For this package,
-get at least GNU Emacs 19.35, and preferably GNU Emacs 20.2 from
+get at least GNU Emacs 19.35, and preferably GNU Emacs 20.3 from
 @uref{ftp://prep.ai.mit.edu}.  You will also want the most recent verilog-mode
 from @uref{http://www.surefirev.com}.
 @end enumerate
@@ -288,9 +288,9 @@ requester.
 
 @item
 Obtain a X11 server.  If you're using Unix you probably already have the
-commercial @prog{eXcursion} or @prog{exceed} programs, and are all set.
-There are also public domain versions, such as MI/X available from
-@uref{http://tnt.microimages.com/www/html/freestuf/mix/}
+commercial @strong{eXcursion} or @strong{exceed} programs, and are all set.
+There are also public domain versions, such as @strong{MI/X} available from
+@uref{http://tnt.microimages.com/www/html/freestuf/mix/}.
 
 @item
 Download the Dinotrace kit, if not done previously.
