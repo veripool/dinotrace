@@ -26,8 +26,8 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V7.1d"
-#define EXPIRATION	((60*60*24)*100) /* In seconds - Comment out define for no expiration dates */
+#define DTVERSION	"Dinotrace V7.2a"
+#define EXPIRATION	((60*60*24)*6*30) /* 6months - In seconds - Comment out define for no expiration dates */
 /*#undef	EXPIRATION*/
 
 /* Turn off alignment for any structures that will be read/written onto Disk! */
@@ -299,8 +299,9 @@ typedef struct {
 
 typedef struct {
     Widget dialog;
-    Widget label1, label2, label3;
+    Widget label1, label2, label3, label4;
     Widget cursors[MAX_SRCH+1];
+    Widget cursors_dotted[MAX_SRCH+1];
     Widget signals[MAX_SRCH+1];
     Widget text;
     Widget ok;
@@ -598,6 +599,7 @@ typedef struct {
     Boolean		anno_poppedup;	/* Annotation has been poped up on some window */
     Boolean		anno_ena_signal[MAX_SRCH+1];   /* Annotation signal enables */
     Boolean		anno_ena_cursor[MAX_SRCH+1];    /* Annotation cursor enables */
+    Boolean		anno_ena_cursor_dotted[MAX_SRCH+1];    /* Annotation cursor enables */
     char		anno_filename[MAXFNAMELEN]; /* Annotation file name */
     char		anno_socket[MAXFNAMELEN];	/* Annotation socket number */
 

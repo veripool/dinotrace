@@ -273,7 +273,7 @@ void    val_examine_popup (trace, x, y, ev)
     char	strg2[2000];
     XmString	xs;
     int		value[3];
-    int		rows, cols, bit, bit_value, row, col;
+    int		rows, cols, bit, bit_value, row, col, par;
     
     time = posx_to_time (trace, x);
     sig_ptr = posy_to_signal (trace, y);
@@ -366,6 +366,19 @@ void    val_examine_popup (trace, x, y, ev)
 			}
 		    }
 		strcat (strg, "\n");
+		}
+
+	    if (sig_ptr->bits > 2) {
+		par = 0;
+		for (bit=0; bit<=sig_ptr->bits; bit++) {
+		    if (bit<32) bit_value = ( value[0] >> bit ) & 1;
+		    else if (bit<64) bit_value = ( value[1] >> (bit-32) ) & 1;
+		    else  bit_value = ( value[2] >> (bit-64) ) & 1;
+
+		    par ^= bit_value;
+		    }
+		if (par) strcat (strg, "Odd Parity\n");
+		else  strcat (strg, "Even Parity\n");
 		}
 
             break;
@@ -785,7 +798,7 @@ void    val_annotate_cb (w,trace,cb)
 	XtAddCallback (trace->annotate.text, XmNactivateCallback, val_annotate_ok_cb, trace);
 	
 	/* Cursor enables */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include which cursor colors:") );
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include which user (solid) cursor colors:") );
 	XtSetArg (arglist[1], XmNx, 10);
 	XtSetArg (arglist[2], XmNy, 75);
 	trace->annotate.label2 = XmCreateLabel (trace->annotate.dialog,"",arglist,3);
@@ -797,21 +810,38 @@ void    val_annotate_cb (w,trace,cb)
 	    XtSetArg (arglist[1], XmNy, 100);
 	    XtSetArg (arglist[2], XmNselectColor, trace->xcolornums[i]);
 	    XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple (""));
-	    trace->annotate.cursors[i] = XmCreateToggleButton (trace->annotate.dialog,"togglen",arglist,4);
+	    trace->annotate.cursors[i] = XmCreateToggleButton (trace->annotate.dialog,"togglenc",arglist,4);
 	    XtManageChild (trace->annotate.cursors[i]);
+	    }
+
+	/* Cursor enables */
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include which auto (dotted) cursor colors:") );
+	XtSetArg (arglist[1], XmNx, 10);
+	XtSetArg (arglist[2], XmNy, 145);
+	trace->annotate.label4 = XmCreateLabel (trace->annotate.dialog,"",arglist,3);
+	XtManageChild (trace->annotate.label4);
+	
+	for (i=0; i<=MAX_SRCH; i++) {
+	    /* enable button */
+	    XtSetArg (arglist[0], XmNx, 15+30*i);
+	    XtSetArg (arglist[1], XmNy, 170);
+	    XtSetArg (arglist[2], XmNselectColor, trace->xcolornums[i]);
+	    XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple (""));
+	    trace->annotate.cursors_dotted[i] = XmCreateToggleButton (trace->annotate.dialog,"togglencd",arglist,4);
+	    XtManageChild (trace->annotate.cursors_dotted[i]);
 	    }
 
 	/* Signal Enables */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include which signal colors:") );
 	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 145);
+	XtSetArg (arglist[2], XmNy, 215);
 	trace->annotate.label3 = XmCreateLabel (trace->annotate.dialog,"",arglist,3);
 	XtManageChild (trace->annotate.label3);
 	
 	for (i=1; i<=MAX_SRCH; i++) {
 	    /* enable button */
 	    XtSetArg (arglist[0], XmNx, 15+30*i);
-	    XtSetArg (arglist[1], XmNy, 170);
+	    XtSetArg (arglist[1], XmNy, 240);
 	    XtSetArg (arglist[2], XmNselectColor, trace->xcolornums[i]);
 	    XtSetArg (arglist[3], XmNlabelString, XmStringCreateSimple (""));
 	    trace->annotate.signals[i] = XmCreateToggleButton (trace->annotate.dialog,"togglen",arglist,4);
@@ -821,7 +851,7 @@ void    val_annotate_cb (w,trace,cb)
 	/* Create OK button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
 	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 210);
+	XtSetArg (arglist[2], XmNy, 280);
 	trace->annotate.ok = XmCreatePushButton (trace->annotate.dialog,"ok",arglist,3);
 	XtAddCallback (trace->annotate.ok, XmNactivateCallback, val_annotate_ok_cb, trace);
 	XtManageChild (trace->annotate.ok);
@@ -829,7 +859,7 @@ void    val_annotate_cb (w,trace,cb)
 	/* create apply button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Apply") );
 	XtSetArg (arglist[1], XmNx, 70);
-	XtSetArg (arglist[2], XmNy, 210);
+	XtSetArg (arglist[2], XmNy, 280);
 	trace->annotate.apply = XmCreatePushButton (trace->annotate.dialog,"apply",arglist,3);
 	XtAddCallback (trace->annotate.apply, XmNactivateCallback, val_annotate_apply_cb, trace);
 	XtManageChild (trace->annotate.apply);
@@ -837,7 +867,7 @@ void    val_annotate_cb (w,trace,cb)
 	/* create cancel button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
 	XtSetArg (arglist[1], XmNx, 140);
-	XtSetArg (arglist[2], XmNy, 210);
+	XtSetArg (arglist[2], XmNy, 280);
 	trace->annotate.cancel = XmCreatePushButton (trace->annotate.dialog,"cancel",arglist,3);
 	XtAddCallback (trace->annotate.cancel, XmNactivateCallback, unmanage_cb, trace->annotate.dialog);
 
@@ -852,6 +882,9 @@ void    val_annotate_cb (w,trace,cb)
     for (i=0; i<=MAX_SRCH; i++) {
 	XtSetArg (arglist[0], XmNset, (global->anno_ena_cursor[i] != 0));
 	XtSetValues (trace->annotate.cursors[i], arglist, 1);
+
+	XtSetArg (arglist[0], XmNset, (global->anno_ena_cursor_dotted[i] != 0));
+	XtSetValues (trace->annotate.cursors_dotted[i], arglist, 1);
 	}
     for (i=1; i<=MAX_SRCH; i++) {
 	XtSetArg (arglist[0], XmNset, (global->anno_ena_signal[i] != 0));
@@ -876,6 +909,7 @@ void    val_annotate_ok_cb (w,trace,cb)
     /* Update with current search enables */
     for (i=0; i<=MAX_SRCH; i++) {
 	global->anno_ena_cursor[i] = XmToggleButtonGetState (trace->annotate.cursors[i]);
+	global->anno_ena_cursor_dotted[i] = XmToggleButtonGetState (trace->annotate.cursors_dotted[i]);
 	}
     for (i=1; i<=MAX_SRCH; i++) {
 	global->anno_ena_signal[i] = XmToggleButtonGetState (trace->annotate.signals[i]);
@@ -957,7 +991,7 @@ void    val_annotate_do_cb (w,trace,cb)
     /* Cursor info */
     fprintf (dump_fp, "(setq dinotrace-cursors [\n");
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
-	if (global->anno_ena_cursor[csr_ptr->color]) {
+	if ((csr_ptr->type==USER) ? global->anno_ena_cursor[csr_ptr->color] : global->anno_ena_cursor_dotted[csr_ptr->color] ) {
 	    time_to_string (global->trace_head, strg, csr_ptr->time, FALSE);
 	    fprintf (dump_fp, "\t[\"%s\"\t%d\t\"%s\"\tnil]\n", strg,
 		     csr_ptr->color, colornum_to_name(csr_ptr->color));
@@ -987,7 +1021,7 @@ void    val_annotate_do_cb (w,trace,cb)
     /* Find number of cursors that will be included */
     csr_num_incl = 0;
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
-	if (global->anno_ena_cursor[csr_ptr->color]) {
+	if ((csr_ptr->type==USER) ? global->anno_ena_cursor[csr_ptr->color] : global->anno_ena_cursor_dotted[csr_ptr->color] ) {
 	    csr_num_incl++;
 	    }
 	}
@@ -1004,7 +1038,7 @@ void    val_annotate_do_cb (w,trace,cb)
 	    csr_num=0;
 	    for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 
-		if (global->anno_ena_cursor[csr_ptr->color]) {
+		if ((csr_ptr->type==USER) ? global->anno_ena_cursor[csr_ptr->color] : global->anno_ena_cursor_dotted[csr_ptr->color] ) {
 		    csr_num++;
 
 		    /* Note grabs value to right of cursor */

@@ -310,6 +310,7 @@ void init_globals ()
     for (i=0; i <= MAX_SRCH; i++) {
 	global->anno_ena_signal[i] = (i!=0);
 	global->anno_ena_cursor[i] = (i!=0);
+	global->anno_ena_cursor_dotted[i] = 0;
 	}
 #ifdef VMS
     strcpy (global->anno_filename, "sys$login:dinotrace.danno");
