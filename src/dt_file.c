@@ -686,6 +686,10 @@ void fil_make_busses (
 	} else {
 	    sig_ptr->bptr = NULL;
 	}
+    }
+
+    /* Must be separate loop, as bptr may change in a copyof's parent */
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	sig_ptr->cptr = sig_ptr->bptr;
     }
 
@@ -728,10 +732,16 @@ static void fil_mark_cptr_end (
 	    value.time = EOT;
 	    fil_add_cptr (sig_ptr, &value, TRUE);
 	}
+    }
 
+    /* Must be separate loop, as bptr may change in a copyof's parent */
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	if (sig_ptr->copyof) {
+	    /* Parent may have moved */
+	    sig_ptr->bptr = sig_ptr->copyof->bptr;
+	}
 	/* re-initialize the cptr's to the bptr's */
 	sig_ptr->cptr = sig_ptr->bptr;
-
 	assert (sig_ptr->bptr->siglw.stbits.size!=0);
     }
 }
