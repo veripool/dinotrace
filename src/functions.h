@@ -25,7 +25,7 @@
 /* Schedule a redraw for trace or everybody */
 #define draw_expose_needed(_trace_)	{ (_trace_)->redraw_needed |= 2; global->redraw_needed |= 1; }
 #define draw_needed(_trace_)	{ (_trace_)->redraw_needed |= 1; global->redraw_needed |= 1; }
-#define draw_all_needed(_trace_) { global->redraw_needed |= 2; }
+#define draw_all_needed() { global->redraw_needed |= 2; }
 
 #define	cptr_to_value(cptr,value_ptr) \
 {\
@@ -112,7 +112,7 @@ extern void
 /* dt_signal.c routines */
 extern void
     sig_update_search(), sig_free(),
-    sig_highlight_pattern (TRACE *, int, char *),
+    sig_highlight_selected (int),
     /**/
     sig_add_cb(), sig_add_ev(), sig_mov_cb(), sig_move_ev(),
     sig_del_cb(), sig_delete_ev(), sig_copy_cb(), sig_copy_ev(),
@@ -122,8 +122,9 @@ extern void
     sig_search_cb(), sig_search_ok_cb(), sig_search_apply_cb(),
     sig_select_cb(), sig_select_ok_cb(), sig_select_apply_cb();
 extern void sig_modify_enables (TRACE *);
-extern void sig_delete_pattern (TRACE *, char *);
-extern void sig_delete_constant_pattern (TRACE *, char *);
+extern void sig_delete_selected (/*Boolean*/);
+extern void sig_move_selected (/*Boolean*/);
+extern void sig_copy_selected (/*Boolean*/);
 extern void sig_goto_pattern (TRACE *, char *);
     
 /* dt_value.c routines */

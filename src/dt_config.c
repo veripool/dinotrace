@@ -54,6 +54,9 @@
 ! Modification of traces:
 !	signal_delete	<signal_pattern>
 !	signal_delete_constant	<signal_pattern>
+!	signal_add	<signal_pattern>	[<after_signal_first_matches>]
+!	signal_copy	<signal_pattern>	[<after_signal_first_matches>]
+!	signal_move	<signal_pattern>	[<after_signal_first_matches>]
 !	signal_highlight <color> <signal_name>
 !	cursor_add	<color> <time>	[-USER]
 !	value_highlight <color>	<value>	[-CURSOR] [-VALUE]
@@ -750,8 +753,34 @@ void	config_process_line_internal (trace, line, eof)
 		    config_error_ack (trace, "Signal_Highlight signal name must not be null\n");
 		    }
 		else {
-		    sig_highlight_pattern (trace, color, pattern);
+		    sig_wildmat_select (NULL, pattern);
+		    sig_highlight_selected (color);
 		    }
+		}
+	    }
+	else if (!strcmp(cmd, "SIGNAL_ADD")
+		 || !strcmp(cmd, "SIGNAL_MOVE")) {
+	    char pattern[MAXSIGLEN], pattern2[MAXSIGLEN];
+	    line += config_read_signal (line, pattern);
+	    if (!pattern[0]) {
+		config_error_ack (trace, "Signal_Add signal name must not be null\n");
+		}
+	    else {
+		line += config_read_signal (line, pattern2);
+		sig_wildmat_select (NULL, pattern);
+		sig_move_selected (trace, pattern2);
+		}
+	    }
+	else if (!strcmp(cmd, "SIGNAL_COPY")) {
+	    char pattern[MAXSIGLEN], pattern2[MAXSIGLEN];
+	    line += config_read_signal (line, pattern);
+	    if (!pattern[0]) {
+		config_error_ack (trace, "Signal_copy signal name must not be null\n");
+		}
+	    else {
+		line += config_read_signal (line, pattern2);
+		sig_wildmat_select (NULL, pattern);
+		sig_copy_selected (trace, pattern2);
 		}
 	    }
 	else if (!strcmp(cmd, "SIGNAL_DELETE")) {
@@ -761,7 +790,8 @@ void	config_process_line_internal (trace, line, eof)
 		config_error_ack (trace, "Signal_Delete signal name must not be null\n");
 		}
 	    else {
-		sig_delete_pattern (trace, pattern);
+		sig_wildmat_select (trace, pattern);
+		sig_delete_selected (TRUE);
 		}
 	    }
 	else if (!strcmp(cmd, "SIGNAL_DELETE_CONSTANT")) {
@@ -771,7 +801,8 @@ void	config_process_line_internal (trace, line, eof)
 		config_error_ack (trace, "Signal_Delete_Constant signal name must not be null\n");
 		}
 	    else {
-		sig_delete_constant_pattern (trace, pattern);
+		sig_wildmat_select (trace, pattern);
+		sig_delete_selected (FALSE);
 		}
 	    }
 	else if (!strcmp(cmd, "VALUE_HIGHLIGHT")) {
@@ -836,7 +867,7 @@ void	config_process_line_internal (trace, line, eof)
 		}
 	    }
 	else if (!strcmp(cmd, "REFRESH")) {
-	    draw_all_needed (trace);
+	    draw_all_needed ();
 	    /* Main loop won't refresh because widget's weren't activated on socket calls */
 	    draw_perform();
 	    }
@@ -1038,44 +1069,64 @@ void config_write_file (filename)
 	}
 
     fprintf (writefp, "! Customization Write by %s\n", DTVERSION);
+    fprintf (writefp, "! Created %s\n", date_string(0));
 
     fprintf (writefp, "\n! ** GLOBAL FLAGS **\n");
     /* Debug and Print skipped */
-    fprintf (writefp, "save_enables %s\n", global->save_enables?"ON":"OFF");
-    fprintf (writefp, "click_to_edge %s\n", global->click_to_edge?"ON":"OFF");
-    fprintf (writefp, "save_enables %s\n", global->save_enables?"ON":"OFF");
-    fprintf (writefp, "page_inc %d\n", 
+    fprintf (writefp, "!debug\t\t%s\n", DTDEBUG?"ON":"OFF");
+    fprintf (writefp, "!print\t\t%d\n", DTPRINT);
+    fprintf (writefp, "save_enables\t%s\n", global->save_enables?"ON":"OFF");
+    fprintf (writefp, "click_to_edge\t%s\n", global->click_to_edge?"ON":"OFF");
+    fprintf (writefp, "save_enables\t%s\n", global->save_enables?"ON":"OFF");
+    fprintf (writefp, "page_inc\t%d\n", 
 	     global->pageinc==QPAGE ? 4 : (global->pageinc==QPAGE?2:1) );
-    /*global->time_rep*/
-    /*global->time_precision*/
+    fprintf (writefp, "print_size\t");
+    switch (global->print_size) {
+      case PRINTSIZE_A:		fprintf (writefp, "A\n");	break;
+      case PRINTSIZE_B:		fprintf (writefp, "B\n");	break;
+      case PRINTSIZE_EPSLAND:	fprintf (writefp, "EPSLAND\n");	break;
+      case PRINTSIZE_EPSPORT:	fprintf (writefp, "EPSPORT\n");	break;
+	}
     if (global->time_format[0])
-	fprintf (writefp, "time_format %s\n", global->time_format);
-    fprintf (writefp, "time_multiplier %d\n", global->tempest_time_mult);
-    /*global->print_size*/
-    /*file_format*/
+	fprintf (writefp, "time_format\t%s\n", global->time_format);
+    fprintf (writefp, "time_multiplier\t%d\n", global->tempest_time_mult);
+    fprintf (writefp, "time_precision\t%s\n", time_units_to_string (global->time_precision, TRUE));
+
     /*start_geometry*/
     /*open_geometry*/
     /*shrink_geometry*/
     /*signal_states*/
+    /*signal_highlight*/
+    /*value_highlight*/
+    /*cursor_add*/
+    /*time & position*/
 
     fprintf (writefp, "\n! ** TRACE FLAGS **\n");
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
-	    fprintf (writefp, "set_trace %s\n", trace->filename);
-	    fprintf (writefp, "cursor %s\n", trace->cursor_vis?"ON":"OFF");
-	    fprintf (writefp, "grid %s\n", trace->grid_vis?"ON":"OFF");
-	    fprintf (writefp, "signal_height %d\n", trace->sighgt);
-	    fprintf (writefp, "vector_seperator \"%c\"\n", trace->vector_seperator);
-	    fprintf (writefp, "rise_fall_time %d\n", trace->sigrf);
+	    fprintf (writefp, "!set_trace\t%s\n", trace->filename);
+	    fprintf (writefp, "file_format\t%s\n", filetypes[trace->fileformat].name);
+	    fprintf (writefp, "cursor\t\t%s\n", trace->cursor_vis?"ON":"OFF");
+	    fprintf (writefp, "grid\t\t%s\n", trace->grid_vis?"ON":"OFF");
+	    fprintf (writefp, "signal_height\t%d\n", trace->sighgt);
+	    fprintf (writefp, "vector_seperator\t\"%c\"\n", trace->vector_seperator);
+	    fprintf (writefp, "rise_fall_time\t%d\n", trace->sigrf);
+	    fprintf (writefp, "time_rep\t%s\n", time_units_to_string (trace->timerep, TRUE));
+	    fprintf (writefp, "grid_resolution\t");
+	    switch (trace->grid_res_auto) {
+	      case GRID_RES_AUTO:		fprintf (writefp, "ASSERTION\n");	break;
+	      case GRID_RES_AUTO_DOUBLE:	fprintf (writefp, "DOUBLE\n");	break;
+	      default:				fprintf (writefp, "%d\n");	break;
+		}
+	    fprintf (writefp, "grid_align\t");
+	    switch (trace->grid_res_auto) {
+	      case GRID_ALN_AUTO_ASS:		fprintf (writefp, "ASSERTION\n");	break;
+	      case GRID_ALN_AUTO_DEASS:		fprintf (writefp, "DEASSERTION\n");	break;
+	      case GRID_ALN_AUTO_TWOCLOCK:	fprintf (writefp, "TWOCLOCK\n");	break;
+	      default:				fprintf (writefp, "%d\n");	break;
+		}
 	    }
 	}
-    /*
-    trace->grid_res = value;
-    trace->grid_res_auto = value;
-    trace->grid_align = value;
-    trace->grid_align_auto = value;
-    trace->sigrf = value;
-    */
 
     fprintf (writefp, "\n! ** GLOBAL INFORMATION **\n");
     cur_print (writefp);
@@ -1083,7 +1134,7 @@ void config_write_file (filename)
     fprintf (writefp, "\n! ** TRACE INFORMATION **\n");
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
-	    fprintf (writefp, "set_trace %s\n", trace->filename);
+	    fprintf (writefp, "!set_trace %s\n", trace->filename);
 	    /* Save signal colors */
 	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 		if (sig_ptr->color && !sig_ptr->search) {

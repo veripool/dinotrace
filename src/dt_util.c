@@ -745,9 +745,10 @@ void    print_sig_info (sig_ptr)
 	}
     }
 
-void    debug_signal_integrity (sig_ptr, list_name)
+void    debug_signal_integrity (sig_ptr, list_name, del)
     SIGNAL	*sig_ptr;
     char	*list_name;
+    Boolean	del;
 {
     SIGNAL_LW	*cptr;
     DTime	last_time;
@@ -759,6 +760,10 @@ void    debug_signal_integrity (sig_ptr, list_name)
 	}
 
     for (; sig_ptr && sig_ptr->forward; sig_ptr=sig_ptr->forward) {
+	if (sig_ptr->deleted != del) {
+	    printf ("%s, Bad deleted flag on %s!\n", list_name, sig_ptr->signame);
+	    }
+
 	if (sig_ptr->forward && sig_ptr->forward->backward != sig_ptr) {
 	    printf ("%s, Bad backward link on signal %s\n", list_name, sig_ptr->signame);
 	    }
@@ -784,10 +789,12 @@ void    debug_integrity_check_cb (w,trace,cb)
     TRACE	       	*trace;
     XmAnyCallbackStruct	*cb;
 {
-    debug_signal_integrity (global->delsig, "Deleted Signals");
+    SIGNAL	*sig_ptr;
+
+    debug_signal_integrity (global->delsig, "Deleted Signals", TRUE);
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	debug_signal_integrity (trace->firstsig, trace->filename);
+	debug_signal_integrity (trace->firstsig, trace->filename, FALSE);
 	}
     }
 
@@ -1101,21 +1108,24 @@ void time_to_string (trace, strg, ctime, relative)
     }
 
 #pragma inline (time_units_to_string)
-char *time_units_to_string (timerep)
+char *time_units_to_string (timerep, showvalue)
     /* find units for the given time represetation */
     TimeRep	timerep;
+    Boolean	showvalue;	/* Show value instead of "units" */
 {
-    /*static char	units[20];*/
+    static char	units[20];
+
     /* Can't switch as not a integral expression. */
     if (timerep==TIMEREP_CYC)		return ("cycles");
     if (timerep==TIMEREP_PS)		return ("ps");
     if (timerep==TIMEREP_US)		return ("us");
     if (timerep==TIMEREP_NS)		return ("ns");
 
-    return ("units");
-    /*sprintf (units, "*%0.0lfps", timerep);
-      return (units);
-      */
+    if (showvalue) {
+	sprintf (units, "%0.0lf", timerep);
+	return (units);
+	}
+    else return ("units");
     }
 
 #pragma inline (time_units_to_multiplier)
