@@ -19,6 +19,7 @@
  *     WPS	08-Sep-93	Added verilog trace support
  *
  */
+static char rcsid[] = "$Id$";
 
 #include <stdio.h>
 #include <string.h>
@@ -47,9 +48,13 @@ static DTime	time_divisor, time_scale;
 
 static SIGNAL	*last_sig_ptr;		/* last signal read in */
 
-/* Pointer to array of signals sorted by pos. */
+/* Pointer to array of signals sorted by pos. (Special hash table) */
 /* *(signal_by_pos[VERILOG_ID_TO_POS ("abc")]) gives signal ABC */
 static SIGNAL	**signal_by_pos;	
+
+/* List of signals that need updating */
+static SIGNAL	**signal_update_array;	
+static SIGNAL	**signal_update_array_last_pptr;
 
 /* Convert a 4 letter <identifier_code> to an id number */
 /* <identifier_code> uses chars 33-126 = '!' - '~' */
@@ -177,7 +182,7 @@ void	verilog_process_var (trace, line)
     if (*cmd != '$' && strcmp(cmd, "[-1]")) strcat (signame, cmd);
     
     /* Allocate new signal structure */
-    sig_ptr = (SIGNAL *)XtMalloc (sizeof(SIGNAL));
+    sig_ptr = XtNew (SIGNAL);
     memset (sig_ptr, 0, sizeof (SIGNAL));
     sig_ptr->trace = trace;
     sig_ptr->file_pos = VERILOG_ID_TO_POS(code);
@@ -246,6 +251,10 @@ void	verilog_process_definitions (trace)
     /* This will, of course, use a lot of memory for large traces.  It will be very fast though */
     signal_by_pos = (SIGNAL **)XtMalloc (sizeof (SIGNAL *) * (max_pos + 1));
     memset (signal_by_pos, 0, sizeof (SIGNAL *) * (max_pos + 1));
+
+    /* Also set aside space so every signal could change in a single cycle */
+    signal_update_array = (SIGNAL **)XtMalloc (sizeof (SIGNAL *) * (max_pos + 1));
+    signal_update_array_last_pptr = signal_update_array;
     
     /* Assign signals to the pos array.  The array points to the "original" */
     /*	-> Note that a single position can have multiple bits (if sig_ptr->file_type is true) */
@@ -300,6 +309,7 @@ void	verilog_process_definitions (trace)
 
     /* Assign signals to the pos array **AGAIN**. */
     /* Since busses now exist, the pointers will all be different */
+    if (DTPRINT_FILE) printf ("Reassigning signals to pos array./n");
     memset (signal_by_pos, 0, sizeof (SIGNAL *) * (max_pos + 1));
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	for (pos = sig_ptr->file_pos; 
@@ -314,15 +324,17 @@ void	verilog_process_definitions (trace)
     }
 
 void	verilog_enter_busses (trace, first_data, time)
-    /* If at a new time a signal has had it's state non zero then */
+    /* If at a new time a signal has had its state non zero then */
     /* enter the file_value as a new cptr */
     TRACE	*trace;
     int		first_data;
     int		time;
 {
     SIGNAL	*sig_ptr;
+    SIGNAL	**sig_upd_pptr;
 
-    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+    for (sig_upd_pptr = signal_update_array; sig_upd_pptr < signal_update_array_last_pptr; sig_upd_pptr++) {
+	sig_ptr = *sig_upd_pptr;
 	if (sig_ptr->file_value.siglw.sttime.state) {
 	    /*if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } */
 
@@ -335,6 +347,8 @@ void	verilog_enter_busses (trace, first_data, time)
 	    /*if (DTPRINT_FILE) { printf ("Exited: "); print_cptr (&(sig_ptr->file_value)); } */
 	    }
 	}
+    /* All updated */
+    signal_update_array_last_pptr = signal_update_array;
     }
 
 void	verilog_read_data (trace, readfp)
@@ -352,6 +366,8 @@ void	verilog_read_data (trace, readfp)
     int		pos;
     int		state;
 
+    if (DTPRINT_ENTRY) printf ("In verilog_read_data\n");
+
     time = 0;
 
     while (1) {
@@ -359,6 +375,7 @@ void	verilog_read_data (trace, readfp)
 	line_num++;
 	line = new_line;
 	if (feof(readfp)) break;
+	/*FIX  if (line_num % 5000 == 0) printf ("Line %d\n", line_num);*/
 	if (DTPRINT_FILE) {
 	    line[strlen(line)-1]= '\0';
 	    printf ("line='%s'\n",line);
@@ -371,8 +388,10 @@ void	verilog_read_data (trace, readfp)
 	  case '#':	/* Time stamp */
 	    verilog_enter_busses (trace, first_data, time);
 	    time = (atol (line) * time_scale) / time_divisor;
-	    if (DTPRINT_FILE) printf (" %d * ( %d / %d )\n", atol(line), time_scale, time_divisor);
-	    if (DTPRINT_FILE) printf ("Time %d start %d first %d got %d\n", time, trace->start_time, first_data, got_data);
+	    if (DTPRINT_FILE) {
+		printf (" %d * ( %d / %d )\n", atol(line), time_scale, time_divisor);
+		printf ("Time %d start %d first %d got %d\n", time, trace->start_time, first_data, got_data);
+		}
 	    if (first_data) {
 		if (got_time) {
 		    if (got_data) first_data = FALSE;
@@ -415,6 +434,8 @@ void	verilog_read_data (trace, readfp)
 		    fil_add_cptr (sig_ptr, &value, !first_data);
 		    }
 		else {	/* Unary signal made into a vector */
+		    /* Mark this for update at next time stamp */
+		    *(signal_update_array_last_pptr++) = sig_ptr;
 		    /* printf ("Pre: "); print_cptr (&(sig_ptr->file_value)); */
 		    switch (state) {
 		      case STATE_U:
@@ -545,68 +566,79 @@ void	verilog_read_data (trace, readfp)
     verilog_enter_busses (trace, first_data, time);
     }
 
-void	verilog_process_line (trace, line, readfp)
+void	verilog_process_lines (trace, readfp)
     TRACE	*trace;
-    char	*line;
     FILE	*readfp;
 {
-    char	*cmd;
+    char	*cmd, *tp;
+    char	*line;
+    char	line_stor[1000];
 
-    /* Find first command */
-    while (*line && *line!='$') line++;
-    if (!*line) return;
+    while (!feof (readfp)) {
+	/* Read line & kill EOL at end */
+	fgets (line_stor, 1000, readfp);
+	line = line_stor;
+	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
+	line_num++;
 
-    /* extract command */
-    line++;
-    verilog_read_parameter (line, cmd);
+	/* if (DTPRINT_FILE) printf ("line='%s'\n",line); */
 
-    /* Note that these are in most frequent first ordering */
-    if (!strcmp(cmd, "end")) {
-	}
-    else if (!strcmp(cmd, "var")) {
-	verilog_process_var (trace, line);
-	}
-    else if (!strcmp(cmd, "upscope")) {
-	if (scope_level > 0) scope_level--;
-	}
-    else if (!strcmp(cmd, "scope")) {
-	/* Skip <scopetype> = module, task, function, begin, fork */
-	verilog_skip_parameter (line);
-
-	/* Null terminate <identifier> */
+	/* Find first command */
+	while (*line && *line!='$') line++;
+	if (!*line) continue;
+	
+	/* extract command */
+	line++;
 	verilog_read_parameter (line, cmd);
-
-	if (scope_level < MAXSCOPES) {
-	    strcpy (scopes[scope_level], cmd);
-	    /* if (DTPRINT_FILE) printf ("added scope, %d='%s'\n", scope_level, scopes[scope_level]); */
-	    scope_level++;
+	
+	/* Note that these are in most frequent first ordering */
+	if (!strcmp(cmd, "end")) {
+	    }
+	else if (!strcmp(cmd, "var")) {
+	    verilog_process_var (trace, line);
+	    }
+	else if (!strcmp(cmd, "upscope")) {
+	    if (scope_level > 0) scope_level--;
+	    }
+	else if (!strcmp(cmd, "scope")) {
+	    /* Skip <scopetype> = module, task, function, begin, fork */
+	    verilog_skip_parameter (line);
+	    
+	    /* Null terminate <identifier> */
+	    verilog_read_parameter (line, cmd);
+	    
+	    if (scope_level < MAXSCOPES) {
+		strcpy (scopes[scope_level], cmd);
+		/* if (DTPRINT_FILE) printf ("added scope, %d='%s'\n", scope_level, scopes[scope_level]); */
+		scope_level++;
+		}
+	    else {
+		if (DTPRINT_FILE) printf ("%%E, Too many scope levels on verilog line %d\n", line_num);
+		
+		sprintf (message, "Too many scope levels\non line %d of %s\n",
+			 cmd, line_num, current_file);
+		dino_error_ack (trace,message);
+		}
+	    }
+	else if (!strcmp (cmd, "date")
+		 || !strcmp (cmd, "version")
+		 || !strcmp (cmd, "comment")) {
+	    verilog_read_till_end (line, readfp);
+	    }
+	else if (!strcmp(cmd, "timescale")) {
+	    verilog_read_timescale (line, readfp);
+	    }
+	else if (!strcmp (cmd, "enddefinitions")) {
+	    verilog_process_definitions (trace);
+	    verilog_read_data (trace, readfp);
 	    }
 	else {
-	    if (DTPRINT_FILE) printf ("%%E, Too many scope levels on verilog line %d\n", line_num);
-
-	    sprintf (message, "Too many scope levels\non line %d of %s\n",
+	    if (DTPRINT_FILE) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, line_num);
+	    
+	    sprintf (message, "Unknown command '%s'\non line %d of %s\n",
 		     cmd, line_num, current_file);
 	    dino_error_ack (trace,message);
 	    }
-	}
-    else if (!strcmp (cmd, "date")
-	|| !strcmp (cmd, "version")
-	|| !strcmp (cmd, "comment")) {
-	verilog_read_till_end (line, readfp);
-	}
-    else if (!strcmp(cmd, "timescale")) {
-	verilog_read_timescale (line, readfp);
-	}
-    else if (!strcmp (cmd, "enddefinitions")) {
-	verilog_process_definitions (trace);
-	verilog_read_data (trace, readfp);
-	}
-    else {
-	if (DTPRINT_FILE) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, line_num);
-
-	sprintf (message, "Unknown command '%s'\non line %d of %s\n",
-		 cmd, line_num, current_file);
-	dino_error_ack (trace,message);
 	}
     }
 
@@ -615,7 +647,6 @@ void verilog_read (trace, read_fd)
     int		read_fd;
 {
     FILE	*readfp;
-    char	line[1000];
     char	*tp;
 
     time_divisor = time_units_to_multiplier (global->time_precision);
@@ -634,15 +665,7 @@ void verilog_read (trace, read_fd)
 
     line_num=0;
     current_file = trace->filename;
-    while (!feof (readfp)) {
-	/* Read line & kill EOL at end */
-	fgets (line, 1000, readfp);
-	if (*(tp=(line+strlen(line)-1))=='\n') *tp='\0';
-	line_num++;
-
-	/* if (DTPRINT_FILE) printf ("line='%s'\n",line); */
-	verilog_process_line (trace, line, readfp);
-	}
+    verilog_process_lines (trace, readfp);
 
     /* Free up */
     DFree (signal_by_pos);
