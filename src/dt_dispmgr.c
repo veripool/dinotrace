@@ -650,6 +650,7 @@ TRACE *create_trace (xs,ys,xp,yp)
 
     dm_menu_title (trace, "Customize", 'u');
     dm_menu_entry (trace, 	"Change...",	'C',	NULL, NULL,	cus_dialog_cb);
+    dm_menu_entry (trace, 	"Grid...",	'R',	NULL, NULL,	grid_customize_cb);
     dm_menu_entry (trace, 	"ReRead",	'e',	NULL, NULL,	cus_reread_cb);
     if (DTDEBUG) {
 	dm_menu_entry (trace, 	"Write",	'W',	NULL, NULL,	config_write_cb);
@@ -666,12 +667,6 @@ TRACE *create_trace (xs,ys,xp,yp)
     dm_menu_subtitle (trace,	 "Highlight",	'H');
     trace->menu.cur_highlight_pds = trace->menu.pds+1;
     dm_menu_subentry_colors (trace, 		NULL, NULL, NULL, NULL,	cur_highlight_cb);
-    dm_menu_entry (trace, 	"Cancel", 	'l',	NULL, NULL,	cancel_all_events);
-
-    dm_menu_title (trace, "Grid", 'G');
-    dm_menu_entry (trace, 	"Res...", 	'R',	NULL, NULL,	grid_res_cb);
-    dm_menu_entry (trace, 	"Align",	'A',	NULL, NULL,	grid_align_cb);
-    dm_menu_entry (trace, 	"Reset",	's',	NULL, NULL,	grid_reset_cb);
     dm_menu_entry (trace, 	"Cancel", 	'l',	NULL, NULL,	cancel_all_events);
 
     dm_menu_title (trace, "Signal", 'S');

@@ -214,9 +214,6 @@ void    remove_all_events (trace)
 	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,cur_delete_ev,trace_ptr);
 	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,cur_highlight_ev,trace_ptr);
 	
-	/* remove all possible events due to grid options */ 
-	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,grid_align_ev,trace_ptr);
-	
 	/* remove all possible events due to signal options */ 
 	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,sig_add_ev,trace_ptr);
 	XtRemoveEventHandler (trace_ptr->work,ButtonPressMask,TRUE,sig_move_ev,trace_ptr);
@@ -257,6 +254,23 @@ ColorNum submenu_to_color (trace, w, base)
 	}
 
     return (color);
+    }
+
+int option_to_number (w, entry0_ptr, maxnumber)
+    Widget	w;		/* foo.options widget */
+    Widget	*entry0_ptr;	/* &foo.pulldownbutton[0] */
+    int		maxnumber;	/* number to consider (INCLUDING!) */
+{
+    int			tempi;
+    Widget		clicked;
+
+    /* Get menu */
+    XtSetArg (arglist[0], XmNmenuHistory, &clicked);
+    XtGetValues (w, arglist, 1);
+    for (tempi=maxnumber; tempi>0; tempi--) {
+	if (entry0_ptr[tempi]==clicked) break;
+	}
+    return (tempi);
     }
 
 TRACE	*widget_to_trace (w)
@@ -320,7 +334,7 @@ void new_time (trace)
 void get_geometry ( trace )
     TRACE	*trace;
 {
-    int		x,y,max_y;
+    int		x,y;
     unsigned int	width,height,dret;
     
     XGetGeometry ( global->display, XtWindow (trace->work), (Window *)&dret,
@@ -330,19 +344,17 @@ void get_geometry ( trace )
     trace->height = height;
     
     /* calulate the number of signals possibly visible on the screen */
-    max_y = max_sigs_on_screen (trace);
-    trace->numsigvis = MIN (trace->numsig - trace->numsigstart,max_y);
+    trace->numsigvis = max_sigs_on_screen (trace);
     
     /* if there are cursors showing, subtract one to make room for cursor */
     if ( (global->cursor_head != NULL) &&
 	trace->cursor_vis &&
-	trace->numsigvis > 1 &&
-	trace->numsigvis >= max_y ) {
+	trace->numsigvis > 1 ) {
 	trace->numsigvis--;
 	}
     
     update_scrollbar (trace->hscroll, global->time,
-		      trace->grid_res,
+		      trace->grid[0].period,
 		      trace->start_time, trace->end_time, 
 		      (int)((trace->width-global->xstart)/global->res) );
 
@@ -550,12 +562,6 @@ void    prompt_ok_cb (w, trace, cb)
     /* do stuff depending on type of data */
     switch (trace->prompt_type)
 	{
-      case IO_GRIDRES:
-	/* get the data and store in display structure */
-	trace->grid_res = (int)restime;
-	draw_all_needed ();
-	break;
-	
       case IO_RES:
 	/* get the data and store in display structure */
 	global->res = RES_SCALE / (float)restime;
@@ -723,7 +729,7 @@ void    print_screen_traces (w,trace)
     int		i,adj,num;
     SIGNAL	*sig_ptr;
     
-    printf ("There are %d signals currently visible.\n",trace->numsigvis);
+    printf ("There are up to %d signals currently visible.\n",trace->numsigvis);
     printf ("Which signal do you wish to view [0-%d]: ",trace->numsigvis-1);
     scanf ("%d",&num);
     if ( num < 0 || num > trace->numsigvis-1 )
@@ -1081,8 +1087,8 @@ DTime string_to_time (trace, strg)
     if (f_time < 0) return (0);
 
     if (trace->timerep == TIMEREP_CYC) {
-	return ((DTime)(f_time * trace->grid_res
-			+ trace->grid_align % trace->grid_res));
+	return ((DTime)(f_time * trace->grid[0].period
+			+ trace->grid[0].alignment % trace->grid[0].period));
 	}
 
     /* First convert to picoseconds */
@@ -1110,11 +1116,11 @@ void time_to_string (trace, strg, ctime, relative)
     if (trace->timerep == TIMEREP_CYC) {
 	if (!relative) {
 	    /* Adjust within one cycle so that grids are on .0 boundaries */
-	    f_time -= (double)(trace->grid_align % trace->grid_res);	/* Want integer remainder */
+	    f_time -= (double)(trace->grid[0].alignment % trace->grid[0].period);	/* Want integer remainder */
 	    }
 
 	decimals = 1;
-	f_time = f_time / ((double)trace->grid_res);
+	f_time = f_time / ((double)trace->grid[0].period);
 	}
     else {
 	/* Convert time to picoseconds, Preserve fall through order in case statement */

@@ -289,7 +289,8 @@ void fil_read_cb (trace)
      */
     set_cursor (trace, DC_NORMAL);
     if (global->res_default) win_full_res_cb (NULL, trace, NULL);
-    new_time (trace);	/* Realignes start and displays */
+    new_time (trace);		/* Realignes start and displays */
+    vscroll_new (trace,0);	/* Realign time */
     if (DTPRINT_ENTRY) printf ("fil_read_cb done!\n");
     }
 
@@ -737,9 +738,6 @@ void read_trace_end (trace)
 	global->time = trace->start_time;
 	}
 
-    /* Clear the starting signal */
-    trace->numsigstart = 0;
-
     /* Mark as loaded */
     trace->loaded = TRUE;
 
@@ -797,98 +795,8 @@ void	update_signal_states (trace)
 	/* else if (DTPRINT_FILE) printf ("Signal %s  no pattern\n",sig_ptr->signame); */
 	}
 
-    /* Determine period, rise point and fall point of first signal */
-    sig_ptr = (SIGNAL *)trace->firstsig;
-
-    /* Skip phase_count, as it is a CCLI artifact */
-    if (sig_ptr && !strncmp(sig_ptr->signame, "phase_count", 11)) sig_ptr=sig_ptr->forward;
-
-    if (sig_ptr) {
-	cptr = sig_ptr->cptr;
-	/* Skip first one, as is not representative of period */
-	if ( cptr->sttime.time != EOT) cptr += sig_ptr->lws;
-
-	while ( cptr->sttime.time != EOT) {
-	    switch (cptr->sttime.state) {
-	      case STATE_1:
-		if (!rise1) rise1 = cptr->sttime.time;
-		else if (!rise2) rise2 = cptr->sttime.time;
-		else if (!rise3) rise3 = cptr->sttime.time;
-		break;
-	      case STATE_0:
-		if (!fall1) fall1 = cptr->sttime.time;
-		else if (!fall2) fall2 = cptr->sttime.time;
-		else if (!fall3) fall3 = cptr->sttime.time;
-		break;
-	      case STATE_B32:
-	      case STATE_B64:
-	      case STATE_B96:
-		if (!rise1) rise1 = cptr->sttime.time;
-		else if (!rise2) rise2 = cptr->sttime.time;
-		else if (!rise3) rise3 = cptr->sttime.time;
-		if (!fall1) fall1 = cptr->sttime.time;
-		else if (!fall2) fall2 = cptr->sttime.time;
-		else if (!fall3) fall3 = cptr->sttime.time;
-		break;
-		}
-	    cptr += sig_ptr->lws;
-	    }
-	
-	/* Set defaults based on changes */
-	trace->grid_type = trace->grid_res_auto;
-	switch (trace->grid_res_auto) {
-	  case GRID_RES_AUTO:
-	    if (rise1 < rise2)	trace->grid_res = rise2 - rise1;
-	    else if (fall1 < fall2) trace->grid_res = fall2 - fall1;
-	    break;
-	  case GRID_RES_AUTO_DOUBLE:
-	    if (rise1 < rise3)	trace->grid_res = rise3 - rise1;
-	    else if (fall1 < fall3) trace->grid_res = fall3 - fall1;
-	    break;
-	    }
-
-	/* Alignment */
-	switch (trace->grid_align_auto) {
-	  case GRID_ALN_AUTO_ASS:
-	    if (rise1) trace->grid_align = rise1 % trace->grid_res;
-	    break;
-	  case GRID_ALN_AUTO_DEASS:
-	    if (fall1) trace->grid_align = fall1 % trace->grid_res;
-	    break;
-	  case GRID_ALN_AUTO_TWOCLOCK:
-	    if (rise1) trace->grid_align = rise1 % trace->grid_res;
-
-	    /* Twoclock logic */
-	    twoclock_sig_ptr = sig_ptr->forward;
-	    if (twoclock_sig_ptr) {
-		cptr = cptr_at_time (twoclock_sig_ptr, rise1);
-		twohigh1 = (cptr && cptr->sttime.time!=EOT && cptr->sttime.state!=STATE_0);
-		cptr = cptr_at_time (twoclock_sig_ptr, rise2);
-		twohigh2 = (cptr && cptr->sttime.time!=EOT && cptr->sttime.state!=STATE_0);
-		cptr = cptr_at_time (twoclock_sig_ptr, rise3);
-		twohigh3 = (cptr && cptr->sttime.time!=EOT && cptr->sttime.state!=STATE_0);
-		}
-
-	    if (rise1 && twohigh1) trace->grid_align = rise1 % trace->grid_res;
-	    else if (rise2 && twohigh2) trace->grid_align = rise2 % trace->grid_res;
-	    else if (rise3 && twohigh3) trace->grid_align = rise3 % trace->grid_res;
-
-	    if (twohigh1 && twohigh2 && twohigh3) {
-		/* Clocks are symmetric, override twohigh */
-		trace->grid_type = GRID_RES_AUTO;
-		trace->grid_res /= 2;
-		if (trace->grid_res < 1) trace->grid_res = 1;
-		}
-	    break;
-	    }
-
-	if (DTPRINT_FILE) printf ("grid autoset signal %s two %s align=%d %d\n", sig_ptr->signame,
-				  twoclock_sig_ptr ? twoclock_sig_ptr->signame : "*NONE*",
-				  trace->grid_align_auto, trace->grid_res_auto);
-	if (DTPRINT_FILE) printf ("grid rises=%d,%d,%d, falls=%d,%d,%d, twohigh=%d,%d,%d res=%d, align=%d\n",
-				  rise1,rise2,rise3, fall1,fall2,fall3, twohigh1,twohigh2,twohigh3,
-				  trace->grid_res, trace->grid_align);
-	}
+    /* Update grids */
+    grid_calc_autos (trace);
 
     /* Update global information */
     update_globals ();

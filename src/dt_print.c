@@ -50,7 +50,7 @@ static char rcsid[] = "$Id$";
 #include "callbacks.h"
 #include "dinopost.h"
 
-extern void	ps_drawsig(), ps_draw();
+extern void	ps_drawsig(), ps_draw(), ps_draw_grid(), ps_draw_cursors();
 
 
 
@@ -515,8 +515,8 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
     SIGNAL_LW *cptr,*nptr;
     char strg[32];
     unsigned int value;
-    CURSOR *csr_ptr;			/* Current cursor being printed */
     int unstroked=0;		/* Number commands not stroked */
+    int		grid_num;
     
     if (DTPRINT_ENTRY) printf ("In ps_draw - filename=%s, printtime=%d sig=%s\n",trace->filename, printtime, sig_ptr->signame);
     
@@ -648,117 +648,15 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	    }
 	} /* end of FOR */
     
-    /*** draw the time line and the grid if its visible ***/
-    
-    /* calculate the starting window pixel location of the first time */
-    xlocf = (trace->grid_align + (printtime - trace->grid_align)
-	     /trace->grid_res*trace->grid_res)*global->res - adj;
-    
-    /* calculate the starting time */
-    xtimf = (xlocf + (float)adj)/global->res + .001;
-    
-    /* initialize some parameters */
-    i = 0;
-    x1 = (int)xtimf;
-    yt = trace->height - 20;
-    y1 = trace->height - trace->ystart + SIG_SPACE/4;
-    y2 = trace->sighgt;
-    
-    /* create the dash pattern for the vertical grid lines */
-    strg[0] = SIG_SPACE/2;
-    strg[1] = trace->sighgt - strg[0];
-    
-    /* set the line attributes as the specified dash pattern */
-    fprintf (psfile,"stroke\n[%d YTRN %d YTRN] 0 setdash\n",strg[0],strg[1]);
-    
-    /* check if there is a reasonable amount of increments to draw the time grid */
-    if ( ((float)xend - xlocf)/(trace->grid_res*global->res) < MIN_GRID_RES )
-	{
-        for (iff=xlocf;iff<(float)xend; iff+=trace->grid_res*global->res)
-	    {
-	    /* compute the time value and draw it if it fits */
-	    time_to_string (trace, strg, x1, FALSE);
-	    if ( (int)iff - i >= XTextWidth (global->time_font,strg,strlen (strg)) + 5 )
-		{
-		fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n",
-			(int)iff,yt-10,strg);
-	        i = (int)iff;
-		}
-	    
-	    /* if the grid is visible, draw a vertical dashed line */
-	    if (trace->grid_vis)
-		{
-		fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
-			(int)iff,y1,(int)iff,y2);
-		}
-	    x1 += trace->grid_res;
-	    }
-	}
-    else
-	{
-	/* grid res is useless - must increase the spacing */
-	/*	dino_warning_ack (trace,"Grid Spacing Too Small - Increase Res"); */
-	}
-    
-    /* reset the line attributes */
-    fprintf (psfile,"stroke [] 0 setdash\n");
-    
+    /* Draw grids */
+    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
+	ps_draw_grid (trace, psfile, printtime, &(trace->grid[grid_num]));
+    }
+
     /* draw the cursors if they are visible */
-    if ( trace->cursor_vis )
-	{
-	/* initial the y values for drawing */
-	y1 = trace->height - 25 - 10;
-	y2 = trace->height - ( (int)((trace->height-trace->ystart)/trace->sighgt)-1) *
-	    trace->sighgt - trace->sighgt/2 - trace->ystart - 2;
+    ps_draw_cursors (trace, psfile, printtime);
+} /* End of DRAW */
 
-	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
-
-	    /* check if cursor is on the screen */
-	    if (csr_ptr->time > printtime) {
-
-		/* draw the vertical cursor line */
-		x1 = csr_ptr->time * global->res - adj;
-		if (x1 > xend) break;	/* past end of screen, since sorted list no more to do */
-		fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
-			x1,y1,x1,y2);
-		
-		/* draw the cursor value */
-		time_to_string (trace, strg, csr_ptr->time, FALSE);
- 		len = XTextWidth (global->time_font,strg,strlen (strg));
-		fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n",
-			x1-len/2,y2-8,strg);
-		
-		/* if there is a previous visible cursor, draw delta line */
-		if ( csr_ptr->prev && csr_ptr->prev->time > printtime ) {
-
-		    x2 = csr_ptr->prev->time * global->res - adj;
-		    time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
- 		    len = XTextWidth (global->time_font,strg,strlen (strg));
-		    
-		    /* write the delta value if it fits */
- 		    if ( x1 - x2 >= len + 6 )
-			{
-			/* calculate the mid pt of the segment */
-			mid = x2 + (x1 - x2)/2;
-			fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
-				x2,y2+5,mid-len/2-2,y2+5);
-			fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
-				mid+len/2+2,y2+5,x1,y2+5);
-			
-			fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n",
-				mid-len/2,y2+2,strg);
-			}
- 		    /* or just draw the delta line */
- 		    else
-			{
-			fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
-				x1,y2+5,x2,y2+5);
-			}
-		    }
-		}
-	    }
-	}
-    } /* End of DRAW */
 
 void ps_drawsig (trace, psfile, sig_ptr, sig_end_ptr)
     TRACE	*trace;
@@ -790,4 +688,144 @@ void ps_drawsig (trace, psfile, sig_ptr, sig_end_ptr)
 	c++;
 	}
     }
+
+void ps_draw_cursors (trace, psfile, printtime)
+    TRACE	*trace;
+    FILE	*psfile;
+    DTime	printtime;	/* Time to start on */
+{
+    Position	x1,x2,y1,y2;
+    char 	strg[32];
+    int		len,mid;
+    int		adj,xend;
+    CURSOR	*csr_ptr;
+    
+    /* reset the line attributes */
+    fprintf (psfile,"stroke [] 0 setdash\n");
+    
+    /* draw the cursors if they are visible */
+    if ( trace->cursor_vis ) {
+	/* initial the y values for drawing */
+	y1 = trace->height - 25 - 10;
+	y2 = trace->height - ( (int)((trace->height-trace->ystart)/trace->sighgt)-1) *
+	    trace->sighgt - trace->sighgt/2 - trace->ystart - 2;
+
+	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
+
+	    /* check if cursor is on the screen */
+	    if (csr_ptr->time > printtime) {
+		
+		/* draw the vertical cursor line */
+		x1 = csr_ptr->time * global->res - adj;
+		if (x1 > xend) break;	/* past end of screen, since sorted list no more to do */
+		fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
+			 x1,y1,x1,y2);
+		
+		/* draw the cursor value */
+		time_to_string (trace, strg, csr_ptr->time, FALSE);
+ 		len = XTextWidth (global->time_font,strg,strlen (strg));
+		fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n",
+			 x1-len/2,y2-8,strg);
+		
+		/* if there is a previous visible cursor, draw delta line */
+		if ( csr_ptr->prev && csr_ptr->prev->time > printtime ) {
+
+		    x2 = csr_ptr->prev->time * global->res - adj;
+		    time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
+ 		    len = XTextWidth (global->time_font,strg,strlen (strg));
+		    
+		    /* write the delta value if it fits */
+ 		    if ( x1 - x2 >= len + 6 ) {
+			/* calculate the mid pt of the segment */
+			mid = x2 + (x1 - x2)/2;
+			fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
+				 x2,y2+5,mid-len/2-2,y2+5);
+			fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
+				 mid+len/2+2,y2+5,x1,y2+5);
+			
+			fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n",
+				 mid-len/2,y2+2,strg);
+		    }
+ 		    /* or just draw the delta line */
+ 		    else {
+			fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
+				 x1,y2+5,x2,y2+5);
+		    }
+		}
+	    }
+	}
+    }
+}
+
+void ps_draw_grid (trace, psfile, printtime, grid_ptr)
+    TRACE	*trace;
+    FILE	*psfile;
+    DTime	printtime;	/* Time to start on */
+    GRID	*grid_ptr;		/* Grid information */
+{
+    char 	strg[MAXSTATELEN+16];	/* String value to print out */
+    char 	primary_dash[4];	/* Dash pattern */
+    int		end_time;
+    int		time_width;		/* Width of time printing */
+    DTime	xtime;
+    int		x_last_time;		/* Last x coordinate time was printed at */
+    Position	x2;			/* Coordinate of current time */
+    Position	y1,y2,yt;		/* Starting and ending points */
+
+    /*
+    int c=0,i,adj,ymdpt,yt,xloc,xend,len,mid,xstart,ystart;
+    int x1,y1,x2,y2;
+    float iff,xlocf,xtimf;
+    SIGNAL_LW *cptr,*nptr;
+    char strg[32];
+    unsigned int value;
+    */
+    
+    if (grid_ptr->period < 1) grid_ptr->period = 1;	/* Prevents round-down to 0 causing infinite loop */
+
+    /* Is the grid too small or invisible?  If so, skip it */
+    if ((! grid_ptr->visible) || ((grid_ptr->period * global->res) < MIN_GRID_RES)) {
+	return;
+    }
+
+    /* set the line attributes as the specified dash pattern */
+    fprintf (psfile,"stroke\n[%d YTRN %d YTRN] 0 setdash\n",SIG_SPACE/2, trace->sighgt - SIG_SPACE/2);
+    
+    /* Start to left of right edge */
+    xtime = global->time;
+    end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
+
+    /* Move starting point to the right to hit where a grid line is aligned */
+    xtime = ((xtime / grid_ptr->period) * grid_ptr->period) + (grid_ptr->alignment % grid_ptr->period);
+
+    /* If possible, put one grid line inside the signal names */
+    if (((grid_ptr->period * global->res) < global->xstart)
+	&& (xtime >= grid_ptr->period)) {
+	xtime -= grid_ptr->period;
+    }
+
+    /* Other coordinates */
+    yt = trace->height - 20;
+    y1 = trace->height - trace->ystart + SIG_SPACE/4;
+    y2 = trace->sighgt;
+
+    /* Loop through grid times */
+    for ( ; xtime <= end_time; xtime += grid_ptr->period) {
+	x2 = TIME_TO_XPOS (xtime);
+
+	/* compute the time value and draw it if it fits */
+	time_to_string (trace, strg, xtime, FALSE);
+	time_width = XTextWidth (global->time_font,strg,strlen (strg));
+	if ( (x2 - x_last_time) >= (time_width+5) ) {
+	    /* Draw if space, centered on grid line */
+	    fprintf (psfile,"%d XADJ %d YADJ MT (%s) show\n", x2, yt-10, strg);
+	    x_last_time = x2;
+	}
+	    
+	/* if the grid is visible, draw a vertical dashed line */
+	fprintf (psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n", x2, y1, x2, y2);
+    }
+}
+
+
 

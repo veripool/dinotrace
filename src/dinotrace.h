@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V7.4a"
+#define DTVERSION	"Dinotrace V7.5a"
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
@@ -47,7 +47,9 @@
 #define MAXFNAMELEN	200	/* Maximum length of file names */
 #define MAXSTATENAMES	130	/* Maximum number of state name translations */
 #define MAXSTATELEN	32	/* Maximum length of state names */
-#define	MIN_GRID_RES	512.0	/* Minimum grid resolution */
+#define MAXGRIDS	4	/* Maximum number of grids */
+#define	MIN_GRID_RES	5	/* Minimum grid resolution, in pixels between grid lines */
+#define	GRID_TIME_Y	20	/* Y Coordinate of where to print grid times */
 #define BLK_SIZE	512	/* Trace data block size */
 #define	CLICKCLOSE	20	/* Number of pixels that are "close" for click-to-edges */
 
@@ -229,11 +231,9 @@ extern XGCValues	xgcv;
 extern Arg		arglist[20];
 
 /* Grid Automatic flags */
-#define GRID_RES_AUTO_DOUBLE	-5
 #define GRID_RES_AUTO		-4
 #define GRID_ALN_AUTO_DEASS	-3
 #define GRID_ALN_AUTO_ASS	-2
-#define GRID_ALN_AUTO_TWOCLOCK	-1
 
 typedef struct {
     Widget	menu;
@@ -274,9 +274,6 @@ typedef struct {
     Widget s1;
     Widget rfwid;
     Widget cursor_state;
-    Widget grid_state;
-    Widget grid_width;
-    Widget grid_label;
     Widget click_to_edge;
     Widget refreshing;
     Widget b1;
@@ -363,6 +360,32 @@ typedef struct {
     Widget options;
     } GOTOS_WDGTS;
 
+typedef struct {
+    Widget label1;
+    Widget visible;
+    Widget wide_line;
+    Widget siglabel, signal;
+    Widget periodlabel, period;
+    Widget align;
+    Widget auto_period;
+    /* Auto stuff */
+    Widget autopulldown;
+    Widget autopulldownbutton[MAX_SRCH+1];
+    Widget autooptions;
+    /* Color stuff */
+    Widget pulldown;
+    Widget pulldownbutton[MAX_SRCH+1];
+    Widget options;
+    } GRID_WDGTS;
+
+typedef struct {
+    Widget popup;
+    Widget ok;
+    Widget apply;
+    Widget cancel;
+    GRID_WDGTS  grid[MAXGRIDS];
+    } GRIDS_WDGTS;
+
 typedef struct st_geometry {
     Position		x, y, height, width;	
     Boolean		xp, yp, heightp, widthp;	/* Above element is a percentage */
@@ -424,6 +447,17 @@ typedef struct st_cursor {
     ColorNum		color;		/* Color number (index into trace->xcolornum) */
     CursorType		type;		/* Type of cursor */
     } CURSOR;
+
+typedef struct st_grid {
+    int			period;		/* Grid period (time between ticks) */
+    int			alignment;	/* Grid alignment (time grid starts at) */
+    enum { USER=0, AUTO=1 }	res_auto;	/* Status of automatic grid resolution */
+    enum { USER=0, ASS=1, DEASS=2 } align_auto; /* Status of automatic grid alignment */
+    Boolean		visible;	/* True if grid is visible */
+    Boolean		wide_line;	/* True to draw a double-width line */
+    char 		signal[MAXSIGLEN];	/* Signal name of the clock */
+    ColorNum		color;		/* Color to print in, 0 = black */
+    } GRID;
 
 /* Signal information structure (one per each signal in a trace window) */
 typedef struct st_signal {
@@ -513,7 +547,7 @@ typedef struct st_trace {
     SIGNAL		*dispsig;	/* Pointer within sigque to first signal on screen */
 
     int			numsig;		/* Total number of signals, excluding deleted */
-    int			numsigvis;	/* Number of signals visible on the screen */
+    int			numsigvis;	/* Maximum number of signals visible on the screen */
     int			numsigstart;	/* signal to start displaying */
 
     Window		wind;		/* X window */
@@ -532,6 +566,7 @@ typedef struct st_trace {
     EXAMINE_WDGTS	examine;
     GOTOS_WDGTS		gotos;
     VALUE_WDGTS		value;
+    GRIDS_WDGTS		gridscus;
     SELECT_WDGTS	select;
     FILE_WDGTS		fileselect;
     Widget		shell;
@@ -562,12 +597,7 @@ typedef struct st_trace {
     int			busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS */
     TimeRep		timerep;	/* Time representation = TIMEREP_NS/TIMEREP_CYC */
 
-    int			grid_res;	/* Grid resolution (time between ticks) */
-    int			grid_align;	/* Grid alignment (time grid starts at) */
-    Boolean		grid_vis;	/* True if grid is visible */
-    int			grid_type;	/* Grid status (now just double) */
-    int			grid_res_auto;	/* Number or status of automatic grid resolution */
-    int			grid_align_auto; /* Number or status of automatic grid alignment */
+    GRID		grid[MAXGRIDS];	/* Grid information */
     Boolean		cursor_vis;	/* True if cursors are visible */
 
     int			numpag;		/* Number of pages in dt_printscreen */
@@ -648,6 +678,7 @@ typedef struct {
     Boolean		res_default;	/* True if resolution has never changed from initial value */
     Position		xstart;		/* Start X pos of signals on display (read_DECSIM) */
     DTime		click_time;	/* time clicked on for res_zoom_click */
+    GRID		*click_grid;	/* grid being set by grid_align */
     } GLOBAL;
 
 extern GLOBAL *global;

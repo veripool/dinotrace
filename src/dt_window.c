@@ -81,7 +81,7 @@ void hscroll_unitinc (w,trace,cb)
     XmScrollBarCallbackStruct *cb;
 {
     if (DTPRINT_ENTRY) printf ("In hscroll_unitinc - trace=%d  old_time=%d",trace,global->time);
-    global->time += trace->grid[0].spacing;
+    global->time += trace->grid[0].period;
     if (DTPRINT_ENTRY) printf (" new time=%d\n",global->time);
 
     new_time (trace);
@@ -93,7 +93,7 @@ void hscroll_unitdec (w,trace,cb)
     XmScrollBarCallbackStruct *cb;
 {
     if (DTPRINT_ENTRY) printf ("In hscroll_unitdec - trace=%d  old_time=%d",trace,global->time);
-    global->time -= trace->grid[0].spacing;
+    global->time -= trace->grid[0].period;
     new_time (trace);
     }
 
@@ -544,22 +544,6 @@ void    win_goto_cb (w,trace,cb)
     win_goto_option_cb (w, trace, NULL);
     }
 
-int    win_goto_number (trace)
-    TRACE			*trace;
-    /* Get the color number in the option menu */
-{
-    int			tempi;
-    Widget		clicked;
-
-    /* Get menu */
-    XtSetArg (arglist[0], XmNmenuHistory, &clicked);
-    XtGetValues (trace->gotos.options, arglist, 1);
-    for (tempi=MAX_SRCH; tempi>0; tempi--) {
-	if (trace->gotos.pulldownbutton[tempi]==clicked) break;
-	}
-    return (tempi - 1);
-    }
-
 void    win_goto_option_cb (w,trace,cb)
     Widget	w;
     TRACE	*trace;
@@ -573,16 +557,16 @@ void    win_goto_option_cb (w,trace,cb)
 
     if (DTPRINT_ENTRY) printf ("In win_goto_option_cb - trace=%d\n",trace);
 
-    i = win_goto_number (trace);
+    i = option_to_number(trace->gotos.options, trace->gotos.pulldownbutton, MAX_SRCH);
 
-    if (i < 0) {
+    if (i <= 0) {
 	/* Put "None" in the button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("None"));
 	XtSetValues ( XmOptionButtonGadget (trace->gotos.options), arglist, 1);
 	}
     else {
 	/* Put "Place" in the button */
-	XSetForeground (global->display, trace->gc, trace->xcolornums[i]);
+	XSetForeground (global->display, trace->gc, trace->xcolornums[i-1]);
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Place"));
 	XtSetValues ( XmOptionButtonGadget (trace->gotos.options), arglist, 1);
 
@@ -594,7 +578,7 @@ void    win_goto_option_cb (w,trace,cb)
 	height = (((XmCascadeButtonWidget) button)->core.height);
 
 	/* Fill the button with the color */
-	XSetForeground (global->display, trace->gc, trace->xcolornums[i]);
+	XSetForeground (global->display, trace->gc, trace->xcolornums[i-1]);
 	XFillRectangle (global->display, XtWindow (button), trace->gc,
 		       x, y, width, height);
 	}
@@ -612,7 +596,8 @@ void    win_goto_ok_cb (w,trace,cb)
     if (DTPRINT_ENTRY) printf ("In win_goto_ok_cb - trace=%d\n",trace);
 
     /* Get menu */
-    global->goto_color = win_goto_number (trace);
+    global->goto_color = -1 + option_to_number(trace->gotos.options, trace->gotos.pulldownbutton, MAX_SRCH);
+
     if (DTPRINT_ENTRY) printf ("\tnew goto_color=%d\n",global->goto_color);
 
     /* Get value */

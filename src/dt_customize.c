@@ -199,19 +199,10 @@ void cus_dialog_cb (w,trace,cb)
 	trace->custom.rfwid = XmCreateToggleButton (trace->custom.customize,"rfwid",arglist,4);
 	XtManageChild (trace->custom.rfwid);
 	
-	/* Create grid state on/off button */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Grid On/Off"));
-	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 220);
-	XtSetArg (arglist[3], XmNshadowThickness, 1);
-	trace->custom.grid_state = XmCreateToggleButton (trace->custom.customize,
-							"grid_state",arglist,4);
-	XtManageChild (trace->custom.grid_state);
-	
 	/* Create cursor state on/off button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cursors On/Off"));
 	XtSetArg (arglist[1], XmNx, 10);
-	XtSetArg (arglist[2], XmNy, 255);
+	XtSetArg (arglist[2], XmNy, 220);
 	XtSetArg (arglist[3], XmNshadowThickness, 1);
 	trace->custom.cursor_state = XmCreateToggleButton (trace->custom.customize,
 							   "cursor_state",arglist,4);
@@ -272,9 +263,6 @@ void cus_dialog_cb (w,trace,cb)
     
     XtSetArg (arglist[0], XmNset, trace->sigrf ? 1:0);
     XtSetValues (trace->custom.rfwid,arglist,1);
-    
-    XtSetArg (arglist[0], XmNset, trace->grid_vis ? 1:0);
-    XtSetValues (trace->custom.grid_state,arglist,1);
     
     XtSetArg (arglist[0], XmNset, trace->cursor_vis ? 1:0);
     XtSetValues (trace->custom.cursor_state,arglist,1);
@@ -343,7 +331,6 @@ void	cus_ok_cb (w,trace,cb)
     
     XmScaleGetValue (trace->custom.s1, &hgt);
     trace->sighgt = hgt;
-    trace->grid_vis = XmToggleButtonGetState (trace->custom.grid_state);
     trace->cursor_vis = XmToggleButtonGetState (trace->custom.cursor_state);
     global->click_to_edge = XmToggleButtonGetState (trace->custom.click_to_edge);
     global->redraw_manually = XmToggleButtonGetState (trace->custom.refreshing);

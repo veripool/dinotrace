@@ -32,9 +32,12 @@
 !	click_to_edge	ON | OFF
 !	cursor		ON | OFF
 !	refreshing	AUTO | MANUAL
-!	grid		ON | OFF
-!	grid_align	<number> | ASSERTION | DEASSERTION | TWOCLOCK
-!	grid_resolution	<number> | AUTO | DOUBLE
+!	grid		ON | OFF	<grid_number>
+!	grid_align	<number> | ASSERTION | DEASSERTION	<grid_number>
+!	grid_resolution	<number> | AUTO 	 <grid_number>
+!	grid_type	NORMAL | WIDE		 <grid_number>
+!	grid_signal	<signal_pattern> 	 <grid_number>
+!	grid_color	<color>		 	 <grid_number>
 !	page_inc	4 | 2 | 1
 !	print_size	A | B | EPSPORT | EPSLAND
 !	rise_fall_time	<number>
@@ -65,6 +68,7 @@
 ! Display changes:
 !	time_goto	<time>
 !	signal_goto	<signal_pattern>	(if not on screen, first match)
+!	resolution	<res>
 !	refresh
 !	annotate
  *	
@@ -401,7 +405,6 @@ void	config_error_ack (trace, message)
     dino_error_ack (trace, newmessage);
     }
 
-
 /**********************************************************************
 *	reading functions w/ error messages
 **********************************************************************/
@@ -460,6 +463,28 @@ int	config_read_color (trace, line, color)
     return (outlen);
     }
 
+int	config_read_grid (trace, line, grid_pptr)
+    TRACE	*trace;
+    char 	*line;
+    GRID	**grid_pptr;
+    /* Read grid number name from line, return < 0 and print msg if bad */
+{
+    int 	outlen;
+    int		grid_num;
+    char	message [50];
+
+    outlen = config_read_int (line, &grid_num);
+
+    if (grid_num < 0 || grid_num > MAXGRIDS) {
+	sprintf (message, "Grid numbers must be 0 to %d\n", MAXGRIDS);
+	grid_num = -1;
+	*grid_pptr = NULL;
+    }
+    else {
+	*grid_pptr = &(trace->grid[grid_num]);
+    }
+}
+
 /**********************************************************************
 *	config_process_states
 **********************************************************************/
@@ -505,6 +530,8 @@ void	config_process_line_internal (trace, line, eof)
 {
     char cmd[MAXSIGLEN];
     int value;
+    GRID	*grid_ptr;
+    char pattern[MAXSIGLEN];
     
     static SIGNALSTATE newsigst;
     static Boolean processing_sig_state = FALSE;
@@ -584,14 +611,6 @@ void	config_process_line_internal (trace, line, eof)
 		trace->cursor_vis = value;
 		}
 	    }
-	else if (!strcmp(cmd, "GRID")) {
-	    value = trace->grid_vis;
-	    line += config_read_on_off (trace, line, &value);
-	    if (value >= 0) {
-		if (DTPRINT_CONFIG) printf ("Config: grid_vis=%d\n",value);
-		trace->grid_vis = value;
-		}
-	    }
 	else if (!strcmp(cmd, "CLICK_TO_EDGE")) {
 	    value = global->click_to_edge;
 	    line += config_read_on_off (trace, line, &value);
@@ -618,43 +637,81 @@ void	config_process_line_internal (trace, line, eof)
 		config_error_ack (trace, "Signal_height must be 15-50\n");
 		}
 	    }
+	else if (!strcmp(cmd, "GRID")) {
+	    line += config_read_on_off (trace, line, &value);
+	    line += config_read_grid (trace, line, &grid_ptr);
+	    if (grid_ptr && value >= 0) {
+		if (DTPRINT_CONFIG) printf ("Config: grid_vis=%d\n",value);
+		grid_ptr->visible = value;
+		}
+	    }
 	else if (!strcmp(cmd, "GRID_RESOLUTION")) {
-	    value = trace->grid_res;
 	    line += config_read_int (line, &value);
-	    if (value >= 1) {
-		trace->grid_res = value;
-		trace->grid_res_auto = value;
+	    if (isalpha(line[0])) { line += config_read_signal (line, pattern); }
+	    line += config_read_grid (trace, line, &grid_ptr);
+	    if (grid_ptr) {
+		if (value >= 1) {
+		    grid_ptr->period = value;
+		    grid_ptr->res_auto = USER;
 		}
-	    else {
-		if (toupper(line[0])=='A')
-		    trace->grid_res_auto = GRID_RES_AUTO;
-		else if (toupper(line[0])=='D')
-		    trace->grid_res_auto = GRID_RES_AUTO_DOUBLE;
 		else {
-		    config_error_ack (trace, "Grid_res must be >0, ASSERTION, or DOUBLE\n");
+		    if (toupper(pattern[0])=='A')
+			grid_ptr->res_auto = AUTO;
+		    else {
+			config_error_ack (trace, "Grid_res must be >0, or ASSERTION\n");
 		    }
 		}
 	    }
+	}
 	else if (!strcmp(cmd, "GRID_ALIGN")) {
-	    value = trace->grid_align;
 	    line += config_read_int (line, &value);
-	    if (value >= 1) {
-		trace->grid_align = value;
-		trace->grid_align_auto = value;
+	    if (isalpha(line[0])) { line += config_read_signal (line, pattern); }
+	    line += config_read_grid (trace, line, &grid_ptr);
+	    if (grid_ptr) {
+		if (value >= 1) {
+		    grid_ptr->alignment = value;
+		    grid_ptr->align_auto = USER;
 		}
-	    else {
-		if (toupper(line[0])=='A')
-		    trace->grid_align_auto = GRID_ALN_AUTO_ASS;
-		else if (toupper(line[0])=='D')
-		    trace->grid_align_auto = GRID_ALN_AUTO_DEASS;
-		else if (toupper(line[0])=='T')
-		    trace->grid_align_auto = GRID_ALN_AUTO_TWOCLOCK;
 		else {
-		    config_error_ack (trace, "Grid_align must be >0, ASSERTION, DEASSERTION, or TWOCLOCK\n");
+		    if (toupper(pattern[0])=='A')
+			grid_ptr->align_auto = ASS;
+		    else if (toupper(pattern[0])=='D')
+			grid_ptr->align_auto = DEASS;
+		    else {
+			config_error_ack (trace, "Grid_align must be >0, ASSERTION, or DEASSERTION\n");
 		    }
 		}
-	    if (DTPRINT_CONFIG) printf ("grid_align_auto = %d\n", trace->grid_align_auto);
 	    }
+	}
+	else if (!strcmp(cmd, "GRID_TYPE")) {
+	    line += config_read_int (line, &value);
+	    if (isalpha(line[0])) { line += config_read_signal (line, pattern); }
+	    line += config_read_grid (trace, line, &grid_ptr);
+	    if (grid_ptr) {
+		if (toupper(pattern[0])=='N')
+		    grid_ptr->wide_line = FALSE;
+		else if (toupper(pattern[0])=='W')
+		    grid_ptr->wide_line = TRUE;
+		else {
+		    config_error_ack (trace, "Grid_type must be NORMAL or WIDE\n");
+		}
+	    }
+	}
+	else if (!strcmp(cmd, "GRID_SIGNAL")) {
+	    line += config_read_signal (line, pattern);
+	    line += config_read_grid (trace, line, &grid_ptr);
+	    if (grid_ptr && *pattern) {
+		strcpy (grid_ptr->signal, pattern);
+	    }
+	}
+	else if (!strcmp(cmd, "GRID_COLOR")) {
+	    ColorNum color;
+	    line += config_read_color (trace, line, &color);
+	    line += config_read_grid (trace, line, &grid_ptr);
+	    if (grid_ptr && color>=0) {
+		grid_ptr->color = color;
+	    }
+	}
 	else if (!strcmp(cmd, "RISE_FALL_TIME")) {
 	    value = trace->sigrf;
 	    line += config_read_int (line, &value);
@@ -765,8 +822,7 @@ void	config_process_line_internal (trace, line, eof)
 					trace->vector_seperator, trace->vector_endseperator);
 	    }
 	else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
-	    char pattern[MAXSIGLEN];
-	    int color;
+	    ColorNum color;
 	    line += config_read_color (trace, line, &color);
 	    if (color >= 0) {
 		line += config_read_signal (line, pattern);
@@ -781,7 +837,7 @@ void	config_process_line_internal (trace, line, eof)
 	    }
 	else if (!strcmp(cmd, "SIGNAL_ADD")
 		 || !strcmp(cmd, "SIGNAL_MOVE")) {
-	    char pattern[MAXSIGLEN], pattern2[MAXSIGLEN];
+	    char pattern2[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Add signal name must not be null\n");
@@ -793,7 +849,7 @@ void	config_process_line_internal (trace, line, eof)
 		}
 	    }
 	else if (!strcmp(cmd, "SIGNAL_COPY")) {
-	    char pattern[MAXSIGLEN], pattern2[MAXSIGLEN];
+	    char pattern2[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_copy signal name must not be null\n");
@@ -805,7 +861,6 @@ void	config_process_line_internal (trace, line, eof)
 		}
 	    }
 	else if (!strcmp(cmd, "SIGNAL_DELETE")) {
-	    char pattern[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Delete signal name must not be null\n");
@@ -816,7 +871,6 @@ void	config_process_line_internal (trace, line, eof)
 		}
 	    }
 	else if (!strcmp(cmd, "SIGNAL_DELETE_CONSTANT")) {
-	    char pattern[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Delete_Constant signal name must not be null\n");
@@ -848,7 +902,7 @@ void	config_process_line_internal (trace, line, eof)
 		}
 	    }
 	else if (!strcmp(cmd, "CURSOR_ADD")) {
-	    int color;
+	    ColorNum color;
 	    DTime ctime;
 	    char strg[MAXSIGLEN],flag[MAXSIGLEN];
 	    
@@ -877,8 +931,19 @@ void	config_process_line_internal (trace, line, eof)
 		new_time (trace);
 		}
 	    }
+	else if (!strcmp(cmd, "RESOLUTION")) {
+	    DTime restime;
+	    char strg[MAXSIGLEN];
+	    
+	    line += config_read_signal (line, strg);
+	    restime = string_to_time (trace, strg);
+
+	    if (restime > 0) {
+		global->res = RES_SCALE / (float)restime;
+		new_res (trace);
+		}
+	    }
 	else if (!strcmp(cmd, "SIGNAL_GOTO")) {
-	    char pattern[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Goto signal name must not be null\n");
@@ -1078,6 +1143,8 @@ void config_write_file (filename)
     TRACE	*trace;
     FILE	*writefp;
     SIGNAL	*sig_ptr;
+    int		grid_num;
+    GRID	*grid_ptr;
     
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Writing config file %s\n", filename);
     
@@ -1129,26 +1196,28 @@ void config_write_file (filename)
 	    fprintf (writefp, "!set_trace\t%s\n", trace->filename);
 	    fprintf (writefp, "file_format\t%s\n", filetypes[trace->fileformat].name);
 	    fprintf (writefp, "cursor\t\t%s\n", trace->cursor_vis?"ON":"OFF");
-	    fprintf (writefp, "grid\t\t%s\n", trace->grid_vis?"ON":"OFF");
 	    fprintf (writefp, "signal_height\t%d\n", trace->sighgt);
 	    fprintf (writefp, "vector_seperator\t\"%c\"\n", trace->vector_seperator);
 	    fprintf (writefp, "rise_fall_time\t%d\n", trace->sigrf);
 	    fprintf (writefp, "time_rep\t%s\n", time_units_to_string (trace->timerep, TRUE));
-	    fprintf (writefp, "grid_resolution\t");
-	    switch (trace->grid_res_auto) {
-	      case GRID_RES_AUTO:		fprintf (writefp, "ASSERTION\n");	break;
-	      case GRID_RES_AUTO_DOUBLE:	fprintf (writefp, "DOUBLE\n");	break;
-	      default:				fprintf (writefp, "%d\n");	break;
+	    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
+		grid_ptr = &(trace->grid[grid_num]);
+
+		fprintf (writefp, "grid\t\t%s\t%d\n", grid_ptr->visible?"ON":"OFF", grid_num);
+		fprintf (writefp, "grid_resolution\t");
+		switch (grid_ptr->res_auto) {
+		  case AUTO:		fprintf (writefp, "ASSERTION\t%d\n", grid_num);	break;
+		  default:		fprintf (writefp, "%d\t%d\n", grid_ptr->period, grid_num);	break;
 		}
-	    fprintf (writefp, "grid_align\t");
-	    switch (trace->grid_res_auto) {
-	      case GRID_ALN_AUTO_ASS:		fprintf (writefp, "ASSERTION\n");	break;
-	      case GRID_ALN_AUTO_DEASS:		fprintf (writefp, "DEASSERTION\n");	break;
-	      case GRID_ALN_AUTO_TWOCLOCK:	fprintf (writefp, "TWOCLOCK\n");	break;
-	      default:				fprintf (writefp, "%d\n");	break;
+		fprintf (writefp, "grid_align\t");
+		switch (grid_ptr->align_auto) {
+		  case ASS:		fprintf (writefp, "ASSERTION\t%d\n", grid_num);	break;
+		  case DEASS:		fprintf (writefp, "DEASSERTION\t%d\n", grid_num);	break;
+		  default:		fprintf (writefp, "%d\t%d\n", grid_ptr->alignment, grid_num);	break;
 		}
 	    }
 	}
+    }
 
     fprintf (writefp, "\n! ** GLOBAL INFORMATION **\n");
     cur_print (writefp);
@@ -1198,14 +1267,13 @@ void config_restore_defaults(trace)
     if (trace->signalstate_head != NULL)
 	free_signal_states (trace);
     
+    grid_reset_cb (NULL, trace, NULL);
+
     global->pageinc = FPAGE;
     global->save_ordering = TRUE;
 
     trace->sighgt = 20;	/* was 25 */
     trace->cursor_vis = TRUE;
-    trace->grid_vis = TRUE;
-    trace->grid_res = 100;
-    trace->grid_align = 0;
     trace->numpag = 1;
     trace->sigrf = SIG_RF;
     trace->timerep = global->time_precision;

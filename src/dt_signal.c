@@ -534,11 +534,9 @@ void    sig_goto_pattern (trace, pattern)
 	if (!on_screen) {
 	    /* Align starting signal to search position */
 	    found = FALSE;
-	    for (sig_ptr = trace->firstsig, numprt = 0; sig_ptr;
-		 sig_ptr = sig_ptr->forward, numprt++) {
+	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 		if (wildmat (sig_ptr->signame, pattern)) {
 		    trace->dispsig = sig_ptr;
-		    trace->numsigstart = numprt;
 		    found = TRUE;
 		    break;
 		    }
@@ -548,14 +546,13 @@ void    sig_goto_pattern (trace, pattern)
 		/* Rescroll found signal to the center of the screen */
 		inc = (-trace->numsigvis) / 2;
 		while ( (inc < 0) && trace->dispsig && trace->dispsig->backward ) {
-		    trace->numsigstart--;
 		    trace->dispsig = trace->dispsig->backward;
 		    inc++;
 		    }
 		}
+	    vscroll_new (trace,0);	/* Realign time */
 	    }
 	}
-
     draw_all_needed ();
     }
 
@@ -1567,6 +1564,8 @@ void sig_cross_restore (trace)
     SIGNAL	*newlist_firstsig;
     SIGNAL	**back_sig_pptr;
 
+    SIGNAL	*new_dispsig;
+
     if (DTPRINT_ENTRY) printf ("In sig_cross_restore - trace=%d\n",trace);
     
     if (global->save_ordering && global->preserved_trace) {
@@ -1591,6 +1590,12 @@ void sig_cross_restore (trace)
 		    sig_delete (trace, new_sig_ptr);
 		}
 	    }
+	}
+
+	/* Remember scrolling position before move signals around */
+	new_dispsig = NULL;	/* But, don't set it yet, the pointer may move */
+	if (global->preserved_trace->dispsig && global->preserved_trace->dispsig->new_trace_sig) {
+	    new_dispsig = global->preserved_trace->dispsig->new_trace_sig;
 	}
 
 	/* Other signals */
@@ -1699,10 +1704,8 @@ if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 	}
 
 	/* Restore scrolling position */
-	if (global->preserved_trace->dispsig && global->preserved_trace->dispsig->new_trace_sig) {
-	    trace->dispsig = global->preserved_trace->dispsig->new_trace_sig;
-	}
-	else trace->dispsig = trace->firstsig;
+	trace->dispsig = (new_dispsig) ? new_dispsig : trace->firstsig;
+	/* vscroll_new called later in file_cb */
 
 	if (DTPRINT_PRESERVE) printf ("Preserve: Done\n");
     }

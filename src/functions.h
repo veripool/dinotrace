@@ -106,6 +106,7 @@ extern int	wildmat ();
     
 /* dt_grid.c routines */
 extern void
+    grid_customize_cb(),
     grid_align_cb(), grid_res_cb(), grid_reset_cb(),
     grid_align_ev();
     
@@ -193,6 +194,9 @@ extern CURSOR	*time_to_cursor ();
 extern ColorNum submenu_to_color (TRACE *, Widget, int);
 extern void     cptr_to_string ();
 extern void     string_to_value ();
+extern int	option_to_number ();
+extern SIGNAL	*sig_find_signame ();
+extern SIGNAL	*sig_wildmat_signame ();
     
 /* dt_window routines */
 extern void
