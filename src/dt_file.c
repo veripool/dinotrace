@@ -897,6 +897,11 @@ void fgets_dynamic (line_pptr, length_ptr, readfp)
     int	*length_ptr;	/* & Length of the buffer */
     FILE *readfp;
 {
+    if (*length_ptr == 0) {
+	*length_ptr = FIL_SIZE_INC;
+	*line_pptr = XtMalloc (*length_ptr);
+	}
+
     fgets ((*line_pptr), (*length_ptr), readfp);
     
     /* Did fgets overflow the string? */
