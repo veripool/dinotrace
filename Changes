@@ -2,6 +2,10 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 	
+* Dinotrace 9.2
+
+****    Fix traces containing only real numbers.  [Vitor Antunes]
+
 * Dinotrace 9.2a 12/20/2004
 
 **      NEWS file is now renamed Changes.

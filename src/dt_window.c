@@ -372,8 +372,8 @@ void win_full_res (
 {
     if (DTPRINT_ENTRY) printf ("In win_full_res_cb - trace=%p\n",trace);
 
-    /*    printf ("%d %d %d %d %d\n",
-	   global->xstart, trace->width,XMARGIN, trace->end_time, trace->start_time);	   */
+        printf ("%d %d %d %d %d\n",
+	   global->xstart, trace->width,XMARGIN, trace->end_time, trace->start_time);	   
 
     /* xstart matters, so recalc if needed */
     draw_update();

@@ -986,6 +986,7 @@ static void	verilog_read_data (
 	    break;
 
 	case 'r':	/* Real number */
+	    got_data = TRUE;
 	    dnum = atof (line);
 	    code = verilog_gettok();
 	    poscode = VERILOG_ID_TO_POS(code);
