@@ -874,12 +874,23 @@ void	config_process_line_internal (trace, line, eof)
 		    }
 		}
 	    }
-	else if (!strcmp(cmd, "SIGNAL_ADD")
-		 || !strcmp(cmd, "SIGNAL_MOVE")) {
+	else if (!strcmp(cmd, "SIGNAL_ADD")) {
 	    char pattern2[MAXSIGLEN];
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Add signal name must not be null\n");
+		}
+	    else {
+		line += config_read_signal (line, pattern2);
+		sig_wildmat_select (global->deleted_trace_head, pattern);
+		sig_move_selected (trace, pattern2);
+		}
+	    }
+	else if (!strcmp(cmd, "SIGNAL_MOVE")) {
+	    char pattern2[MAXSIGLEN];
+	    line += config_read_signal (line, pattern);
+	    if (!pattern[0]) {
+		config_error_ack (trace, "Signal_Move signal name must not be null\n");
 		}
 	    else {
 		line += config_read_signal (line, pattern2);
