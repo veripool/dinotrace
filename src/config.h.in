@@ -93,7 +93,7 @@
 #define HAVE_SYS_TIME_H 0
 
 /* Set define if we have header: <sys/un.h> */
-#define HAVE_SYS_UN_H 1
+#define HAVE_SYS_UN_H 0
 
 /**********************************************************************/
 /**** System Information */
