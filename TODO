@@ -2,30 +2,14 @@ DESCRIPTION: Dinotrace: SUGGESTIONS DOCUMENT
 $Id$
 -----------------------------------------------------------------------------
 
-GROUPS!!!
-	Whole groups of hiearchys can be moved
-	Allow hiearchy browsing.  Remap -> to ., then use . for hiearchy.
-
-Config:
-	Store in .dinotrace directory (list last files; edit dinotrace_recent.dino)
-
-Signals:
-	Vector expand/collapse
-	Per-signal heights	-- fallback to default (if 0)
-	Find a change on a signal
-	Signal action popup
-	Z signals that aren't applicable in pipelines (_c12 in tss)
-
-Radixes:
-	Add negative numbers:
-		hex (unsign/2comp/1comp)
-		dec (unsign/2comp/1comp)
-		binary (unsign/2comp/1comp)
-
-Menus:
+GUI:	
+  Menus:
 	Add standard window menu
 
-Display:
+	Additional keyboard shortcuts, such as Customize/ReRead, and one
+	for all of the Signal pull-down menu selections.
+
+  Display:
 	Assign color to state changes.  For example, High=red, Low=blue,
 	Z=black, or that type of thing.  Signal states are difficult to
 	pick out in large trace files, and color would help. [Ted Steubing]
@@ -36,12 +20,7 @@ Display:
 	STATE_ZU with U's of lower amplitute to show mixes of unknowns and
 	tristates.
 	
-Diff:
-	Have a method to display the difference between two trace-files,
-	could be implemented by xoring two inputs and displaying the
-	result.  [Paul Wasson]
-
-Time:	
+  Time:	
 	I'd also like the ability to "hide" time periods (much like you can
 	hide signals).  This would allow me to ignore initialization stuff if
 	it got captured (hide beginning to time n) or to hide junk after the
@@ -50,27 +29,7 @@ Time:
 	Have method of decoupling the multiple windows so one doesn't
 	scroll with the other.  [Marco Zamora]
 	
-Value searches:
-	Allow wildcards and symbolic state names in value searches.
-
-Signal states:
-	Limiting to 128 is problematic, especially with one-hot machines.
-	[Glenn Garvey]
-
-	Can you allow wildcarding (in bin) for signal states? [Mike Kagen]
-	signal_states *->*CPM*<7:0> = 00000xxx=nop,
-		00001xxx=rsvd,
-		0001xxxx=rsvd, etc, etc
-
-Printing:
-	Support color postscript.
-
-Trace format:	
-	Support LSI Traces. [Josh Belkin]
-
-	Have pre-pruning to eliminate signals from .dmp files. [Ted Steubing]
-
-Closer to Microsoft standard:
+  Closer to Microsoft standard:
 	Multi windows per file:
 	    filename.foo:1	filename.foo:2
 
@@ -81,6 +40,74 @@ Closer to Microsoft standard:
 		Middle pan
 		Right menu
 
-Neatness:
+  Misc GUI:
+	Resizable signal name window
+	
+	More intuitive signal selection window to make it easier to find signals
+	
+	Holding mb1 on the scroll arrows in the waveform window does not
+	allow a screen update until the mb1 is released, makes it hard to
+	tell how far you have scrolled left or right when scrolling this
+	way
+
+	Mouse grabbable/movable cursors
+	
+	Mouse-click & drag zoom selection in the waveform, right-click
+	zoom-out from center of waveform
+
+Core:	
+  GROUPS!!!
+	Whole groups of hiearchys can be moved
+	Allow hiearchy browsing.  Remap -> to ., then use . for hiearchy.
+
+  Config:
+	Store in .dinotrace directory (list last files; edit dinotrace_recent.dino)
+
+	Customize/Reread does not seem to handle the signal_copy command in
+	an intuitive manner.  It will create another copy of the signal in
+	the trace.
+	
+  Signals:
+	Vector expand/collapse
+	Per-signal heights	-- fallback to default (if 0)
+	Find a change on a signal
+	Signal action popup
+	Z signals that aren't applicable in pipelines (_c12 in tss)
+	
+	Fix adding or move a signal to the very bottom of the waveform,
+	it only allows insertion before an existing signal.
+
+  Radixes:
+	Add negative numbers:
+		hex (unsign/2comp/1comp)
+		dec (unsign/2comp/1comp)
+		binary (unsign/2comp/1comp)
+
+  Diff:
+	Have a method to display the difference between two trace-files,
+	could be implemented by xoring two inputs and displaying the
+	result.  [Paul Wasson]
+
+  Value searches:
+	Allow wildcards and symbolic state names in value searches.
+
+  Signal states:
+	Limiting to 128 is problematic, especially with one-hot machines.
+	[Glenn Garvey]
+
+	Can you allow wildcarding (in bin) for signal states? [Mike Kagen]
+	signal_states *->*CPM*<7:0> = 00000xxx=nop,
+		00001xxx=rsvd,
+		0001xxxx=rsvd, etc, etc
+
+   Printing:
+	Support color postscript.
+
+   Trace format:	
+	Support LSI Traces. [Josh Belkin]
+
+	Have pre-pruning to eliminate signals from .dmp files. [Ted Steubing]
+
+   Neatness:
 	Get rid of orignal leftover fixed string sizes
 

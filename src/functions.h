@@ -63,36 +63,15 @@
 
 /* Utilities */
 #ifndef MAX
-# if __GNUC__
-#   define MAX(a,b) \
-       ({typedef __typeof__(a) _ta; typedef __typeof__(b) _tb;  \
-         _ta _a = (a); _tb _b = (b);     \
-         _a > _b ? _a : _b; })
-# else
-#  define MAX(_a_,_b_) ( ( ( _a_ ) > ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
-# endif
+# define MAX(_a_,_b_) ( ( ( _a_ ) > ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
 #endif
 
 #ifndef MIN
-# if __GNUC__
-#   define MIN(a,b) \
-       ({typedef __typeof__(a) _ta; typedef __typeof__(b) _tb;  \
-         _ta _a = (a); _tb _b = (b);     \
-         _a < _b ? _a : _b; })
-# else
-#   define MIN(_a_,_b_) ( ( ( _a_ ) < ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
-# endif
+# define MIN(_a_,_b_) ( ( ( _a_ ) < ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
 #endif
 
 #ifndef ABS
-# if __GNUC__
-#   define ABS(a) \
-       ({typedef __typeof__(a) _ta;  \
-         _ta _a = (a);     \
-         _a < 0 ? - _a : _a; })
-# else
-#   define ABS(_a_) ( ( ( _a_ ) < 0 ) ? ( - (_a_) ) : ( _a_ ) )
-# endif
+# define ABS(_a_) ( ( ( _a_ ) < 0 ) ? ( - (_a_) ) : ( _a_ ) )
 #endif
 
 /* Avoid binding error messages on XtFree, NOTE ALSO clears the pointer! */
