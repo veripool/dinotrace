@@ -320,7 +320,7 @@ typedef struct {
 } OkApplyWidgets_t;
 
 #define MENU_PDE_MAX 13
-#define MENU_PDM_MAX 78
+#define MENU_PDM_MAX 79
 #define MENU_PDS_MAX (8+(MAX_SRCH+2)*5+RADIX_MAX_MENU)
 #define MENU_PDMSEP_MAX 12
 typedef struct {

@@ -894,6 +894,7 @@ Trace_t *create_trace (
 	dm_menu_title (trace, "Debug", 'D');
 	dm_menu_entry	(trace, "Toggle Print",		'P', NULL, NULL,	debug_toggle_print_cb);
 	dm_menu_entry	(trace, "Integrity Check",	'I', NULL, NULL,	debug_integrity_check_cb);
+	dm_menu_entry	(trace, "Statistics",		'S', NULL, NULL,	debug_statistics_cb);
 	dm_menu_entry	(trace, "Print Signal Info (Screen Only)", 'I', NULL, NULL,	debug_print_screen_traces_cb);
 	dm_menu_entry	(trace, "Increase DebugTemp",	'+', NULL, NULL,	debug_increase_debugtemp_cb);
 	dm_menu_entry	(trace, "Decrease DebugTemp",	'-', NULL, NULL,	debug_decrease_debugtemp_cb);

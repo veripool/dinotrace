@@ -472,6 +472,7 @@ extern void	debug_toggle_print_cb (Widget w);
 extern void	debug_integrity_check_cb (Widget w);
 extern void	debug_increase_debugtemp_cb (Widget w);
 extern void	debug_decrease_debugtemp_cb (Widget w);
+extern void	debug_statistics_cb (Widget w);
 extern void	hscroll_unitinc_cb (Widget w);
 extern void	hscroll_unitdec_cb (Widget w);
 extern void	hscroll_pageinc_cb (Widget w);

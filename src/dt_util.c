@@ -1005,7 +1005,6 @@ void    debug_integrity_check_cb (
     }
 }
 
-
 void    debug_increase_debugtemp_cb (
     Widget	w)
 {
@@ -1020,6 +1019,59 @@ void    debug_decrease_debugtemp_cb (
     DebugTemp--;
     printf ("New DebugTemp = %d\n", DebugTemp);
     draw_all_needed ();
+}
+
+
+void    debug_statistics_cb (
+    Widget		w)
+{
+    Trace_t *trace;
+    Signal_t	*sig_ptr;	
+    Value_t	*cptr;
+
+    int i=0;
+    int sigs=0;
+    int sigs_ncopy=0;
+    int bysize[32];
+    int cp_used=0;
+    int cp_alloc=0;
+    int allhigh=0;
+    int states[8];
+    
+    for (i=0; i<8; i++) states[i]=0;
+    for (i=0; i<32; i++) bysize[i]=0;
+
+    for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
+	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	    sigs++;
+	    if (!sig_ptr->copyof) {
+		sigs_ncopy++;
+		for (i=0; (1<<i)<sig_ptr->bits; i++); bysize[i]++;
+		cp_alloc += sig_ptr->blocks;
+		for (cptr = sig_ptr->bptr; CPTR_TIME(cptr) != EOT; cptr = CPTR_NEXT(cptr)) {
+		    cp_used++;
+		    states[cptr->siglw.stbits.state]++;
+		    if (cptr->siglw.stbits.allhigh && cptr->siglw.stbits.state!=STATE_1) allhigh++;
+		}
+	    }
+	}
+    }
+
+#define PCT(x,y) ((y)?(int)(((double)(x)*100)/(double)(y)):0)
+    printf ("Statistics\n");
+    printf ("%10d       Signals\n", sigs);
+    printf ("%10d  %3d%% Signals, not a copy\n", sigs_ncopy, PCT(sigs_ncopy,sigs));
+    for (i=0; i<32; i++) {
+	if (bysize[i]) printf ("  %10d  %3d%% Size <=%d bits\n", bysize[i], PCT(bysize[i],sigs_ncopy), 1<<i);
+    }
+
+    printf ("%10d       Cptrs Alloced\n", cp_alloc);
+    printf ("%10d  %3d%% Cptrs Used\n", cp_used, PCT(cp_used,cp_alloc));
+    for (i=0; i<8; i++) {
+	printf ("  %10d  %3d%% State %d\n", states[i], PCT(states[i],cp_used), i);
+    }
+    printf ("  %10d  %3d%% Allhigh\n", allhigh, PCT(allhigh,cp_used));
+#undef PCT
 }
 
 
