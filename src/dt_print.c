@@ -712,7 +712,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
     int c=0,adj,ymdpt,xloc,xend,xstart,ystart;
     int y1,y2;
     SIGNAL_LW *cptr,*nptr;
-    char strg[MAXVALUELEN];
+    char dvstrg[MAXVALUELEN];
     char vstrg[MAXVALUELEN];
     unsigned int value;
     int unstroked=0;		/* Number commands not stroked */
@@ -802,8 +802,8 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		if ( (sig_ptr->decode != NULL) &&
 		    (value < sig_ptr->decode->numstates) &&
 		    (sig_ptr->decode->statename[value][0] != '\0')) {
-		    strcpy (strg, sig_ptr->decode->statename[value]);
-		    fprintf (psfile,"%d (%s) (%s) STATE_B_FB\n",xloc,vstrg,strg);
+		    strcpy (dvstrg, sig_ptr->decode->statename[value]);
+		    fprintf (psfile,"%d (%s) (%s) STATE_B_FB\n",xloc,vstrg,dvstrg);
 		    }
 		else {
 		    fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
@@ -814,7 +814,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	      case STATE_B128:
 		if ( xloc > xend ) xloc = xend;
 
-		value_to_string (trace, strg, cptr+1, ' ');
+		value_to_string (trace, vstrg, cptr+1, ' ');
 
 		fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
 		break;
