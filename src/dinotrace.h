@@ -27,7 +27,8 @@
  */
 
 #define DTVERSION	"Dinotrace V7.2b"
-#define EXPIRATION	((60*60*24)*6*30) /* 6months - In seconds - Comment out define for no expiration dates */
+/*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
+#define EXPIRATION	((60*60*24)*15) /* 15days */
 /*#undef	EXPIRATION*/
 
 /* Turn off alignment for any structures that will be read/written onto Disk! */
@@ -436,8 +437,8 @@ typedef struct st_signal {
     ColorNum		color;		/* Signal line's Color number (index into trace->xcolornum) */
     ColorNum		search;		/* Number of search color is for, 0 = manual */
 
-    Boolean		selected;	/* Signal has been selected by the pattern matcher */
     Boolean		srch_ena;	/* Searching is enabled */
+    Boolean		deleted;	/* Signal is deleted */
 
     int			type;		/* Type of signal, STATE_B32, _B64, etc */
     SIGNALSTATE		*decode;	/* Pointer to decode information, NULL if none */
@@ -467,6 +468,13 @@ typedef struct st_signal {
     unsigned int	pos_mask;	/* Mask to translate file positions */
     VALUE		file_value;	/* current state/time LW information for reading in */
     } SIGNAL;
+
+/* Signal list structure */
+typedef struct st_signal_list {
+    struct st_signal_list	*forward;	/* Forward link to next signal */
+    struct st_trace		*trace;		/* Trace signal belongs to (originally) */
+    struct st_signal		*signal;	/* Selected signal */
+    } SIGNAL_LIST;
 
 typedef struct {
     Widget select;
@@ -569,6 +577,7 @@ typedef struct {
     SIGNAL	 	*delsig;       	/* Linked list of deleted signals */
     SIGNAL		*selected_sig;	/* Selected signal to move or add */
     TRACE		*selected_trace; /* Selected signal's trace */
+    SIGNAL_LIST		*select_head;	/* Pointer to selected signal list head */
 
     CURSOR		*cursor_head;	/* Pointer to first cursor */
 

@@ -251,7 +251,9 @@ SIGNAL *sig_wildmat_signame (trace, signame)
     SIGNAL	*sig_ptr;
     
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	if (!wildmat (sig_ptr->signame, signame)) return (sig_ptr);
+	if (wildmat (sig_ptr->signame, signame)) {
+	    return (sig_ptr);
+	    }
 	}
     return (NULL);
     }
