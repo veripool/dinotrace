@@ -365,7 +365,6 @@ void    ps_print_direct_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    if (!trace->loaded) return;
     ps_print_internal (trace);
     }
 
@@ -425,6 +424,7 @@ void    ps_print_internal (trace)
     char	estrg[MAXTIMELEN];
     
     if (DTPRINT_ENTRY) printf ("In ps_print_internal - trace=%d\n",trace);
+    if (!trace->loaded) return;
     
     if (trace->printname) {
 	/* Open the file */
