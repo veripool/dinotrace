@@ -1687,9 +1687,10 @@ char *strdup(s)
     }
 #endif
 
-void sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr)
+void sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr, is_cosmos)
     TRACE	*trace;
     SIGNAL	*en_sig_ptr, *base_sig_ptr;
+    Boolean	is_cosmos;
 {
     SIGNAL	*new_sig_ptr;
     SIGNAL_LW	*base_cptr, *en_cptr;
@@ -1773,14 +1774,24 @@ void sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr)
 	new_value.number[2] = base_value.number[2];
 	new_value.number[3] = base_value.number[3];
 
-	if (has_zeros) {
+	if (is_cosmos) {
 	    if (has_ones) {
+		/* Cosmos	enable means force U	-> U */
 		new_value.siglw.sttime.state = STATE_U;
+	    }
+	}
+	else {
+	    if (has_zeros) {
+		if (has_ones) {
+		    /* Non-cosmos	mixed enables	-> U */
+		    new_value.siglw.sttime.state = STATE_U;
 		}
-	    else {
-		new_value.siglw.sttime.state = STATE_Z;
+		else {
+		    /* Non-cosmos	zero enables	-> Z */
+		    new_value.siglw.sttime.state = STATE_Z;
 		}
 	    }
+	}
 	/** end of determining new value **/
 
 	/* Calc time */
@@ -1843,14 +1854,17 @@ void sig_modify_enables (trace)
     SIGNAL	*sig_ptr, *en_sig_ptr, *base_sig_ptr;
     char	*tp, *nonenablename;
     Boolean	did_one=FALSE;
-    
+    Boolean	is_cosmos=FALSE;
+
     for (sig_ptr = trace->firstsig; sig_ptr; ) {
 	for (tp=sig_ptr->signame; *tp; tp++) {
 	    if (tp[0]=='_' && tp[1]=='_'
 		&& ( ( tp[2]=='e' && tp[3]=='n')
 		    || (tp[2]=='E' && tp[3]=='N')
 		    || ( tp[2]=='i' && tp[3]=='n' && tp[4]=='e' && tp[5]=='n')
-		    || ( tp[2]=='I' && tp[3]=='N' && tp[4]=='E' && tp[5]=='N') ))
+		    || ( tp[2]=='I' && tp[3]=='N' && tp[4]=='E' && tp[5]=='N')
+		    || ( tp[2]=='c' && tp[3]=='o' && tp[4]=='s')
+		    || ( tp[2]=='C' && tp[3]=='O' && tp[4]=='S') ))
 		break;
 	    }
 	if (*tp) {
@@ -1861,11 +1875,18 @@ void sig_modify_enables (trace)
 
 	    /* Chop _en from the middle of the name (sig__en<xx> -> sig<xx>)*/
 	    if (tp[2]=='e' || tp[2]=='E') {
+		is_cosmos = FALSE;
 		strcpy_overlap (nonenablename + (tp - sig_ptr->signame), 
 				nonenablename + (tp - sig_ptr->signame) + 4);
 		}
+	    else if (tp[2]=='c' || tp[2]=='C') {
+		is_cosmos = TRUE;
+		strcpy_overlap (nonenablename + (tp - sig_ptr->signame), 
+				nonenablename + (tp - sig_ptr->signame) + 5);
+		}
 	    else {
 		/* (sig__inen<xx> -> sig__in<xx>)*/
+		is_cosmos = FALSE;
 		strcpy_overlap (nonenablename + (tp - sig_ptr->signame) + 4, 
 				nonenablename + (tp - sig_ptr->signame) + 6);
 		}
@@ -1877,12 +1898,14 @@ void sig_modify_enables (trace)
 	    /* Point to next signal, as we will be deleting several, */
 	    /* make sure we don't point at one being deleted */
 	    sig_ptr = sig_ptr->forward;
-	    while (sig_ptr && ((sig_ptr == en_sig_ptr) || (sig_ptr==base_sig_ptr))) sig_ptr = sig_ptr->forward;
+	    while (sig_ptr && ((sig_ptr == en_sig_ptr) || (sig_ptr==base_sig_ptr))) {
+		sig_ptr = sig_ptr->forward;
+	    }
 
 	    free (nonenablename);
 
 	    if (base_sig_ptr) {
-		sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr);
+		sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr, is_cosmos);
 		did_one = TRUE;
 		}
 	    }
