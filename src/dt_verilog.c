@@ -803,6 +803,7 @@ static void	verilog_read_data (
     Boolean_t	first_data=TRUE;
     Boolean_t	got_data=FALSE;
     Boolean_t	got_time=FALSE;
+    Boolean_t	told_wrap=FALSE;
     Value_t	value;
     Signal_t	*sig_ptr;
     int		poscode;
@@ -810,6 +811,7 @@ static void	verilog_read_data (
     char	*scratchline;
     char	*scratchline2;
     double	dnum; 
+    double	time_mult = ((double)time_scale / (double)time_divisor);
 
     if (DTPRINT_ENTRY) printf ("In verilog_read_data (max_bits = %d)\n", verilog_max_bits);
 
@@ -817,6 +819,8 @@ static void	verilog_read_data (
     scratchline = (char *)XtMalloc(100+verilog_max_bits);
     scratchline2 = (char *)XtMalloc(100+verilog_max_bits);
     
+    trace->end_time = 0;
+
     while (!verilog_eof) {
 	line = verilog_gettok();
 	if (verilog_eof) return;
@@ -930,13 +934,20 @@ static void	verilog_read_data (
 	    /* Times are next most common */
 	case '#':	/* Time stamp */
 	    verilog_enter_busses (trace, first_data, time);
-	    time = (atol (line) * time_scale) / time_divisor;	/* 1% of time in this division! */
+	    time = (atof (line) * time_mult);	/* 1% of time in this division! */
 	    if (first_data && got_time && got_data) {
 		first_data = FALSE;
 	    } else if (first_data) {
 		trace->start_time = time;
 		got_time = TRUE;
 		got_data = FALSE;
+	    }
+	    if (trace->end_time > time
+		&& !told_wrap) {
+		char msg[1000];
+		told_wrap = TRUE;
+		dino_warning_ack (trace, "Time has wrapped dinotrace's integer size.\nTry increasing Timescale.");
+		printf ("Time out %d  Time in %d  TS %d  TD %d\n", time, atol(line), time_scale, time_divisor);
 	    }
 	    trace->end_time = time;
 	    if (DTPRINT_FILE) {
