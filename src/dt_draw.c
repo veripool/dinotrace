@@ -39,23 +39,84 @@ static char rcsid[] = "$Id$";
 #include "callbacks.h"
 
 #define MAXCNT	4000		/* Maximum number of segment pairs to draw before stopping this signal */
-#define OVERLAPSPACE 2		/* Number of pixels within which two signal transitions are visualized as one */
 /* Don't make this above 4000, as some servers choke with that many points. */
+
+#define OVERLAPSPACE 2		/* Number of pixels within which two signal transitions are visualized as one */
 
 extern void draw_hscroll (),
     draw_vscroll ();
 
-void draw_grid (trace, grid_ptr)
+void draw_string_fit (trace, textoccupied, x, y, font, strg)
+    TRACE	*trace;
+    Boolean	*textoccupied;
+    Position	x,y;
+    XFontStruct	*font;
+    char	*strg;
+    /* Draw a string if it will fit on the screen without overlapping something already printed */
+    /*** Note textoccupied must be initialized before calling!!! */
+{
+    Position	len;		/* x width of the string to be printed */
+    Position	testx;
+    Position	maxx, minx;		/* Max and min position printing on */
+
+    len = XTextWidth (font, strg, strlen (strg));
+
+    minx = (x - len/2 - 2);
+    maxx = (x + len/2 + 2);
+
+    /* Test where the text will be printed, if printing occupies it, then abort printing it */
+    for (testx = minx;  testx <= maxx; testx++) {
+	if (textoccupied[testx] == TRUE) break;
+    }
+
+    if (testx > maxx) {
+	/* Fits on screen */
+	XDrawString (global->display, trace->wind, trace->gc, minx + 2, y, strg, strlen (strg));
+	/* Mark these positions as occupied */
+	for (testx = minx;  testx <= maxx; testx++) {
+	    textoccupied[testx] = TRUE;
+	}
+    }
+}
+    
+void draw_grid_line (trace, textoccupied, grid_ptr, xtime, y1,y2)
     TRACE	*trace;           
+    Boolean	*textoccupied;
+    GRID	*grid_ptr;		/* Grid information */
+    DTime	xtime;
+    Position	y1,y2;
+{
+    Position	x2;			/* Coordinate of current time */
+    char 	strg[MAXSTATELEN+16];	/* String value to print out */
+
+    x2 = TIME_TO_XPOS (xtime);
+
+    /* if the grid is visible, draw a vertical dashed line */
+    XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0, 0);
+    XDrawLine     (global->display, trace->wind,trace->gc,   x2, y1,   x2, y2);
+    if (grid_ptr->wide_line) {
+	XDrawLine (global->display, trace->wind,trace->gc, 1+x2, y1, 1+x2, y2);
+    }
+
+    XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
+    XDrawLine     (global->display, trace->wind,trace->gc, x2,   y1,   x2, GRID_TIME_Y+2);
+    if (grid_ptr->wide_line) {
+	XDrawLine (global->display, trace->wind,trace->gc, 1+x2, y1, 1+x2, GRID_TIME_Y+2);
+    }
+
+    /* compute the time value and draw it if it fits */
+    time_to_string (trace, strg, xtime, FALSE);
+    draw_string_fit (trace, textoccupied, x2, GRID_TIME_Y, global->time_font, strg);
+}
+
+void draw_grid (trace, textoccupied, grid_ptr)
+    TRACE	*trace;           
+    Boolean	*textoccupied;
     GRID	*grid_ptr;		/* Grid information */
 {         
-    char 	strg[MAXSTATELEN+16];	/* String value to print out */
     char 	primary_dash[4];	/* Dash pattern */
     int		end_time;
-    int		time_width;		/* Width of time printing */
     DTime	xtime;
-    int		x_last_time;		/* Last x coordinate time was printed at */
-    Position	x2;			/* Coordinate of current time */
     Position	y1,y2;			/* Starting and ending points */
 
     if (grid_ptr->period < 1) grid_ptr->period = 1;	/* Prevents round-down to 0 causing infinite loop */
@@ -68,63 +129,77 @@ void draw_grid (trace, grid_ptr)
     /* create the dash pattern for the vertical grid lines */
     primary_dash[0] = PDASH_HEIGHT;
     primary_dash[1] = trace->sighgt - primary_dash[0];
+
+    /* Other coordinates */
+    y1 = trace->ystart - SIG_SPACE/4;
+    y2 = trace->height - trace->sighgt;
     
     /* set the line attributes as the specified dash pattern */
     XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0, 0);
     XSetDashes (global->display, trace->gc, 0, primary_dash, 2);
     XSetFont (global->display, trace->gc, global->time_font->fid);
 
+    /* Set color */
+    XSetForeground (global->display, trace->gc, trace->xcolornums[grid_ptr->color]);
+
     /* Start to left of right edge */
     xtime = global->time;
     end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
 
-    /* Move starting point to the right to hit where a grid line is aligned */
-    xtime = ((xtime / grid_ptr->period) * grid_ptr->period) + (grid_ptr->alignment % grid_ptr->period);
+    /***** Draw the grid lines */
 
-    /* If possible, put one grid line inside the signal names */
-    if (((grid_ptr->period * global->res) < global->xstart)
-	&& (xtime >= grid_ptr->period)) {
-	xtime -= grid_ptr->period;
+    switch (grid_ptr->period_auto) {
+      case PA_EDGE:
+	/* Edges not supported yet */
+	break;
+
+      case PA_USER:
+      case PA_AUTO:
+      default:
+	/* Do a regular grid every so many grid units */
+
+	/* Move starting point to the right to hit where a grid line is aligned */
+	xtime = ((xtime / grid_ptr->period) * grid_ptr->period) + (grid_ptr->alignment % grid_ptr->period);
+
+	/* If possible, put one grid line inside the signal names */
+	if (((grid_ptr->period * global->res) < global->xstart)
+	    && (xtime >= grid_ptr->period)) {
+	    xtime -= grid_ptr->period;
+	}
+
+	/* Loop through grid times */
+	for ( ; xtime <= end_time; xtime += grid_ptr->period) {
+	    draw_grid_line (trace, textoccupied, grid_ptr, xtime, y1, y2);
+	}
+
+	break;
+
     }
 
-    /* Other coordinates */
-    y1 = trace->ystart - SIG_SPACE/4;
-    y2 = trace->height - trace->sighgt;
-
-    /* Loop through grid times */
-    for ( ; xtime <= end_time; xtime += grid_ptr->period) {
-	x2 = TIME_TO_XPOS (xtime);
-	XSetForeground (global->display, trace->gc, trace->xcolornums[grid_ptr->color]);
-
-	/* compute the time value and draw it if it fits */
-	time_to_string (trace, strg, xtime, FALSE);
-	time_width = XTextWidth (global->time_font,strg,strlen (strg));
-	if ( (x2 - x_last_time) >= (time_width+5) ) {
-	    /* Draw if space, centered on grid line */
-	    XDrawString (global->display,trace->wind, trace->gc, x2 - time_width/2, GRID_TIME_Y, strg, strlen (strg));
-	    x_last_time = x2;
-	}
-	    
-	/* if the grid is visible, draw a vertical dashed line */
-	XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0, 0);
-	XDrawLine     (global->display, trace->wind,trace->gc,   x2, y1,   x2, y2);
-	if (grid_ptr->wide_line) {
-	    XDrawLine (global->display, trace->wind,trace->gc, 1+x2, y1, 1+x2, y2);
-	}
-
-	XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
-	XDrawLine     (global->display, trace->wind,trace->gc, x2,   y1,   x2, GRID_TIME_Y+2);
-	if (grid_ptr->wide_line) {
-	    XDrawLine (global->display, trace->wind,trace->gc, 1+x2, y1, 1+x2, GRID_TIME_Y+2);
-	}
-    }
-
+    /***** End of drawing */
+    
     /* Back to default color */
     XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
 
     /* reset the line attributes */
     XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
     }
+
+void draw_grids (trace)
+    TRACE	*trace;
+{           
+    Boolean	textoccupied[MAXSCREENWIDTH];
+    int	grid_num;
+
+    /* Initalize text array */
+    memset (textoccupied, FALSE, sizeof (textoccupied));
+
+    /* Draw each grid */
+    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
+	draw_grid (trace, textoccupied, &(trace->grid[grid_num]));
+    }
+}
+
 
 void draw_cursors (trace)
     TRACE	*trace;                        
@@ -283,7 +358,6 @@ void draw_trace (trace)
     /* char temp_strg[20]; */
     int end_time;
     int question_width;			/* Width of '?' character */
-    int	grid_num;
     
     if (DTPRINT_ENTRY) printf ("In draw_trace\n");
     
@@ -596,9 +670,7 @@ void draw_trace (trace)
     /* Back to default color */
     XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
 
-    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
-	draw_grid (trace, &(trace->grid[grid_num]));
-    }
+    draw_grids (trace);
 
     /* draw the cursors if they are visible */
     if ( trace->cursor_vis ) draw_cursors (trace);

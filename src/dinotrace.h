@@ -44,10 +44,12 @@
 #endif
 
 #define MAXSIGLEN	256	/* Maximum length of signal names */
+#define MAXTIMELEN	20	/* Maximum length of largest time as a string */
 #define MAXFNAMELEN	200	/* Maximum length of file names */
 #define MAXSTATENAMES	130	/* Maximum number of state name translations */
 #define MAXSTATELEN	32	/* Maximum length of state names */
 #define MAXGRIDS	4	/* Maximum number of grids */
+#define MAXSCREENWIDTH	5000	/* Maximum width of screen */
 #define	MIN_GRID_RES	5	/* Minimum grid resolution, in pixels between grid lines */
 #define	GRID_TIME_Y	20	/* Y Coordinate of where to print grid times */
 #define BLK_SIZE	512	/* Trace data block size */
@@ -374,11 +376,14 @@ typedef struct {
     Widget siglabel, signal;
     Widget periodlabel, period;
     Widget align;
-    Widget period_auto;
-    /* Auto stuff */
-    Widget autopulldown;
-    Widget autopulldownbutton[MAX_SRCH+1];
-    Widget autooptions;
+    /* Auto Period stuff */
+    Widget autoperiod_pulldown;
+    Widget autoperiod_pulldownbutton[3];
+    Widget autoperiod_options;
+    /* Auto Align stuff */
+    Widget autoalign_pulldown;
+    Widget autoalign_pulldownbutton[4];
+    Widget autoalign_options;
     /* Color stuff */
     Widget pulldown;
     Widget pulldownbutton[MAX_SRCH+1];
@@ -458,7 +463,7 @@ typedef struct st_cursor {
 typedef struct st_grid {
     int			period;		/* Grid period (time between ticks) */
     int			alignment;	/* Grid alignment (time grid starts at) */
-    enum { PA_USER=0, PA_AUTO=1 }	period_auto;	/* Status of automatic grid resolution */
+    enum { PA_USER=0, PA_AUTO=1, PA_EDGE=2 } period_auto;	/* Status of automatic grid resolution */
     enum { AA_USER=0, AA_ASS=1, AA_DEASS=2 } align_auto; /* Status of automatic grid alignment */
     Boolean		visible;	/* True if grid is visible */
     Boolean		wide_line;	/* True to draw a double-width line */
