@@ -142,6 +142,9 @@
 #define	TIME_WIDTH(_trace_) \
 	((DTime)( ((_trace_)->width - XMARGIN - global->xstart) / global->res ))
 
+#define CPTR_TIME(cptr) ((cptr)->stbits.time)
+#define CPTR_SIZE(cptr) (sig_ptr->lws)
+#define CPTR_SIZE_PREV(cptr) (sig_ptr->lws)
 #define	cptr_to_value(cptr,value_ptr) \
 {\
      (value_ptr)->siglw.number = (cptr)[0].number;\
@@ -154,28 +157,28 @@
 /* Also identical commented function in dt_file if this isn't defined */
 #define	fil_add_cptr(sig_ptr, value_ptr, nocheck) \
 {\
-    SignalLW	*cptr;\
+    SignalLW_t	*cptr;\
     ulong_t diff;\
     cptr = ((Signal *)(sig_ptr))->cptr - ((Signal *)(sig_ptr))->lws;\
     if ( (nocheck)\
-	|| ( cptr->sttime.state != ((Value *)(value_ptr))->siglw.sttime.state )\
-	|| ( cptr[1].number != ((Value *)(value_ptr))->number[0] )\
-	|| ( cptr[2].number != ((Value *)(value_ptr))->number[1] )\
-	|| ( cptr[3].number != ((Value *)(value_ptr))->number[2] )\
-	|| ( cptr[4].number != ((Value *)(value_ptr))->number[3] ) )\
+	|| ( cptr->stbits.state != ((Value_t *)(value_ptr))->siglw.stbits.state )\
+	|| ( cptr[1].number != ((Value_t *)(value_ptr))->number[0] )\
+	|| ( cptr[2].number != ((Value_t *)(value_ptr))->number[1] )\
+	|| ( cptr[3].number != ((Value_t *)(value_ptr))->number[2] )\
+	|| ( cptr[4].number != ((Value_t *)(value_ptr))->number[3] ) )\
 	{\
 	diff = ((Signal *)sig_ptr)->cptr - ((Signal *)sig_ptr)->bptr;\
 	if (diff > (sig_ptr)->blocks) {\
 	    ((Signal *)(sig_ptr))->blocks += BLK_SIZE;\
-	    ((Signal *)(sig_ptr))->bptr = (SignalLW *)XtRealloc ((char*)((Signal *)(sig_ptr))->bptr,\
-		       (((Signal *)(sig_ptr))->blocks*sizeof(unsigned int)) + (sizeof(Value)*2 + 2));\
+	    ((Signal *)(sig_ptr))->bptr = (SignalLW_t *)XtRealloc ((char*)((Signal *)(sig_ptr))->bptr,\
+		       (((Signal *)(sig_ptr))->blocks*sizeof(unsigned int)) + (sizeof(Value_t)*2 + 2));\
 	    ((Signal *)(sig_ptr))->cptr = ((Signal *)(sig_ptr))->bptr+diff;\
 	}\
-	(((Signal *)(sig_ptr))->cptr)[0].number = ((Value *)(value_ptr))->siglw.number;\
-	(((Signal *)(sig_ptr))->cptr)[1].number = ((Value *)(value_ptr))->number[0];\
-	(((Signal *)(sig_ptr))->cptr)[2].number = ((Value *)(value_ptr))->number[1];\
-	(((Signal *)(sig_ptr))->cptr)[3].number = ((Value *)(value_ptr))->number[2];\
-	(((Signal *)(sig_ptr))->cptr)[4].number = ((Value *)(value_ptr))->number[3];\
+	(((Signal *)(sig_ptr))->cptr)[0].number = ((Value_t *)(value_ptr))->siglw.number;\
+	(((Signal *)(sig_ptr))->cptr)[1].number = ((Value_t *)(value_ptr))->number[0];\
+	(((Signal *)(sig_ptr))->cptr)[2].number = ((Value_t *)(value_ptr))->number[1];\
+	(((Signal *)(sig_ptr))->cptr)[3].number = ((Value_t *)(value_ptr))->number[2];\
+	(((Signal *)(sig_ptr))->cptr)[4].number = ((Value_t *)(value_ptr))->number[3];\
 	(((Signal *)(sig_ptr))->cptr) += ((Signal *)(sig_ptr))->lws;\
     }\
  }
@@ -285,7 +288,7 @@ extern void	sig_search_apply_cb (Widget w, Trace *trace, XmSelectionBoxCallbackS
 extern void	val_update_search (void);
 extern void	val_states_update (void);
 extern void	value_to_string (Trace *trace, char *strg, unsigned int cptr[], char seperator);
-extern void	cptr_to_search_value (SignalLW *cptr, uint_t value[]);
+extern void	cptr_to_search_value (SignalLW_t *cptr, uint_t value[]);
 
 extern void	val_annotate_cb (Widget w);
 extern void	val_annotate_ok_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
@@ -355,7 +358,7 @@ extern void	dino_message_ack (Trace *trace, int type, char *msg);
 extern void	get_data_popup (Trace *trace, char *string, int type);
 extern void	print_sig_info (Signal *);
 extern Trace *	widget_to_trace (Widget w);
-extern SignalLW *cptr_at_time (Signal *sig_ptr, DTime ctime);
+extern SignalLW_t *cptr_at_time (Signal *sig_ptr, DTime ctime);
 extern XmString	string_create_with_cr (char *);
 extern DTime	posx_to_time (Trace *trace, Position x);
 extern DTime	posx_to_time_edge (Trace *trace, Position x, Position y);
@@ -367,7 +370,7 @@ extern Signal *	posy_to_signal (Trace *trace, Position y);
 extern DCursor *posx_to_cursor (Trace *trace, Position x);
 extern DCursor *time_to_cursor (DTime xtime);
 extern ColorNum submenu_to_color (Trace *trace, Widget, int);
-extern void	cptr_to_string (SignalLW *cptr, char *strg);
+extern void	cptr_to_string (SignalLW_t *cptr, char *strg);
 extern void	string_to_value (Trace *trace, char *strg, uint_t cptr[]);
 extern int	option_to_number (Widget w, Widget *entry0_ptr, int maxnumber);
 

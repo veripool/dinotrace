@@ -507,18 +507,18 @@ typedef union un_signal_lw {
     struct {
 	uint_t state:3;
 	uint_t time:29;
-    } sttime;
+    } stbits;
     uint_t number;
-} SignalLW;
+} SignalLW_t;
 #define EOT	0x1FFFFFFF	/* SignalLW End of time indicator if in .time */
 
 /* Value: A signal_lw and 3 data elements */
 /* A cptr points to at least a SignalLW and at most a Value */
 /* since from 0 to 2 of the uint_ts are dropped in the cptr array */
 typedef struct {
-    SignalLW	siglw;
+    SignalLW_t	siglw;
     uint_t	number[4];	/* [0]=bits 31-0, [1]=bits 63-32, [2]=bits 95-64, [3]=bits 127-96 */
-} Value;
+} Value_t;
 
 /* Value searching structure */
 typedef struct {
@@ -567,8 +567,8 @@ struct st_signal {
     struct st_signal	*forward;	/* Forward link to next signal */
     struct st_signal	*backward;	/* Backward link to previous signal */
 
-    SignalLW		*bptr;		/* begin of time data ptr */
-    SignalLW		*cptr;		/* current time data ptr */
+    SignalLW_t		*bptr;		/* begin of time data ptr */
+    SignalLW_t		*cptr;		/* current time data ptr */
 
     struct st_signal	*copyof;	/* Link to signal this is copy of (or NULL) */
     Trace		*trace;		/* Trace signal belongs to (originally) */
@@ -613,7 +613,7 @@ struct st_signal {
 
     uint_t		value_mask[4];	/* Value Mask with 1s in bits that are to be set */
     uint_t		pos_mask;	/* Mask to translate file positions */
-    Value		file_value;	/* current state/time LW information for reading in */
+    Value_t		file_value;	/* current state/time LW information for reading in */
 }; /*Signal;  typedef'd above */
 
 /* Signal list structure */

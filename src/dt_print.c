@@ -758,7 +758,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 {
     int c=0,adj,ymdpt,xloc,xend,xstart,ystart;
     int y1,y2;
-    SignalLW *cptr,*nptr;
+    SignalLW_t *cptr,*nptr;
     char dvstrg[MAXVALUELEN];
     char vstrg[MAXVALUELEN];
     unsigned int value;
@@ -781,17 +781,17 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	xloc = 0;
 	
 	/* find data start */
-	cptr = (SignalLW *)sig_ptr->bptr;
-	if (printtime >= (*cptr).sttime.time ) {
-	    while (((*cptr).sttime.time != EOT) &&
-		   (printtime > (* (SignalLW *)((cptr) + sig_ptr->lws)).sttime.time)) {
-		cptr += sig_ptr->lws;
+	cptr = sig_ptr->bptr;
+	if (printtime >= CPTR_TIME(cptr) ) {
+	    while ((CPTR_TIME(cptr) != EOT) &&
+		   (printtime > CPTR_TIME(cptr + CPTR_SIZE(cptr)))) {
+		cptr += CPTR_SIZE(cptr);
 	    }
 	}
 
 	/* Compute starting points for signal */
 	xstart = global->xstart;
-	switch ( cptr->sttime.state )
+	switch ( cptr->stbits.state )
 	    {
 	  case STATE_0: ystart = y2; break;
 	  case STATE_1: ystart = y1; break;
@@ -799,7 +799,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	  case STATE_Z: ystart = ymdpt; break;
 	  case STATE_B32: ystart = ymdpt; break;
 	  case STATE_B128: ystart = ymdpt; break;
-	  default: printf ("Error: State=%d\n",cptr->sttime.state); ystart = ymdpt; break;
+	  default: printf ("Error: State=%d\n",cptr->stbits.state); ystart = ymdpt; break;
 	    }
 	
 	/* output y information - note reverse from draw() due to y-axis */
@@ -808,19 +808,19 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		 ymdpt, y1, y2, xstart, ystart);
 	
 	/* Loop as long as the time and end of trace are in current screen */
-	while ( cptr->sttime.time != EOT && xloc < xend )
+	while ( CPTR_TIME(cptr) != EOT && xloc < xend )
 	    {
 	    /* find the next transition */
-	    nptr = cptr + sig_ptr->lws;
+	    nptr = cptr + CPTR_SIZE(cptr);
 	    
 	    /* if next transition is the end, don't draw */
-	    if (nptr->sttime.time == EOT) break;
+	    if (CPTR_TIME(nptr) == EOT) break;
 	    
 	    /* find the x location for the end of this segment */
-	    xloc = nptr->sttime.time * global->res - adj;
+	    xloc = CPTR_TIME(nptr) * global->res - adj;
 	    
 	    /* Determine what the state of the signal is and build transition */
-	    switch ( cptr->sttime.state ) {
+	    switch ( cptr->stbits.state ) {
 	      case STATE_0: if ( xloc > xend ) xloc = xend;
 		fprintf (psfile,"%d STATE_0\n",xloc);
 		break;
@@ -868,7 +868,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
 		break;
 		
-	      default: printf ("Error: State=%d\n",cptr->sttime.state); break;
+	      default: printf ("Error: State=%d\n",cptr->stbits.state); break;
 	    } /* end switch */
 	    
 	    if (unstroked++ > 400) {
@@ -877,7 +877,7 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		unstroked=0;
 	    }
 
-	    cptr += sig_ptr->lws;
+	    cptr += CPTR_SIZE(cptr);
 	    }
 	} /* end of FOR */
     

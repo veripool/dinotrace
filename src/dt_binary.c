@@ -119,7 +119,7 @@ int	EXTRACT_2STATE (
 int	read_4state_to_value (
     Signal	*sig_ptr,
     char	*buf,
-    Value	*value_ptr)
+    Value_t	*value_ptr)
 {
     register uint_t state = STATE_0;	/* Unknown */
     register int bitcnt, bit_pos;
@@ -226,7 +226,7 @@ int	read_4state_to_value (
 int	read_2state_to_value (
     Signal	*sig_ptr,
     char	*buf,
-    Value	*value_ptr)
+    Value_t	*value_ptr)
 {
     register int bitcnt, bit_pos;
 
@@ -311,8 +311,8 @@ void	fil_decsim_binary_add_cptr (
 	else state = read_4state_to_value (sig_ptr, buf, &value);
     }
 	    
-    value.siglw.sttime.state = state;
-    value.siglw.sttime.time = time;
+    value.siglw.stbits.state = state;
+    value.siglw.stbits.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
 }
 
@@ -529,7 +529,7 @@ void	fil_tempest_binary_add_cptr (
     register uint_t value_index;
     register uint_t data_index;
     register uint_t data_mask;
-    Value	value;
+    Value_t	value;
 
     /* zero the value */
     value.siglw.number = value.number[0] = value.number[1] = value.number[2] = value.number[3] = 0;
@@ -593,11 +593,11 @@ void	fil_tempest_binary_add_cptr (
 	}
     }
 	    
-    value.siglw.sttime.state = state;
-    value.siglw.sttime.time = time;
+    value.siglw.stbits.state = state;
+    value.siglw.stbits.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
 
-    /*if (DTPRINT_FILE) printf ("Sig %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.sttime.state,
+    /*if (DTPRINT_FILE) printf ("Sig %s  State %d  Value %d\n", sig_ptr->signame, value.siglw.stbits.state,
       value.number[0]);*/
 }
 

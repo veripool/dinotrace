@@ -553,7 +553,7 @@ void	fil_string_add_cptr (
     register char	*cp, *cep;
     register char 	state_chr;
     register int	len, bitcnt;
-    Value	value;
+    Value_t	value;
 
     /* zero the value */
     /* We do NOT need to set value.siglw.number, as is set later */
@@ -634,8 +634,8 @@ void	fil_string_add_cptr (
     }
 
     /* if (DTPRINT_FILE) printf ("time %d sig %s state %d\n", time, sig_ptr->signame,  state); */
-    value.siglw.sttime.state = state;
-    value.siglw.sttime.time = time;
+    value.siglw.stbits.state = state;
+    value.siglw.stbits.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
 }
 
@@ -644,23 +644,23 @@ void	fil_string_add_cptr (
 /* WARNING, INLINED CODE IN CALLBACKS.H */
 void	fil_add_cptr (
     Signal	*sig_ptr,
-    Value	*value_ptr,
+    Value_t	*value_ptr,
     Boolean	nocheck)		/* compare against previous data */
 {
     long	diff;
-    SignalLW	*cptr;
+    SignalLW_t	*cptr;
 
     printf ("Checking st %d tm %d with st %d time %d\n",
-	    value_ptr->siglw.sttime.state,
-	    value_ptr->siglw.sttime.time,
-	    ((sig_ptr->cptr) - sig_ptr->lws)->sttime.state,      
-	    ((sig_ptr->cptr) - sig_ptr->lws)->sttime.time
+	    value_ptr->siglw.stbits.state,
+	    value_ptr->siglw.stbits.time,
+	    ((sig_ptr->cptr) - CPTR_SIZE_PREV(cptr))->stbits.state,      
+	    CPTR_TIME((sig_ptr->cptr) - CPTR_SIZE_PREV(sig_ptr->cptr))
 	    );
 
     /* Comparing all 4 LW's works because we keep the unused LWs zeroed */
-    cptr = sig_ptr->cptr - sig_ptr->lws;
+    cptr = sig_ptr->cptr - CPTR_SIZE_PREV(sig_ptr->cptr);
     if ( nocheck
-	|| ( cptr->sttime.state != value_ptr->siglw.sttime.state )
+	|| ( cptr->stbits.state != value_ptr->siglw.stbits.state )
 	|| ( cptr[1].number != value_ptr->number[0] )
 	|| ( cptr[2].number != value_ptr->number[1] )
 	|| ( cptr[3].number != value_ptr->number[2] )
@@ -669,7 +669,7 @@ void	fil_add_cptr (
 	diff = sig_ptr->cptr - sig_ptr->bptr;
 	if (diff > sig_ptr->blocks ) {
 	    sig_ptr->blocks += BLK_SIZE;
-	    sig_ptr->bptr = (SignalLW *)XtRealloc ((char*)sig_ptr->bptr,
+	    sig_ptr->bptr = (SignalLW_t *)XtRealloc ((char*)sig_ptr->bptr,
 						    (sig_ptr->blocks*sizeof(uint_t)) + (sizeof(Value)*2 + 2));
 	    sig_ptr->cptr = sig_ptr->bptr + diff;
 	}
@@ -679,7 +679,7 @@ void	fil_add_cptr (
 	(sig_ptr->cptr)[2].number = value_ptr->number[1];
 	(sig_ptr->cptr)[3].number = value_ptr->number[2];
 	(sig_ptr->cptr)[4].number = value_ptr->number[3];
-	(sig_ptr->cptr) += sig_ptr->lws;
+	(sig_ptr->cptr) += CPTR_SIZE(sig_ptr->cptr);
     }
 }
 #endif
@@ -913,7 +913,8 @@ void read_make_busses (
 	
 	/* allocate the data storage memory */
 	sig_ptr->blocks = BLK_SIZE;
-	sig_ptr->bptr = (SignalLW *)XtMalloc ((sig_ptr->blocks*sizeof(uint_t)) + (sizeof(Value)*2 + 2));
+	sig_ptr->bptr = (SignalLW_t *)XtMalloc ((sig_ptr->blocks*sizeof(uint_t))
+						+ (sizeof(Value_t)*2 + 2));
 	sig_ptr->cptr = sig_ptr->bptr;
     }
 
@@ -925,8 +926,8 @@ void read_mark_cptr_end (
     Trace	*trace)
 {
     Signal	*sig_ptr;
-    SignalLW	*cptr;
-    Value	value;
+    SignalLW_t	*cptr;
+    Value_t	value;
 
     /* loop thru each signal */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -934,10 +935,10 @@ void read_mark_cptr_end (
 	/* Must be a cptr which has the same time as the last time on the screen */
 	/* If none exists, create it */
 	if (sig_ptr->bptr != sig_ptr->cptr) {
-	    cptr = sig_ptr->cptr - sig_ptr->lws;
-	    if (cptr->sttime.time != trace->end_time) {
+	    cptr = sig_ptr->cptr - CPTR_SIZE_PREV(cptr);
+	    if (CPTR_TIME(cptr) != trace->end_time) {
 		cptr_to_value (cptr, &value);
-		value.siglw.sttime.time = trace->end_time;
+		value.siglw.stbits.time = trace->end_time;
 		fil_add_cptr (sig_ptr, &value, TRUE);
 	    }
 	}
@@ -946,7 +947,7 @@ void read_mark_cptr_end (
 	}
 
 	/* Mark end of time */
-	sig_ptr->cptr->sttime.time = EOT;
+	sig_ptr->cptr->stbits.time = EOT;
 
 	/* re-initialize the cptr's to the bptr's */
 	sig_ptr->cptr = sig_ptr->bptr;

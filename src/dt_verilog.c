@@ -439,11 +439,11 @@ void	verilog_enter_busses (
 
     for (sig_upd_pptr = signal_update_array; sig_upd_pptr < signal_update_array_last_pptr; sig_upd_pptr++) {
 	sig_ptr = *sig_upd_pptr;
-	if (sig_ptr->file_value.siglw.sttime.state) {
+	if (sig_ptr->file_value.siglw.stbits.state) {
 	    /*if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } */
 
 	    /* Enter the cptr */
-	    sig_ptr->file_value.siglw.sttime.time = time;
+	    sig_ptr->file_value.siglw.stbits.time = time;
 	    fil_add_cptr (sig_ptr, &(sig_ptr->file_value), first_data);
 
 	    /* Zero the state and keep the value for next time */
@@ -464,7 +464,7 @@ void	verilog_read_data (
     Boolean	first_data=TRUE;
     Boolean	got_data=FALSE;
     Boolean	got_time=FALSE;
-    Value	value;
+    Value_t	value;
     Signal	*sig_ptr;
     int		pos;
     int		state;
@@ -510,8 +510,8 @@ void	verilog_read_data (
 		/* printf ("\tsignal '%s'=%d %s  state %d\n", code, pos, sig_ptr->signame, state); */
 		if (sig_ptr->bits == 0) {
 		    /* Not a vector.  This is easy */
-		    value.siglw.sttime.state = state;
-		    value.siglw.sttime.time = time;
+		    value.siglw.stbits.state = state;
+		    value.siglw.stbits.time = time;
 		    fil_add_cptr (sig_ptr, &value, first_data);
 		}
 		else {	/* Unary signal made into a vector */
@@ -521,26 +521,26 @@ void	verilog_read_data (
 		    switch (state) {
 		      case STATE_U:
 		      default:
-			sig_ptr->file_value.siglw.sttime.state = STATE_U;
+			sig_ptr->file_value.siglw.stbits.state = STATE_U;
 			break;
 
 		      case STATE_Z:
 			/* Make a U if the signal has any 0, 1, or Us */
-			sig_ptr->file_value.siglw.sttime.state = 
-			    ( (sig_ptr->file_value.siglw.sttime.state == STATE_Z)
-			     || (sig_ptr->file_value.siglw.sttime.state == STATE_0) )
+			sig_ptr->file_value.siglw.stbits.state = 
+			    ( (sig_ptr->file_value.siglw.stbits.state == STATE_Z)
+			     || (sig_ptr->file_value.siglw.stbits.state == STATE_0) )
 				? STATE_Z : STATE_U;
 			break;
 
 		      case STATE_0:
-			if ( (sig_ptr->file_value.siglw.sttime.state == STATE_Z)
-			    || (sig_ptr->file_value.siglw.sttime.state == STATE_U)) {
-			    sig_ptr->file_value.siglw.sttime.state = STATE_U;
+			if ( (sig_ptr->file_value.siglw.stbits.state == STATE_Z)
+			    || (sig_ptr->file_value.siglw.stbits.state == STATE_U)) {
+			    sig_ptr->file_value.siglw.stbits.state = STATE_U;
 			}
 			else {
 			    register int bit = sig_ptr->bits - (pos - sig_ptr->file_pos); 
 
-			    sig_ptr->file_value.siglw.sttime.state = sig_ptr->type;
+			    sig_ptr->file_value.siglw.stbits.state = sig_ptr->type;
 			    if (bit < 32) {
 				sig_ptr->file_value.number[0] = 
 				    ( sig_ptr->file_value.number[0] & (~ (1<<bit)) );
@@ -566,14 +566,14 @@ void	verilog_read_data (
 			break;
 
 		      case STATE_1:
-			if ( (sig_ptr->file_value.siglw.sttime.state == STATE_Z)
-			    || (sig_ptr->file_value.siglw.sttime.state == STATE_U)) {
-			    sig_ptr->file_value.siglw.sttime.state = STATE_U;
+			if ( (sig_ptr->file_value.siglw.stbits.state == STATE_Z)
+			    || (sig_ptr->file_value.siglw.stbits.state == STATE_U)) {
+			    sig_ptr->file_value.siglw.stbits.state = STATE_U;
 			}
 			else {
 			    register int bit = sig_ptr->bits - (pos - sig_ptr->file_pos); 
 
-			    sig_ptr->file_value.siglw.sttime.state = sig_ptr->type;
+			    sig_ptr->file_value.siglw.stbits.state = sig_ptr->type;
 			    if (bit < 32) {
 				sig_ptr->file_value.number[0] = 
 				    ( sig_ptr->file_value.number[0] | (1<<bit) );

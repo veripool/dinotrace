@@ -156,11 +156,11 @@ void    string_to_value (
 }
 
 void    cptr_to_search_value (
-    SignalLW	*cptr,
+    SignalLW_t	*cptr,
     uint_t value[])
 {
     value[0] = value[1] = value[2] = value[3] = 0;
-    switch (cptr->sttime.state) {
+    switch (cptr->stbits.state) {
       case STATE_0:
       case STATE_U:
       case STATE_Z:
@@ -187,7 +187,7 @@ void	val_update_search ()
 {
     Trace	*trace;
     Signal	*sig_ptr;
-    SignalLW	*cptr;
+    SignalLW_t	*cptr;
     int		cursorize;
     register int i;
     DCursor	*csr_ptr;
@@ -212,7 +212,7 @@ void	val_update_search ()
     /* Search every trace for the value, mark the signal if it has it to speed up displaying */
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    if (sig_ptr->lws == 1) {
+	    if (sig_ptr->bits<1) {
 		/* Single bit signal, don't search for values */
 		continue;
 	    }
@@ -224,9 +224,9 @@ void	val_update_search ()
 		    sig_ptr->srch_ena[i] = FALSE;
 		}
 
-		cptr = (SignalLW *)(sig_ptr->bptr);
-		for (; (cptr->sttime.time != EOT); cptr += sig_ptr->lws) {
-		    switch (cptr->sttime.state) {
+		cptr = (SignalLW_t *)(sig_ptr->bptr);
+		for (; (CPTR_TIME(cptr) != EOT); cptr += CPTR_SIZE(cptr)) {
+		    switch (cptr->stbits.state) {
 		      case STATE_B32:
 			for (i=0; i<MAX_SRCH; i++) {
 			    if ( ( global->val_srch[i].value[0]== *((uint_t *)cptr+1) )
@@ -258,7 +258,7 @@ void	val_update_search ()
 		    } /* switch */
 		    
 		    if (cursorize) {
-			if (NULL != (csr_ptr = time_to_cursor (cptr->sttime.time))) {
+			if (NULL != (csr_ptr = time_to_cursor (CPTR_TIME(cptr)))) {
 			    if (csr_ptr->type == SEARCHOLD) {
 				/* mark the old cursor as new so won't be deleted */
 				csr_ptr->type = SEARCH;
@@ -266,7 +266,7 @@ void	val_update_search ()
 			}
 			else {
 			    /* Make new cursor at this location */
-			    cur_add (cptr->sttime.time, cursorize, SEARCH);
+			    cur_add (CPTR_TIME(cptr), cursorize, SEARCH);
 			}
 			cursorize = 0;
 		    }
@@ -350,8 +350,8 @@ char *val_examine_popup_sig_string (
 	
     /* Debugging information */
     if (DTDEBUG) {
-	sprintf (strg2, "\nType %d   Lws %d   Blocks %ld\n",
-		 sig_ptr->type, sig_ptr->lws, sig_ptr->blocks);
+	sprintf (strg2, "\nType %d   Blocks %ld\n",
+		 sig_ptr->type, sig_ptr->blocks);
 	strcat (strg, strg2);
 	sprintf (strg2, "Bits %d   Index %d - %d  Srch_ena %p\n",
 		 sig_ptr->bits, sig_ptr->msb_index, sig_ptr->lsb_index, sig_ptr->srch_ena);
@@ -372,7 +372,7 @@ char *val_examine_popup_cptr_string (
     Signal	*sig_ptr,
     DTime	time)
 {
-    SignalLW	*cptr;
+    SignalLW_t	*cptr;
     static char	strg[2000];
     char	strg2[2000];
     uint_t	value[4];
@@ -387,27 +387,22 @@ char *val_examine_popup_cptr_string (
     
     strcpy (strg, sig_ptr->signame);
 	
-    if (cptr->sttime.time == EOT) {
+    if (CPTR_TIME(cptr) == EOT) {
 	strcat (strg, "\nValue at EOT:\n");
     }
     else {
 	strcat (strg, "\nValue at times ");
-	time_to_string (trace, strg2, cptr->sttime.time, FALSE);
+	time_to_string (trace, strg2, CPTR_TIME(cptr), FALSE);
 	strcat (strg, strg2);
 	strcat (strg, " - ");
-	if (((cptr + sig_ptr->lws)->sttime.time) == EOT) {
-	    strcat (strg, "EOT:\n");
-	}
-	else {
-	    time_to_string (trace, strg2, (cptr + sig_ptr->lws)->sttime.time, FALSE);
-	    strcat (strg, strg2);
-	    strcat (strg, ":\n");
-	}
+	time_to_string (trace, strg2, CPTR_TIME(cptr + CPTR_SIZE(cptr)), FALSE);
+	strcat (strg, strg2);
+	strcat (strg, ":\n");
     }
     
     cptr_to_search_value (cptr, value);
     
-    switch (cptr->sttime.state) {
+    switch (cptr->stbits.state) {
     case STATE_0:
     case STATE_1:
 	sprintf (strg2, "= %d\n", value[0]);
@@ -430,7 +425,7 @@ char *val_examine_popup_cptr_string (
 	value_to_string (trace, strg2, value, ' ');
 	strcat (strg, strg2);
 	if ( (sig_ptr->decode != NULL) 
-	     && (cptr->sttime.state == STATE_B32)
+	     && (cptr->stbits.state == STATE_B32)
 	     && (value[0] < sig_ptr->decode->numstates)
 	     && (sig_ptr->decode->statename[value[0]][0] != '\0') ) {
 	    sprintf (strg2, " = %s\n", sig_ptr->decode->statename[value[0]] );
@@ -894,7 +889,7 @@ void    val_highlight_ev (
 {
     DTime	time;
     Signal	*sig_ptr;
-    SignalLW	*cptr;
+    SignalLW_t	*cptr;
     VSearchNum	search_pos;
     
     if (DTPRINT_ENTRY) printf ("In val_highlight_ev - trace=%p\n",trace);
@@ -1107,7 +1102,7 @@ void    val_annotate_do_cb (
 {
     int		i;
     Signal	*sig_ptr;
-    SignalLW	*cptr;
+    SignalLW_t	*cptr;
     FILE	*dump_fp;
     DCursor 	*csr_ptr;		/* Current cursor being printed */
     char	strg[1000];
@@ -1201,7 +1196,7 @@ void    val_annotate_do_cb (
 	    fprintf (dump_fp, "\t(\"%s\"\t", sig_ptr->signame);
 	    if (global->anno_ena_signal[sig_ptr->color]) fprintf (dump_fp, "%d\t(", sig_ptr->color);
 	    else     fprintf (dump_fp, "nil\t(");
-	    cptr = (SignalLW *)sig_ptr->cptr;
+	    cptr = (SignalLW_t *)sig_ptr->cptr;
 
 	    csr_num=0;
 	    for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
@@ -1210,13 +1205,13 @@ void    val_annotate_do_cb (
 		    csr_num++;
 
 		    /* Note grabs value to right of cursor */
-		    while ( (cptr->sttime.time <= csr_ptr->time)
-			   && (cptr->sttime.time != EOT)) {
-			cptr += sig_ptr->lws;
+		    while ( (CPTR_TIME(cptr) <= csr_ptr->time)
+			   && (CPTR_TIME(cptr) != EOT)) {
+			cptr += CPTR_SIZE(cptr);
 		    }
-		    if ( (cptr->sttime.time > csr_ptr->time)
-			&& ( cptr != (SignalLW *)sig_ptr->cptr)) {
-			cptr -= sig_ptr->lws;
+		    if ( (CPTR_TIME(cptr) > csr_ptr->time)
+			&& ( cptr != (SignalLW_t *)sig_ptr->cptr)) {
+			cptr -= CPTR_SIZE_PREV(cptr);
 		    }
 
 		    cptr_to_search_value (cptr, value);

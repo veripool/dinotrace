@@ -383,7 +383,7 @@ void draw_cursors (
 void draw_trace (
     Trace	*trace)
 {         
-    int c=0,i,cnt,ymdpt,xloc,xend,du,len,mid,yfntloc;
+    int c=0,i,cnt,ymdpt,xloc,xloclast,xend,du,len,mid,yfntloc;
     int last_drawn_xloc;
     uint_t last_drawn_state=EOT;
     int	y1,y2;
@@ -391,13 +391,13 @@ void draw_trace (
     int srch_this_color;		/* Color to print signal if matches search value */
     XPoint Pts[MAXCNT+100];		/* Array of points to plot */
     char strg[MAXVALUELEN];		/* String value to print out */
-    register SignalLW *cptr,*nptr;	/* Current value pointer and next value pointer */
+    register SignalLW_t *cptr,*nptr;	/* Current value pointer and next value pointer */
     Signal *sig_ptr;			/* Current signal being printed */
     uint_t value;
     /* int temp_color=0; */
     /* char temp_strg[20]; */
     int end_time;
-    int question_width;			/* Width of '?' character */
+    int star_width;			/* Width of '*' character */
     
     if (DTPRINT_ENTRY) printf ("In draw_trace, xstart=%d\n", global->xstart);
     
@@ -406,7 +406,7 @@ void draw_trace (
     /* check for all signals being deleted */
     if (trace->dispsig == NULL) return;
     
-    question_width = XTextWidth (global->value_font,"?",1);
+    star_width = XTextWidth (global->value_font,"*",1);
 
     /* calculate the font y location */
     yfntloc = global->value_font->max_bounds.ascent + global->value_font->max_bounds.descent;
@@ -453,38 +453,39 @@ void draw_trace (
 	y1 = trace->ystart + c * trace->sighgt + Y_SIG_SPACE;
 	ymdpt = y1 + (int)(trace->sighgt/2) - Y_SIG_SPACE;
 	y2 = y1 + trace->sighgt - 2*Y_SIG_SPACE;
-	cptr = (SignalLW *)sig_ptr->cptr;
+	cptr = sig_ptr->cptr;
 	cnt = 0;
 	c++;
 	
 	/* Compute starting points for signal */
 	Pts[cnt].x = global->xstart - trace->sigrf;
 	last_drawn_xloc = -1;
-	switch ( cptr->sttime.state ) {
+	switch ( cptr->stbits.state ) {
 	  case STATE_0: Pts[cnt].y = y2; break;
 	  case STATE_1: Pts[cnt].y = y1; break;
 	  case STATE_U: Pts[cnt].y = ymdpt; break;
 	  case STATE_Z: Pts[cnt].y = ymdpt; break;
 	  case STATE_B32: Pts[cnt].y = ymdpt; break;
 	  case STATE_B128: Pts[cnt].y = ymdpt; break;
-	  default: printf ("Error: State=%d\n",cptr->sttime.state); break;
+	  default: printf ("Error: State=%d\n",cptr->stbits.state); break;
 	}
 	
 	/* Loop as long as the time and end of trace are in current screen */
-	while ( cptr->sttime.time != EOT && Pts[cnt].x < xend && cnt < MAXCNT) {
+	while ( CPTR_TIME(cptr) != EOT && Pts[cnt].x < xend && cnt < MAXCNT) {
 
 	    /* find the next transition */
-	    nptr = cptr + sig_ptr->lws;
+	    nptr = cptr + CPTR_SIZE(cptr);
 	    
 	    /* if next transition is the end, don't draw */
-	    if (nptr->sttime.time == EOT) break;
+	    if (CPTR_TIME(nptr) == EOT) break;
 	    
 	    /* find the x location for the end of this segment */
-	    xloc = TIME_TO_XPOS (nptr->sttime.time);
+	    xloc = TIME_TO_XPOS (CPTR_TIME(nptr));
 	    xloc = MIN (xloc, xend);
+	    xloclast = Pts[cnt].x;
 	    
 	    /* printf ("L %07x\t%d < %d < %d\n", cptr, last_drawn_xloc+OVERLAPSPACE, xloc, xend); */
-	    if ( ((uint_t)last_drawn_state==(uint_t)(cptr->sttime.state))
+	    if ( ((uint_t)last_drawn_state==(uint_t)(cptr->stbits.state))
 		 && ((Position)(last_drawn_xloc+OVERLAPSPACE) > (Position)(xloc))
 		 && ((Position)(xloc) < (Position)(xend-OVERLAPSPACE)) ) {
 		/* Too close to previously drawn vector.  User won't see the difference */
@@ -493,62 +494,62 @@ void draw_trace (
 	    }
 	    else {
 		last_drawn_xloc = xloc;
-		last_drawn_state = cptr->sttime.state;
+		last_drawn_state = cptr->stbits.state;
 	    }
 	    
 	    /* Determine what the state of the signal is and build transition */
-	    switch ( cptr->sttime.state ) {
+	    switch ( cptr->stbits.state ) {
 	      case STATE_0:
 		if ( xloc > xend ) xloc = xend;
-		Pts[cnt+1].x = Pts[cnt].x+trace->sigrf; Pts[cnt+1].y = y2;
+		Pts[cnt+1].x = xloclast+trace->sigrf; Pts[cnt+1].y = y2;
 		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y2;
 		cnt += 2;
 		break;
 		
 	      case STATE_1:
 		if ( xloc > xend ) xloc = xend;
-		Pts[cnt+1].x = Pts[cnt].x+trace->sigrf; Pts[cnt+1].y = y1;
+		Pts[cnt+1].x = xloclast+trace->sigrf; Pts[cnt+1].y = y1;
 		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = y1;
 		Pts[cnt+3].x = xloc;                  Pts[cnt+3].y = y1+1;
-		Pts[cnt+4].x = Pts[cnt].x+trace->sigrf; Pts[cnt+4].y = y1+1;
+		Pts[cnt+4].x = xloclast+trace->sigrf; Pts[cnt+4].y = y1+1;
 		Pts[cnt+5].x = xloc;                  Pts[cnt+5].y = y1+1; /* extranious, just to get endpoint right */
 		cnt += 5;
 		break;
 		
 	      case STATE_U:
-		Pts[cnt+1].x=Pts[cnt].x+trace->sigrf; Pts[cnt+1].y=ymdpt;
+		Pts[cnt+1].x=xloclast+trace->sigrf; Pts[cnt+1].y=ymdpt;
 		cnt++;
 		if ( xloc > xend ) xloc = xend;
-		if ( xloc - Pts[cnt].x < DELU2)
+		if ( xloc - xloclast < DELU2)
 		    {
-		    du = xloc - Pts[cnt].x;
-		    Pts[cnt+1].x=Pts[cnt].x+du/2;  Pts[cnt+1].y = y2;
-		    Pts[cnt+2].x=Pts[cnt].x+du; Pts[cnt+2].y = ymdpt;
-		    Pts[cnt+3].x=Pts[cnt].x+du/2;  Pts[cnt+3].y = y1;
-		    Pts[cnt+4].x=Pts[cnt].x;       Pts[cnt+4].y = ymdpt;
-		    Pts[cnt+5].x=Pts[cnt].x+du/2;  Pts[cnt+5].y = y1;
-		    Pts[cnt+6].x=Pts[cnt].x+du; Pts[cnt+6].y = ymdpt;
+		    du = xloc - xloclast;
+		    Pts[cnt+1].x=xloclast+du/2;  Pts[cnt+1].y = y2;
+		    Pts[cnt+2].x=xloclast+du; Pts[cnt+2].y = ymdpt;
+		    Pts[cnt+3].x=xloclast+du/2;  Pts[cnt+3].y = y1;
+		    Pts[cnt+4].x=xloclast;       Pts[cnt+4].y = ymdpt;
+		    Pts[cnt+5].x=xloclast+du/2;  Pts[cnt+5].y = y1;
+		    Pts[cnt+6].x=xloclast+du; Pts[cnt+6].y = ymdpt;
 		    cnt += 6;
 		    }
 		else
 		    {
-		    while ( Pts[cnt].x < xloc - DELU )
+		    while ( xloclast < xloc - DELU )
 			{
-                        Pts[cnt+1].x=Pts[cnt].x+DELU;  Pts[cnt+1].y = y2;
-                        Pts[cnt+2].x=Pts[cnt].x+DELU2; Pts[cnt+2].y = ymdpt;
-                        Pts[cnt+3].x=Pts[cnt].x+DELU;  Pts[cnt+3].y = y1;
-                        Pts[cnt+4].x=Pts[cnt].x;       Pts[cnt+4].y = ymdpt;
-                        Pts[cnt+5].x=Pts[cnt].x+DELU;  Pts[cnt+5].y = y1;
-                        Pts[cnt+6].x=Pts[cnt].x+DELU2; Pts[cnt+6].y = ymdpt;
+                        Pts[cnt+1].x=xloclast+DELU;  Pts[cnt+1].y = y2;
+                        Pts[cnt+2].x=xloclast+DELU2; Pts[cnt+2].y = ymdpt;
+                        Pts[cnt+3].x=xloclast+DELU;  Pts[cnt+3].y = y1;
+                        Pts[cnt+4].x=xloclast;       Pts[cnt+4].y = ymdpt;
+                        Pts[cnt+5].x=xloclast+DELU;  Pts[cnt+5].y = y1;
+                        Pts[cnt+6].x=xloclast+DELU2; Pts[cnt+6].y = ymdpt;
                         cnt += 6;
 			}
 		    }
-		Pts[cnt].x = Pts[cnt-4].x = xloc;
+		xloclast = Pts[cnt-4].x = xloc;
 		break;
 		
 	      case STATE_Z:
 		if ( xloc > xend ) xloc = xend;
-		Pts[cnt+1].x = Pts[cnt].x+trace->sigrf; Pts[cnt+1].y = ymdpt;
+		Pts[cnt+1].x = xloclast+trace->sigrf; Pts[cnt+1].y = ymdpt;
 		Pts[cnt+2].x = xloc;                  Pts[cnt+2].y = ymdpt;
 		cnt += 2;
 		break;
@@ -564,7 +565,7 @@ void draw_trace (
 		    (sig_ptr->decode->statename[value][0] != '\0')) {
 		    strcpy (strg, sig_ptr->decode->statename[value]);
 		    len = XTextWidth (global->value_font,strg,strlen (strg));
-		    if ( xloc-Pts[cnt].x < len + 2 ) {
+		    if ( xloc-xloclast < len + 2 ) {
 			/* doesn't fit, try number */
 			goto value_rep;
 		    }
@@ -615,51 +616,52 @@ void draw_trace (
 	      state_plot:
 
 		/* calculate positional parameters */
-
-		len = XTextWidth (global->value_font,strg,strlen (strg));
+		if (xloc-xloclast >= 6) {  /* if less definately no space for value */
+		    len = XTextWidth (global->value_font,strg,strlen (strg));
 		
-		if (xloc-Pts[cnt].x-2 < len) {
-		    /* Value won't fit, try question mark */
-		    len = question_width;
-		    strg[0] = '?';  strg[1] = '\0';
-		}
-
-		/* write the bus value if it fits */
-		if ( xloc-Pts[cnt].x-2 >= len ) {
-		    mid = Pts[cnt].x + (int)( (xloc-Pts[cnt].x)/2 );
-		    if (srch_this_color) {
-			/* Grab the color we want */
-			XSetForeground (global->display, trace->gc, trace->xcolornums[srch_this_color]);
-			XDrawString (global->display, XtWindow ( trace->work),
-				    trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
-			XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
+		    if (xloc-xloclast-2 < len) {
+			/* Value won't fit, try star */
+			len = star_width;
+			strg[0] = '*';  strg[1] = '\0';
 		    }
-		    else {
-			XDrawString (global->display, XtWindow ( trace->work),
-				    trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
+
+		    /* write the bus value if it fits */
+		    if ( xloc-xloclast-2 >= len ) {
+			mid = xloclast + (int)( (xloc-xloclast)/2 );
+			if (srch_this_color) {
+			    /* Grab the color we want */
+			    XSetForeground (global->display, trace->gc, trace->xcolornums[srch_this_color]);
+			    XDrawString (global->display, XtWindow ( trace->work),
+					 trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
+			    XSetForeground (global->display, trace->gc, trace->xcolornums[sig_ptr->color]);
+			}
+			else {
+			    XDrawString (global->display, XtWindow ( trace->work),
+					 trace->gc, mid-len/2, y2-yfntloc, strg, strlen (strg) );
+			}
 		    }
 		}
 
 		/* Plot points */
-		Pts[cnt+1].x=Pts[cnt].x+trace->sigrf; Pts[cnt+1].y=y2;
+		Pts[cnt+1].x=xloclast+trace->sigrf; Pts[cnt+1].y=y2;
 		Pts[cnt+2].x=xloc-trace->sigrf;       Pts[cnt+2].y=y2;
 		Pts[cnt+3].x=xloc;                  Pts[cnt+3].y=ymdpt;
 		Pts[cnt+4].x=xloc-trace->sigrf;       Pts[cnt+4].y=y1;
-		Pts[cnt+5].x=Pts[cnt].x+trace->sigrf; Pts[cnt+5].y=y1;
-		Pts[cnt+6].x=Pts[cnt].x;            Pts[cnt+6].y=ymdpt;
-		Pts[cnt+7].x=Pts[cnt].x+trace->sigrf; Pts[cnt+7].y=y1;
+		Pts[cnt+5].x=xloclast+trace->sigrf; Pts[cnt+5].y=y1;
+		Pts[cnt+6].x=xloclast;            Pts[cnt+6].y=ymdpt;
+		Pts[cnt+7].x=xloclast+trace->sigrf; Pts[cnt+7].y=y1;
 		Pts[cnt+8].x=xloc-trace->sigrf;       Pts[cnt+8].y=y1;
 		Pts[cnt+9].x=xloc;                  Pts[cnt+9].y=ymdpt;
 		cnt += 9;
 		break;
 		
 	      default:
-		printf ("Error: State=%d\n",cptr->sttime.state); break;
+		printf ("Error: State=%d\n",cptr->stbits.state); break;
 	    } /* end switch */
 	    
 	  next_state:
 
-	    cptr += sig_ptr->lws;
+	    cptr += CPTR_SIZE(cptr);
 	}
         cnt++;
 	
@@ -667,7 +669,7 @@ void draw_trace (
 	XDrawLines (global->display, trace->wind, trace->gc, Pts, cnt, CoordModeOrigin);
 	/*
 	for (cnt--; cnt>0; cnt--) {
-	    printf ("C%d\tx%d\ty%d\n", cnt, Pts[cnt].x, Pts[cnt].y);
+	    printf ("C%d\tx%d\ty%d\n", cnt, Pts[cnt].xx, Pts[cnt].y);
 	    }
 	    */
     } /* end of FOR */

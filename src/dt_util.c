@@ -385,32 +385,36 @@ Trace	*widget_to_trace (
     return (trace);
 }
 
+/* Adjust starting times on signals to new point */
 void new_time_sigs (
     Signal	*sig_first_ptr)
 {
     Signal	*sig_ptr;	
 
     for (sig_ptr = sig_first_ptr; sig_ptr; sig_ptr = sig_ptr->forward) {
+	SignalLW_t	*cptr = sig_ptr->cptr;
 	/* if (DTPRINT)
-	   printf ("next time=%d\n", (* (SignalLW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time);
+	   printf ("next time=%d\n", CPTR_TIME(cptr+CPTR_SIZE(cptr)));
 	   */
-	
-	if ( !sig_ptr->cptr ) {
-	    sig_ptr->cptr = sig_ptr->bptr;
+	if ( !cptr ) {
+	    cptr = sig_ptr->bptr;
 	}
 
-	if (global->time >= (* (SignalLW *)(sig_ptr->cptr)).sttime.time ) {
-	    while (((* (SignalLW *)(sig_ptr->cptr)).sttime.time != EOT) &&
-		   (global->time > (* (SignalLW *)((sig_ptr->cptr)+sig_ptr->lws)).sttime.time)) {
-		(sig_ptr->cptr) += sig_ptr->lws;
+	if (global->time >= CPTR_TIME(cptr) ) {
+	    /* Step forward till right segment is found */
+	    while ((CPTR_TIME(cptr) != EOT) &&
+		   (global->time > CPTR_TIME(cptr + CPTR_SIZE(cptr)))) {
+		cptr += CPTR_SIZE(cptr);
 	    }
 	}
 	else {
-	    while ((sig_ptr->cptr > sig_ptr->bptr) &&
-		   (global->time < (* (SignalLW *)(sig_ptr->cptr)).sttime.time)) {
-		(sig_ptr->cptr) -= sig_ptr->lws;
+	    /* Step backward till right segment is found */
+	    while ((cptr > sig_ptr->bptr) &&
+		   (global->time < CPTR_TIME(cptr))) {
+		cptr -= CPTR_SIZE_PREV(cptr);
 	    }
 	}
+	sig_ptr->cptr = cptr;
     }
 }
 
@@ -609,15 +613,17 @@ void dino_message_ack (
     DManageChild (trace->message, trace, MC_NOKEYS);
 }
 
-SignalLW *cptr_at_time (
+SignalLW_t *cptr_at_time (
     /* Return the CPTR for the given time */
     Signal	*sig_ptr,
     DTime	ctime)
 {
-    SignalLW	*cptr;
-    for (cptr = (SignalLW *)(sig_ptr->cptr);
-	 (cptr->sttime.time != EOT) && (((cptr + sig_ptr->lws)->sttime.time) <= ctime);
-	     cptr += sig_ptr->lws) ;
+    SignalLW_t	*cptr;
+    for (cptr = sig_ptr->cptr;
+	 CPTR_TIME(cptr) != EOT
+	     && (CPTR_TIME(cptr + CPTR_SIZE(cptr)) <= ctime);
+	 cptr += CPTR_SIZE(cptr)) {
+    }
     return (cptr);
 }
 
@@ -629,10 +635,10 @@ SignalLW *cptr_at_time (
  *****************************************************************************/
 
 void    cptr_to_string (
-    SignalLW	*cptr,
+    SignalLW_t	*cptr,
     char	*strg)
 {
-    switch (cptr->sttime.state) {
+    switch (cptr->stbits.state) {
       case STATE_1:
 	strg[0] = '1';
 	strg[1] = '\0';
@@ -672,14 +678,14 @@ void    cptr_to_string (
 }
 
 void    print_cptr (
-    SignalLW	*cptr)
+    SignalLW_t	*cptr)
 {
     char strg[1000];
     uint_t	value[4];
 
     cptr_to_search_value (cptr, value);
     value_to_string (global->trace_head, strg, value, '_');
-    printf ("%s at time %d\n",strg,cptr->sttime.time);
+    printf ("%s at time %d\n", strg, CPTR_TIME(cptr));
 }
 
 void    debug_print_screen_traces_cb (
@@ -708,14 +714,14 @@ void    debug_print_screen_traces_cb (
 void    print_sig_info (
     Signal	*sig_ptr)
 {
-    SignalLW	*cptr;
+    SignalLW_t	*cptr;
     
-    cptr = (SignalLW *)sig_ptr->bptr;
+    cptr = sig_ptr->bptr;
     
     printf ("Signal %s starts ",sig_ptr->signame);
     print_cptr (cptr);
     
-    for ( ; cptr->sttime.time != EOT; cptr += sig_ptr->lws ) {
+    for ( ; CPTR_TIME(cptr); cptr += CPTR_SIZE(size) ) {
 	/*printf ("%x %x %x %x %x    ", (cptr)->number, (cptr+1)->number, (cptr+2)->number,
 		(cptr+3)->number, (cptr+4)->number);*/
 	print_cptr (cptr);
@@ -728,7 +734,7 @@ void    debug_signal_integrity (
     char	*list_name,
     Boolean	del)
 {
-    SignalLW	*cptr;
+    SignalLW_t	*cptr;
     DTime	last_time;
     uint_t	nsigstart, nsig;
     Boolean	hitstart;
@@ -760,17 +766,20 @@ void    debug_signal_integrity (
 
 	/* Change data */
 	last_time = -1;
-	for (cptr = (SignalLW *)sig_ptr->bptr; cptr->sttime.time != EOT; cptr += sig_ptr->lws) {
-	    if ( cptr->sttime.time == last_time ) {
-		printf ("%s, Double time change at signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
+	for (cptr = sig_ptr->bptr; CPTR_TIME(cptr) != EOT; cptr += CPTR_SIZE(cptr)) {
+	    if ( CPTR_TIME(cptr) == last_time ) {
+		printf ("%s, Double time change at signal %s time %d\n",
+			list_name, sig_ptr->signame, CPTR_TIME(cptr));
 	    }
-	    if ( cptr->sttime.time < last_time ) {
-		printf ("%s, Reverse time change at signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
+	    if ( CPTR_TIME(cptr) < last_time ) {
+		printf ("%s, Reverse time change at signal %s time %d\n",
+			list_name, sig_ptr->signame, CPTR_TIME(cptr));
 	    }
-	    last_time = cptr->sttime.time;
+	    last_time = CPTR_TIME(cptr);
 	}
 	if (last_time != sig_ptr->trace->end_time) {
-	    printf ("%s, Doesn't end at right time, signal %s time %d\n", list_name, sig_ptr->signame, cptr->sttime.time);
+	    printf ("%s, Doesn't end at right time, signal %s time %d\n",
+		    list_name, sig_ptr->signame, CPTR_TIME(cptr));
 	}
     }
 
@@ -883,7 +892,7 @@ DTime	posx_to_time_edge (
 {
     DTime	xtime;
     Signal 	*sig_ptr;
-    SignalLW	*cptr;
+    SignalLW_t	*cptr;
     DTime	left_time, right_time;
 
     xtime = posx_to_time (trace,x);
@@ -893,13 +902,13 @@ DTime	posx_to_time_edge (
     if (! (sig_ptr = posy_to_signal (trace,y))) return (xtime);
 
     /* Find time where signal changes */
-    for (cptr = (SignalLW *)(sig_ptr->cptr);
-	 (cptr->sttime.time != EOT) && (((cptr + sig_ptr->lws)->sttime.time) < xtime);
-	 cptr += sig_ptr->lws) ;
-    left_time = cptr->sttime.time;
+    for (cptr = sig_ptr->cptr;
+	 (CPTR_TIME(cptr) != EOT) && (CPTR_TIME(cptr + CPTR_SIZE(cptr)) < xtime);
+	 cptr += CPTR_SIZE(cptr)) ;
+    left_time = CPTR_TIME(cptr);
     if (left_time == EOT) return (xtime);
-    cptr += sig_ptr->lws;
-    right_time = cptr->sttime.time;
+    cptr += CPTR_SIZE(cptr);
+    right_time = CPTR_TIME(cptr);
 
     /*
     if (DTPRINT) {
@@ -1039,6 +1048,11 @@ void time_to_string (
     int		decimals;
 
     f_time = (double)ctime;
+
+    if (ctime == EOT) {
+	strcpy (strg, "EOT");
+	return;
+    }
 
     if (trace->timerep == TIMEREP_CYC) {
 	if (!relative) {
