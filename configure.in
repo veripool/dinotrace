@@ -1,7 +1,13 @@
 dnl Process this file with autoconf to produce a configure script.
+dnl Note:  /usr/local/share/autoconf/ was editied to have X11R6.3 and .4
+dnl to support the cygwin default installation directory
 AC_REVISION($Revision$)dnl
 AC_INIT(src/dinotrace.c)
 AC_CONFIG_HEADER(src/config.h)
+
+AC_MSG_RESULT([])
+AC_MSG_RESULT([You may want to look in bin/ for a precompiled executable])
+AC_MSG_RESULT([])
 
 dnl Checks host type
 AC_CANONICAL_HOST
@@ -30,7 +36,7 @@ dnl Checks for header files.
 AC_PATH_X
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(fcntl.h unistd.h sys/file.h sys/time.h math.h)
+AC_CHECK_HEADERS(fcntl.h unistd.h sys/file.h sys/time.h sys/un.h math.h)
 
 dnl Checks for typedefs, structures
 AC_CHECK_TYPE(size_t,unsigned int)
