@@ -199,7 +199,7 @@ TAGS:	$(TAGFILES)
 	etags $(TAGFILES)
 
 # Don't depend on DISTFILES because there's no rule for "standards.info*".
-dist: $(DISTDEP)
+dist: $(DISTDEP) maintainer-copy
 	distname=`sed -e '/DTVERSION/!d' \
 	-e 's/[^0-9]*\([0-9.a-z]*\).*/dinotrace-\1/' -e q src/config.h.in`; \
 	rm -fr $$distname; \
