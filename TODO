@@ -1,0 +1,68 @@
+SUGGESTIONS
+$Id$
+-----------------------------------------------------------------------------
+
+***CHECK part of contrib:
+
+Display:
+
+	Assign color to state changes.  For example, High=red, Low=blue,
+	Z=black, or that type of thing.  Signal states are difficult to
+	pick out in large trace files, and color would help. [Ted Steubing]
+
+	Allow the user to associate a visual appearance with a value, just
+	as you do with value names on buses. [Tim Leonard]
+
+	STATE_ZU with U's of lower amplitute to show mixes of unknowns and
+	tristates.
+	
+Diff:
+
+	Have a method to display the difference between two trace-files,
+	could be implemented by xoring two inputs and displaying the
+	result.  [Paul Wasson]
+
+Signal Selection:
+
+	Allow hiearchy browsing.  Remap -> to ., then use . for hiearchy.
+
+Keybindings:
+
+	Bind cursor keys to something useful.  [Paul Wasson]
+
+Time:	
+
+	I'd also like the ability to "hide" time periods (much like you can
+	hide signals).  This would allow me to ignore initialization stuff if
+	it got captured (hide beginning to time n) or to hide junk after the
+	problem area (from time n to end of time). [Steve Glaser]
+
+	Have method of decoupling the multiple windows so one doesn't
+	scroll with the other.  [Marco Zamora]
+	
+Value searches:
+
+	Allow wildcards and symbolic state names in value searches.
+
+Signal states:
+       
+	Limiting to 128 is problematic, especially with one-hot machines.
+	[Glenn Garvey]
+
+	Can you allow wildcarding (in bin) for signal states? [Mike Kagen]
+	signal_states *->*CPM*<7:0> = 00000xxx=nop,
+		00001xxx=rsvd,
+		0001xxxx=rsvd, etc, etc
+
+Printing:
+	
+	Support color postscript.
+
+Trace format:	
+
+	Support VCD+ Traces.
+
+	Support LSI Traces. [Josh Belkin]
+
+	Have pre-pruning to eliminate signals from .dmp files. [Ted Steubing]
+
