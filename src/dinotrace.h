@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V8.0b"
+#define DTVERSION	"Dinotrace V8.0c"
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
