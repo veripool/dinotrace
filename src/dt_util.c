@@ -233,6 +233,42 @@ void    remove_all_events (trace)
     set_cursor (trace, DC_NORMAL);
     }
 
+ColorNum submenu_to_color (trace, w, base)
+    TRACE	*trace;		/* Display information */
+    Widget	w;
+    int		base;		/* Loaded when the menu was loaded */
+{
+    ColorNum color;
+
+    /* Grab color number from the menu button pointer (+2 for current and next buttons) */
+    for (color=0; color<=(MAX_SRCH+2); color++) {
+	if (w == trace->menu.pdsubbutton[color + base]) {
+	    break;
+	    }
+	}
+
+    /* Duplicate code in config_read_color */
+    if (color==COLOR_CURRENT) color = global->highlight_color;
+    if (color==COLOR_NEXT) {
+	if ((++global->highlight_color) > MAX_SRCH) global->highlight_color = 1;  /* skips black */
+	color = global->highlight_color;
+	}
+
+    return (color);
+    }
+
+TRACE	*widget_to_trace (w)
+    Widget		w;
+{
+    TRACE	*trace;		/* Display information */
+    
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	if (trace->work == w) break;
+	}
+    if (!trace && DTDEBUG) printf ("widget_to_trace failed lookup.\n");
+    return (trace);
+    }
+
 void new_time (trace)
     TRACE 	*trace;
 {
