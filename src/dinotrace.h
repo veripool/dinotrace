@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V7.3b"
+#define DTVERSION	"Dinotrace V7.4a"
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
@@ -519,7 +519,6 @@ typedef struct st_trace {
     Window		wind;		/* X window */
     Pixel		xcolornums[MAXCOLORS];	/* X color numbers (pixels) for normal/highlight */
     Pixel		barcolornum;	/* X color number for the signal bar background */
-    XFontStruct		*text_font;	/* Display's Text font */
     GC                  gc;
     GC                  hscroll_gc;
 
@@ -609,7 +608,14 @@ typedef struct {
     ColorNum		highlight_color; /* Color selected for sig/cursor highlight */
     ColorNum		goto_color;	/* Cursor color to place on a 'GOTO' -1=none */
     char *		color_names[MAXCOLORS];	/* Names of the colors from the user */
-    char *		barcolor_name;	/* name of the signal bar color */
+    char *		barcolor_name;		/* name of the signal bar color */
+
+    char *		signal_font_name;	/* name of font for signal names */
+    char *		time_font_name;		/* name of font for times */
+    char *		value_font_name;	/* name of font for values */
+    XFontStruct		*signal_font;		/* Signal Text font */
+    XFontStruct		*time_font;		/* Time Text font */
+    XFontStruct		*value_font;		/* Value Text font */
 
     GEOMETRY		start_geometry;	/* Geometry to open first trace with */
     GEOMETRY		open_geometry;	/* Geometry to open later traces with */

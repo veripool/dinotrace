@@ -75,7 +75,10 @@ XtResource resources[] = {
     {"color6", "Color6", XtRString, sizeof(String), Offset(color_names[6]), XtRImmediate, (XtPointer) "Cyan"},
     {"color7", "Color7", XtRString, sizeof(String), Offset(color_names[7]), XtRImmediate, (XtPointer) "Yellow"},
     {"color8", "Color8", XtRString, sizeof(String), Offset(color_names[8]), XtRImmediate, (XtPointer) "Salmon"},
-    {"color9", "Color9", XtRString, sizeof(String), Offset(color_names[9]), XtRImmediate, (XtPointer) "NavyBlue"}
+    {"color9", "Color9", XtRString, sizeof(String), Offset(color_names[9]), XtRImmediate, (XtPointer) "NavyBlue"},
+    {"signalfont", "SignalFont", XtRString, sizeof(String), Offset(signal_font_name), XtRImmediate, (XtPointer) "-*-Fixed-Medium-R-Normal--*-120-*-*-*-*-*-1"},
+    {"timefont",   "TimeFont",   XtRString, sizeof(String), Offset(time_font_name),   XtRImmediate, (XtPointer) "-*-Courier-Medium-R-Normal--*-120-*-*-*-*-*-1"},
+    {"valuefont",  "ValueFont",  XtRString, sizeof(String), Offset(value_font_name),  XtRImmediate, (XtPointer) "-*-Fixed-Medium-R-Normal--*-100-*-*-*-*-*-1"}
     };
 #undef Offset
 
@@ -517,8 +520,32 @@ void dm_menu_subentry_colors (TRACE *trace,
     dm_menu_subentry (trace, "Next", 'N', next_accel, next_accel_string, callback);
     }
 
-/* Create a trace display and link it into the global information */
 
+/* Try to allocate the given font.  If it doesn't exist, use a default font, rather
+*  then printing a error.  Roughly equivelent to:
+*  return (XLoadQueryFont (global->display, global->signal_font_name))
+*  but that crashes if a font isn't found.
+*/
+XFontStruct *grab_font (trace, font_name)
+    TRACE	*trace;
+    char	*font_name;		/* Name of the font */
+{
+    XFontStruct *xfs;
+    int	num;
+    char **list;
+
+    list = XListFonts (global->display, font_name, 1, &num);
+    XFreeFontNames(list);
+
+    if (num > 0) {
+	return (XLoadQueryFont (global->display, font_name));
+    }
+    else {
+	return (XLoadQueryFont (global->display, "-*-*-medium-r-*-*-*-*-*-*-*-*-*-*"));
+    }
+}
+
+/* Create a trace display and link it into the global information */
 TRACE *create_trace (xs,ys,xp,yp)
     int		xs,ys,xp,yp;
 {
@@ -531,6 +558,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     char	**argv_copy;
     XColor	xcolor,xcolor2;
     Colormap	cmap;
+    Font 	font;
     
     /*** alloc space for trace to display state block ***/
     trace = malloc_trace ();
@@ -871,16 +899,15 @@ TRACE *create_trace (xs,ys,xp,yp)
     trace->signalstate_head = NULL;
     config_restore_defaults (trace);
     
-    /*
-    XGetGeometry (global->display, XtWindow (trace->work), (Window*) &x1, &x1,
-		 &x1, &x2, &x1, &x1, &x1);
-		 */
-
     trace->gc = XCreateGC (global->display, trace->wind, 0, NULL);
 
-    /* get font information */
-    trace->text_font = XQueryFont (global->display,XGContextFromGC (trace->gc));
-    
+    /* Choose fonts */
+    global->signal_font = grab_font (trace, global->signal_font_name);
+    global->time_font   = grab_font (trace, global->time_font_name);
+    global->value_font  = grab_font (trace, global->value_font_name);
+
+    XSetFont (global->display, trace->gc, global->signal_font->fid);
+
     new_res (trace);
 
     set_cursor (trace, DC_NORMAL);
