@@ -148,6 +148,8 @@ void fil_read_cb (trace)
 {
     int		read_fd;
     FILE	*read_fp;	/* Routines are responsible for assigning this! */
+    char	*pchar;
+    char 	pipecmd[MAXFNAMELEN+20]="";
 
     if (DTPRINT_ENTRY) printf ("In fil_read_cb trace=%d filename=%s\n",trace,trace->filename);
     
@@ -211,23 +213,31 @@ void fil_read_cb (trace)
 
 #ifndef VMS
     /* If compressed, close the file and open as uncompressed */
-    if (trace->fileformat == FF_DECSIM_Z) {
-	char scmd[MAXFNAMELEN];
+    pipecmd[0]='\0';
+    if ((pchar=strrchr(trace->filename,'.')) != NULL ) {
 
-	/* Close compressed file and open uncompressed file */
-	close (read_fd);
+	if (!strcmp (pchar, ".Z")) sprintf (pipecmd, "uncompress -c %s", trace->filename);
+	if (!strcmp (pchar, ".gz")) sprintf (pipecmd, "gunzip -c %s", trace->filename);
+	
+	/* Decsim must be ASCII because of record format */
+	if (trace->fileformat == FF_DECSIM_BIN) trace->fileformat == FF_DECSIM_ASCII;
 
-	sprintf (scmd, "uncompress -c %s", trace->filename);
-	read_fp = popen (scmd, "r");
-	if (!read_fp) {
-	    /* Similar above! */
-	    sprintf (message,"Can't create pipe with command '%s'", scmd);
-	    dino_error_ack (trace, message);
+	if (pipecmd[0]) {
 
-	    /* Clear cursor and return */
-	    change_title (trace);
-	    set_cursor (trace, DC_NORMAL);
-	    return;
+	    /* Close compressed file and open uncompressed file */
+	    close (read_fd);
+
+	    read_fp = popen (pipecmd, "r");
+	    if (!read_fp) {
+		/* Similar above! */
+		sprintf (message,"Can't create pipe with command '%s'", pipecmd);
+		dino_error_ack (trace, message);
+
+		/* Clear cursor and return */
+		change_title (trace);
+		set_cursor (trace, DC_NORMAL);
+		return;
+		}
 	    }
 	}
 #endif
@@ -246,7 +256,6 @@ void fil_read_cb (trace)
 	verilog_read (trace, read_fd);
 	break;
       case	FF_DECSIM_ASCII:
-      case	FF_DECSIM_Z:
 	decsim_read_ascii (trace, read_fd, read_fp);
 	break;
       default:
@@ -254,7 +263,7 @@ void fil_read_cb (trace)
 	}
 
     /* Close the file */
-    if (trace->fileformat != FF_DECSIM_Z) {
+    if (pipecmd[0] == '\0') {
 	close (read_fd);
 	}
 #ifndef VMS
@@ -560,7 +569,7 @@ void read_make_busses (trace, not_tempest)
 		      && ((bus_sig_ptr->lsb_index - 1) == sig_ptr->msb_index))
 		    || ((bus_sig_ptr->msb_index <= sig_ptr->lsb_index)
 			&& ((bus_sig_ptr->lsb_index + 1) == sig_ptr->msb_index)))
-		&& (trace->fileformat != FF_TEMPEST
+		&& ((trace->fileformat != FF_TEMPEST)
 		    || (((bus_sig_ptr->file_pos) == (sig_ptr->file_pos + sig_ptr->bits + 1))
 			&& trace->vector_seperator=='<'))
 		&& (trace->fileformat != FF_VERILOG
@@ -715,7 +724,6 @@ void read_trace_end (trace)
       case	FF_TEMPEST:
       case	FF_DECSIM_ASCII:
       case	FF_DECSIM_BIN:
-      case	FF_DECSIM_Z:
 	sig_modify_enables (trace);
 	break;
       case	FF_VERILOG:
@@ -1026,7 +1034,7 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
 
     time_divisor = time_units_to_multiplier (global->time_precision);
 
-    if (trace->fileformat != FF_DECSIM_Z) {
+    if (!decsim_z_readfp) {
 	/* Make file into descriptor */
 	readfp = fdopen (read_fd, "r");
 	if (!readfp) {
@@ -1206,8 +1214,6 @@ void decsim_read_ascii (trace, read_fd, decsim_z_readfp)
     read_trace_end (trace);
 
     /* Mark format as may have presumed binary */
-    if (trace->fileformat != FF_DECSIM_Z) {
-	trace->fileformat = FF_DECSIM_ASCII;
-	}
+    trace->fileformat = FF_DECSIM_ASCII;
     }
 

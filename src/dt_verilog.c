@@ -99,7 +99,8 @@ void	verilog_read_till_end (line, readfp)
 	}
     }
 
-void	verilog_read_timescale (line, readfp)
+void	verilog_read_timescale (trace, line, readfp)
+    TRACE	*trace;
     char	*line;
     FILE	*readfp;
 {
@@ -121,6 +122,7 @@ void	verilog_read_timescale (line, readfp)
 	time_scale *= 1000;
       case 'm':
 	time_scale *= 1000;
+	dino_warning_ack (trace, "Timescale of trace may be too big.");
       case 'u':
 	time_scale *= 1000;
       case 'n':
@@ -129,8 +131,9 @@ void	verilog_read_timescale (line, readfp)
 	break;
       case 'f':
       default:
-	if (DTPRINT) printf ("Unknown time scale unit '%c'\non line %d of %s\n",
-			     *line, verilog_line_num, current_file);
+	sprintf (message,"Unknown time scale unit '%c'\non line %d of %s\n",
+		 *line, verilog_line_num, current_file);
+	dino_error_ack (trace, message);
 	}
     if (time_scale == 0) time_scale = 1;
     if (DTPRINT_FILE) printf ("timescale=%d\n",time_scale);
@@ -684,7 +687,7 @@ void	verilog_process_lines (trace, readfp)
 	    verilog_read_till_end (line, readfp);
 	    }
 	else if (!strcmp(cmd, "timescale")) {
-	    verilog_read_timescale (line, readfp);
+	    verilog_read_timescale (trace, line, readfp);
 	    }
 	else if (!strcmp (cmd, "enddefinitions")) {
 	    verilog_process_definitions (trace);

@@ -52,18 +52,13 @@ XGCValues	xgcv;
 Arg		arglist[20];
 GLOBAL		*global;
 /* filetypes must be in the same order that the FF_* defines are */
-struct st_filetypes filetypes[8] = {
-    { 0, "Auto",		"?", "*.*" },
-    { 1, "DECSIM",		"TRA", "*.tra" },
-#ifdef VMS
-    { 0, "DECSIM Compressed",	"TRA.Z", "*_tra.Z" },
-#else
-    { 1, "DECSIM Compressed",	"TRA.Z", "*.tra.Z" },
-#endif
-    { 1, "Tempest CCLI",	"BT", "*.bt" },
-    { 1, "Verilog",		"DMP", "*.dmp" },
-    { 0, "DECSIM Binary",	"TRA", "*.tra" },
-    { 0, "DECSIM Ascii",	"TRA", "*.tra" },
+struct st_filetypes filetypes[FF_NUMFORMATS] = {
+    { 0, "Auto",		"?",	"*.*"		},
+    { 1, "DECSIM",		"TRA",	"*.tra*"	},
+    { 1, "Tempest CCLI",	"BT",	"*.bt*"		},
+    { 1, "Verilog",		"DMP",	"*.dmp*"	},
+    { 0, "DECSIM Binary",	"TRA",	"*.tra*"	},
+    { 0, "DECSIM Ascii",	"TRA",	"*.tra*"	},
     };
 
 int    main (argc, argv)
@@ -101,14 +96,12 @@ int    main (argc, argv)
         else if ( !strcmp (argv[i], "-tempest") ) {
             file_format = FF_TEMPEST;
 	    }
-        else if ( !strcmp (argv[i], "-decsim") ) {
+        else if ( !strcmp (argv[i], "-decsim")
+		 || !strcmp (argv[i], "-decsim_z") ) {
             file_format = FF_DECSIM;
 	    }
         else if ( !strcmp (argv[i], "-verilog") ) {
             file_format = FF_VERILOG;
-	    }
-        else if ( !strcmp (argv[i], "-decsim_z") ) {
-            file_format = FF_DECSIM_Z;
 	    }
         else if ( !strcmp (argv[i], "-sync") ) {
             sync = TRUE;

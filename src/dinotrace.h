@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V7.1b"
+#define DTVERSION	"Dinotrace V7.1c"
 #define EXPIRATION	((60*60*24)*100) /* In seconds - Comment out define for no expiration dates */
 /*#undef	EXPIRATION*/
 
@@ -202,20 +202,20 @@ extern int	DebugTemp;		/* Temp value for trying things */
 /* File formats.  See also hardcoded case statement in dinotrace.c */
 #define	FF_AUTO		0		/* Automatic selection */
 #define	FF_DECSIM	1		/* May be ascii or binary */
-#define	FF_DECSIM_Z	2		/* Compressed */
-#define	FF_TEMPEST	3
-#define	FF_VERILOG	4
-#define	FF_DECSIM_BIN	5
-#define	FF_DECSIM_ASCII	6
-#define	FF_NUMFORMATS	7		/* Number of formats */
+#define	FF_TEMPEST	2
+#define	FF_VERILOG	3
+#define	FF_DECSIM_BIN	4
+#define	FF_DECSIM_ASCII	5
+#define	FF_NUMFORMATS	6		/* Number of formats */
 extern int		file_format;	/* Type of trace to support */
 extern struct st_filetypes {
     Boolean		selection;	/* True if user can select this format */
     char	       	*name;		/* Name of this file type */
     char		*extension;	/* File extension */
     char		*mask;		/* File Open mask */
+    /*char		*pipe;		/ * Pipe to use (if NULL, no pipe) */
     /* void		(*routine);	/ * Routine to read it */
-    } filetypes[8];
+    } filetypes[FF_NUMFORMATS];
 
 extern char		message[1000];	/* generic string for messages */
 

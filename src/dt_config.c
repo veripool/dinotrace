@@ -42,7 +42,7 @@
 !	time_precision	US | NS | PS
 !	time_rep	<number> | US | NS | PS | CYCLE
 ! File Format:
-!	file_format	DECSIM | TEMPEST | VERILOG | DECSIM_Z
+!	file_format	DECSIM | TEMPEST | VERILOG
 !	save_enables	ON | OFF
 !	signal_states	<signal_pattern> = {<State>, <State>...}
 !	vector_seperator "<char>"
@@ -544,8 +544,8 @@ void	config_process_line_internal (trace, line, eof)
 	    }
 	else if (!strcmp(cmd, "PRINT")) {
 	    value=DTPRINT;
-	    if (toupper(line[0])=='O' && toupper(line[0])=='N') DTPRINT = -1;
-	    else if (toupper(line[0])=='O' && toupper(line[0])=='F') DTPRINT = 0;
+	    if (toupper(line[0])=='O' && toupper(line[1])=='N') DTPRINT = -1;
+	    else if (toupper(line[0])=='O' && toupper(line[1])=='F') DTPRINT = 0;
 	    else if (value >= 0) {
 		sscanf (line, "%lx", &value);
 		DTPRINT=value;
@@ -708,9 +708,7 @@ void	config_process_line_internal (trace, line, eof)
 	    for (tp = line; *tp && *tp!='Z' && *tp!='z'; tp++) ;
 	    switch (toupper(line[0])) {
 	      case 'D':
-		if (toupper (*tp) == 'Z')
-		    file_format = FF_DECSIM_Z;
-		else file_format = FF_DECSIM;
+		file_format = FF_DECSIM;
 		break;
 	      case 'T':
 		file_format = FF_TEMPEST;
@@ -719,7 +717,7 @@ void	config_process_line_internal (trace, line, eof)
 		file_format = FF_VERILOG;
 		break;
 	      default:
-		config_error_ack (trace, "File_Format must be DECSIM, TEMPEST or VERILOG\n");
+		config_error_ack (trace, "File_Format must be DECSIM, TEMPEST, or VERILOG\n");
 		}
 	    if (DTPRINT_CONFIG) printf ("File_format = %d\n", file_format);
 	    }
@@ -985,6 +983,15 @@ void config_read_defaults (trace, report_errors)
 	    *pchar = '\0';
 	strcat (newfilename, ".dino");
 	config_read_file (trace, newfilename, FALSE, report_errors);
+	/* Chop one more period & try again */
+	if (pchar) {
+	    *pchar = '\0';
+	    if ((pchar=strrchr(newfilename,'.')) != NULL ) {
+		*pchar = '\0';
+		strcat (newfilename, ".dino");
+		config_read_file (trace, newfilename, FALSE, report_errors);
+		}
+	    }
 	}
 
     /* Apply the statenames */
