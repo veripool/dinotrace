@@ -588,12 +588,11 @@ int	config_read_time (
     DTime_t	*dtime)
 {
     int 	outlen;
-    int		grid_num;
     char cmd[MAXSIGLEN];
 
     outlen = config_read_string (trace, line, cmd);
     if (!isdigit(cmd[0])) {
-	sprintf (message, "Expected time\n", MAXGRIDS);
+	sprintf (message, "Expected time\n");
 	*dtime = 0;
     }
     *dtime = string_to_time (trace, cmd);
