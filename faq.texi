@@ -115,7 +115,7 @@ X11R6, and a X11 server, like Exceed or Excursion.
 @section How do I get a printed copy of the Dinotrace manual?
 
 A html file is available at
-@uref{http://www.veripool.com/dinotrace/dinotrace.html}.
+@uref{http://www.veripool.com/dinotrace/index.html}.
 Your web browser should be able to print this.
 
 The more ambitious can build the manual themselves.  The texinfo source
