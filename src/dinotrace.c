@@ -226,8 +226,6 @@ See the Help menu for more information.");
 	XtAppNextEvent (global->appcontext, &event);
 	XtDispatchEvent (&event);
 	}
-
-    return(0);	/* to please lint */
     }
 
 char	*help_message ()

@@ -221,7 +221,7 @@ void fil_read_cb (trace)
 	if (!strcmp (pchar, ".gz")) sprintf (pipecmd, "gunzip -c %s", trace->filename);
 	
 	/* Decsim must be ASCII because of record format */
-	if (trace->fileformat == FF_DECSIM_BIN) trace->fileformat == FF_DECSIM_ASCII;
+	if (trace->fileformat == FF_DECSIM_BIN) trace->fileformat = FF_DECSIM_ASCII;
 
 	if (pipecmd[0]) {
 
@@ -248,7 +248,9 @@ void fil_read_cb (trace)
      */
     switch (trace->fileformat) {
       case	FF_DECSIM_BIN:
+#ifdef VMS
 	decsim_read_binary (trace, read_fd);
+#endif /* VMS */
 	break;
       case	FF_TEMPEST:
 	tempest_read (trace, read_fd);
@@ -303,8 +305,6 @@ void help_trace_cb (w,trace,cb)
 {
     static char msg[2000];
     static char msg2[100];
-    static char	date_str[50];
-    struct tm *timestr;
 
     if (DTPRINT_ENTRY) printf ("in help_trace_cb\n");
     

@@ -257,7 +257,7 @@ void draw_trace (trace)
     int c=0,i,cnt,adj,ymdpt,xloc,xend,du,len,mid,yfntloc;
     int last_drawn_xloc;
     unsigned int last_drawn_state=EOT;
-    int	x1,x2,y1,y2;
+    int	x1,y1,y2;
     int numprt;				/* Number of signals printed out on screen */
     int srch_this_color;		/* Color to print signal if matches search value */
     XPoint Pts[MAXCNT+100];			/* Array of points to plot */

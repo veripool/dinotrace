@@ -179,8 +179,6 @@ void trace_open_cb (w,trace,cb)
     TRACE		*trace;
     XmAnyCallbackStruct	*cb;
 {
-    Position x,y,width,height;
-    Position new_x,new_y,new_width,new_height;
     TRACE	*trace_new;
 
     trace_new = trace_create_split_window (trace);
@@ -236,7 +234,7 @@ void trace_clear_cb (w,trace,cb)
     for (trace_ptr = global->trace_head; trace_ptr; ) {
 	trace_next = trace_ptr->next_trace;
 	if (trace_ptr != trace) {
-	    trace_close_cb (w, trace_ptr);
+	    trace_close_cb (w, trace_ptr, cb);
 	    }
 	trace_ptr = trace_next;
 	}
@@ -262,7 +260,7 @@ void trace_exit_cb (w,trace,cb)
 
     for (trace = global->trace_head; trace; ) {
 	trace_next = trace->next_trace;
-	trace_close_cb (w, trace);
+	trace_close_cb (w, trace, cb);
 	trace = trace_next;
 	}
 

@@ -129,7 +129,6 @@ int	config_read_signal (line, out)
 {
     char *tp;
     int outlen=0;
-    char strg[MAXSIGLEN];
 
     while (*line && !issigchr(*line)) {
 	line++;

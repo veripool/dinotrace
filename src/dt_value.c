@@ -485,6 +485,10 @@ void    val_examine_ev (w, trace, ev)
 	    em = (XMotionEvent *)&event;
 	    val_examine_popup (trace, em->x, em->y, em);
 	    }
+
+	if (global->redraw_needed && !XtAppPending (global->appcontext)) {
+	    draw_perform();
+	    }
 	}
     
     /* reset the events the widget will respond to */
@@ -502,9 +506,6 @@ void    val_examine_popup_act (w, ev, params, num_params)
     String		params;
     Cardinal		*num_params;
 {
-    XEvent	event;
-    XMotionEvent *em;
-    int		update_pending = FALSE;
     TRACE	*trace;		/* Display information */
     int		prev_cursor;
     
@@ -905,7 +906,7 @@ void    val_annotate_do_cb (w,trace,cb)
     TRACE	*trace;
     XmAnyCallbackStruct	*cb;
 {
-    int		i,adj,num;
+    int		i;
     SIGNAL	*sig_ptr;
     SIGNAL_LW	*cptr;
     FILE	*dump_fp;

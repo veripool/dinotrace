@@ -59,10 +59,7 @@ void socket_input_cb (CLIENT *client,
     int	sock_client = *sock_client_ptr;
     char c;
     Boolean cont=TRUE;
-    Boolean cr=FALSE;
     int len;
-    char *cp;
-    int chrs;
 
     /*
     static int call = 0;
@@ -117,7 +114,7 @@ void socket_accept_cb (XtPointer usr,
 {
     int sock_client;		/* Specific connection socket number */
     int	clen;			/* Client packet length */
-    struct sockaddr_in sa_server,sa_client;	/* Socket addresses */
+    struct sockaddr_in sa_client;	/* Socket addresses */
     int		sock_server = *sock_server_ptr;
     CLIENT *client;		/* Buffer and other client info */
 

@@ -1328,7 +1328,6 @@ void sig_modify_en_signal (trace, en_sig_ptr, base_sig_ptr)
     SIGNAL	*en_sig_ptr, *base_sig_ptr;
 {
     SIGNAL	*new_sig_ptr;
-    char	*tp, *enablename;
     SIGNAL_LW	*base_cptr, *en_cptr;
     VALUE	new_value, base_value, en_value;
     int		has_ones;
