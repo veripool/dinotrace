@@ -119,7 +119,7 @@ void draw_grid (trace, textoccupied, grid_ptr)
     DTime	xtime;
     Position	y1,y2;			/* Starting and ending points */
 
-    if (grid_ptr->period < 1) grid_ptr->period = 1;	/* Prevents round-down to 0 causing infinite loop */
+    if (grid_ptr->period < 1) return;
 
     /* Is the grid too small or invisible?  If so, skip it */
     if ((! grid_ptr->visible) || ((grid_ptr->period * global->res) < MIN_GRID_RES)) {
@@ -382,7 +382,7 @@ void draw_trace (trace)
     /* Loop and draw each signal individually */
     for (sig_ptr = trace->dispsig, numprt = 0; sig_ptr && numprt<trace->numsigvis;
 	 sig_ptr = sig_ptr->forward, numprt++) {
-	if (DTPRINT_DRAW) printf ("draw %s\n",sig_ptr->signame);
+	/*if (DTPRINT_DRAW) printf ("draw %s\n",sig_ptr->signame);*/
 
 	/* Print the green bars */
 	if ( (c & 1) ^ (trace->numsigstart & 1) ) {
@@ -638,19 +638,24 @@ void draw_trace (trace)
 	} /* end of FOR */
     
     /* Back to default color */
+    if (DTPRINT_DRAW) printf ("Draw done.\n");
     XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
 
     draw_grids (trace);
 
+    if (DTPRINT_DRAW) printf ("Draw done.\n");
     /* draw the cursors if they are visible */
     if ( trace->cursor_vis ) draw_cursors (trace);
 
     /* Draw the scroll bar */
+    if (DTPRINT_DRAW) printf ("Draw %d.\n",__LINE__);
     draw_hscroll (trace);
     draw_vscroll (trace);
     
     /* Back to default color */
     XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
+
+    if (DTPRINT_DRAW) printf ("Draw done.\n");
     } /* End of DRAW */
 
 

@@ -621,7 +621,7 @@ void ps_draw_grid (trace, psfile, printtime, grid_ptr, draw_numbers)
     Position	x2;			/* Coordinate of current time */
     Position	yl,yh,yt;		/* Starting and ending points */
 
-    if (grid_ptr->period < 1) grid_ptr->period = 1;	/* Prevents round-down to 0 causing infinite loop */
+    if (grid_ptr->period < 1) return;
 
     /* Is the grid too small or invisible?  If so, skip it */
     if ((! grid_ptr->visible) || ((grid_ptr->period * global->res) < MIN_GRID_RES)) {

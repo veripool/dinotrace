@@ -66,7 +66,15 @@ void	grid_calc_auto (trace, grid_ptr)
     if (sig_ptr && !strncmp(sig_ptr->signame, "phase_count", 11)) sig_ptr=sig_ptr->forward;
 
     /* Can't do anything if don't have a signal yet */
-    if (!sig_ptr) return;	
+    if (!sig_ptr) {
+	/* Effectively disable grid */
+	switch (grid_ptr->period_auto) {
+	  case PA_AUTO:
+	    grid_ptr->period = 0;
+	    break;
+	}
+	return;	
+    }
 
     cptr = sig_ptr->cptr;
     /* Skip first one, as is often not representative of period */
