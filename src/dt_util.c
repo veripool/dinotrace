@@ -599,7 +599,7 @@ void get_geometry (
     }
 
     update_scrollbar (trace->hscroll, global->time,
-		      trace->grid[0].period,
+		      grid_primary_period (trace),
 		      trace->start_time, trace->end_time, 
 		      (int)TIME_WIDTH(trace) );
 
@@ -1243,8 +1243,8 @@ DTime string_to_time (
     if (f_time < 0) return (0);
 
     if (global->timerep == TIMEREP_CYC) {
-	return ((DTime)(f_time * trace->grid[0].period
-			+ trace->grid[0].alignment % trace->grid[0].period));
+	return ((DTime)(f_time * grid_primary_period(trace)
+			+ trace->grid[0].alignment % grid_primary_period(trace)));
     }
 
     /* First convert to picoseconds */
@@ -1277,11 +1277,11 @@ void time_to_string (
     if (global->timerep == TIMEREP_CYC) {
 	if (!relative) {
 	    /* Adjust within one cycle so that grids are on .0 boundaries */
-	    f_time -= (double)(trace->grid[0].alignment % trace->grid[0].period);	/* Want integer remainder */
+	    f_time -= (double)(trace->grid[0].alignment % grid_primary_period(trace));	/* Want integer remainder */
 	}
 
 	decimals = 1;
-	f_time = f_time / ((double)trace->grid[0].period);
+	f_time = f_time / ((double)grid_primary_period(trace));
     }
     else {
 	/* Convert time to picoseconds, Preserve fall through order in case statement */

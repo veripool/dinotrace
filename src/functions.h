@@ -251,11 +251,14 @@ extern DTime	cur_time_first (Trace *trace);
 extern DTime	cur_time_last (Trace *trace);
 extern void	cur_write (FILE *, char *c);
 extern char *	cur_examine_string (Trace *trace, DCursor *cursor_ptr);
+extern void	cur_step (DTime step);
 
 extern void	cur_add_cb (Widget w);
 extern void	cur_mov_cb (Widget w);
 extern void	cur_del_cb (Widget w);
 extern void	cur_clr_cb (Widget w);
+extern void	cur_step_fwd_cb (Widget w);
+extern void	cur_step_back_cb (Widget w);
 extern void	cur_highlight_cb (Widget w);
 extern void	cur_highlight_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
 extern void	cur_add_ev (Widget w, Trace *trace, XButtonPressedEvent *ev);
@@ -274,6 +277,7 @@ extern void	config_write_file (Trace *trace, char *filename);
 extern SignalState_t *signalstate_find (Trace *, char *);
 
 /* dt_grid.c routines */
+extern DTime	grid_primary_period (Trace *trace);
 extern void	grid_calc_autos (Trace *trace);
 extern char *	grid_examine_string (Trace *trace, Grid *grid_ptr, DTime time);
 

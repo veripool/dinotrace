@@ -68,6 +68,7 @@ MAKEINFO = makeinfo
 TEXI2DVI = texi2dvi
 PERL = @PERL@
 
+#### Don't edit: You're much better using configure switches to set these
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 
@@ -80,19 +81,24 @@ datadir = @datadir@
 # Directory in which to install documentation info files.
 infodir = @infodir@
 
+# Directory in which to install package specific files
+# Note this gets coded into src/config.h also
+pkgdatadir = @pkgdatadir@
+
 #### End of system configuration section. ####
+######################################################################
 
 SHELL = /bin/sh
 
 SUBDIRS = src
 
 # Files that can be generated, but should be up to date for a distribution.
-DISTDEP = info Makefile
+DISTDEP = info Makefile src/dinodoc.pl src/dist_date.pl
 # Files to distribute.
-DISTFILES = COPYING ChangeLog ChangeLog.1 INSTALL FAQ \
-	Makefile.in NEWS README TODO \
-	install.texi faq.texi \
-	src/Makefile.in src/*.h src/*.c src/*.pl
+DISTFILES = COPYING FAQ INSTALL NEWS TODO Makefile.in \
+	dinotrace.txt \
+	install.texi faq.texi *.com \
+	src/*.in src/*.h src/*.c src/*.pl src/*.com
 
 all: dinotrace_exe info
 
@@ -102,11 +108,16 @@ dinotrace_exe dinotrace:
 	echo making dinotrace in src ; \
 	  (cd src && $(MAKE) ../dinotrace) ; \
 
-info: dinotrace.info INSTALL FAQ
+INFOS = dinotrace.info INSTALL FAQ dinotrace.txt
+info: $(INFOS)
 
 # Use --no-split to avoid creating filenames > 14 chars.
 dinotrace.info: dinotrace.texi
 	$(MAKEINFO) -I$(srcdir) $(srcdir)/dinotrace.texi --no-split --output=$@
+
+dinotrace.txt: dinotrace.texi
+	$(MAKEINFO) -I$(srcdir) $(srcdir)/dinotrace.texi --output=$@ \
+	--no-headers --no-validate
 
 INSTALL: install.texi
 	$(MAKEINFO) -I$(srcdir) $(srcdir)/install.texi --output=$@ \
@@ -122,13 +133,13 @@ dinotrace.dvi: dinotrace.texi
 	$(TEXI2DVI) $(srcdir)/dinotrace.texi
 
 installdirs:
-	$(SHELL) ${srcdir}/mkinstalldirs $(bindir) $(infodir) $(acdatadir)
+	$(SHELL) ${srcdir}/mkinstalldirs $(bindir) $(infodir) $(datadir)
 
 install: all $(M4FILES) acconfig.h installdirs install-info
 	@case `$(M4) --help < /dev/null 2>&1` in \
 	*reload-state*) echo installing frozen m4 files; \
-	  $(M4) -F $(acdatadir)/dinotrace.m4f -I${srcdir} ${srcdir}/dinotrace.m4 ; \
-	  $(M4) -F $(acdatadir)/autoheader.m4f -I${srcdir} ${srcdir}/autoheader.m4 ;; \
+	  $(M4) -F $(datadir)/dinotrace.m4f -I${srcdir} ${srcdir}/dinotrace.m4 ; \
+	  $(M4) -F $(datadir)/autoheader.m4f -I${srcdir} ${srcdir}/autoheader.m4 ;; \
 	*traditional*) ;; \
 	*) echo Error: Dinotrace requires GNU m4 1.1 or later; exit 1 ;; \
 	esac
@@ -136,13 +147,13 @@ install: all $(M4FILES) acconfig.h installdirs install-info
 	  $(INSTALL_PROGRAM) $$p $(bindir)/`echo $$p|sed '$(transform)'`; \
 	done
 	for i in $(M4FILES) acconfig.h; do \
-	$(INSTALL_DATA) $(srcdir)/$$i $(acdatadir)/$$i; \
+	$(INSTALL_DATA) $(srcdir)/$$i $(datadir)/$$i; \
 	done
 	-if test -f autoscan; then \
 	$(INSTALL_PROGRAM) autoscan $(bindir)/`echo autoscan|sed '$(transform)'`; \
 	for i in acfunctions acheaders acidentifiers acprograms \
 	  acmakevars; do \
-	$(INSTALL_DATA) $(srcdir)/$$i $(acdatadir)/$$i; \
+	$(INSTALL_DATA) $(srcdir)/$$i $(datadir)/$$i; \
 	done; \
 	else :; fi
 
@@ -159,13 +170,8 @@ install-info: info installdirs
 	fi
 
 uninstall:
-	for p in $(SCRIPTS); do \
-	  rm -f $(bindir)/`echo $$p|sed '$(transform)'`; \
-	done
-	rm -fr $(acdatadir)
+	rm -fr $(datadir)
 	cd $(infodir) && rm -f dinotrace.info*
-	if test -f standards.info || test -f $(srcdir)/standards.info; \
-	then cd $(infodir) && rm -f standards.info*; fi
 
 # autoheader might not change config.h.in, so touch a stamp file.
 ${srcdir}/config.h.in: stamp-h.in
@@ -187,7 +193,7 @@ configure: configure.in
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
 	@echo "rebuilding the deleted files requires makeinfo."
-	rm -f *.info* INSTALL FAQ configure
+	rm -f *.info* $(INFOS) configure
 
 clean mostlyclean distclean maintainer-clean::
 	for dir in $(SUBDIRS); do \
@@ -216,9 +222,7 @@ dist: $(DISTDEP)
 	distname=`sed -e '/define(AC_ACVERSION,/!d' \
 	-e 's/[^0-9.]*\([0-9.]*\).*/dinotrace-\1/' -e q acgeneral.m4`; \
 	rm -fr $$distname; \
-	mkdir $$distname $$distname/testsuite $$distname/testsuite/config \
-	$$distname/testsuite/lib $$distname/testsuite/dinotrace.g \
-	$$distname/testsuite/dinotrace.s; \
+	mkdir $$distname; \
 	for file in $(DISTFILES); do \
 	  ln $$file $$distname/$$file \
 	  || { echo copying $$file instead; cp -p $$file $$distname/$$file;}; \

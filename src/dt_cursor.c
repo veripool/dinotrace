@@ -211,6 +211,28 @@ DTime cur_time_last (
     }
 }
 
+void cur_step (
+    DTime	step
+    )
+    /* Move all cursors the specified distance */
+{
+    DCursor	*csr_ptr;
+    DCursor	*nxt_csr_ptr;
+
+    if (DTPRINT_ENTRY) printf ("In cur_step %d\n", step);
+    for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = nxt_csr_ptr) {
+	nxt_csr_ptr = csr_ptr->next;
+	if (csr_ptr->type == USER) {
+	    if (step >= 0 || csr_ptr->time >= -step) {
+		csr_ptr->time += step;
+	    } else {
+		cur_remove (csr_ptr);
+	    }
+	}
+    }
+    draw_all_needed ();
+}
+
 /****************************** EXAMINE ******************************/
 
 char *cur_examine_string (
@@ -325,6 +347,22 @@ void    cur_highlight_cb (
     remove_all_events (trace);
     set_cursor (DC_CUR_HIGHLIGHT);
     add_event (ButtonPressMask, cur_highlight_ev);
+}
+
+void    cur_step_fwd_cb (
+    Widget		w)
+{
+    Trace *trace = widget_to_trace(w);
+    if (DTPRINT_ENTRY) printf ("In cur_step_fwd_cb.\n");
+    cur_step (grid_primary_period (trace));
+}
+
+void    cur_step_back_cb (
+    Widget		w)
+{
+    Trace *trace = widget_to_trace(w);
+    if (DTPRINT_ENTRY) printf ("In cur_step_back_cb.\n");
+    cur_step ( - grid_primary_period (trace));
 }
 
 /****************************** EVENTS ******************************/

@@ -6,6 +6,7 @@ dnl Checks host type
 AC_CANONICAL_HOST
 HOST=$host
 AC_SUBST(HOST)
+AC_DEFINE_UNQUOTED(HOST,"$host")
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -37,5 +38,10 @@ AC_TYPE_SIGNAL
 AC_CHECK_FUNCS(gethostname strdup strcascmp)
 
 dnl Checks for system services
+
+dnl Other install directories
+pkgdatadir=${datadir}/dinotrace
+AC_DEFINE_UNQUOTED(DINODISK_DEFAULT,"$pkgdatadir")
+AC_SUBST(pkgdatadir)
 
 AC_OUTPUT(Makefile src/Makefile)

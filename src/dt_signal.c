@@ -1657,6 +1657,7 @@ void sig_cross_preserve (
     /* Tell old trace that it no longer has any signals */
     trace->firstsig = NULL;
     trace->dispsig = NULL;
+    trace->numsigstart = 0;
 }
 
 void sig_cross_sigmatch (
@@ -1755,6 +1756,8 @@ void sig_cross_restore (
 
 	/* Remember scrolling position before move signals around */
 	new_dispsig = NULL;	/* But, don't set it yet, the pointer may move */
+	if (global->preserved_trace->dispsig) {
+	}
 	if (global->preserved_trace->dispsig && global->preserved_trace->dispsig->new_trace_sig) {
 	    new_dispsig = global->preserved_trace->dispsig->new_trace_sig;
 	}
@@ -1855,6 +1858,7 @@ void sig_cross_restore (
 	if (DTPRINT_PRESERVE) printf ("Preserve: Relinking\n");
 	trace->firstsig = newlist_firstsig;
 	trace->numsig = 0;
+	trace->numsigstart = 0;
 	old_sig_ptr = NULL;
 	for (new_sig_ptr = newlist_firstsig; new_sig_ptr; new_sig_ptr = new_sig_ptr->new_forward_sig) {
 	    trace->numsig++;

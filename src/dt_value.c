@@ -1642,7 +1642,7 @@ void    val_annotate_do_cb (
     }
 
     /* Signal values */
-    /* [basename name color-num nil(face) note values] */
+    /* (basename [name color-num note values] nil(propertied)) */
     fprintf (dump_fp, "(setq dinotrace-signal-values '(\n");
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
         if ((   global->anno_traces == TRACESEL_THIS && trace!=global->anno_last_trace)
@@ -1657,7 +1657,7 @@ void    val_annotate_do_cb (
 	    if (p) *p = '\0';
 	    fprintf (dump_fp, "\t(\"%s\"\t", basename);
 
-	    fprintf (dump_fp, "\t\"%s\"\t", sig_ptr->signame);
+	    fprintf (dump_fp, "\t[\"%s\"\t", sig_ptr->signame);
 	    if (global->anno_ena_signal[sig_ptr->color]) fprintf (dump_fp, "%d\t", sig_ptr->color);
 	    else     fprintf (dump_fp, "nil\t");
 
@@ -1693,7 +1693,7 @@ void    val_annotate_do_cb (
 		    fprintf (dump_fp, "\"\t");
 		}
 	    }
-	    fprintf (dump_fp, "))\n");
+	    fprintf (dump_fp, ") nil])\n");
 	}
     }
     fprintf (dump_fp, "\t))\n");

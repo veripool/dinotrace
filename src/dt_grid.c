@@ -78,6 +78,26 @@ extern void	grid_customize_ok_cb(), grid_customize_apply_cb(), grid_customize_re
 extern void	grid_customize_align_cb (Widget w, Trace *trace, XmAnyCallbackStruct *cb);
 
 
+/****************************** UTILITIES ******************************/
+
+DTime	grid_primary_period (
+    Trace	*trace)
+{
+    int		grid_num;
+    Grid	*grid_ptr;
+    DTime	step;
+    step = 0;
+    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
+	grid_ptr = &(trace->grid[grid_num]);
+	if (grid_ptr->visible) {
+	    step = grid_ptr->period;
+	    break;
+	}
+    }
+    return (step);
+}
+
+
 /****************************** AUTO GRIDS ******************************/
 
 void	grid_calc_auto (

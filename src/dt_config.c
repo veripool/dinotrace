@@ -1043,6 +1043,12 @@ void	config_process_line_internal (
 		cur_add (ctime, color, type, note);
 	    }
 	}
+	else if (!strcmp(cmd, "CURSOR_STEP_FORWARD")) {
+	    cur_step (grid_primary_period (trace));
+	}
+	else if (!strcmp(cmd, "CURSOR_STEP_BACKWARD")) {
+	    cur_step ( - grid_primary_period (trace));
+	}
 	else if (!strcmp(cmd, "TIME_GOTO")) {
 	    DTime ctime;
 	    char strg[MAXSIGLEN];
@@ -1251,8 +1257,12 @@ void config_read_defaults (
     Boolean_t	report_errors)
 {
     int		cfg_num;
+    Signal	*new_dispsig;
+    Signal	*sig_ptr;
 
     if (DTPRINT_ENTRY) printf ("In config_read_defaults\n");
+
+    new_dispsig = trace->dispsig;
 
     /* Erase old cursors */
     cur_delete_of_type (CONFIG);
@@ -1265,10 +1275,24 @@ void config_read_defaults (
 	}
     }
 
+    /* If user deleted and readded signals, we might have reset */
+    /* dispsig.  Attempt to restore */
+    if (new_dispsig && trace->dispsig == trace->firstsig) {
+	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	    if (sig_ptr == new_dispsig) {
+		/* Is still actively displayed (else deleted) */
+		trace->dispsig = new_dispsig;
+		vscroll_new (trace, 0);
+		break;
+	    }
+	}
+
+    }
+
     /* Apply the statenames */
     grid_calc_autos (trace);
-    draw_all_needed ();
 
+    draw_all_needed ();
     if (DTPRINT_ENTRY) printf ("Exit config_read_defaults\n");
 }
 

@@ -838,6 +838,8 @@ Trace *create_trace (
     dm_menu_subentry_colors (trace, 		NULL, NULL, NULL, NULL,	cur_highlight_cb);
     dm_menu_entry (trace, 	"Move",		'M',	NULL, NULL,	cur_mov_cb);
     dm_menu_entry (trace, 	"Delete",	'D',	NULL, NULL,	cur_del_cb);
+    dm_menu_entry (trace, 	"Step Forward",	'F',	"!Shift<Key>greater:", ">",	cur_step_fwd_cb);
+    dm_menu_entry (trace, 	"Step Backward",'B',	"!Shift<Key>less:", "<",	cur_step_back_cb);
     dm_menu_entry (trace, 	"Clear", 	'C',	NULL, NULL,	cur_clr_cb);
     dm_menu_entry (trace, 	"Cancel", 	'l',	"!<Key>Escape:", "esc",	cancel_all_events_cb);
 

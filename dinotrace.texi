@@ -18,52 +18,35 @@
 
 @c Before release, run C-u C-c C-u C-a (texinfo-all-menus-update with a
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
+@c Also update the master menu, created with texinfo-master-menu
 
 @set ID 9.0a
 @set VERSION 9.0a
 @set UPDATED June 1998
 @c All functions use these for searching ease
-@macro dmenu {f}
+@macro dmenu{f}
 @code{\f\}
 @end macro
-@iftex
-@global@let@dmenu=@code
-@end iftex
 
-@macro widget {f}
+@macro widget{f}
 @emph{\f\}
 @end macro
-@iftex
-@global@let@widget=@emph
-@end iftex
 
-@macro resource {f}
+@macro resource{f}
 @code{\f\}
 @end macro
-@iftex
-@global@let@resource=@code
-@end iftex
 
-@macro config {f}
+@macro config{f}
 @code{\f\}
 @end macro
-@iftex
-@global@let@config=@code
-@end iftex
 
-@macro switch {f}
-@samp{\f\}
+@macro switch{f}
+@code{\f\}
 @end macro
-@iftex
-@global@let@switch=@samp
-@end iftex
 
-@macro prog {f}
+@macro prog{f}
 @strong{\f\}
 @end macro
-@iftex
-@global@let@prog=@strong
-@end iftex
 
 @iftex
 @finalout
@@ -101,7 +84,7 @@ except that this permission notice may be stated in a translation approved
 by the author.
 @end ifinfo
 
-@setchapternewpage odd
+@c @setchapternewpage odd   <- when manual gets bigger
 
 @c @finalout
 @titlepage
@@ -139,7 +122,7 @@ This file documents the Dinotrace package for signal waveform tracing.
 This is edition @value{ID}, for Dinotrace version @value{VERSION}.
 
 For the latest version, please see
-@url{http://www.ultranet.com/~wsnyder/veripool/dinotrace}
+@uref{http://www.ultranet.com/~wsnyder/veripool/dinotrace}
 
 Please feel free to send comments and suggestions to
 @email{wsnyder@@ultranet.com} or @email{wsnyder@@world.std.com}.  If you install this
@@ -150,16 +133,10 @@ releases.
 
 @c The master menu, created with texinfo-master-menu, goes here.
 
-@c @menu
-@c * Tree Structuring::            A manual is like an upside down tree
-@c @end menu
-
-@c ======================================================================
 @menu
 * Summary::                     
 * History::                     
 * Invoking Dinotrace::          
-* Concepts::                    
 * Screen Description::          
 * Keyboard Shortcuts::          
 * Customization Files::         
@@ -169,6 +146,8 @@ releases.
 * Bugs::                        
 * Index::                       
 @end menu
+
+@c ======================================================================
 
 @node Summary, History, Top, Top
 @chapter Summary
@@ -223,7 +202,7 @@ from Digital's X toolkit to Motif, added color, highlighting, searching,
 and other features.  Several formats were added to Dinotrace to support
 Verilator, our group's own Verilog to C translator, written by Paul
 Wasson.  (And soon be available on the Dinotrace website at
-@url{http://www.ultranet.com/~wsnyder/veripool/verilator}.)  As the
+@uref{http://www.ultranet.com/~wsnyder/veripool/verilator}.)  As the
 years went on, other groups started using the typical industry standard
 Verilog simulators.  Although programs like vwaves were available, they
 had some silly limitations.  Besides, we were hooked on Dinotrace, so I
@@ -266,7 +245,7 @@ Michael Quadri, Reinhard Schumann, Simcha, Jai Singh, Dean Sovie, Julie
 Staraitis, Bob Walsh, Paul Wasson, and Bob Yodlowski.
 
 @c ======================================================================
-@node Invoking Dinotrace, Concepts, History, Top
+@node Invoking Dinotrace, Screen Description, History, Top
 @chapter Invoking Dinotrace
 @cindex Invoking Dinotrace
 
@@ -287,53 +266,49 @@ respectively.
 These switches are supported, in addition to the standard @prog{X-11}
 switches, like @switch{-display}.
 
-@ftable @switch
+@c @table @switch
+@table @code
 @item -verilog
 @findex -verilog
+
 Read following trace filenames using Verilog format.  This is the
 default format.
+
 @item -decsim
 @findex -decsim
+
 Read following trace filenames using Decsim format.  If running on
 a VMS system, Decsim Binary format is also supported.
+
 @item -tempest
 @findex -tempest
 @cindex File Format, Switch
+
 Read following trace filenames using Tempest/CCLI format.
+
 @item -noconfig
 @findex -noconfig
 @findex Configuration Files, Disabling
+
 Skip reading the standard global, user, and directory .dino files.
 Do read any trace-specific .dino files.
+
 @item -geometry @var{geometry}
 @findex -geometry
 @cindex Geometry, Switch
+
 Specifies the window size and position in standard
 X format (@var{width}X@var{height}+@var{xpos}+@var{ypos}).
+
 @item -res @var{resolution}
 @findex -res
+
 Specify the trace resolution.
-@end ftable
+
+@end table
 
 @c ======================================================================
-@node Concepts, Screen Description, Invoking Dinotrace, Top
-@chapter Concepts
-
-      Radix        	Verilog Style  VHDL Style
-      Hex           	'h<num>      X"<num>"
-      Oct            	'o<num>      O"<num>"
-      Binary            'b<num>      B"<num>"
-      Decimal		'd<num>      D"<num>"
-      Real		'r<num>	     R"<num>"   **
-      Ascii (String)	's<strg>      S"<strg>"
-      Ascii (String)	"<strg>"
-
-**=Reals are only supported as 64 bit doubles in the native machine format.
-A Verilog file with a @code{real} will map to this type.  Changing regular
-signals to the real radix will probably not map the value correctly.
-
-@c ======================================================================
-@node Screen Description, Keyboard Shortcuts, Concepts, Top
+@node Screen Description, Keyboard Shortcuts, Invoking Dinotrace, Top
 @chapter Screen Description
 
 This chapter describes the layout of the screen, and the function of the
@@ -352,10 +327,24 @@ various widget and menu items.
 @section Window Widgets
 
 The main window is broken into the display area, with signal names on
-the left and values stretching to the vertical scroll bar.  The vertical
-scroll bar on the right scrolls through the various signals, if they all
-cannot fit on the screen at once.  At the bottom of the screen is a time
-scroll bar on the right, and a signal name scroll bar on the left.
+the left and values stretching to the vertical scroll bar.  
+
+The state of each signal across time is indicated by the way the line is
+drawn.  As usual, low, tristate, and high are low, middle, and high
+strait lines.  The high value has a bolder line to aid in discriminating
+it from a low.  Unknowns are filled areas.
+
+Busses are drawn in one of three ways; if zero they are low, if all bits
+are one it it is two parallel lines with the upper one bolded.  If the
+bus is some mix of zeros and ones it is two narrow parallel lines.  If
+there is space the value of the bus will be shown based on the
+@dmenu{Signal Radix} menu option.
+
+Gadgets surround the main area.  The vertical scroll bar on the right is
+the @widget{Signal Slider} used to scroll signals, if they all cannot
+fit on the screen at once.  At the bottom of the screen is the
+@widget{Time Slider} on the right, and the @widget{Name Slider} on the
+left.
 
 @menu
 * Time Slider::                 
@@ -368,31 +357,34 @@ scroll bar on the right, and a signal name scroll bar on the left.
 @subsection Time Slider
 @cindex Time Slider
 
-On the left bottom of the main window is the time scroll bar.
+On the left bottom of the main window is the @widget{Time Slider}.
 
-@table @widget
+@c @table @widget
+@table @emph
 @item Drag
-Dragging the time slider will scroll the time across the screen.  Lines
-are printed in the scroll area to indicate where cursors are located.
+
+Dragging the @widget{Time Slider} will scroll the time across the
+screen.  Lines are printed in the scroll area to indicate where cursors
+are located.
 
 @item Unit Dec
 @kindex @key{left}
 
-Clicking the <- arrow at the left of the time slider, or pressing
-@kbd{@key{left}} will move the time one grid #0 resolution (usually one
-clock) earlier.
+Clicking the <- arrow at the left of the @widget{Time Slider}, or
+pressing @kbd{@key{left}} will move the time one grid #0 (or the first
+visible grid) resolution earlier.
 
 @item Unit Inc
 @kindex @key{right}
 
-Clicking the -> arrow at the right of the time slider, or pressing
+Clicking the -> arrow at the right of the @widget{Time Slider}, or pressing
 @kbd{@key{right}} will move the time one grid #0 resolution (usually one
 clock) later.
 
 @item Page Dec
 @kindex S-@key{left}
 
-Clicking the blank area at the left of the time slider, or pressing
+Clicking the blank area at the left of the @widget{Time Slider}, or pressing
 @kbd{S-@key{right}} will move the time one screen width earlier, so the
 time at the left of the screen is now at the right.  (Or 1/2 or 1/4
 screen width, depending on the @config{page_inc} customization setting.)
@@ -400,7 +392,7 @@ screen width, depending on the @config{page_inc} customization setting.)
 @item Page Inc
 @kindex S-@key{right}
 
-Clicking the blank area at the right of the time slider, or pressing
+Clicking the blank area at the right of the @widget{Time Slider}, or pressing
 @kbd{S-@key{right}} will move the time one screen width later, so the
 time at the right of the screen is now at the left. (Or 1/2 or 1/4
 screen width, depending on the @config{page_inc} customization setting.)
@@ -411,15 +403,19 @@ screen width, depending on the @config{page_inc} customization setting.)
 @cindex Name Slider
 @cindex Signal Names, Scrolling
 
-The name slider is the horizontal scroll bar left of time scroll bar.
+The @widget{Name Slider} is the horizontal scroll bar left of the
+@widget{Time Slider}.
 
-@table @widget
+@c @table @widget
+@table @emph
 @item Drag
 @cindex Name Slider
 @cindex Signal Names, Scrolling
-Dragging the name slider will scroll the signal names left and right so
-that they may be completely seen.  Dinotrace aligns the signals on the
-last dot (hierarchy character).
+
+Dragging the @widget{Name Slider} will scroll the signal names left and
+right so that they may be completely seen.  Dinotrace aligns the signals
+on the last dot (hierarchy character).
+
 @end table
 
 @node Signal Slider, Buttons, Name Slider, Window Widgets
@@ -427,34 +423,37 @@ last dot (hierarchy character).
 @cindex Signal Slider
 @cindex Signals, Scrolling
 
-The signal slider is the vertical scroll bar to the right of the window.
+The @widget{Signal Slider} is the vertical scroll bar to the right of
+the window.
 
-@table @widget
+@c @table @widget
+@table @emph
 @item Drag
 @cindex Signal Slider
-Dragging the signal slider will scroll the signals so that new signals
-can be seen.  Lines are printed in the scroll area to indicate where
-highlighted signals are located.
+
+Dragging the @widget{Signal Slider} will scroll the signals so that new
+signals can be seen.  Lines are printed in the scroll area to indicate
+where highlighted signals are located.
 
 @item Unit Dec
 @kindex @key{up}
 
-Clicking the <- arrow at the top of the signal slider, or pressing
-@kbd{@key{up}} will move the signals down one, displaying a new signal
-at the top.
+Clicking the <- arrow at the top of the @widget{Signal Slider}, or
+pressing @kbd{@key{up}} will move the signals down one, displaying a new
+signal at the top.
 
 @item Unit Inc
 @kindex @key{down}
 
-Clicking the -> arrow at the bottom of the signal slider, or pressing
-@kbd{@key{down}} will move the Moves signals up one, displaying a new
-signal at the bottom.
+Clicking the -> arrow at the bottom of the @widget{Signal Slider}, or
+pressing @kbd{@key{down}} will move the Moves signals up one, displaying
+a new signal at the bottom.
 
 @item Page Dec
 @kindex S-@key{up}
 @kindex @key{pageup}
 
-Clicking the blank area above the signal slider, or pressing
+Clicking the blank area above the @widget{Signal Slider}, or pressing
 @kbd{@key{pageup}} will move the signals up one screen full, so the
 previous top signal is now at the bottom.
 
@@ -462,7 +461,7 @@ previous top signal is now at the bottom.
 @kindex S-@key{down}
 @kindex @key{pagedown}
 
-Clicking the blank area below the signal slider, or pressing
+Clicking the blank area below the @widget{Signal Slider}, or pressing
 @kbd{@key{pagedown}} will move the signals down one screen full, so the
 previous bottom signal is now at the top.
 
@@ -471,16 +470,17 @@ previous bottom signal is now at the top.
 @node Buttons,  , Signal Slider, Window Widgets
 @subsection Buttons
 
-The buttons below the lower scroll bar perform common functions that affect
+The buttons below the lower sliders perform common functions that affect
 the display.
 
-@table @widget
+@c @table @widget
+@table @emph
 @item Begin
 @cindex Begin Button
 @cindex Time, Moving to Beginning
 @kindex @key{begin}
 
-Clicking the @widget{Begin} button below the time scroll bar, or
+Clicking the @widget{Begin} button below the @widget{Time Slider}, or
 pressing @kbd{@key{begin}} will move to the earliest time in the trace.
 
 @item End
@@ -488,7 +488,7 @@ pressing @kbd{@key{begin}} will move to the earliest time in the trace.
 @cindex Time, Moving to End
 @kindex @key{end}
 
-Clicking the @widget{End} button below the time scroll bar, or pressing
+Clicking the @widget{End} button below the @widget{Time Slider}, or pressing
 @kbd{@key{end}} will move to the earliest time in the trace.
 
 @item Goto
@@ -496,11 +496,12 @@ Clicking the @widget{End} button below the time scroll bar, or pressing
 @cindex Time, Goto
 @kindex g
 
-Clicking the @widget{Goto} button below the time scroll bar, or pressing
-@kbd{g} will make a popup that prompts for a time.  The window will
-scroll horizontally so that the entered time is centered on the screen.
-A option menu will place a cursor of the selected color at the time
-entered.
+Clicking the @widget{Goto} button below the @widget{Time Slider}, or
+pressing @kbd{g} will make a popup that prompts for a time.  The window
+will scroll horizontally so that the entered time is centered on the
+screen.  A option menu will place a cursor of the selected color at the
+time entered.  A note may be attached to the cursor, and seen with
+@dmenu{Value Examine}.
 
 @item Refresh
 @cindex Refresh Button
@@ -550,22 +551,35 @@ entire trace fits onto the screen.  It is often quicker to press
 @node Trace Menu, Customize Menu, Window Widgets, Screen Description
 @section Trace Menu
 
-@table @dmenu
-@item Trace Read...
+@menu
+* Trace Read...::               
+* Trace ReRead::                
+* Trace ReRead All::            
+* Trace Open...::               
+* Trace Close::                 
+* Trace Clear::                 
+* Trace Print...::              
+* Trace Print::                 
+* Trace Exit::                  
+@end menu
+
+@node Trace Read..., Trace ReRead, Trace Menu, Trace Menu
+@subsection Trace Read...
 @cindex Trace Read...
 @cindex Reading, Traces
 @kindex C-o
 
-Selecting the @dmenu{Trace Read} menu option, or pressing @kbd{C-o}
-pops up a file requester to read a trace.  The default is to read
-Verilog traces (@file{.dmp}).  To read other formats, the format must be
-set FIRST using the option menu, a command line switch, or the
-@config{file_format} configuration command.
+Selecting the @dmenu{Trace Read...} menu option, or pressing @kbd{C-o}
+pops up a file requester to read a trace.  If a file ends in a @file{.Z}
+or @file{.gz} extension, it will be piped through uncompress or gunzip
+respectively before being read.  The type of trace may be set with the
+option box; the default is set by the @config{file_format} configuration
+command.  If @widget{Preserve Signal Ordering} is checked, the signals
+in the new trace will be reorganized to attempt to match the ordering of
+the current trace in the window.
 
-If a file ends in a @file{.Z} or @file{.gz} extension, it will be piped
-through uncompress or gunzip respectively before being read.
-
-@item Trace ReRead
+@node Trace ReRead, Trace ReRead All, Trace Read..., Trace Menu
+@subsection Trace ReRead
 @cindex Trace ReRead
 @cindex Rereading, Traces
 
@@ -577,7 +591,8 @@ if a new one exists.  If no file is displayed, it is the same as the
 This is useful for rereading a trace after it has changed due to a new
 simulation run.
 
-@item Trace ReRead All
+@node Trace ReRead All, Trace Open..., Trace ReRead, Trace Menu
+@subsection Trace ReRead All
 @cindex Trace ReRead All
 @kindex C-r
 
@@ -585,18 +600,20 @@ Selecting @dmenu{Trace ReRead All}, or pressing @kbd{C-r}, checks every
 window to see if that window's file has been updated, and rereads if it
 has.
 
-@item Trace Open...
+@node Trace Open..., Trace Close, Trace ReRead All, Trace Menu
+@subsection Trace Open...
 @cindex Trace Open...
 @cindex Opening, Traces
 
-Selecting @dmenu{Trace Open} shrinks the current window in half, and
+Selecting @dmenu{Trace Open...} shrinks the current window in half, and
 opens another Dinotrace window, linked in time to the original.  The two
 traces will then pan together and share cursors, etc.  Multiple window
 support is intended for traces that have the same time lengths.
-@xref{Customization Files} for how to change the default window sizes,
-such as to not shrink the original window when opening.
+@xref{open_geometry} for how to change the default window sizes, such as
+to not shrink the original window when opening.
 
-@item Trace Close
+@node Trace Close, Trace Clear, Trace Open..., Trace Menu
+@subsection Trace Close
 @cindex Trace Close
 @cindex Closing, Traces
 
@@ -604,69 +621,136 @@ Selecting @dmenu{Trace Close} closes the current window if more then one
 is open.  If this is the only one remaining open, use @dmenu{Trace Exit}
 instead.
 
-@item Trace Clear
+@node Trace Clear, Trace Print..., Trace Close, Trace Menu
+@subsection Trace Clear
 @cindex Trace Clear
 @cindex Clearing, Traces
 
 Selecting @dmenu{Trace Clear} closes all other windows and resets
 Dinotrace as if Dinotrace was exited and ran again.
 
-@item Trace Print...
+@node Trace Print..., Trace Print, Trace Clear, Trace Menu
+@subsection Trace Print...
 @cindex Trace Print...
 @cindex Print...
 @cindex Printing
 
-Selecting @dmenu{Trace Print} pops up a file requester allowing the
+Selecting @dmenu{Trace Print...} pops up a file requester allowing the
 current screen to be printed to a file.  The amount of time, and number
-of signals on the screen will represent the time and signals on one page
-of paper.
+of signals on the screen will match the time and signals put onto one
+page of paper.
 
-The include off-screen times button will print multiple @dfn{horizontal}
-pages of paper, so that all times in the trace is printed.  The include
-off-screen signals button will print multiple @dfn{vertical} pages, so that
-all signals are printed.  Both may be checked and taped together to get
-a nice wall hanging.
+The @widget{Filename} and @widget{Note} specify where to put the output,
+and a note to be placed on the bottom of each page.
 
-The @widget{EPS} option will make a Encapsulated Postscript file that does not
-include all of the headers.  This is suitable for making figures for
-inclusion in other documents.
+@cindex Page Size, Print
+@cindex Print, Page Size
 
-@item Trace Print
+The @widget{Layout} option selects the size of the page.  @widget{EPS}
+will make a Encapsulated Postscript file that does not include all of
+the headers.  This is suitable for making figures for inclusion in other
+documents.
+
+The @widget{Include off-screen times} button will print multiple
+@dfn{horizontal} pages of paper, so that all times in the trace is
+printed.  The @widget{Include off-screen signals} button will print
+multiple @dfn{vertical} pages, so that all signals are printed.  Both
+may be checked and taped together to get a nice wall hanging.
+
+The @widget{Begin printing at} and @widget{End printing at} select the
+region to be printed.  This may be based on the whole trace, what is
+displayed on the screen, or the cursors.
+
+@node Trace Print, Trace Exit, Trace Print..., Trace Menu
+@subsection Trace Print
 @cindex Trace Print
 
 Selecting @dmenu{Trace Print} performs a print using the last @dmenu{Trace
 Print...} settings.
 
-@item Trace Exit
+@node Trace Exit,  , Trace Print, Trace Menu
+@subsection Trace Exit
 @cindex Trace Exit
 @cindex Exiting
 
 Selecting @dmenu{Trace Exit} will exit Dinotrace.
 
-@end table
 
 @node Customize Menu, Cursor Menu, Trace Menu, Screen Description
 @section Customize Menu
 
-@table @dmenu
-@item Customize Change...
+@menu
+* Customize Change...::         
+* Customize Grid...::           
+* Customize Read...::           
+* Customize ReRead::            
+* Customize Save As...::        
+* Customize Restore::           
+@end menu
+
+@node Customize Change..., Customize Grid..., Customize Menu, Customize Menu
+@subsection Customize Change...
 @cindex Customize Change...
 
 Selecting @dmenu{Customize Change} pops up a requester that allows the
 configuration to be customized.  @xref{Customization Files} for
-permanent configuration.
+permanent configuration, and additional options that are not selectable
+here.
 
-@item Customize Grid...
+@cindex Page Increment
+
+The @widget{Page Increment} option selects how much of a screen clicking
+on the @widget{Page Inc} space on the @widget{Time Slider} will
+increment.
+
+@cindex Time, Representation
+@cindex Representation, Time
+
+The @widget{Time Representation} option selects how times are displayed
+and entered in the @widget{Goto} popup.  Selecting @widget{Grid #0
+Cycles} will put all times in the period defined by Grid #0.
+
+@cindex Height, Signals
+@cindex Signals, Height
+
+The @widget{Signal Height} option controls how many signals can fit on
+the screen and printout.  Small sizes have more information, but may
+cause the values to be hard to read.
+
+@cindex Edge, Clicking to
+@cindex Click to Edge
+
+The @widget{Click To Edge} button enables @dmenu{Cursor Add} and other
+menu items that require mouse clicks to find the closest transition and add
+it at that point.  The search will be only within 20 pixels; if there is no
+edge within that distance, the cursor is added right where the cursor is.
+
+@cindex Signal, Rise-fall time
+@cindex Rise-fall time
+
+The @widget{Rise/Fall Time} slider controls how fast signals transition.
+
+@cindex Refreshing, Mode
+@cindex Manual Refreshing
+
+Thw @widget{Manual Refreshing} button disables automatic refreshing, for
+dialup lines.  The @widget{Refresh} button must be pressed to refresh
+the screen.
+
+@node Customize Grid..., Customize Read..., Customize Change..., Customize Menu
+@subsection Customize Grid...
 @cindex Customize Grid...
 @cindex Grid...
 @cindex Grid, Customization
 
 Selecting @dmenu{Customize Grid} pops up a requester that allows the
 configuration to be customized.  @xref{Customization Files} for
-permanent configuration.  Note that grid #0 is used for moving one
-increment, and for counting cycles.
+permanent configuration.  Note that the lowest numbered grid that is
+visible is used for moving one increment, stepping cursors forward and
+back, and for counting cycles.
 
-@item Customize Read...
+@node Customize Read..., Customize ReRead, Customize Grid..., Customize Menu
+@subsection Customize Read...
 @cindex Customize Read...
 @cindex Reading, Customization
 
@@ -675,14 +759,16 @@ specified @file{.dino} file.  The requester also allows enabling and
 disabling of which @file{.dino} files will be read when a new trace is
 read.
 
-@item Customize ReRead
+@node Customize ReRead, Customize Save As..., Customize Read..., Customize Menu
+@subsection Customize ReRead
 @cindex Customize ReRead
 
 Selecting @dmenu{Customize ReRead} will reread the customize
 @file{.dino} files.  This is useful for applying changes to Dinotrace
 after a @file{.dino} file has been edited outside Dinotrace.
 
-@item Customize Save As...
+@node Customize Save As..., Customize Restore, Customize ReRead, Customize Menu
+@subsection Customize Save As...
 @cindex Customize Save As...
 @cindex Saving, Customization
 
@@ -693,7 +779,8 @@ many of the settings that will be saved can be applied only to one
 window, and should be edited out before being included in any global
 @file{dinotrace.dino} files.
 
-@item Customize Restore
+@node Customize Restore,  , Customize Save As..., Customize Menu
+@subsection Customize Restore
 @cindex Customize Restore
 @cindex Restoring, Customization
 
@@ -701,14 +788,24 @@ Selecting @dmenu{Customize Restore} will restore the customization
 options to their program defaults.  It will not read any @file{.dino}
 files.
 
-@end table
 @c ------------------------------
 
 @node Cursor Menu, Signal Menu, Customize Menu, Screen Description
 @section Cursor Menu
 
-@table @dmenu
-@item Cursor Add
+@menu
+* Cursor Add::                  
+* Cursor Highlight::            
+* Cursor Move::                 
+* Cursor Delete::               
+* Cursor Step Forward::         
+* Cursor Step Backward::        
+* Cursor Clear::                
+* Cursor Cancel::               
+@end menu
+
+@node Cursor Add, Cursor Highlight, Cursor Menu, Cursor Menu
+@subsection Cursor Add
 @cindex Cursor Add
 @cindex Adding, Cursors
 @kindex c
@@ -720,14 +817,16 @@ Selecting @dmenu{Cursor Add}, or pressing @kbd{c}, then clicking
 color down in the menu from the last color selected.  @xref{cursor_add}
 for the equivalent configuration file command.
 
-@item Cursor Highlight
+@node Cursor Highlight, Cursor Move, Cursor Add, Cursor Menu
+@subsection Cursor Highlight
 @cindex Cursor Highlight
 @cindex Highlighting, Cursors
 
 Selecting @dmenu{Cursor Delete} then clicking @kbd{@key{MB1}} on cursors
 will change the color of those cursors.
 
-@item Cursor Move
+@node Cursor Move, Cursor Delete, Cursor Highlight, Cursor Menu
+@subsection Cursor Move
 @cindex Cursor Move
 @cindex Moving, Cursors
 
@@ -737,7 +836,8 @@ the cursor is at the new time desired.  Moving a cursor that was created
 with @dmenu{Signal Search} will make that cursor permanent; the cursor
 will not go away if the search is changed.
 
-@item Cursor Delete
+@node Cursor Delete, Cursor Step Forward, Cursor Move, Cursor Menu
+@subsection Cursor Delete
 @cindex Cursor Delete
 @cindex Deleting, Cursors
 
@@ -746,27 +846,57 @@ will delete those cursors.  To delete cursors that were created by
 @dmenu{Value Search} (those with dotted lines), turn off the second
 button on the @dmenu{Value Search} requester.
 
-@item Cursor Clear
+@node Cursor Step Forward, Cursor Step Backward, Cursor Delete, Cursor Menu
+@subsection Cursor Step Forward
+@cindex Cursor Step Foward
+@cindex Moving, Cursors by Grid
+@cindex Grids, Stepping Cursors by
+
+Selecting @dmenu{Cursor Step Forward} will move all user cursors forward the
+by grid #0's (or the first visible grid's) period.
+
+@node Cursor Step Backward, Cursor Clear, Cursor Step Forward, Cursor Menu
+@subsection Cursor Step Backward
+@cindex Cursor Step Backward
+@cindex Moving, Cursors by Grid
+@cindex Grids, Stepping Cursors by
+
+Selecting @dmenu{Cursor Step Back} will move all user cursors backward the
+by grid #0's (or the first visible grid's) period.
+
+@node Cursor Clear, Cursor Cancel, Cursor Step Backward, Cursor Menu
+@subsection Cursor Clear
 @cindex Cursor Clear
 @cindex Clearing, Cursors
 
 Selecting @dmenu{Cursor Clear} will delete all cursors.
 
-@item Cursor Cancel
+@node Cursor Cancel,  , Cursor Clear, Cursor Menu
+@subsection Cursor Cancel
 @cindex Cursor Cancel
 @kindex @key{esc}
 
 Selecting @dmenu{Cursor Cancel}, or pressing @kbd{@key{esc}} will stop
 @kbd{@key{MB1}} mouse clicks from having any affect.
 
-@end table
-
 @c ------------------------------
 @node Signal Menu, Value Menu, Cursor Menu, Screen Description
 @section Signal Menu
 
-@table @dmenu
-@item Signal Add...
+@menu
+* Signal Add...::               
+* Signal Highlight::            
+* Signal Move::                 
+* Signal Copy::                 
+* Signal Delete::               
+* Signal Radix::                
+* Signal Search...::            
+* Signal Select...::            
+* Signal Cancel::               
+@end menu
+
+@node Signal Add..., Signal Highlight, Signal Menu, Signal Menu
+@subsection Signal Add...
 @cindex Signal Add
 @cindex Adding, Signals
 
@@ -774,7 +904,8 @@ Selecting @dmenu{Signal Add} will pop up a popup allowing a signal to be
 selected then added at the point where @kbd{@key{MB1}} is clicked.
 @xref{signal_add} for the equivalent configuration file command.
 
-@item Signal Highlight
+@node Signal Highlight, Signal Move, Signal Add..., Signal Menu
+@subsection Signal Highlight
 @cindex Signal Highlight
 @cindex Highlighting, Signals
 @kindex s
@@ -784,7 +915,8 @@ Selecting @dmenu{Signal Highlight}, or pressing @kbd{s}, then clicking
 @kbd{@key{MB1}} on signals changes the color of those signals.
 @xref{signal_highlight} for the equivalent configuration file command.
 
-@item Signal Move
+@node Signal Move, Signal Copy, Signal Highlight, Signal Menu
+@subsection Signal Move
 @cindex Signal Move
 @cindex Moving, Signals
 
@@ -794,7 +926,8 @@ Signals may be moved between traces, but closing a trace eliminates all
 signals that were originally from that trace.  @xref{signal_move} for
 the equivalent configuration file command.
 
-@item Signal Copy
+@node Signal Copy, Signal Delete, Signal Move, Signal Menu
+@subsection Signal Copy
 @cindex Signal Copy
 @cindex Copying, Signals
 
@@ -805,7 +938,8 @@ signals that were originally from that trace.  @xref{signal_copy} for
 the equivalent configuration file command.
 
 
-@item Signal Delete
+@node Signal Delete, Signal Radix, Signal Copy, Signal Menu
+@subsection Signal Delete
 @cindex Signal Delete
 @cindex Deleting, Signals
 
@@ -814,7 +948,8 @@ deletes those signals.  @dmenu{Signal Select} may be used to recover the
 deleted signals.  @xref{signal_delete} for the equivalent configuration
 file command.
 
-@item Signal Radix
+@node Signal Radix, Signal Search..., Signal Delete, Signal Menu
+@subsection Signal Radix
 @cindex Signal Radix
 @cindex Radix, Signals
 
@@ -825,22 +960,31 @@ other non-real signals to a real format probably won't display the
 values you wish.  @xref{signal_radix} for the equivalent configuration
 file command.
 
-@item Signal Search...
+@node Signal Search..., Signal Select..., Signal Radix, Signal Menu
+@subsection Signal Search...
 @cindex Signal Search...
 @cindex Searching, Signals
 @cindex Finding, Signals
 
 Selecting @dmenu{Signal Search} opens a popup for highlighting signal
 names.  Nine signal names which will be searched for in the trace are
-specified.  A signal name pattern, potentially containing @kbd{*} to match
-any number of characters, or @kbd{?} to match any single character is entered
-into a text widget and the toggle buttons to the left is activated.  Any
-signal name which matches the signal name pattern will be highlighted
-using the color of the toggle button, just as if @dmenu{Signal Highlight} was
-used to color it.  Highlighting a signal makes it permanent; it will not
-go away when the search that found that signal changes.
+specified.  Any signal name which matches the signal name pattern will
+be highlighted using the color of the toggle button, just as if
+@dmenu{Signal Highlight} was used to color it.  Unlike @dmenu{Signal
+Search}, highlighting a signal with @dmenu{Signal Highlight} makes it
+permanent; it will not go away when the search that found that signal
+changes.
 
-@item Signal Select...
+The @widget{Signal name pattern} indicates which signal names to
+highlight, potentially containing @kbd{*} to match any number of
+characters, or @kbd{?} to match any single character.  Case never
+matters when matching signal names.
+
+The @widget{Enable} button enables the search, and shows the color to be
+used for highlighting when the signal is found.
+
+@node Signal Select..., Signal Cancel, Signal Search..., Signal Menu
+@subsection Signal Select...
 @cindex Signal Select...
 @cindex Selecting, Signal
 @kindex C-f
@@ -852,25 +996,34 @@ the top which a signal must match to be displayed.  Clicking on a signal
 will add it to the bottom of the other list.  Clicking on the
 @widget{Add All} or @widget{Delete All} will affect all of those in the
 list.  By specifying a pattern then @widget{Add All} or @widget{Delete
-All}, signals which match a pattern can be added or deleted.  The
-@widget{Delete Constant Value} button will delete only those signals
+All}, signals which match a pattern can be added or deleted.
+
+The @widget{Delete Constant Value} button will delete only those signals
 which have a single constant value for all times in the trace.
 
-@item Signal Cancel
+@node Signal Cancel,  , Signal Select..., Signal Menu
+@subsection Signal Cancel
 @cindex Signal Cancel
 
 Selecting @dmenu{Signal Cancel}, or pressing @kbd{@key{esc}} will stop
 @kbd{@key{MB1}} mouse clicks from having any affect.
-
-@end table
 
 @c ------------------------------
 
 @node Value Menu,  , Signal Menu, Screen Description
 @section Value Menu
 
-@table @dmenu
-@item Value Annotate...
+@menu
+* Value Annotate...::           
+* Value Annotate::              
+* Value Highlight::             
+* Value Examine::               
+* Value Search...::             
+* Value Cancel::                
+@end menu
+
+@node Value Annotate..., Value Annotate, Value Menu, Value Menu
+@subsection Value Annotate...
 @cindex Value Annotate...
 @cindex Annotate...
 @cindex Annotation
@@ -880,7 +1033,7 @@ Selecting @dmenu{Value Annotate...} makes a file with the highlighted
 signals, and values under every cursor.  Behavioral code can then be
 highlighted with the values by @file{dinotrace.el}'s reading the written
 file.  Cursors which are exactly on a edge of a signal will get the
-value that the signal is changing _to_, not from.
+value that the signal is changing @emph{to}, not from.
 
 Buttons specify which cursor and signal colors are included in the file.
 If a button is on, the color is included, else it is as if the cursor
@@ -892,7 +1045,8 @@ Automatic cursors are from searching for values or cursors placed by
 
 See @xref{Dinotrace and Emacs}
 
-@item Value Annotate
+@node Value Annotate, Value Highlight, Value Annotate..., Value Menu
+@subsection Value Annotate
 @cindex Value Annotate
 @kindex a
 
@@ -900,7 +1054,8 @@ Selecting @dmenu{Value Annotate}, or pressing @kbd{a} annotates code
 using the last Annotate... settings.  @xref{annotate} for the equivalent
 configuration file command.
 
-@item Value Highlight
+@node Value Highlight, Value Examine, Value Annotate, Value Menu
+@subsection Value Highlight
 @cindex Value Highlight
 @cindex Highlighting, Values
 @kindex v
@@ -912,36 +1067,81 @@ values, and highlights it where it occurs in the trace.  The search
 value can then be seen and modified with the @dmenu{Value Search} popup.
 @xref{value_highlight} for the equivalent configuration file command.
 
-@item Value Examine
+@node Value Examine, Value Search..., Value Highlight, Value Menu
+@subsection Value Examine
 @cindex Value Examine
 @cindex Examining, Values
 
-Selecting @dmenu{Value Examine} then holding @kbd{@key{MB1}} on a signal
-will show the state of the signal under the mouse.  @kbd{@key{MB2}} can
+Selecting @dmenu{Value Examine} then holding @kbd{@key{MB1}}
+will show the state of the entity under the mouse.  @kbd{@key{MB2}} can
 always be used for this feature.
 
-@item Value Search...
+Signal transitions can be examined when over the transition lines.
+Signal names and base information can be seen when over the signal
+names.  Cursors can be examined when at the bottom of the screen, and
+grids when at the top.
+
+@node Value Search..., Value Cancel, Value Examine, Value Menu
+@subsection Value Search...
 @cindex Value Search...
 @cindex Searching, Values
 
 Selecting @dmenu{Value Search...} allows specification of 9 values to be
 searched for in the trace.  Each value is entered into a text widget and
-one or two toggle buttons to the left are activated.  With the first
-button active, anywhere that the value appears in a trace that value
-will be printed using the color of the toggle button.  The second button
-will add a cursor at the time where the value begins.  Cursors that are
-placed in this fashion are displayed as dotted lines, and will go away
-if the search value is changed.  Highlighting or moving a cursor makes
-it permanent; it will not go away when the search changes.
+one or two toggle buttons to the left are activated.  The @dmenu{Value
+Highlight} menu can be used to load a search automatically.
 @xref{value_highlight} for the equivalent configuration file command.
 
-@item Value Cancel
+The @widget{Highlight value} button will make anywhere that the value
+appears in a trace to be printed using the color of the toggle button.
+
+The @widget{Add cursor} button will add a cursor at the time where the
+value begins.  Cursors that are placed in this fashion are displayed as
+dotted lines, and will go away if the search value is changed.
+Highlighting or moving a cursor makes it permanent; it will not go away
+when the search changes.
+
+The @widget{Signal name pattern} indicates which signals names to search
+for the value, potentially containing @kbd{*} to match any number of
+characters, or @kbd{?} to match any single character.  Often a single
+@kbd{*} is useful to search all signals.
+
+The @widget{Value} indicates the value to be found.  Unfortunately wildcards
+are not supported.  A standard verilog or VHDL prefix may be added to specify
+the radix of the number being entered.  (The radix of the signal found does
+not have to match the radix entered; @samp{'h10} will match @samp{'d16}.
+
+@cindex Radix, Values
+@cindex Values, indicating Radix
+
+@table @code
+@item  'h<num> 
+@itemx X"<num>"
+Hex           	
+@item  'o<num> 
+@itemx O"<num>"
+Octal
+@item  'b<num> 
+@itemx B"<num>"
+Binary            
+@item  'd<num> 
+@itemx D"<num>"
+Decimal		
+@item  'r<num>	
+@itemx R"<num>"
+Real		
+@item  's<strg>
+@item  S"<strg>"
+@item  "<strg>"
+Ascii (String)
+@end table
+
+@node Value Cancel,  , Value Search..., Value Menu
+@subsection Value Cancel
 @cindex Value Cancel
 
 Selecting @dmenu{Value Cancel}, or pressing @kbd{@key{esc}} will stop
 @kbd{@key{MB1}} mouse clicks from having any affect.
-
-@end table
 
 @c ======================================================================
 @node Keyboard Shortcuts, Customization Files, Screen Description, Top
@@ -965,54 +1165,54 @@ function when using GNU Emacs's Verilog, C, Merlin, or CCLI modes.
 @item @key{up}
 Signal scroll up one signal.
 @item S-@key{up}
-Signal scroll up a screen-full
+Signal scroll up a screen full.
 @item @key{down}
-Signal scroll down one signal
+Signal scroll down one signal.
 @item S-@key{down}
-Signal scroll down a screen-full
+Signal scroll down a screen full.
 @item @key{pageup}
-Signal scroll up a screen-full
+Signal scroll up a screen full.
 @item @key{pagedown}
-Signal scroll down a screen-full
+Signal scroll down a screen full.
 @item @key{left}
-Time scroll left a grid #0 increment
+Time scroll left a grid #0 increment.
 @item S-@key{left}
-Time scroll left a screen-full
+Time scroll left a screen full.
 @item @key{right}
-Time scroll left a grid #0 increment
+Time scroll left a grid #0 increment.
 @item S-@key{right}
-Time scroll left a screen-full
+Time scroll left a screen full.
 @item @key{begin}
-Beginning of time
+Beginning of time.
 @item @key{end}
-End of time
+End of time.
 
 @item @key{esc}
-@dmenu{Signal Cancel}
+@dmenu{Signal Cancel}.
 
 @item a
-@dmenu{Value Annotate}
+@dmenu{Value Annotate}.
 @item c
-@dmenu{Cursor Add} with current color
+@dmenu{Cursor Add} with current color.
 @item C
-@dmenu{Cursor Add} with next color
+@dmenu{Cursor Add} with next color.
 @item g
-Goto time
+@widget{Goto} time.
 @item s
-@dmenu{Signal Highlight} with current color
+@dmenu{Signal Highlight} with current color.
 @item S
-@dmenu{Signal Highlight} with next color
+@dmenu{Signal Highlight} with next color.
 @item v
-@dmenu{Value Highlight} with current color
+@dmenu{Value Highlight} with current color.
 @item V
-@dmenu{Value Highlight} with next color
+@dmenu{Value Highlight} with next color.
 
 @item C-f
-@dmenu{Signal Search...}
+@dmenu{Signal Search...}.
 @item C-o
-@dmenu{Trace Read...}
+@dmenu{Trace Read...}.
 @item C-r
-@dmenu{Trace ReRead All}
+@dmenu{Trace ReRead All}.
 
 @end table
 
@@ -1035,32 +1235,35 @@ be customized to suit a specific site, user, directory, and trace.
 @section Automatically Read Files
 
 When a trace file is read using the @dmenu{Trace Read} menu option,
-several configuration files are read automatically: (On VMS,
-@file{$DINODISK} and @file{$DINOCONFIG} are defines, not environment
-variables, and @file{SYS$LOGIN} is used as ~.)
+several configuration files are read automatically:
 
 @table @file
 
 @item $DINODISK:dinotrace.dino
 @cindex DINODISK
+@cindex Environment Variables, DINODISK
 
 The @file{$DINODISK:dinotrace.dino} file is intended to have site wide
-defaults.  This will probably contain a @config{file_format verilog} or similar
-commands.
+defaults.  This will probably contain a @config{file_format verilog} or
+similar commands.  (On Unix, @file{$DINODISK} represents the contents of
+the @file{DINODISK} environment variable.  On VMS, it represents the
+value of the system define.)
 
 @item $DINOCONFIG
 @cindex DINOCONFIG
+@cindex Environment Variables, DINOCONFIG
 
 The @file{$DINOCONFIG} file is intended to be used for session specific
-start-up, like setting screen size depending on what type of system
-you are using.  Users will probably point this to several possible sources
+start-up, like setting screen size depending on what type of system you
+are using.  Users will probably point this to several possible sources
 using their @file{.login}.
 
 @item ~/dinotrace.dino
 
 The @file{~/dinotrace.dino} file is for user defaults.  The author for
-example has a @config{signal_height 15} and @config{signal_delete_constant *},
-which are both personal preference items.
+example has a @config{signal_height 15} and
+@config{signal_delete_constant *}, which are both personal preference
+items.  (On VMS, @file{SYS$LOGIN:} is used instead of @file{~/}.)
 
 @item @{current/trace/directory@}/dinotrace.dino
 
@@ -1143,6 +1346,7 @@ Comments out the remainder of the line.
 @node page_inc, rise_fall_time, #, Configuration Commands
 @subsection page_inc
 @findex page_inc
+@cindex Page Increment
 @config{page_inc}		@var{4 | 2 | 1}
 
 Changes the increment used during @widget{Page Inc} and @widget{Page
@@ -1152,6 +1356,8 @@ Dec} clicks on the horizontal scroll-bar.  1=full page, 2=half,
 @node rise_fall_time, signal_height, page_inc, Configuration Commands
 @subsection rise_fall_time
 @findex rise_fall_time
+@cindex Signal, Rise-fall time
+@cindex Rise-fall time
 @config{rise_fall_time}	@var{number}
 
 Changes the slope used when drawing signal assertions and deassertion.
@@ -1229,6 +1435,7 @@ Changes the color used to display the grid.
 @subsection refreshing
 @findex refreshing
 @cindex Refreshing, Mode
+@cindex Manual Refreshing
 @config{refreshing}		AUTO | MANUAL
 
 In automatic refresh mode, any change in the screen such as zooming,
@@ -1314,6 +1521,7 @@ was already on the screen, do nothing.
 @node time_rep, time_precision, time_goto, Configuration Commands
 @subsection time_rep
 @cindex Representation, Time
+@cindex Time, Representation
 @findex time_rep
 @config{time_rep}		@var{number} | PS | NS | US | CYCLE
 
@@ -1409,6 +1617,7 @@ rereads.
 @subsection click_to_edge
 @findex click_to_edge
 @cindex Edge, Clicking to
+@cindex Click to Edge
 @config{click_to_edge}	ON | OFF
 
 Enables or disables whether adding a cursor or grid close to a signal
@@ -1435,6 +1644,7 @@ informational level.
 @subsection print_size
 @findex print_size
 @cindex Page Size, Print
+@cindex Print, Page Size
 @config{print_size}		A | B | EPSPORT | EPSLAND
 
 Selects the paper size, A (8 1/2" by 11") or B (11" by 17").
@@ -1650,7 +1860,8 @@ Then type at the shell @samp{xrdb ~/.Xdefaults} to reread the database.
 Dinotrace adds the following resources over and above the core X Toolkit
 resource names and classes (such as foreground and background):
 
-@table @resource
+@c @table @resource
+@table @code
 @cindex Color, Searching
 @item color@var{#}
 @findex color#
@@ -1695,10 +1906,174 @@ buses.  Defaults to @code{-*-Fixed-Medium-R-Normal--*-100-*-*-*-*-*-1}
 @c ======================================================================
 @node Dinotrace and Emacs, File Formats, X Resources, Top
 @chapter Dinotrace and Emacs
+@cindex Emacs, Annotation
 
 This chapter describes the interaction between Dinotrace and Emacs.
 
-FIX!
+Dinotrace provides the means for back-annotating highlighting and values
+into Emacs buffers, and from Emacs, highlighting signals, values, and
+the like.  This is what separates Dinotrace from the rest.
+
+@menu
+* Installation::                
+* Annotation::                  
+* Signal Matching::             
+* Entering Dinotrace-Mode::     
+* Exiting Dinotrace Mode::      
+* Keys in Dinotrace Mode::      
+@end menu
+
+@node Installation, Annotation, Dinotrace and Emacs, Dinotrace and Emacs
+@section Installation
+@cindex verilog-mode.el
+
+The appropriate Emacs code should have been installed along with the
+rest of Dinotrace.  If you encounter problems, you should return to this
+section.
+
+You'll probably also need @file{verilog-mode.el} from
+@uref{http://www.surefirev.com/verilog-mode.html}.  Make sure that file,
+and the distribution's files @file{lisp/dinotrace.el} and
+@file{lisp/sim-mode.el} are installed in your Emacs @code{site-lisp}
+directory. (In Emacs @kbd{C-h v load-path @key{RET}} should list the
+name of that directory.)  Check that in your @file{.emacs} file, or
+better yet, the site's @file{site-start.el} file there are the lines:
+
+@example
+(autoload 'sim-log-mode "sim-log" "Mode for Simulation Log files." t)
+(setq auto-mode-alist (append (list '("\\.log$" . sim-log-mode)) auto-mode-alist))
+(autoload 'dinotrace-update "dinotrace" "Update dinotrace annotations in this buffer" t)
+(autoload 'dinotrace-mode   "dinotrace" "Toggle dinotrace annotations in this buffer" t)
+(global-set-key "\C-x\C-aa" 'dinotrace-update)
+(global-set-key "\C-x\C-ad" 'dinotrace-mode)
+@end example
+
+@node Annotation, Signal Matching, Installation, Dinotrace and Emacs
+@section Annotation
+
+With a trace up in Dinotrace, select the @dmenu{Value Annotate...} menu
+item.  This will create a magic file in your home directory.
+
+In Emacs, visit a Verilog or C file which has some signals that are in
+the trace.  Press @kbd{C-x C-a a}.  Emacs will read the annotation file
+and add highlighting to your buffer.  A new menu will appear on the
+screen, and the mode line will indicate @samp{Dinotrace}.
+
+In a simulation log file (ending in @file{.log}), Pressing @kbd{C-x C-a
+a} will likewise add annotations of where cursors exist.
+
+@node Signal Matching, Entering Dinotrace-Mode, Annotation, Dinotrace and Emacs
+@section Signal Matching
+
+Emacs chooses what to highlight based upon only the base part of the
+signal name; all hiearchy and bus descriptors are stripped.  If multiple
+signals exist with the same basename, all signals other then those with
+the desired hiearchy should be deleted so they won't participate in the
+annotation.
+
+@node Entering Dinotrace-Mode, Exiting Dinotrace Mode, Signal Matching, Dinotrace and Emacs
+@section Entering Dinotrace-Mode
+
+There are two keys used to enter Dinotrace Mode:
+
+@table @kbd
+@item C-x C-a a
+@itemx M-x dinotrace-update
+@kindex C-x C-a a
+
+@kbd{C-x C-a a} will enter dinotrace-mode in this buffer.
+If there is a new annotation file, read it, update all annotations in all
+visible widows, and remove outdated annotations from invisible buffers.
+
+@item C-x C-a d
+@itemx M-x dinotrace-mode
+@kindex C-x C-a d
+
+@kbd{C-x C-a d} will toggle Dinotrace Mode in this buffer.
+With arg, turn Dinotrace mode on if and only if arg is positive.
+
+It will not read a new annotation file if one has already been read in.
+
+@end table
+
+@node Exiting Dinotrace Mode, Keys in Dinotrace Mode, Entering Dinotrace-Mode, Dinotrace and Emacs
+@section Exiting Dinotrace Mode
+
+There are two ways to exit Dinotrace Mode:
+
+@table @kbd
+@item C-x C-a d
+@itemx M-x dinotrace-mode
+@kindex C-x C-a d
+
+@kbd{C-x C-a d} will toggle Dinotrace Mode in this buffer.  With zero or
+negative arg, turn off Dinotrace mode.
+
+@item C-x C-q
+@itemx M-x dinotrace-toggle-read-only
+@kindex C-x C-q
+
+@kbd{C-x C-q} will toggle read-only status.  Dinotrace traps this key
+and will remove annotations and make the buffer writable.
+
+@end table
+
+@node Keys in Dinotrace Mode,  , Exiting Dinotrace Mode, Dinotrace and Emacs
+@section Keys in Dinotrace Mode
+
+When inside a Dinotrace Mode buffer, many keys are defined to affect
+both Emacs and also Dinotrace.  All begin with @kbd{C-x C-a}, and are
+also selectable from the Emacs menubar.  Most match the keyboard
+accelerator keys for Dinotrace itself.
+
+@table @kbd
+@item C-x C-a c
+@itemx M-x dinotrace-goto-and-cursor-time
+@kindex C-x C-a c
+
+Take the time that the point is over, and scroll Dinotrace so time is
+visible.  Add a cursor using the current color.
+
+@item C-x C-a C
+@itemx M-x dinotrace-goto-and-cursor-time-next-color
+@kindex C-x C-a C
+
+Take the time that the point is over, and scroll Dinotrace so time is
+visible.  Add a cursor using the next color.
+
+@item C-x C-a s
+@itemx M-x dinotrace-goto-and-highlight-signal
+@kindex C-x C-a s
+
+@kbd{C-x C-a s} will take the signal name the point is over, and scroll
+Dinotrace so the signal is visible.  The signal is highlighted using the
+current color.
+
+@item C-x C-a S
+@itemx M-x dinotrace-goto-and-highlight-signal-next-color
+@kindex C-x C-a S
+
+@kbd{C-x C-a S} will take the signal name the point is over, and scroll
+Dinotrace so the signal is visible.  The signal is highlighted using the
+next color.
+
+@item C-x C-a v
+@itemx M-x dinotrace-highlight-value
+@kindex C-x C-a v
+
+@kbd{C-x C-a v} will take the value the point is over, and highlight it
+using the current color.  With a prefix-arg, cursors will also be put
+where the value occurs.
+
+@item C-x C-a V
+@itemx M-x dinotrace-highlight-value-next-color
+@kindex C-x C-a V
+
+@kbd{C-x C-a S} will take the value the point is over, and highlight it
+using the next color.  With a prefix-arg, cursors will also be put where
+the value occurs.
+
+@end table
 
 @c ======================================================================
 @node File Formats, Bugs, Dinotrace and Emacs, Top
@@ -1845,7 +2220,7 @@ The data follows, with one time per line.  The spaces leading the header
 above were added so that the first signal column lines up with the first
 value after the time stamp.  Actually, the time stamps are optional, in
 which case Dinotrace will assign successive times, starting at 0 and
-incrementing by 100 to each data line.
+incrementing by 100 for each data line.
 
 @example
 0     xxxx
@@ -1855,9 +2230,9 @@ incrementing by 100 to each data line.
 203   0001
 @end example
 
-Dinotrace understands the values @code{0}, @code{L}, @code{0}, @code{H},
-the tristate @code{Z}, and the unknowns @code{?}, @code{X}, and
-@code{U}.  Case does not matter.
+Dinotrace understands the values @code{0}, @code{1}, the tristate
+@code{Z}, and the unknowns @code{?}, @code{X}, and @code{U}.  Case does
+not matter.
 
 @c ----------------------------------------------------------------------
 

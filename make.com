@@ -11,6 +11,15 @@ $! This will create an executable file called [.src]dinotrace_v?.exe that
 $! will run on the version of VMS that you linked with.
 $!
 $!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+$!
+$ if f$sarch("config.h") .eqs. "" then
+$    write sys$output "If you get a error on the next line,"
+$    write sys$output "find a file like [.src]config and rename it [.src]config.h"
+$    copy config_h.in config.h
+$    write sys$output "Never mind."
+$ endif
+$!
 $ @[.src]make.com p1 p2 p3 p4 p5 p6 p7 p8
-$ copy [.src]dinotrace.exe [.]dinotrace.exe
+$!
+$ rename [.src]dinotrace*.exe []
 $!

@@ -29,25 +29,25 @@ Dinotrace manual for configuration options.
 @enumerate
 @item
 The latest version of Dinotrace is available at 
-@url{http://www.ultranet.com/~wsnyder/dinotrace}.
+@uref{http://www.ultranet.com/~wsnyder/dinotrace}.
 Download the latest package from that site, and decompress.
 @samp{gunzip dinotrace_version.tar.gz ; tar xvf dinotrace_version.tar}
 
 @item
 Dinotrace requires the Motif Widget set.  If your system doesn't include
 Motif, a public domain version, LessTif, is available at
-@url{ftp://ftp.lesstif.org}.
+@uref{ftp://ftp.lesstif.org}.
 
 @item
 For best results, you should have perl installed on the system.
 This will enable the documentation to be included in the executable.
-Perl is available from @url{http://www.perl.org}
+Perl is available from @uref{http://www.perl.org}
 
 @item
 This kit includes a optional interface for GNU Emacs.  For this package,
 get at least GNU Emacs 19.35, and preferably GNU Emacs 20.2 from
-@url{ftp://prep.ai.mit.edu}.  You will also want the most recent verilog-mode
-from @url{http://www.surefirev.com}.
+@uref{ftp://prep.ai.mit.edu}.  You will also want the most recent verilog-mode
+from @uref{http://www.surefirev.com}.
 @end enumerate
 
 @node Supported Systems, Unix Installation, Obtaining Distribution
@@ -116,7 +116,7 @@ messages telling which features it is checking for.
 @item
 Type @samp{make} to compile Dinotrace.  This program requires X11
 with the Motif Widget set.  If Motif didn't come with your system, a public
-domain version, LessTif, is available at @url{ftp://ftp.lesstif.org}.
+domain version, LessTif, is available at @uref{ftp://ftp.lesstif.org}.
 
 @item
 Try out the executable with @samp{src/dinotrace}.
@@ -282,6 +282,15 @@ $ arch_bin_v == "_VV"
 $ if f$getsyi("NODE_HWTYPE") .eqs. "ALPH" then arch_bin_v == "_VA"
 $ Dinotraceexe :== "$dinodisk:dinotrace''arch_bin_v'"
 $ Dinotrace :== "spawn/nowait/nolog/input=nl:/output=nl: dinotraceexe"
+@end example
+
+Note a hazard with this definition of dinotrace: The display, etc. must
+be set correctly for Dinotrace to start up.  When running under VMS, if
+Dinotrace has an error message when starting, it will not be seen due to
+the spawn.  To see error messages, users should be told to type:
+
+@example
+$ dinotraceexe
 @end example
 
 @item

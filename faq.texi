@@ -14,44 +14,26 @@
 @macro dmenu {f}
 @code{\f\}
 @end macro
-@iftex
-@global@let@dmenu=@code
-@end iftex
 
 @macro widget {f}
 @emph{\f\}
 @end macro
-@iftex
-@global@let@widget=@emph
-@end iftex
 
 @macro resource {f}
 @code{\f\}
 @end macro
-@iftex
-@global@let@resource=@code
-@end iftex
 
 @macro config {f}
 @code{\f\}
 @end macro
-@iftex
-@global@let@config=@code
-@end iftex
 
 @macro switch {f}
 @samp{\f\}
 @end macro
-@iftex
-@global@let@switch=@samp
-@end iftex
 
 @macro prog {f}
 @strong{\f\}
 @end macro
-@iftex
-@global@let@prog=@strong
-@end iftex
 
 @iftex
 @finalout
@@ -66,7 +48,7 @@
 
 This is a list of frequently asked questions (FAQ) for Dinotrace users.
 A hypertext version is available on the World Wide Web at
-@url{http://www.ultranet.com/~wsnyder/veripool/dinotrace/FAQ_toc.html}.
+@uref{http://www.ultranet.com/~wsnyder/veripool/dinotrace/FAQ_toc.html}.
 
 Please send updates and corrections to the FAQ to
 @code{wsnyder@@ultranet.com}.
@@ -79,7 +61,7 @@ Please send updates and corrections to the FAQ to
 
 The latest version is Dinotrace @value{VERSION}.  It can be down-loaded
 from the veripool, at
-@url{http://www.ultranet.com/~wsnyder/veripool/dinotrace}.
+@uref{http://www.ultranet.com/~wsnyder/veripool/dinotrace}.
 
 @c --------------------
 @section Can I copy Dinotrace?
@@ -120,7 +102,7 @@ available at the Veripool.
 @section How do I get a printed copy of the Dinotrace manual?
 
 A PDF file is available at
-@url{http://www.ultranet.com/~wsnyder/veripool/dinotrace/dinotrace.pdf}.
+@uref{http://www.ultranet.com/~wsnyder/veripool/dinotrace/dinotrace.pdf}.
 Your web browser should be able to print this, if not you can probably
 print the HTML version in the same directory.
 
@@ -143,6 +125,26 @@ Copy this file to a directory in your info path, usually
 
 @c ======================================================================
 @chapter Common Things People Want To Do 
+
+@c --------------------
+@section How do I have dinotrace always display a group of signals together?
+
+Dinotrace doesn't really have the concept of groups yet.  Instead, use
+the @config{signal_move} or @config{signal_copy} to accomplish the
+desired effect.
+
+For example, if out of a huge trace you want only @samp{foo} and @samp{bar}
+to be displayed, put in your @file{dinotrace.dino}:
+
+@example
+signal_delete *
+signal_add foo 
+signal_add bar
+@end example
+
+Dinotrace will create similar code for you by selecting the
+@dmenu{Customize Save As...} menu option then checking the @widget{Save
+signal ordering} box.
 
 @c --------------------
 @section How do I make a signal that is a concatenation of other signals?
@@ -237,9 +239,10 @@ use @dmenu{Signal Search} to find it.
 
 In Verilog DMP files, if a identical signal exists at many levels of
 hierarchy, only the top level signal will exist.  If your naming
-convention is sane, and doesn't change names at hierarchy boundaries, you
-still should find the signal, just with a different hierarchy in front of
-the base signal name.
+convention is sane, and doesn't change names at hierarchy boundaries,
+you still should find the signal, just with a different hierarchy in
+front of the base signal name.  Furthermore, signals with over 1024 bits
+are dropped, since they would take too much space on the screen.
 
 A bug is not impossible either, though usually Dinotrace manages to eek
 out a warning message when it is about to loose a signal.

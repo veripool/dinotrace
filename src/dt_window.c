@@ -106,7 +106,7 @@ void hscroll_unitinc_cb (
 {
     Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In hscroll_unitinc - trace=%p  old_time=%d",trace,global->time);
-    global->time += trace->grid[0].period;
+    global->time += grid_primary_period (trace);
     if (DTPRINT_ENTRY) printf (" new time=%d\n",global->time);
 
     new_time (trace);
@@ -117,7 +117,7 @@ void hscroll_unitdec_cb (
 {
     Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In hscroll_unitdec - trace=%p  old_time=%d",trace,global->time);
-    global->time -= trace->grid[0].period;
+    global->time -= grid_primary_period (trace);
     new_time (trace);
 }
 
