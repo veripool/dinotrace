@@ -74,6 +74,7 @@ int    main (argc, argv)
     Boolean	sync = FALSE;
     char	*start_filename = NULL;
     TRACE	*trace;
+    int		benchmark = FALSE;
     
     /* Create global structure */
     global = XtNew (GLOBAL);
@@ -93,6 +94,9 @@ int    main (argc, argv)
 		sscanf (argv[++i], "%x", & DTPRINT );
 		}
 	    else DTPRINT = -1;
+	    }
+        else if ( !strcmp (argv[i], "-benchmark") ) {
+            benchmark = TRUE;
 	    }
         else if ( !strcmp (argv[i], "-tempest") ) {
             file_format = FF_TEMPEST;
@@ -190,7 +194,21 @@ See the Help menu for more information.");
 	}
 
     /* loop forever */
-    XtAppMainLoop (global->appcontext);
+    if (!benchmark) {
+	XtAppMainLoop (global->appcontext);
+	}
+    else {
+	int t;
+
+	file_format = FF_TEMPEST;
+	strcpy (trace->filename, "../benchmark.bt");
+	fil_read_cb (trace);
+	fil_read_cb (trace);
+	fil_read_cb (trace);
+	for (t=1; t<100; t++) {
+	    redraw_all (trace);
+	    }
+	}
 
     return(0);	/* to please lint */
     }
