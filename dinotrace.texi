@@ -21,7 +21,7 @@
 @c Also update the master menu, created with texinfo-master-menu
 
 @set VERSION 9.0e
-@set UPDATED July 1999
+@set UPDATED September 1999
 @set ID @value{VERSION}
 @c All functions use these for searching ease
 @macro dmenu{f}
