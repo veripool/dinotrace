@@ -56,6 +56,7 @@
 !	signal_delete_constant	<signal_pattern>
 !	signal_highlight <color> <signal_name>
 !	cursor_add	<color> <time>	[-USER]
+!	value_highlight <color>	<value>	[-CURSOR] [-VALUE]
 ! Display changes:
 !	time_goto	<time>
 !	signal_goto	<signal_pattern>	(if not on screen, first match)
@@ -128,6 +129,7 @@ int	config_read_signal (line, out)
 {
     char *tp;
     int outlen=0;
+    char strg[MAXSIGLEN];
 
     while (*line && !issigchr(*line)) {
 	line++;
@@ -765,6 +767,27 @@ void	config_process_line_internal (trace, line, eof)
 		sig_delete_constant_pattern (trace, pattern);
 		}
 	    }
+	else if (!strcmp(cmd, "VALUE_HIGHLIGHT")) {
+	    char strg[MAXSIGLEN],flag[MAXSIGLEN];
+	    Boolean show_value=FALSE, add_cursor=FALSE;
+	    VSearchNum search_pos;
+	    line += config_read_color (trace, line, &search_pos);
+	    search_pos--;
+	    if (search_pos >= 0) {
+		line += config_read_signal (line, strg);
+		do {
+		    line += config_read_signal (line, flag);
+		    upcase_string (flag);
+		    if (!strcmp(flag, "-CURSOR")) add_cursor=TRUE;
+		    if (!strcmp(flag, "-VALUE")) show_value=TRUE;
+		    } while (flag[0]=='-');
+		/* Add it */
+		global->val_srch[search_pos].color = (show_value) ? search_pos+1 : 0;
+		global->val_srch[search_pos].cursor = (add_cursor) ? search_pos+1 : 0;
+		string_to_value (trace, strg, global->val_srch[search_pos].value);
+		val_update_search ();
+		}
+	    }
 	else if (!strcmp(cmd, "CURSOR_ADD")) {
 	    int color;
 	    DTime ctime;
@@ -806,7 +829,9 @@ void	config_process_line_internal (trace, line, eof)
 		}
 	    }
 	else if (!strcmp(cmd, "REFRESH")) {
-	    redraw_all (trace);
+	    draw_all_needed (trace);
+	    /* Main loop won't refresh because widget's weren't activated on socket calls */
+	    draw_perform();
 	    }
 	else if (!strcmp(cmd, "ANNOTATE")) {
 	    val_annotate_do_cb (NULL,trace,NULL);
@@ -965,6 +990,105 @@ void config_read_defaults (trace, report_errors)
     update_signal_states (trace);
     val_update_search ();
     sig_update_search ();
+    }
+
+/**********************************************************************
+*	config_writing
+**********************************************************************/
+
+void config_write_file (filename)
+    char	*filename;	/* Specific filename of CONFIG file */
+{
+    TRACE	*trace;
+    FILE	*writefp;
+    SIGNAL	*sig_ptr;
+    
+    if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Writing config file %s\n", filename);
+    
+    /* Open File For Writing */
+    if (!(writefp=fopen(filename,"w"))) {
+	if (DTPRINT) printf("%%E, Can't Write File %s\n", filename);
+	sprintf(message,"Can't write file %s",filename);
+	dino_error_ack(trace, message);
+	return;
+	}
+
+    fprintf (writefp, "! Customization Write by %s\n", DTVERSION);
+
+    fprintf (writefp, "\n! ** GLOBAL FLAGS **\n");
+    /* Debug and Print skipped */
+    fprintf (writefp, "save_enables %s\n", global->save_enables?"ON":"OFF");
+    fprintf (writefp, "click_to_edge %s\n", global->click_to_edge?"ON":"OFF");
+    fprintf (writefp, "save_enables %s\n", global->save_enables?"ON":"OFF");
+    fprintf (writefp, "page_inc %d\n", 
+	     global->pageinc==QPAGE ? 4 : (global->pageinc==QPAGE?2:1) );
+    /*global->time_rep*/
+    /*global->time_precision*/
+    if (global->time_format[0])
+	fprintf (writefp, "time_format %s\n", global->time_format);
+    fprintf (writefp, "time_multiplier %d\n", global->tempest_time_mult);
+    /*global->print_size*/
+    /*file_format*/
+    /*start_geometry*/
+    /*open_geometry*/
+    /*shrink_geometry*/
+    /*signal_states*/
+
+    fprintf (writefp, "\n! ** TRACE FLAGS **\n");
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	if (trace->loaded) {
+	    fprintf (writefp, "set_trace %s\n", trace->filename);
+	    fprintf (writefp, "cursor %s\n", trace->cursor_vis?"ON":"OFF");
+	    fprintf (writefp, "grid %s\n", trace->grid_vis?"ON":"OFF");
+	    fprintf (writefp, "signal_height %d\n", trace->sighgt);
+	    fprintf (writefp, "vector_seperator \"%c\"\n", trace->vector_seperator);
+	    fprintf (writefp, "rise_fall_time %d\n", trace->sigrf);
+	    }
+	}
+    /*
+    trace->grid_res = value;
+    trace->grid_res_auto = value;
+    trace->grid_align = value;
+    trace->grid_align_auto = value;
+    trace->sigrf = value;
+    */
+
+    fprintf (writefp, "\n! ** GLOBAL INFORMATION **\n");
+    cur_print (writefp);
+    
+    fprintf (writefp, "\n! ** TRACE INFORMATION **\n");
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	if (trace->loaded) {
+	    fprintf (writefp, "set_trace %s\n", trace->filename);
+	    /* Save signal colors */
+	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+		if (sig_ptr->color && !sig_ptr->search) {
+		    fprintf (writefp, "signal_highlight %d %s\n", sig_ptr->color, sig_ptr->signame);
+		    }
+		}
+	    }
+	}
+
+    fclose (writefp);
+    }
+
+void config_write_cb (w,trace,cb)
+    Widget		w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    char newfilename[MAXFNAMELEN];
+    char *pchar;
+
+#ifdef VMS
+    config_write_file ("SYS$LOGIN:DINOTRACE.WCONFIG");
+#else
+    newfilename[0] = '\0';
+    if (NULL != (pchar = getenv ("HOME"))) strcpy (newfilename, pchar);
+    if (newfilename[0]) strcat (newfilename, "/");
+    strcat (newfilename, "dinotrace.wconfig");
+    config_write_file (newfilename);
+#endif
     }
 
 /**********************************************************************
