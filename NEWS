@@ -11,6 +11,8 @@ This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
 ***	Let right button terminate Zoom click.  [Uwe Bonnes]
 
+****	Fixed Emacs 21.0 incompatibility with back-annotation.
+
 ****	Hacked around bug causing window manager crash when
 	using Examine inside Zoom.  [Uwe Bonnes]
 
