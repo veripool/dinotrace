@@ -340,7 +340,7 @@ void get_geometry ( trace )
     XGetGeometry ( global->display, XtWindow (trace->work), (Window *)&dret,
 		 &x, &y, &width, &height, &dret, &dret);
     
-    trace->width = width;
+    trace->width = MIN(width, MAXSCREENWIDTH-2);
     trace->height = height;
     
     /* calulate the number of signals possibly visible on the screen */
