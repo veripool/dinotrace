@@ -447,7 +447,7 @@ void    val_examine_ev (w, trace, ev)
     if (ev->type != ButtonPress) return;	/* Used for both button 1 & 2. */
     
     /* not sure why this has to be done but it must be done */
-    XSync (global->display);
+    XSync (global->display, FALSE);
     XUngrabPointer (XtDisplay (trace->work),CurrentTime);
 
     /* select the events the widget will respond to */
@@ -488,7 +488,7 @@ void    val_examine_ev (w, trace, ev)
 	}
     
     /* reset the events the widget will respond to */
-    XSync (global->display);
+    XSync (global->display, FALSE);
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonPressMask|StructureNotifyMask|ExposureMask);
     
