@@ -84,7 +84,7 @@ char *extract_first_xms_segment (
     XmStringContext	context;
     XmStringCharSet	charset;
     XmStringDirection	direction;
-    Boolean		separator;
+    Boolean_t		separator;
     char		*primitive_string;
 
     XmStringInitContext (&context,cs);
@@ -320,6 +320,7 @@ void    remove_all_events (
     remove_event (ButtonPressMask, sig_copy_ev);
     remove_event (ButtonPressMask, sig_delete_ev);
     remove_event (ButtonPressMask, sig_highlight_ev);
+    remove_event (ButtonPressMask, sig_base_ev);
     
     /* remove all possible events due to nvalue options */ 
     remove_event (ButtonPressMask, val_examine_ev);
@@ -447,7 +448,7 @@ void get_geometry (
     int		x,y;
     uint_t	width,height,dret,depth;
     uint_t	pixmap_width,pixmap_height;
-    Dimension m_time_height = global->time_font->ascent + global->time_font->descent;
+    Dimension m_time_height = global->time_font->ascent;
     
     XGetGeometry ( global->display, trace->pixmap, (Window *)&dret,
 		   &x, &y, &pixmap_width, &pixmap_height, &dret, &depth);
@@ -571,17 +572,16 @@ void    prompt_ok_cb (
     }
 
     /* do stuff depending on type of data */
-    switch (trace->prompt_type)
-	{
-      case IO_RES:
+    switch (trace->prompt_type) {
+    case IO_RES:
 	/* change the resolution string on display */
 	new_res (trace, RES_SCALE / (float)restime);
 	break;
 	
-      default:
+    default:
 	printf ("Error - bad type %d\n",trace->prompt_type);
-	}
     }
+}
 
 
 void dino_message_ack (
@@ -655,7 +655,7 @@ void    print_cptr (
     Value_t	*value_ptr)
 {
     char strg[1000];
-    value_to_string (global->trace_head, strg, value_ptr, '_');
+    val_to_string (global->bases[0], strg, value_ptr, FALSE);
     if (CPTR_TIME(value_ptr)==EOT) {
 	printf ("%s at EOT\n", strg);
     }
@@ -710,12 +710,14 @@ void    debug_signal_integrity (
     Trace	*trace,
     Signal	*sig_ptr,
     char	*list_name,
-    Boolean	del)
+    Boolean_t	del)
 {
     Value_t	*cptr;
+    Value_t	*cptr_last;
     DTime	last_time;
     uint_t	nsigstart, nsig;
-    Boolean	hitstart;
+    Boolean_t	hitstart;
+    Boolean_t	dumpsig;
 
     if (!sig_ptr) return;
 
@@ -734,43 +736,68 @@ void    debug_signal_integrity (
 	}
 
 	/* flags */
+	dumpsig = FALSE;
 	if (sig_ptr->deleted != del) {
-	    printf ("%s, Bad deleted flag on %s!\n", list_name, sig_ptr->signame);
+	    printf ("%%E, %s, Bad deleted flag on %s!\n", list_name, sig_ptr->signame);
+	    dumpsig = TRUE;
 	}
 
 	if (sig_ptr->forward && sig_ptr->forward->backward != sig_ptr) {
-	    printf ("%s, Bad backward link on signal %s\n", list_name, sig_ptr->signame);
+	    printf ("%%E, %s, Bad backward link on signal %s\n", list_name, sig_ptr->signame);
+	    dumpsig = TRUE;
 	}
 
 	/* Change data */
 	last_time = -1;
+	cptr_last = NULL;
 	for (cptr = sig_ptr->bptr; CPTR_TIME(cptr) != EOT; cptr = CPTR_NEXT(cptr)) {
-	    if ( CPTR_TIME(cptr) == last_time ) {
-		printf ("%s, Double time change at signal %s time %d\n",
+	    if ( cptr_last == cptr) {
+		printf ("%%E, %s, size field messed up, infinite loop, signal %s time %d\n",
 			list_name, sig_ptr->signame, CPTR_TIME(cptr));
+		dumpsig = TRUE;
+		break;
+	    }
+	    if ( cptr_last && cptr->siglw.stbits.size_prev
+		 != cptr_last->siglw.stbits.size) {
+		printf ("%%E, %s, size != prev size, signal %s time %d\n",
+			list_name, sig_ptr->signame, CPTR_TIME(cptr));
+		dumpsig = TRUE;
+		break;
+	    }
+	    cptr_last = cptr;
+	    if ( CPTR_TIME(cptr) == last_time ) {
+		/*printf ("%%W, %s, Double time change at signal %s time %d\n",
+			list_name, sig_ptr->signame, CPTR_TIME(cptr));
+			dumpsig = TRUE;*/
 	    }
 	    if ( CPTR_TIME(cptr) < last_time ) {
-		printf ("%s, Reverse time change at signal %s time %d\n",
+		printf ("%%E, %s, Reverse time change at signal %s time %d\n",
 			list_name, sig_ptr->signame, CPTR_TIME(cptr));
+		dumpsig = TRUE;
 	    }
 	    last_time = CPTR_TIME(cptr);
 	}
 	if (last_time != sig_ptr->trace->end_time) {
-	    printf ("%s, Doesn't end at right time, signal %s time %d\n",
+	    printf ("%%E, %s, Doesn't end at right time, signal %s time %d\n",
 		    list_name, sig_ptr->signame, CPTR_TIME(cptr));
+	    dumpsig = TRUE;
 	}
+	if (dumpsig) {
+	    print_sig_info (sig_ptr);
+	}
+	cptr_last = cptr;
     }
 
     if (!del) {
 	if (nsig != trace->numsig) {
-	    printf ("%s, Numsigs is wrong, %d!=%d\n", list_name, nsig, trace->numsig);
+	    printf ("%%E, %s, Numsigs is wrong, %d!=%d\n", list_name, nsig, trace->numsig);
 	}
 	if (!hitstart) {
-	    printf ("%s, Never found display starting point\n", list_name);
+	    printf ("%%E, %s, Never found display starting point\n", list_name);
 	}
 	if (nsigstart) nsigstart--;
 	if (nsigstart != trace->numsigstart) {
-	    printf ("%s, Numsigstart is wrong, %d!=%d\n", list_name, nsigstart, trace->numsigstart);
+	    printf ("%%E, %s, Numsigstart is wrong, %d!=%d\n", list_name, nsigstart, trace->numsigstart);
         }
     }
 }
@@ -970,6 +997,44 @@ DCursor *posx_to_cursor (
 }
 
 
+Grid *posx_to_grid (
+    /* convert x value to the index of the nearest grid, return NULL if invalid click */
+    Trace	*trace,
+    Position	x,
+    DTime	*time_ptr)
+{
+    DTime 	xtime;
+    Grid 	*best_grid_ptr = NULL;
+    DTime 	best_grid_time = 0;
+    DTime 	best_grid_error = 0;
+    int grid_num;
+
+    xtime = posx_to_time (trace, x);
+    if (xtime<0) return (NULL);
+
+    /* find the closest grid */
+    for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
+	Grid *grid_ptr = &(trace->grid[grid_num]);
+	if (grid_ptr->visible) {
+	    DTime grid_error = ((xtime - (grid_ptr->alignment % grid_ptr->period))
+				% grid_ptr->period);
+	    DTime grid_time = xtime - grid_error;
+	    if (grid_error > (grid_ptr->period/2)) {
+		grid_error = grid_ptr->period - grid_error;
+		grid_time += grid_ptr->period;
+	    }
+	    if (!best_grid_ptr || grid_error < best_grid_error) {
+		best_grid_ptr = grid_ptr;
+		best_grid_time = grid_time;
+		best_grid_error = grid_error;
+	    }
+	}
+    }
+    *time_ptr = best_grid_time;
+    return (best_grid_ptr);
+}
+
+
 #pragma inline (time_to_cursor)
 DCursor *time_to_cursor (
     /* convert specific time value to the index of the nearest cursor, return NULL if none */
@@ -1020,7 +1085,7 @@ void time_to_string (
     Trace	*trace,
     char	*strg,
     DTime	ctime,
-    Boolean	relative)	/* true = time is relative, so don't adjust */
+    Boolean_t	relative)	/* true = time is relative, so don't adjust */
 {
     double	f_time, remain;
     int		decimals;
@@ -1076,8 +1141,8 @@ void time_to_string (
 #pragma inline (time_units_to_string)
 char *time_units_to_string (
     /* find units for the given time represetation */
-    TimeRep	timerep,
-    Boolean	showvalue)	/* Show value instead of "units" */
+    TimeRep_t	timerep,
+    Boolean_t	showvalue)	/* Show value instead of "units" */
 {
     static char	units[MAXTIMELEN];
 
@@ -1097,21 +1162,21 @@ char *time_units_to_string (
 #pragma inline (time_units_to_multiplier)
 DTime time_units_to_multiplier (
     /* find units for the given time represetation */
-    TimeRep	timerep)
+    TimeRep_t	timerep)
 {
     return (timerep);
     /*
     switch (timerep) {
-      case TIMEREP_CYC:
+    case TIMEREP_CYC:
 	return (-1);
-      case TIMEREP_PS:
+    case TIMEREP_PS:
 	return (1);
-      case TIMEREP_NS:
+    case TIMEREP_NS:
       default:
 	return (1000);
-      case TIMEREP_US:
+    case TIMEREP_US:
 	return (1000000);
 	}
-	*/
+    */
 }
 

@@ -81,7 +81,7 @@ extern void	ps_drawsig(), ps_draw(), ps_draw_grid(), ps_draw_cursors();
 
 void    ps_range_sensitives_cb (
     Widget		w,
-    RangeWidgets		*range_ptr,	/* <<<< NOTE not Trace!!! */
+    RangeWidgets_t	*range_ptr,	/* <<<< NOTE not Trace!!! */
     XmSelectionBoxCallbackStruct *cb)
 {
     int		opt;
@@ -96,20 +96,20 @@ void    ps_range_sensitives_cb (
     opt = option_to_number(range_ptr->time_option, range_ptr->time_pulldownbutton, 3);
     
     switch (opt) {
-      case 3:	/* Window */
+    case 3:	/* Window */
 	active = FALSE;
 	range_ptr->dastime = (range_ptr->type == BEGIN) ? global->time 
 	    :   (global->time + TIME_WIDTH (trace));
 	break;
-      case 2:	/* Trace */ 
+    case 2:	/* Trace */ 
 	active = FALSE;
 	range_ptr->dastime = (range_ptr->type == BEGIN) ? trace->start_time : trace->end_time;
 	break;
-      case 1:	/* Cursor */
+    case 1:	/* Cursor */
 	active = FALSE;
 	range_ptr->dastime = (range_ptr->type == BEGIN) ? cur_time_first(trace) : cur_time_last(trace);
 	break;
-      default:	/* Manual */
+    default:	/* Manual */
 	active = TRUE;
 	break;
     }
@@ -128,10 +128,10 @@ void    ps_range_sensitives_cb (
 
 void    ps_range_create (
     Trace		*trace,
-    RangeWidgets	*range_ptr,
+    RangeWidgets_t	*range_ptr,
     Widget		above,		/* Upper widget for form attachment */
     char		*descrip,	/* Description of selection */
-    Boolean		type)		/* True if END, else beginning */
+    Boolean_t		type)		/* True if END, else beginning */
 {
     if (DTPRINT_ENTRY) printf ("In ps_create_range - trace=%p\n",trace);
 
@@ -212,7 +212,7 @@ void    ps_range_create (
 
 
 DTime	ps_range_value (
-    RangeWidgets		*range_ptr)
+    RangeWidgets_t	*range_ptr)
     /* Read the range value */
 {
     /* Make sure have latest cursor, etc */
@@ -660,7 +660,7 @@ void ps_draw_grid (trace, psfile, printtime, grid_ptr, draw_numbers)
     FILE	*psfile;
     DTime	printtime;	/* Time to start on */
     Grid	*grid_ptr;		/* Grid information */
-    Boolean	draw_numbers;		/* Whether to print the times or not */
+    Boolean_t	draw_numbers;		/* Whether to print the times or not */
 { 
     char 	strg[MAXTIMELEN];	/* String value to print out */
     int		end_time;
@@ -761,7 +761,6 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
     Value_t *cptr,*nptr;
     char dvstrg[MAXVALUELEN];
     char vstrg[MAXVALUELEN];
-    unsigned int value;
     int unstroked=0;		/* Number commands not stroked */
     
     if (DTPRINT_ENTRY) printf ("In ps_draw - filename=%s, printtime=%d sig=%s\n",trace->filename, printtime, sig_ptr->signame);
@@ -791,16 +790,15 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 
 	/* Compute starting points for signal */
 	xstart = global->xstart;
-	switch ( cptr->siglw.stbits.state )
-	    {
-	  case STATE_0: ystart = y2; break;
-	  case STATE_1: ystart = y1; break;
-	  case STATE_U: ystart = ymdpt; break;
-	  case STATE_Z: ystart = ymdpt; break;
-	  case STATE_B32: ystart = ymdpt; break;
-	  case STATE_B128: ystart = ymdpt; break;
-	  default: printf ("Error: State=%d\n",cptr->siglw.stbits.state); ystart = ymdpt; break;
-	    }
+	switch ( cptr->siglw.stbits.state ) {
+	case STATE_0: ystart = y2; break;
+	case STATE_1: ystart = y1; break;
+	case STATE_U: ystart = ymdpt; break;
+	case STATE_Z: ystart = ymdpt; break;
+	case STATE_B32: ystart = ymdpt; break;
+	case STATE_B128: ystart = ymdpt; break;
+	default: printf ("Error: State=%d\n",cptr->siglw.stbits.state); ystart = ymdpt; break;
+	}
 	
 	/* output y information - note reverse from draw() due to y-axis */
 	/* output starting positional information */
@@ -820,38 +818,35 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 	    xloc = CPTR_TIME(nptr) * global->res - adj;
 	    
 	    /* Determine what the state of the signal is and build transition */
+	    if ( xloc > xend ) xloc = xend;
 	    switch ( cptr->siglw.stbits.state ) {
-	      case STATE_0: if ( xloc > xend ) xloc = xend;
+	    case STATE_0:
 		fprintf (psfile,"%d STATE_0\n",xloc);
 		break;
 		
-	      case STATE_1: if ( xloc > xend ) xloc = xend;
+	    case STATE_1:
 		fprintf (psfile,"%d STATE_1\n",xloc);
 		break;
 		
-	      case STATE_U: if ( xloc > xend ) xloc = xend;
+	    case STATE_U:
+	    case STATE_F32:
+	    case STATE_F128:
 		fprintf (psfile,"%d STATE_U\n",xloc);
 		break;
 		
-	      case STATE_Z: if ( xloc > xend ) xloc = xend;
+	    case STATE_Z:
 		fprintf (psfile,"%d STATE_Z\n",xloc);
 		break;
 		
-	      case STATE_B32: if ( xloc > xend ) xloc = xend;
-		value = cptr->number[0];
-
-		if (trace->busrep == BUSREP_HEX_UN)
-		    sprintf (vstrg,"%x", value);
-		else if (trace->busrep == BUSREP_OCT_UN)
-		    sprintf (vstrg,"%o", value);
-		else
-		    sprintf (vstrg,"%d", value);
+	    case STATE_B32: {
+		uint_t num = cptr->number[0];
+		val_to_string (sig_ptr->base, vstrg, cptr, TRUE);
 
 		/* Below evaluation left to right important to prevent error */
 		if ( (sig_ptr->decode != NULL) &&
-		    (value < sig_ptr->decode->numstates) &&
-		    (sig_ptr->decode->statename[value][0] != '\0')) {
-		    strcpy (dvstrg, sig_ptr->decode->statename[value]);
+		    (num < sig_ptr->decode->numstates) &&
+		    (sig_ptr->decode->statename[num][0] != '\0')) {
+		    strcpy (dvstrg, sig_ptr->decode->statename[num]);
 		    fprintf (psfile,"%d (%s) (%s) STATE_B_FB\n",xloc,vstrg,dvstrg);
 		}
 		else {
@@ -859,16 +854,17 @@ void ps_draw (trace, psfile, sig_ptr, sig_end_ptr, printtime)
 		}
 		
 		break;
+	    }
 		
-	      case STATE_B128:
+	    case STATE_B128:
 		if ( xloc > xend ) xloc = xend;
 
-		value_to_string (trace, vstrg, cptr, ' ');
+		val_to_string (sig_ptr->base, vstrg, cptr, TRUE);
 
 		fprintf (psfile,"%d (%s) STATE_B\n",xloc,vstrg);
 		break;
 		
-	      default: printf ("Error: State=%d\n",cptr->siglw.stbits.state); break;
+	    default: printf ("Error: State=%d\n",cptr->siglw.stbits.state); break;
 	    } /* end switch */
 	    
 	    if (unstroked++ > 400) {

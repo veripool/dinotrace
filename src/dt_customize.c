@@ -123,31 +123,6 @@ void cus_dialog_cb (
 	trace->custom.tpage3 = XmCreateToggleButton (trace->custom.rpage,"tpage3",arglist,1);
 	DManageChild (trace->custom.tpage3, trace, MC_NOKEYS);
 	
-	/* Create label for bus value */
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Bus Repres."));
-	XtSetArg (arglist[1], XmNx, 160);
-	XtSetArg (arglist[2], XmNy, 5);
-	trace->custom.bus_label = XmCreateLabel (trace->custom.form,"buslabel",arglist,3);
-	DManageChild (trace->custom.bus_label, trace, MC_NOKEYS);
-	
-	/* Create radio box for bus representation */
-	XtSetArg (arglist[0], XmNx, 160);
-	XtSetArg (arglist[1], XmNy, 35);
-	XtSetArg (arglist[2], XmNspacing, 2);
-	trace->custom.rbus = XmCreateRadioBox (trace->custom.form,"rbus",arglist,3);
-	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Octal"));
-	trace->custom.tbus3 = XmCreateToggleButton (trace->custom.rbus,"tbus3",arglist,1);
-	DManageChild (trace->custom.tbus3, trace, MC_NOKEYS);
-	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Hexadecimal"));
-	trace->custom.tbus4 = XmCreateToggleButton (trace->custom.rbus,"tbus4",arglist,1);
-	DManageChild (trace->custom.tbus4, trace, MC_NOKEYS);
-	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Decimal"));
-	trace->custom.tbus5 = XmCreateToggleButton (trace->custom.rbus,"tbus5",arglist,1);
-	DManageChild (trace->custom.tbus5, trace, MC_NOKEYS);
-	
 	/* Create label for time value */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Time Repres."));
 	XtSetArg (arglist[1], XmNx, 300);
@@ -189,7 +164,7 @@ void cus_dialog_cb (
 	XtSetArg (arglist[1], XmNx, 180);
 	XtSetArg (arglist[2], XmNy, 200);
 	XtSetArg (arglist[3], XmNwidth, 100);
-	XtSetArg (arglist[4], XmNminimum, 15);
+	XtSetArg (arglist[4], XmNminimum, 10);
 	XtSetArg (arglist[5], XmNmaximum, 50);
 	XtSetArg (arglist[6], XmNorientation, XmHORIZONTAL);
 	XtSetArg (arglist[7], XmNprocessingDirection, XmMAX_ON_RIGHT);
@@ -280,13 +255,6 @@ void cus_dialog_cb (
     XtSetArg (arglist[0], XmNset, (global->pageinc==PAGEINC_FULL));
     XtSetValues (trace->custom.tpage3,arglist,1);
     
-    XtSetArg (arglist[0], XmNset, (trace->busrep==BUSREP_OCT_UN));
-    XtSetValues (trace->custom.tbus3,arglist,1);
-    XtSetArg (arglist[0], XmNset, (trace->busrep==BUSREP_HEX_UN));
-    XtSetValues (trace->custom.tbus4,arglist,1);
-    XtSetArg (arglist[0], XmNset, (trace->busrep==BUSREP_DEC_UN));
-    XtSetValues (trace->custom.tbus5,arglist,1);
-    
     XtSetArg (arglist[0], XmNset, (trace->timerep==TIMEREP_NS));
     XtSetValues (trace->custom.ttimens,arglist,1);
     XtSetArg (arglist[0], XmNset, (trace->timerep==TIMEREP_PS));
@@ -362,12 +330,6 @@ void	cus_ok_cb (
     if (XmToggleButtonGetState (trace->custom.rfwid))
 	trace->sigrf = SIG_RF;
     else trace->sigrf = 0;
-
-    if (XmToggleButtonGetState (trace->custom.tbus3))
-	trace->busrep = BUSREP_OCT_UN;
-    else if (XmToggleButtonGetState (trace->custom.tbus4))
-	trace->busrep = BUSREP_HEX_UN;
-    else trace->busrep = BUSREP_DEC_UN;
 
     if (XmToggleButtonGetState (trace->custom.ttimecyc))
 	trace->timerep = TIMEREP_CYC;

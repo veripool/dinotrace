@@ -90,7 +90,7 @@ void    cur_remove (
 void cur_add (
     DTime	ctime,
     ColorNum	color,
-    CursorType	type)
+    CursorType_t	type)
 {
     DCursor *new_csr_ptr;
     DCursor *prev_csr_ptr, *csr_ptr;
@@ -137,7 +137,7 @@ void cur_add (
 
 
 void cur_delete_of_type (
-    CursorType	type)
+    CursorType_t	type)
 {
     DCursor	*csr_ptr,*new_csr_ptr;
 
@@ -159,13 +159,13 @@ void cur_print (FILE *writefp)
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 	time_to_string (global->trace_head, strg, csr_ptr->time, FALSE);
 	switch (csr_ptr->type) {
-	  case USER:
+	case USER:
 	    fprintf (writefp, "cursor_add %s %d -user\n", strg, csr_ptr->color);
 	    break;
-	  case CONFIG:
+	case CONFIG:
 	    fprintf (writefp, "cursor_add %s %d\n", strg, csr_ptr->color);
 	    break;
-	  default:
+	default:
 	    break;
 	}
     }
@@ -201,6 +201,38 @@ DTime cur_time_last (
     }
 }
 
+/****************************** EXAMINE ******************************/
+
+char *cur_examine_string (
+    /* Return string with examine information in it */
+    Trace	*trace,
+    DCursor	*csr_ptr)
+{
+    static char	strg[2000];
+    char	strg2[2000];
+    
+    if (DTPRINT_ENTRY) printf ("val_examine_popup_csr_string\n");
+
+    strcpy (strg, "Cursor at Time ");
+    time_to_string (trace, strg2, csr_ptr->time, FALSE);
+    strcat (strg, strg2);
+    strcat (strg, "\n");
+    
+    switch (csr_ptr->type) {
+    case USER:
+	strcat (strg, "Placed by you\n");
+	break;
+    case SEARCH:
+	strcat (strg, "Placed by Value Search\n");
+	break;
+    case CONFIG:
+	strcat (strg, "Placed by .dino file or Emacs\n");
+	break;
+    case SEARCHOLD:
+    }
+    return (strg);
+}
+	
 
 /****************************** MENU OPTIONS ******************************/
 
@@ -210,13 +242,11 @@ void    cur_add_cb (
     Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cur_add_cb - trace=%p\n",trace);
     
-    /* remove any previous events */
-    remove_all_events (trace);
-    
     /* Grab color number from the menu button pointer */
     global->highlight_color = submenu_to_color (trace, w, trace->menu.cur_add_pds);
 
     /* process all subsequent button presses as cursor adds */
+    remove_all_events (trace);
     set_cursor (trace, DC_CUR_ADD);
     add_event (ButtonPressMask, cur_add_ev);
 }
@@ -228,10 +258,8 @@ void    cur_mov_cb (
     
     if (DTPRINT_ENTRY) printf ("In cur_mov_cb - trace=%p\n",trace);
     
-    /* remove any previous events */
-    remove_all_events (trace);
-    
     /* process all subsequent button presses as cursor moves */
+    remove_all_events (trace);
     set_cursor (trace, DC_CUR_MOVE);
     add_event (ButtonPressMask, cur_move_ev);
 }
@@ -243,10 +271,8 @@ void    cur_del_cb (
     
     if (DTPRINT_ENTRY) printf ("In cur_del_cb - trace=%p\n",trace);
     
-    /* remove any previous events */
-    remove_all_events (trace);
-    
     /* process all subsequent button presses as cursor deletes */
+    remove_all_events (trace);
     set_cursor (trace, DC_CUR_DELETE);
     add_event (ButtonPressMask, cur_delete_ev);
 }
@@ -278,13 +304,11 @@ void    cur_highlight_cb (
     Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cur_highlight_cb - trace=%p\n",trace);
     
-    /* remove any previous events */
-    remove_all_events (trace);
-     
     /* Grab color number from the menu button pointer */
     global->highlight_color = submenu_to_color (trace, w, trace->menu.cur_highlight_pds);
 
     /* process all subsequent button presses as signal deletions */ 
+    remove_all_events (trace);
     set_cursor (trace, DC_CUR_HIGHLIGHT);
     add_event (ButtonPressMask, cur_highlight_ev);
 }

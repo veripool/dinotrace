@@ -69,7 +69,7 @@
 
 /**********************************************************************/
 
-Boolean		DTDEBUG=FALSE;		/* Debugging mode */
+Boolean_t	DTDEBUG=FALSE;		/* Debugging mode */
 uint_t		DTPRINT=0;		/* Information printing mode */
 int		DebugTemp=0;		/* Temp value for trying things */
 uint_t		file_format=FF_VERILOG;	/* Type of trace to support */
@@ -92,8 +92,8 @@ int    main (
     char	**argv)
 {
     uint_t	i;
-    Boolean	sync = FALSE;
-    Boolean	opened_a_file = FALSE;
+    Boolean_t	sync = FALSE;
+    Boolean_t	opened_a_file = FALSE;
     Trace	*trace;
     
     /* Create global structure */

@@ -69,74 +69,205 @@
 #include <Xm/LabelP.h>
 
 #include "functions.h"
+
+char *val_state_name[] = { "STATE_0", "STATE_1", "STATE_U", "STATE_Z",
+			   "STATE_B32", "STATE_F32", "STATE_B128", "STATE_F128"};
 
 /****************************** UTILITIES ******************************/
 
-void    value_strcat_lw (
-    Trace *trace,
-    char *strg,
-    uint_t lw)
+uint_t val_bit (
+    Value_t *value_ptr,
+    int bit)
+    /* Return bit value, understanding 4-state, may be 0/1/U/Z */
 {
-    /* Add to end */
-    strg += strlen(strg);
-    if (trace->busrep == BUSREP_HEX_UN)
-	sprintf (strg,"%x", lw);
-    else if (trace->busrep == BUSREP_OCT_UN)
-	sprintf (strg,"%o", lw);
-    else
-	sprintf (strg,"%d", lw);
+    switch (value_ptr->siglw.stbits.state) {
+    case STATE_0:
+	return (0);
+    case STATE_1:
+	return (bit==0 ? 1:0);
+    case STATE_Z:
+	return (3);
+    case STATE_B32:
+	if (bit<32) return ((value_ptr->number[0] >> bit) & 1);
+	return (0);
+    case STATE_F32:
+	if (bit>=32) return (0);
+	return (((value_ptr->number[0] >>bit) & 1)
+		| (((value_ptr->number[1] >>bit) & 1)<<1));
+    case STATE_B128:
+	if (bit<32) return ((value_ptr->number[0] >> bit) & 1);
+	if (bit<64) return ((value_ptr->number[1] >> bit) & 1);
+	if (bit<96) return ((value_ptr->number[2] >> bit) & 1);
+	if (bit<128) return ((value_ptr->number[3] >> bit) & 1);
+	return (0);
+    case STATE_F128:
+	if (bit<32) return (((value_ptr->number[0] >> bit) & 1)
+			    | (((value_ptr->number[4] >>bit) & 1)<<1));
+	if (bit<64) return (((value_ptr->number[1] >> bit) & 1)
+			    | (((value_ptr->number[5] >>bit) & 1)<<1));
+	if (bit<96) return (((value_ptr->number[2] >> bit) & 1)
+			    | (((value_ptr->number[6] >>bit) & 1)<<1));
+	if (bit<128) return (((value_ptr->number[3] >> bit) & 1)
+			     | (((value_ptr->number[7] >>bit) & 1)<<1));
+	return (0);
+    default:
+	return (2);/*X*/
+    }
 }
 
-void    value_to_string (
-    Trace *trace,
-    char *strg,
-    Value_t *value_ptr,
-    char separator)		/* What to print between the values */
+char	val_str_digit (
+    int lsb,
+    uint_t mask,
+    uint_t lw,
+    uint_t enlw
+    )
 {
-    char sep[2];
-    sep[0] = separator; sep[1] = '\0';
+    lw = (lw>>lsb) & mask;
+    enlw = (enlw>>lsb) & mask;
+    if (enlw) {
+	if ((enlw == mask) && (lw == mask)) {
+	    return ('z');	/* All z's */
+	} else if ((enlw == mask) && (lw == 0)) {
+	    return ('u');	/* All u's */
+	}
+	return ('U');	/* U/Z/0/1 mix */
+    }
+
+    return (lw + ((lw < 10) ? '0':('a'-10)));
+}
+
+void    val_str_lw (
+    const Base_t *base_ptr,
+    char *strg,
+    char sep,
+    Boolean_t middle,	/* 2nd, 3rd, etc value on this line */
+    uint_t lw,
+    uint_t enlw
+    )
+{
+    int bit = 31;
+
+    /* Seperate if needed */
+    if (middle) {
+	if (base_ptr->type != BASE_ASCII) *strg++ = sep;
+    }
+    if (!middle) {
+	/* Skip leading 0's */
+	for (; bit>0; bit--) {
+	    if ((lw|enlw) & (1L<<bit)) break;
+	}
+    } 
+
+    switch (base_ptr->type) {
+    case BASE_HEX_UN:
+	for (; bit>=0; bit--) {
+	    bit = (bit / 4) *4;	/* Next hex digit */
+	    *strg++ = val_str_digit (bit, 0xf, lw, enlw);
+	}
+	*strg++ = '\0';
+	break;
+    case BASE_OCT_UN:
+	for (; bit>=0; bit--) {
+	    bit = (bit / 3) *3;	/* Next octal digit */
+	    *strg++ = val_str_digit (bit, 0x7, lw, enlw);
+	}
+	*strg++ = '\0';
+	break;
+    case BASE_DEC_UN:
+	if (enlw) {
+	    strcpy (strg,"Mixed01XU");
+	} else {
+	    sprintf (strg,middle?"%010d":"%d", lw);
+	}
+	break;
+    case BASE_BIN_UN: {
+	for (;bit>=0;bit--) {
+	    *strg++ = val_str_digit (bit, 0x1, lw, enlw);
+	}
+	*strg++ = '\0';
+	break;
+    }
+    case BASE_ASCII: {
+#define VALLWCHAR(v) if (v) *strg++ = (isprint(v&0xff) ? (v&0xff) : '?')
+	VALLWCHAR((lw & 0xff000000L)>>24);
+	VALLWCHAR((lw & 0x00ff0000L)>>16);
+	VALLWCHAR((lw & 0x0000ff00L)>>8);
+	VALLWCHAR((lw & 0x000000ffL)>>0);
+	*strg++ = '\0';
+	break;
+    }
+    default: strcat (strg, "bad base");
+    }
+}
+
+void    val_to_string (
+    const Base_t *base_ptr,
+    char *strg,
+    const Value_t *value_ptr,
+    Boolean_t compressed)		/* Drawing on screen; keep small & tidy */
+    /* Convert a string to a value */
+    /* Understand 'h 'b and other similar tags */
+    /* Try to convert a signal state also */
+    /* This isn't fast, so don't use when reading files!!! */
+{
+    char sep = compressed ? ' ' : '_';
+    if (base_ptr==NULL) {strcpy (strg,"nullbase_ptr"); return;}
+    
     switch (value_ptr->siglw.stbits.state) {
-    case STATE_1:
-	strg[0] = '1';
-	strg[1] = '\0';
-	return;
-	
     case STATE_0:
-	strg[0] = '0';
-	strg[1] = '\0';
-	return;
-	
+	if (base_ptr->type != BASE_ASCII) *strg++ = '0';
+	break;
+    case STATE_1:
+	if (base_ptr->type != BASE_ASCII) *strg++ = '1';
+	break;
     case STATE_U:
-	strg[0] = 'U';
-	strg[1] = '\0';
-	return;
-	
+	*strg++ = 'x';
+	break;
     case STATE_Z:
-	strg[0] = 'Z';
-	strg[1] = '\0';
-	return;
+	*strg++ = 'z';
+	break;
 	
     case STATE_B32:
-	strg[0] = '\0';
-	value_strcat_lw (trace, strg, value_ptr->number[0]);
-	return;
-	
+    case STATE_F32:
     case STATE_B128:
-	strg[0] = '\0';
-	value_strcat_lw (trace, strg, value_ptr->number[3]);
-	strcat (strg, sep);
-	value_strcat_lw (trace, strg, value_ptr->number[2]);
-	strcat (strg, sep);
-	value_strcat_lw (trace, strg, value_ptr->number[1]);
-	strcat (strg, sep);
-	value_strcat_lw (trace, strg, value_ptr->number[0]);
-	return;
-	
-    default:
-	strg[0] = '?';
-	strg[1] = '\0';
-	return;
+    case STATE_F128: {
+	Boolean_t middle = FALSE;
+	if (!compressed) {
+	    strcpy (strg, base_ptr->prefix);
+	    strg += strlen (base_ptr->prefix);
+	}
+	if (value_ptr->siglw.stbits.state == STATE_B128
+	    && value_ptr->siglw.stbits.state != STATE_F128) {
+	    if (value_ptr->number[3]) {
+		val_str_lw (base_ptr, strg, sep, middle, value_ptr->number[3],
+			    (value_ptr->siglw.stbits.state == STATE_F128)?value_ptr->number[7]:0);
+		strg += strlen (strg);
+		middle = TRUE;
+	    }
+	    if (value_ptr->number[2]) {
+		val_str_lw (base_ptr, strg, sep, middle, value_ptr->number[2],
+			    (value_ptr->siglw.stbits.state == STATE_F128)?value_ptr->number[6]:0);
+		strg += strlen (strg);
+		middle = TRUE;
+	    }
+	    if (value_ptr->number[1]) {
+		val_str_lw (base_ptr, strg, sep, middle, value_ptr->number[1],
+			    (value_ptr->siglw.stbits.state == STATE_F128)?value_ptr->number[5]:0);
+		strg += strlen (strg);
+		middle = TRUE;
+	    }
+	}
+	val_str_lw (base_ptr, strg, sep, middle, value_ptr->number[0],
+		    (value_ptr->siglw.stbits.state == STATE_F128)?value_ptr->number[4]:0);
+	strg += strlen (strg);
+	break;
     }
+    default:
+	*strg++ = '?';
+	break;
+    }
+    if (!compressed && base_ptr->type == BASE_ASCII) *strg++ = '\"';
+    *strg++ = '\0';
 }
 
 void	val_minimize (
@@ -144,36 +275,67 @@ void	val_minimize (
     )
     /* Given a STATE_B128, try to shrink to something smaller if we can */
 {
-    if (value_ptr->siglw.stbits.state != STATE_B128) {
+    Boolean_t num123 = (value_ptr->number[1]
+			|| value_ptr->number[2]
+			|| value_ptr->number[3]);
+    Boolean_t num567 = (value_ptr->number[5]
+			|| value_ptr->number[6]
+			|| value_ptr->number[7]);
+    if (!value_ptr->number[4] && !num567) {
+	if (!num123) {
+	    if (!value_ptr->number[0])
+		value_ptr->siglw.stbits.state = STATE_0;
+	    else value_ptr->siglw.stbits.state = STATE_B32;
 	}
-    else if ((value_ptr->number[0] == 0)
-	     && (value_ptr->number[1] == 0)
-	     && (value_ptr->number[2] == 0)
-	     && (value_ptr->number[3] == 0)) {
-	value_ptr->siglw.stbits.state = STATE_0;
-    }
-    else if ((value_ptr->number[1] == 0)
-	     && (value_ptr->number[2] == 0)
-	     && (value_ptr->number[3] == 0)) {
-	value_ptr->siglw.stbits.state = STATE_B32;
+	else value_ptr->siglw.stbits.state = STATE_B128;
+    } else {
+	if (!num123 && !num567) {
+	    value_ptr->siglw.stbits.state = STATE_F32;
+	    value_ptr->number[1] = value_ptr->number[4];
+	    value_ptr->number[4] = 0;
+	} else {
+	    value_ptr->siglw.stbits.state = STATE_F128;
+	}
     }
     value_ptr->siglw.stbits.size = STATE_SIZE(value_ptr->siglw.stbits.state);
 }
 
 void    string_to_value (
-    Trace *trace,
-    char *strg,
+    Base_t **base_pptr,
+    const char *strg,
     Value_t *value_ptr)
 {
     register char value;
-    uint_t MSO = (7<<29);		/* Most significant hex digit */
-    uint_t MSH = (15<<28);	/* Most significant octal digit */
-    register char *cp;
+    uint_t MSO = (7L<<29);	/* Most significant octal digit */
+    uint_t MSH = (15L<<28);	/* Most significant hex digit */
+    uint_t MSB = (1L<<31);	/* Most significant binary digit */
+    uint_t MSC = (0xffL<<24);	/* Most significant char */
+    const char *cp = strg;
     uint_t *nptr = &(value_ptr->number[0]);
 
-    value_zero (value_ptr);
+    val_zero (value_ptr);
 
-    for (cp=strg; *cp; cp++) {
+    *base_pptr = global->bases[BASE_HEX_UN];
+    if (*cp=='\'') {
+	cp++;
+	if (*cp=='o') *base_pptr = global->bases[BASE_OCT_UN];
+	else if (*cp=='b') *base_pptr = global->bases[BASE_BIN_UN];
+	else if (*cp=='d') *base_pptr = global->bases[BASE_DEC_UN];
+    } else if (*cp=='"') {
+	cp++;
+	*base_pptr = global->bases[BASE_ASCII];
+    }
+
+    if ((*cp == 'z' || *cp == 'Z') && cp[1]=='\0') {
+	value_ptr->siglw.stbits.state = STATE_Z;
+	return;
+    }
+    if ((*cp == 'u' || *cp == 'U' || *cp == 'x' || *cp == 'X') && cp[1]=='\0') {
+	value_ptr->siglw.stbits.state = STATE_U;
+	return;
+    }
+
+    for (; *cp; cp++) {
 	value = -1;
 	if (*cp >= '0' && *cp <= '9')
 	    value = *cp - '0';
@@ -182,55 +344,81 @@ void    string_to_value (
 	else if (*cp >= 'a' && *cp <= 'f')
 	    value = *cp - ('a' - 10);
 
-	if (trace->busrep == BUSREP_HEX_UN && value >=0 && value <= 15) {
-	    nptr[3] = (nptr[3]<<4) + ((nptr[2] & MSH)>>28);
-	    nptr[2] = (nptr[2]<<4) + ((nptr[1] & MSH)>>28);
-	    nptr[1] = (nptr[1]<<4) + ((nptr[0] & MSH)>>28);
-	    nptr[0] = (nptr[0]<<4) + value;
-	}
-	else if (trace->busrep == BUSREP_OCT_UN && value >=0 && value <= 7) {
-	    nptr[3] = (nptr[3]<<3) + ((nptr[2] & MSO)>>29);
-	    nptr[2] = (nptr[2]<<3) + ((nptr[1] & MSO)>>29);
-	    nptr[1] = (nptr[1]<<3) + ((nptr[0] & MSO)>>29);
-	    nptr[0] = (nptr[0]<<3) + value;
-	}
-	else if (trace->busrep == BUSREP_DEC_UN && value >=0 && value <= 9) {
-	    /* This may be buggy for large numbers */
-	    nptr[3] = (nptr[3]*10) + ((cp>=(strg+30))?cp[-30]:0);
-	    nptr[2] = (nptr[2]*10) + ((cp>=(strg+20))?cp[-20]:0);
-	    nptr[1] = (nptr[1]*10) + ((cp>=(strg+10))?cp[-10]:0);
-	    nptr[0] = (nptr[0]*10) + value;
+	switch ((*base_pptr)->type) {
+	case BASE_HEX_UN:
+	    if (value >=0 && value <= 15) {
+		nptr[3] = (nptr[3]<<4) + ((nptr[2] & MSH)>>28);
+		nptr[2] = (nptr[2]<<4) + ((nptr[1] & MSH)>>28);
+		nptr[1] = (nptr[1]<<4) + ((nptr[0] & MSH)>>28);
+		nptr[0] = (nptr[0]<<4) + value;
+	    }
+	    break;
+	case BASE_OCT_UN:
+	    if (value >=0 && value <= 7) {
+		nptr[3] = (nptr[3]<<3) + ((nptr[2] & MSO)>>29);
+		nptr[2] = (nptr[2]<<3) + ((nptr[1] & MSO)>>29);
+		nptr[1] = (nptr[1]<<3) + ((nptr[0] & MSO)>>29);
+		nptr[0] = (nptr[0]<<3) + value;
+	    }
+	    break;
+	case BASE_BIN_UN:
+	    if (value >=0 && value <= 1) {
+		nptr[3] = (nptr[3]<<1) + ((nptr[2] & MSB)>>31);
+		nptr[2] = (nptr[2]<<1) + ((nptr[1] & MSB)>>31);
+		nptr[1] = (nptr[1]<<1) + ((nptr[0] & MSB)>>31);
+		nptr[0] = (nptr[0]<<1) + value;
+	    }
+	    break;
+	case BASE_DEC_UN:
+	    if (value >=0 && value <= 9) {
+		/* WPSFIX This is buggy for large numbers */
+		nptr[3] = (nptr[3]*10) + ((cp>=(strg+30))?cp[-30]:0);
+		nptr[2] = (nptr[2]*10) + ((cp>=(strg+20))?cp[-20]:0);
+		nptr[1] = (nptr[1]*10) + ((cp>=(strg+10))?cp[-10]:0);
+		nptr[0] = (nptr[0]*10) + value;
+	    }
+	    break;
+	case BASE_ASCII:
+	    if (*cp != '\"') {
+		nptr[3] = (nptr[3]<<8) + ((nptr[2] & MSC)>>24);
+		nptr[2] = (nptr[2]<<8) + ((nptr[1] & MSC)>>24);
+		nptr[1] = (nptr[1]<<8) + ((nptr[0] & MSC)>>24);
+		nptr[0] = (nptr[0]<<8) + (*cp & 0xff);
+	    }
+	    break;
+	case BASE_MAX:
+	    break;
 	}
     }
 
-    value_ptr->siglw.stbits.state = STATE_B128;
     val_minimize (value_ptr);
 }
 
-Boolean  val_equal (
-    Value_t	*vptra,
-    Value_t	*vptrb)
+Boolean_t  val_equal (
+    const Value_t	*vptra,
+    const Value_t	*vptrb)
 {
-    switch ( vptra->siglw.stbits.state ) {
-    case STATE_0:
-    case STATE_1:
-    case STATE_U:
-    case STATE_Z:
-	return (vptra->siglw.stbits.state == vptrb->siglw.stbits.state);
-    case STATE_B32:
-	if (vptrb->siglw.stbits.state != STATE_B32) return (0);
-	if (vptra->number[0] != vptrb->number[0]) return (0);
-	return (1);
-    case STATE_B128:
-	if (vptrb->siglw.stbits.state != STATE_B32) return (0);
-	if (vptra->number[0] != vptrb->number[0]) return (0);
-	if (vptra->number[1] != vptrb->number[1]) return (0);
-	if (vptra->number[2] != vptrb->number[2]) return (0);
-	if (vptra->number[3] != vptrb->number[3]) return (0);
-	return (1);
-    default:
-	return (0);
-    }
+    return ((vptra->siglw.stbits.state == vptrb->siglw.stbits.state)
+	    && ((   (vptra->siglw.stbits.state == STATE_B32)
+		    & (vptra->number[0] == vptrb->number[0]))
+		|| ((vptra->siglw.stbits.state == STATE_B32)
+		    & (vptra->number[0] == vptrb->number[0])
+		    & (vptra->number[1] == vptrb->number[1])
+		    & (vptra->number[2] == vptrb->number[2])
+		    & (vptra->number[3] == vptrb->number[3]))
+		|| ((vptra->siglw.stbits.state == STATE_F32)
+		    & (vptra->number[0] == vptrb->number[0])
+		    & (vptra->number[1] == vptrb->number[1]))
+		|| ((vptra->siglw.stbits.state == STATE_F128)
+		    & (vptra->number[0] == vptrb->number[0])
+		    & (vptra->number[1] == vptrb->number[1])
+		    & (vptra->number[2] == vptrb->number[2])
+		    & (vptra->number[3] == vptrb->number[3])
+		    & (vptra->number[4] == vptrb->number[4])
+		    & (vptra->number[5] == vptrb->number[5])
+		    & (vptra->number[6] == vptrb->number[6])
+		    & (vptra->number[7] == vptrb->number[7]))
+		));
 }
 
 void	val_update_search ()
@@ -241,18 +429,20 @@ void	val_update_search ()
     int		cursorize;
     register int i;
     DCursor	*csr_ptr;
-    Boolean	any_enabled;
-    Boolean	matches[MAX_SRCH];	/* Cache the wildmat for each bit, so searching is faster */
+    Boolean_t	any_enabled;
+    Boolean_t	matches[MAX_SRCH];	/* Cache the wildmat for each bit, so searching is faster */
+    static Boolean_t enabled_lasttime = FALSE;
 
     if (DTPRINT_ENTRY) printf ("In val_update_search\n");
 
     /* If no searches are enabled, skip the cptr loop.  This saves */
     /* 3% of the first reading time on large traces */
-    any_enabled = FALSE;
+    any_enabled = enabled_lasttime; 	/* if all get disabled, we still need to clean up enables */
     for (i=0; i<MAX_SRCH; i++) {
 	if (global->val_srch[i].color != 0) any_enabled = TRUE;
 	if (global->val_srch[i].cursor != 0) any_enabled = TRUE;
     }
+    enabled_lasttime = FALSE;
 
     /* Mark all cursors that are a result of a search as old (-1) */
     for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
@@ -271,26 +461,39 @@ void	val_update_search ()
 		cursorize=0;
 		for (i=0; i<MAX_SRCH; i++) {
 		    matches[i] = 0;
-		    sig_ptr->srch_ena[i] = FALSE;
 		}
 
 		for (cptr = sig_ptr->bptr; (CPTR_TIME(cptr) != EOT);
 		     cptr = CPTR_NEXT(cptr)) {
+		    int color_to_assign = 0;
 		    switch (cptr->siglw.stbits.state) {
-		      case STATE_B32:
-		      case STATE_B128:
+		    case STATE_B32:
+		    case STATE_B128:
+		    case STATE_F32:
+		    case STATE_F128:
 			for (i=0; i<MAX_SRCH; i++) {
 			    if (val_equal (cptr, &global->val_srch[i].value)
 				&& ( matches[i] || wildmat (sig_ptr->signame, global->val_srch[i].signal))  ) {
 				matches[i] = TRUE;
-				if ( global->val_srch[i].color != 0)  sig_ptr->srch_ena[i] = TRUE;
-				if ( global->val_srch[i].cursor != 0) cursorize = global->val_srch[i].cursor;
+				if ( global->val_srch[i].color != 0) {
+				    color_to_assign = global->val_srch[i].color;
+				    enabled_lasttime = TRUE;
+				}
+				if ( global->val_srch[i].cursor != 0) {
+				    cursorize = global->val_srch[i].cursor;
+				    enabled_lasttime = TRUE;
+				}
 				/* don't break, because if same value on two lines, one with cursor and one without will fail */
 			    }
 			}
 			break;
 		    } /* switch */
 		    
+		    if (color_to_assign != cptr->siglw.stbits.color) {
+			/* Don't write unless changes to save cache flushing */
+			cptr->siglw.stbits.color = color_to_assign;
+		    }
+
 		    if (cursorize) {
 			if (NULL != (csr_ptr = time_to_cursor (CPTR_TIME(cptr)))) {
 			    if (csr_ptr->type == SEARCHOLD) {
@@ -312,6 +515,73 @@ void	val_update_search ()
 
     /* Delete all old cursors */
     cur_delete_of_type (SEARCHOLD);
+}
+
+/****************************** BASES ******************************/
+
+Base_t *val_base_find (
+    const char *name)
+{
+    Base_t *base_ptr;
+    for (base_ptr=global->bases[0]; base_ptr; base_ptr = base_ptr->next) {
+	if (!strcasecmp(base_ptr->name, name)) {
+	    return (base_ptr);
+	}
+    }
+    return (NULL);
+}
+
+Base_t *val_base_add (
+    BaseType_t type,
+    char *name,
+    char *prefix)
+{
+    int basenum;
+    Base_t *base_ptr;
+    Base_t *found_base_ptr;
+    
+    found_base_ptr = val_base_find (name); /* Null if not found */
+    base_ptr = found_base_ptr;
+
+    if (found_base_ptr == NULL) {
+	Base_t *base_end_ptr;
+	base_ptr = DNewCalloc (Base_t);
+
+	for (base_end_ptr=global->bases[0]; base_end_ptr; base_end_ptr = base_end_ptr->next) {
+	    if (!base_end_ptr->next) {
+		base_end_ptr->next = base_ptr;
+		break;
+	    }
+	}
+
+	/* Can we fit it in the menu? */
+	for (basenum=0; basenum < BASE_MAX_MENU; basenum++) {
+	    if (global->bases[basenum]==NULL) {
+		global->bases[basenum]=base_ptr;
+		break;
+	    }
+	}
+    }
+    base_ptr->name = strdup (name);
+    base_ptr->type = type;
+    base_ptr->prefix = strdup(prefix);
+    
+    return (base_ptr);
+}
+
+void	val_bases_init ()
+{
+    int		basenum;
+    /* Define default bases */
+    for (basenum=0; basenum<BASE_MAX; basenum++) {
+	global->bases[basenum] = NULL;
+    }
+    /* This order MUST match the enum order of BaseType_t */
+    val_base_add (BASE_HEX_UN, "Hex", "");
+    val_base_add (BASE_OCT_UN, "Octal",	"'o");
+    val_base_add (BASE_BIN_UN, "Binary", "'b");
+    val_base_add (BASE_DEC_UN, "Decimal", "'d");
+    val_base_add (BASE_ASCII,  "Ascii", "\"");
 }
 
 /****************************** STATES ******************************/
@@ -342,10 +612,8 @@ void    val_examine_cb (
     
     if (DTPRINT_ENTRY) printf ("In val_examine_cb - trace=%p\n",trace);
     
-    /* remove any previous events */
-    remove_all_events (trace);
-    
     /* process all subsequent button presses as cursor moves */
+    remove_all_events (trace);
     set_cursor (trace, DC_VAL_EXAM);
     add_event (ButtonPressMask, val_examine_ev);
 }
@@ -356,13 +624,11 @@ void    val_highlight_cb (
     Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In val_highlight_cb - trace=%p\n",trace);
     
-    /* remove any previous events */
-    remove_all_events (trace);
-     
     /* Grab color number from the menu button pointer */
     global->highlight_color = submenu_to_color (trace, w, trace->menu.val_highlight_pds);
 
     /* process all subsequent button presses as signal deletions */ 
+    remove_all_events (trace);
     set_cursor (trace, DC_VAL_HIGHLIGHT);
     add_event (ButtonPressMask, val_highlight_ev);
 }
@@ -370,37 +636,7 @@ void    val_highlight_cb (
 
 /****************************** EVENTS ******************************/
 
-char *val_examine_popup_sig_string (
-    /* Return string with examine information in it */
-    Trace	*trace,
-    Signal	*sig_ptr)
-{
-    static char	strg[2000];
-    char	strg2[2000];
-    
-    if (DTPRINT_ENTRY) printf ("val_examine_popup_sig_string\n");
-
-    strcpy (strg, sig_ptr->signame);
-	
-    /* Debugging information */
-    if (DTDEBUG) {
-	sprintf (strg2, "\nType %d   Blocks %ld\n",
-		 sig_ptr->type, sig_ptr->blocks);
-	strcat (strg, strg2);
-	sprintf (strg2, "Bits %d   Index %d - %d  Srch_ena %p\n",
-		 sig_ptr->bits, sig_ptr->msb_index, sig_ptr->lsb_index, sig_ptr->srch_ena);
-	strcat (strg, strg2);
-	sprintf (strg2, "File_type %x  File_Pos %d-%d  Mask %08x\n",
-		 sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->file_end_pos, sig_ptr->pos_mask);
-	strcat (strg, strg2);
-	sprintf (strg2, "Value_mask %08x %08x %08x %08x\n",
-		 sig_ptr->value_mask[3], sig_ptr->value_mask[2], sig_ptr->value_mask[1], sig_ptr->value_mask[0]);
-	strcat (strg, strg2);
-    }
-    return (strg);
-}
-	
-char *val_examine_popup_cptr_string (
+char *val_examine_string (
     /* Return string with examine information in it */
     Trace	*trace,
     Signal	*sig_ptr,
@@ -409,8 +645,7 @@ char *val_examine_popup_cptr_string (
     Value_t	*cptr;
     static char	strg[2000];
     char	strg2[2000];
-    int		rows, cols, bit, row, col, par;
-    uint_t	bit_value;
+    int		rows, cols, bit, row, col;
     char	*format;
     
     if (DTPRINT_ENTRY) printf ("\ttime = %d, signal = %s\n", time, sig_ptr->signame);
@@ -433,29 +668,20 @@ char *val_examine_popup_cptr_string (
 	strcat (strg, ":\n");
     }
     
+    strcat (strg, "= ");
+    val_to_string (sig_ptr->base, strg2, cptr, FALSE);
+    strcat (strg, strg2);
+    strcat (strg, "\n");
+    if (sig_ptr->base->type != global->bases[0]->type) {
+	strcat (strg, "= ");
+	val_to_string (global->bases[0], strg2, cptr, FALSE);
+	strcat (strg, strg2);
+	strcat (strg, "\n");
+    }
+
     switch (cptr->siglw.stbits.state) {
-    case STATE_0:
-	strcat (strg, "= 0\n");
-	break;
-    case STATE_1:
-	strcat (strg, "= 1\n");
-	break;
-	
-    case STATE_Z:
-	sprintf (strg2, "= Z\n");
-	strcat (strg, strg2);
-	break;
-	
-    case STATE_U:
-	sprintf (strg2, "= U\n");
-	strcat (strg, strg2);
-	break;
-	
     case STATE_B32:
     case STATE_B128:
-	strcat (strg, "= ");
-	value_to_string (trace, strg2, cptr, ' ');
-	strcat (strg, strg2);
 	if ( (sig_ptr->decode != NULL) 
 	     && (cptr->siglw.stbits.state == STATE_B32)
 	     && (cptr->number[0] < sig_ptr->decode->numstates)
@@ -463,55 +689,64 @@ char *val_examine_popup_cptr_string (
 	    sprintf (strg2, " = %s\n", sig_ptr->decode->statename[cptr->number[0]] );
 	    strcat (strg, strg2);
 	}
-	else strcat (strg, "\n");
+    } /* Case */
 	
+    switch (cptr->siglw.stbits.state) {
+    case STATE_B32:
+    case STATE_F32:
+    case STATE_B128:
+    case STATE_F128:
 	/* Bitwise information */
 	rows = ceil (sqrt ((double)(sig_ptr->bits + 1)));
 	cols = ceil ((double)(rows) / 4.0) * 4;
 	rows = ceil ((double)(sig_ptr->bits + 1)/ (double)cols);
 	
-	format = "<%01d>=%d ";
-	if (sig_ptr->bits >= 10)  format = "<%02d>=%d ";
-	if (sig_ptr->bits >= 100) format = "<%03d>=%d ";
+	format = "<%01d>=%c ";
+	if (sig_ptr->bits >= 10)  format = "<%02d>=%c ";
+	if (sig_ptr->bits >= 100) format = "<%03d>=%c ";
 	
 	bit = 0;
 	for (row=rows - 1; row >= 0; row--) {
 	    for (col = cols - 1; col >= 0; col--) {
 		bit = (row * cols + col);
-		
-		if (bit<32) bit_value = ( cptr->number[0] >> bit ) & 1;
-		else if (bit<64) bit_value = ( cptr->number[1] >> (bit-32) ) & 1;
-		else if (bit<96) bit_value = ( cptr->number[2] >> (bit-64) ) & 1;
-		else  bit_value = ( cptr->number[3] >> (bit-96) ) & 1;
-		
 		if ((bit>=0) && (bit <= sig_ptr->bits)) {
+		    uint_t bit_value = val_bit (cptr, bit);
 		    sprintf (strg2, format, sig_ptr->msb_index +
 			     ((sig_ptr->msb_index >= sig_ptr->lsb_index)
 			      ? (bit - sig_ptr->bits) : (sig_ptr->bits - bit)),
-			     bit_value);
+			     "01uz"[bit_value]);
 		    strcat (strg, strg2);
 		    if (col==4 || col==8) strcat (strg, "  ");
 		}
 	    }
 	    strcat (strg, "\n");
 	}
+	break;
+    }
 	
-	if (sig_ptr->bits > 2) {
-	    par = 0;
-	    for (bit=0; bit<=sig_ptr->bits; bit++) {
-		if (bit<32) bit_value = ( cptr->number[0] >> bit ) & 1;
-		else if (bit<64) bit_value = ( cptr->number[1] >> (bit-32) ) & 1;
-		else if (bit<96) bit_value = ( cptr->number[2] >> (bit-64) ) & 1;
-		else  bit_value = ( cptr->number[3] >> (bit-96) ) & 1;
-		
-		par ^= bit_value;
-	    }
+    if (sig_ptr->bits > 2) {
+	int par = 0;
+	Boolean_t unknown = FALSE;
+	for (bit=0; bit<=sig_ptr->bits; bit++) {
+	    uint_t bit_value = val_bit (cptr, bit);
+	    if (bit_value==0 || bit_value==1) par ^= bit_value;
+	    else unknown = TRUE;
+	}
+	if (!unknown) {
 	    if (par) strcat (strg, "Odd Parity\n");
 	    else  strcat (strg, "Even Parity\n");
 	}
+    }
 	
-	break;
-    } /* Case */
+    /* Debugging information */
+    if (DTDEBUG) {
+	strcat (strg, "\n");
+	sprintf (strg2, "Value_stbits %08x  %s\n",
+		 cptr->siglw.number,
+		 val_state_name[cptr->siglw.stbits.state]);
+	strcat (strg, strg2);
+    }
+
     return (strg);
 }
 	
@@ -527,7 +762,7 @@ void    val_examine_popup (
     
     time = posx_to_time (trace, ev->x);
     sig_ptr = posy_to_signal (trace, ev->y);
-    if (DTPRINT_ENTRY) printf ("In val_examine_popup %d\n", __LINE__);
+    if (DTPRINT_ENTRY) printf ("In val_examine_popup %d %d time %d\n", __LINE__, ev->x, time);
     
     if (trace->examine.popup && XtIsManaged(trace->examine.popup)) {
 	XtUnmanageChild (trace->examine.popup);
@@ -535,16 +770,27 @@ void    val_examine_popup (
 	trace->examine.popup = NULL;
     }
       
+    /* Brace yourself for something that should be object oriented... */
     if (sig_ptr) {
 	/* Get information */
 	if (time>=0) {
-	    strg = val_examine_popup_cptr_string (trace, sig_ptr, time);
+	    strg = val_examine_string (trace, sig_ptr, time);
 	} else {
-	    strg = val_examine_popup_sig_string (trace, sig_ptr);
+	    strg = sig_examine_string (trace, sig_ptr);
+	}
+    } else {
+	if (ev->y <= trace->ystart) {
+	    DTime grid_time;
+	    Grid *grid_ptr = posx_to_grid (trace, ev->x, &grid_time);
+	    if (grid_ptr) strg = grid_examine_string (trace, grid_ptr, grid_time);
+	} else {
+	    DCursor *csr_ptr = posx_to_cursor (trace, ev->x);
+	    if (csr_ptr) strg = cur_examine_string (trace, csr_ptr);
 	}
     }
+	    
 	
-    XtSetArg (arglist[0], XmNentryAlignment, XmALIGNMENT_BEGINNING);
+    XtSetArg (arglist[0], XmNentryAlignment, XmALIGNMENT_CENTER);
     trace->examine.popup = XmCreatePopupMenu (trace->main, "examinepopup", arglist, 1);
   
     xs = string_create_with_cr (strg);
@@ -690,20 +936,22 @@ void    val_search_widget_update (
 
     /* Copy settings to local area to allow cancel to work */
     for (search_pos=0; search_pos<MAX_SRCH; search_pos++) {
+	ValSearch_t *vs_ptr = &global->val_srch[search_pos];
+
 	/* Update with current search enables */
-	XtSetArg (arglist[0], XmNset, (global->val_srch[search_pos].color != 0));
+	XtSetArg (arglist[0], XmNset, (vs_ptr->color != 0));
 	XtSetValues (trace->value.enable[search_pos], arglist, 1);
 
 	/* Update with current cursor enables */
-	XtSetArg (arglist[0], XmNset, (global->val_srch[search_pos].cursor != 0));
+	XtSetArg (arglist[0], XmNset, (vs_ptr->cursor != 0));
 	XtSetValues (trace->value.cursor[search_pos], arglist, 1);
 
 	/* Update with current search values */
-	value_to_string (trace, strg, &global->val_srch[search_pos].value, ' ');
+	val_to_string (vs_ptr->base, strg, &vs_ptr->value, FALSE);
 	XmTextSetString (trace->value.text[search_pos], strg);
 
 	/* Update with current signal values */
-	XmTextSetString (trace->value.signal[search_pos], global->val_srch[search_pos].signal);
+	XmTextSetString (trace->value.signal[search_pos], vs_ptr->signal);
     }
 }
 
@@ -755,9 +1003,8 @@ void    val_search_cb (
 	trace->value.label5 = XmCreateLabel (trace->value.form,"label5",arglist,5);
 	DManageChild (trace->value.label5, trace, MC_NOKEYS);
 	
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple
-		 ( (trace->busrep == BUSREP_HEX_UN)? "Search value in HEX":
-		  ( (trace->busrep == BUSREP_OCT_UN) ? "Search value in OCTAL" : "Search value in DECIMAL" ) ) );
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (
+	    "Search value, Hex default, 'd=decimal, 'b=binary"));
 	XtSetArg (arglist[1], XmNx, 140);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopOffset, 1);
@@ -876,24 +1123,27 @@ void    val_search_ok_cb (
     if (DTPRINT_ENTRY) printf ("In val_search_ok_cb - trace=%p\n",trace);
 
     for (i=0; i<MAX_SRCH; i++) {
+	ValSearch_t *vs_ptr = &global->val_srch[i];
+
 	/* Update with current search enables */
-	global->val_srch[i].color = (XmToggleButtonGetState (trace->value.enable[i])) ? i+1 : 0;
+	vs_ptr->color = (XmToggleButtonGetState (trace->value.enable[i])) ? i+1 : 0;
 	
 	/* Update with current cursor enables */
-	global->val_srch[i].cursor = (XmToggleButtonGetState (trace->value.cursor[i])) ? i+1 : 0;
+	vs_ptr->cursor = (XmToggleButtonGetState (trace->value.cursor[i])) ? i+1 : 0;
 	
 	/* Update with current search values */
 	strg = XmTextGetString (trace->value.text[i]);
-	string_to_value (trace, strg, &global->val_srch[i].value);
+	string_to_value (&vs_ptr->base, strg, &vs_ptr->value);
 
 	/* Update with current search values */
 	strg = XmTextGetString (trace->value.signal[i]);
-	strcpy (global->val_srch[i].signal, strg);
+	strcpy (vs_ptr->signal, strg);
 
 	if (DTPRINT_SEARCH) {
 	    char strg2[MAXVALUELEN];
-	    value_to_string (trace, strg2, &global->val_srch[i].value, '_');
-	    printf ("Search %d) %d   '%s' -> '%s'\n", i, global->val_srch[i].color, strg, strg2);
+	    val_to_string (global->bases[0], strg2, &vs_ptr->value, FALSE);
+	    printf ("Search %d) %d  %s  '%s' -> '%s'\n", i, vs_ptr->color,
+		    vs_ptr->base->name, strg, strg2);
 	}
     }
     
@@ -936,12 +1186,13 @@ void    val_highlight_ev (
     /* Change the color */
     if (global->highlight_color > 0) {
 	search_pos = global->highlight_color - 1;
-	memcpy (cptr, &global->val_srch[search_pos].value, sizeof(Value_t));
+	val_copy (&global->val_srch[search_pos].value, cptr);
 	strcpy (global->val_srch[search_pos].signal, sig_ptr->signame);
 	if (!global->val_srch[search_pos].color
 	    && !global->val_srch[search_pos].cursor ) {
 	    /* presume user really wants color if neither is on */
 	    global->val_srch[search_pos].color = search_pos + 1;
+	    global->val_srch[search_pos].cursor = search_pos + 1;
 	}
     }
 
@@ -1196,8 +1447,9 @@ void    val_annotate_do_cb (
     /* Value search info */
     fprintf (dump_fp, "(setq dinotrace-value-searches '(\n");
     for (i=1; i<=MAX_SRCH; i++) {
-	if (global->val_srch[i-1].color) {
-	    value_to_string (global->trace_head, strg, &global->val_srch[i-1].value, '_');
+	ValSearch_t *vs_ptr = &global->val_srch[i-1];
+	if (vs_ptr->color) {
+	    val_to_string (vs_ptr->base, strg, &vs_ptr->value, FALSE);
 	    fprintf (dump_fp, "\t[\"%s\"\t%d\t\"%s\"]\n", strg,
 		     i, colornum_to_name(i));
 	}
@@ -1245,7 +1497,7 @@ void    val_annotate_do_cb (
 			cptr = CPTR_PREV(cptr);
 		    }
 
-		    value_to_string (trace, strg, cptr, '_');
+		    val_to_string (sig_ptr->base, strg, cptr, FALSE);
 		    
 		    /* First value must have `, last must have ', commas in middle */
 		    if (csr_num==1 && csr_num==csr_num_incl)

@@ -200,9 +200,9 @@ void fil_read (
 
     /* Normalize format */
     switch (trace->fileformat) {
-      case	FF_AUTO:
-      case	FF_DECSIM:
-      case	FF_DECSIM_BIN:
+    case	FF_AUTO:
+    case	FF_DECSIM:
+    case	FF_DECSIM_BIN:
 #ifdef VMS
 	trace->fileformat =	FF_DECSIM_BIN;
 #else
@@ -304,7 +304,7 @@ void fil_read (
 #endif
 
     /* Now add EOT to each signal and reset the cptr */
-    read_trace_end (trace);
+    fil_trace_end (trace);
 
     /* Change the name on title bar to filename */
     change_title (trace);
@@ -546,35 +546,35 @@ void	fil_string_add_cptr (
     /* Add a cptr corresponding to the text at value_strg */
     /* WARNING: Similar verilog_string_to_value in dt_verilog for speed reasons */
     Signal	*sig_ptr,
-    char	*value_strg,
+    const char	*value_strg,
     DTime	time,
-    Boolean	nocheck)		/* don't compare against previous data */
+    Boolean_t	nocheck)		/* don't compare against previous data */
 {
     register uint_t state;
-    register char	*cp, *cep;
-    register char 	state_chr;
+    register const char	*cp;
+    register char 	chr_or, chr_and;
     register int	len, bitcnt;
     Value_t	value;
 
     /* zero the value */
     /* We do NOT need to set value.siglw.number, as is set later */
     /* I set it anyways to get it into the cache */
-    value_zero (&value);
+    val_zero (&value);
 
     if (sig_ptr->bits == 0) {
 	/* This branch not used for verilog, only Decsim */
 	/* scalar signal */  
 	switch ( *value_strg ) {
-	  case '0': state = STATE_0; break;
-	  case '1': state = STATE_1; break;
-	  case '?':
-	  case 'X':
-	  case 'x':
-	  case 'U':
-	  case 'u': state = STATE_U; break;
-	  case 'Z': 
-	  case 'z': state = STATE_Z; break;
-	  default: 
+	case '0': state = STATE_0; break;
+	case '1': state = STATE_1; break;
+	case '?':
+	case 'X':
+	case 'x':
+	case 'U':
+	case 'u': state = STATE_U; break;
+	case 'Z': 
+	case 'z': state = STATE_Z; break;
+	default: 
 	    state = STATE_U;
 	    printf ("%%E, Unknown state character '%c' at line %d\n", *value_strg, fil_line_num);
 	}
@@ -583,10 +583,6 @@ void	fil_string_add_cptr (
     else {
 	/* Multi bit signal */
 	/* determine the state of the bus */
-	state_chr = 0;
-	len = sig_ptr->bits;
-	cp = value_strg;
-	cep = cp + len;
 	/* Ok, here comes a fast algorithm (5% faster file reads)
 	 * Take each letter in the trace as a binary vector
 	 *	?   = 0011 1111	state_u
@@ -600,43 +596,78 @@ void	fil_string_add_cptr (
 	 *	    0011 000x	if everything is 0 or 1
 	 *	    else	it's a U
 	 */
-	while (cp <= cep) {
-	    state_chr |= *cp++;
+	chr_or = chr_and = *value_strg;
+	len = sig_ptr->bits;
+	for (cp = value_strg; cp <= (value_strg + len); cp++) {
+	    chr_or |= *cp; chr_and &= *cp;
 	}
-	switch (state_chr) {
+	switch (chr_or) {
 	case '0':
 	    /* Got all zeros, else LSB would have gotten set */
+	    state = STATE_0;
+	    break;
 	case '1':
+	    if (chr_and == '1') {
+		/* All ones */
+		value.siglw.stbits.allhigh = 1;
+	    }
 	    /* Mix of 0's and 1's, or all 1's */
 	    /* compute the value */
 	    /* Note '0'->0 and '1'->1 by just ANDing with 1 */
 	    state = sig_ptr->type;
 	    cp = value_strg;
-	    for (bitcnt=96; bitcnt <= (MIN (127,len)); bitcnt++)
-		value.number[3] = (value.number[3]<<1) | (*cp++=='1');
-	    
-	    for (bitcnt=64; bitcnt <= (MIN (95,len)); bitcnt++)
-		value.number[2] = (value.number[2]<<1) | (*cp++=='1');
-	    
-	    for (bitcnt=32; bitcnt <= (MIN (63,len)); bitcnt++)
-		value.number[1] = (value.number[1]<<1) | (*cp++=='1');
-
-	    for (bitcnt=0; bitcnt <= (MIN (31,len)); bitcnt++)
-		value.number[0] = (value.number[0]<<1) | (*cp++=='1');
+	    for (bitcnt=96; bitcnt <= (MIN (127,len)); bitcnt++, cp++)
+		value.number[3] = (value.number[3]<<1) | (*cp=='1');
+	    for (bitcnt=64; bitcnt <= (MIN (95,len)); bitcnt++, cp++)
+		value.number[2] = (value.number[2]<<1) | (*cp=='1');
+	    for (bitcnt=32; bitcnt <= (MIN (63,len)); bitcnt++, cp++)
+		value.number[1] = (value.number[1]<<1) | (*cp=='1');
+	    for (bitcnt=0; bitcnt <= (MIN (31,len)); bitcnt++, cp++)
+		value.number[0] = (value.number[0]<<1) | (*cp=='1');
 	    break;
-
 	case 'z':
 	case 'Z':
 	    state = STATE_Z;
 	    break;
 
-	default:
-	    state = STATE_U;
+	case 'u':
+	case 'U':
+	    state = STATE_U;	/* Pure U */
+	    break;
+
+	default: /* 4-state mix */
+	    cp = value_strg;
+	    if (sig_ptr->bits <= 31 ) {
+		state = STATE_F32;
+		for (bitcnt=0; bitcnt <= (MIN (31,len)); bitcnt++, cp++) {
+		    value.number[0] = (value.number[0]<<1) | (*cp=='1') | (*cp=='z') | (*cp=='Z');
+		    value.number[1] = (value.number[1]<<1) | (((*cp)|1)!='1');
+		    cp++;
+		}
+	    } else {
+		state = STATE_F128;
+		for (bitcnt=96; bitcnt <= (MIN (127,len)); bitcnt++, cp++) {
+		    value.number[3] = (value.number[3]<<1) | (*cp=='1') | (*cp=='z') | (*cp=='Z');
+		    value.number[7] = (value.number[7]<<1) | (((*cp)|1)!='1');
+		}
+		for (bitcnt=64; bitcnt <= (MIN (95,len)); bitcnt++, cp++) {
+		    value.number[2] = (value.number[2]<<1) | (*cp=='1') | (*cp=='z') | (*cp=='Z');
+		    value.number[6] = (value.number[6]<<1) | (((*cp)|1)!='1');
+		}
+		for (bitcnt=32; bitcnt <= (MIN (63,len)); bitcnt++, cp++) {
+		    value.number[1] = (value.number[1]<<1) | (*cp=='1') | (*cp=='z') | (*cp=='Z');
+		    value.number[5] = (value.number[5]<<1) | (((*cp)|1)!='1');
+		}
+		for (bitcnt=0; bitcnt <= (MIN (31,len)); bitcnt++, cp++) {
+		    value.number[0] = (value.number[0]<<1) | (*cp=='1') | (*cp=='z') | (*cp=='Z');
+		    value.number[4] = (value.number[4]<<1) | (((*cp)|1)!='1');
+		}
+	    }
 	    break;
 	}
     }
 
-    /* if (DTPRINT_FILE) printf ("time %d sig %s state %d\n", time, sig_ptr->signame,  state); */
+    /*if (DTPRINT_FILE) printf ("time %d sig %s str %s cor %c cand %c state %d n0 %d n1 %d\n",				time, sig_ptr->signame, value_strg, chr_or, chr_and, state, value.number[0], value.number[1]); */
     value.siglw.stbits.state = state;
     value.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
@@ -648,9 +679,9 @@ void	fil_string_add_cptr (
 void	fil_add_cptr (
     Signal	*sig_ptr,
     Value_t	*value_ptr,
-    Boolean	nocheck)		/* compare against previous data */
+    Boolean_t	nocheck)		/* compare against previous data */
 {
-    long	diff;
+    ulong_t	diff;
     Value_t	*cptr = sig_ptr->cptr;
 
     /* Important! During the adding cptr points to the __last__ value added, not the next! */
@@ -674,7 +705,11 @@ void	fil_add_cptr (
 	|| ( cptr->number[0] != value_ptr->number[0] )
 	|| ( cptr->number[1] != value_ptr->number[1] )
 	|| ( cptr->number[2] != value_ptr->number[2] )
-	|| ( cptr->number[3] != value_ptr->number[3] ) ) {
+	|| ( cptr->number[3] != value_ptr->number[3] )
+	|| ( cptr->number[4] != value_ptr->number[4] )
+	|| ( cptr->number[5] != value_ptr->number[5] )
+	|| ( cptr->number[6] != value_ptr->number[6] )
+	|| ( cptr->number[7] != value_ptr->number[7] ) ) {
 
 	diff = (uint_t*)sig_ptr->cptr - (uint_t*)sig_ptr->bptr;
 	if (diff > sig_ptr->blocks ) {
@@ -697,18 +732,18 @@ void	fil_add_cptr (
 	}
 
 	/* Load new datum */
-	value_cpy (sig_ptr->cptr, value_ptr);
+	val_copy (sig_ptr->cptr, value_ptr);
 	/*if (DTPRINT_FILE) print_sig_info(sig_ptr);*/
     }
 
 }
 #endif
 
-void read_make_busses (
+void fil_make_busses (
     /* Take the list of signals and make it into a list of busses */
     /* Also do the common stuff required for each signal. */
     Trace	*trace,
-    Boolean	not_tempest)	/* Use the name of the bus to find the bit vectors */
+    Boolean_t	not_tempest)	/* Use the name of the bus to find the bit vectors */
 {
     Signal	*sig_ptr;	/* ptr to current signal (lower bit number) */
     Signal	*bus_sig_ptr;	/* ptr to signal which is being bussed (upper bit number) */
@@ -718,7 +753,7 @@ void read_make_busses (
     char	sepchar;
     char	postbusstuff[MAXSIGLEN];
 
-    if (DTPRINT_ENTRY) printf ("In read_make_busses\n");
+    if (DTPRINT_ENTRY) printf ("In fil_make_busses\n");
     if (DTPRINT_BUSSES) sig_print_names (trace);
 
     /* Convert the signal names to the internal format */
@@ -932,7 +967,7 @@ void read_make_busses (
 	sig_ptr->blocks = BLK_SIZE;
 	sig_ptr->bptr = (Value_t *)XtMalloc ((sig_ptr->blocks*sizeof(uint_t))
 						+ (sizeof(Value_t)*2 + 2));
-	value_zero (sig_ptr->bptr);	/* So we know is empty */
+	val_zero (sig_ptr->bptr);	/* So we know is empty */
 	sig_ptr->cptr = sig_ptr->bptr;
     }
 
@@ -940,22 +975,22 @@ void read_make_busses (
 }
 
 
-void read_mark_cptr_end (
+static void fil_mark_cptr_end (
     Trace	*trace)
 {
     Signal	*sig_ptr;
     Value_t	value;
-    Boolean	msg=FALSE;
+    Boolean_t	msg=FALSE;
 
     /* loop thru each signal */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 
 	/* Must be a cptr which has the same time as the last time on the screen */
 	/* If none exists, create it */
-	if (sig_ptr->bptr != sig_ptr->cptr) {
+	if (sig_ptr->cptr->siglw.number || sig_ptr->cptr!=sig_ptr->bptr) {
 	    Value_t	*cptr = sig_ptr->cptr;
 	    if (CPTR_TIME(cptr) != trace->end_time) {
-		value_cpy (&value, sig_ptr->cptr);
+		val_copy (&value, sig_ptr->cptr);
 		value.time = trace->end_time;
 		fil_add_cptr (sig_ptr, &value, TRUE);
 	    }
@@ -978,16 +1013,16 @@ void read_mark_cptr_end (
     }
 }
 
-void read_trace_end (
+void fil_trace_end (
     /* Perform stuff at end of trace - common across all reading routines */
     Trace	*trace)
 {
     Signal	*sig_ptr;
 
-    if (DTPRINT_FILE) printf ("In read_trace_end\n");
+    if (DTPRINT_FILE) printf ("In fil_trace_end\n");
 
     /* Modify ending cptrs to be correct */
-    read_mark_cptr_end (trace);
+    fil_mark_cptr_end (trace);
 
     /* Misc */
     trace->dispsig = trace->firstsig;
@@ -1001,13 +1036,13 @@ void read_trace_end (
     trace->loaded = TRUE;
 
     switch (trace->fileformat) {
-      case	FF_TEMPEST:
-      case	FF_DECSIM_ASCII:
-      case	FF_DECSIM_BIN:
+    case	FF_TEMPEST:
+    case	FF_DECSIM_ASCII:
+    case	FF_DECSIM_BIN:
 	sig_modify_enables (trace);
 	break;
-      case	FF_VERILOG:
-      default:
+    case	FF_VERILOG:
+    default:
 	break;
     }
 
@@ -1030,7 +1065,7 @@ void read_trace_end (
     draw_needupd_sig_start ();
     grid_calc_autos (trace);
 
-    if (DTPRINT_FILE) printf ("read_trace_end: Done\n");
+    if (DTPRINT_FILE) printf ("fil_trace_end: Done\n");
 }
 
 /****************************** DECSIM ASCII ******************************/
@@ -1047,7 +1082,7 @@ void decsim_read_ascii_header (
     Signal	*sig_ptr,*last_sig_ptr=NULL;
     char	*line_ptr, *tmp_ptr;
     char	*signame_array;
-    Boolean	hit_name_block, past_name_block, no_names;
+    Boolean_t	hit_name_block, past_name_block, no_names;
 
 #define	SIGLINE(_l_) (signame_array+(_l_)*(sig_end_pos+5))
 
@@ -1072,6 +1107,7 @@ void decsim_read_ascii_header (
 	/* allow extra space in case becomes vector - don't know size yet */
 	sig_ptr->signame = (char *)XtMalloc (20+header_lines);
 	sig_ptr->trace = trace;
+	sig_ptr->base = global->bases[0];
 	sig_ptr->file_type.flags = 0;
 	sig_ptr->file_pos = col;
 	sig_ptr->bits = 0;	/* = buf->TRA$W_BITLEN; */
@@ -1157,7 +1193,7 @@ void decsim_read_ascii (
     FILE	*decsim_z_readfp)	/* Only pre-set if FF_DECSIM_Z */
 {
     FILE	*readfp;
-    Boolean	first_data;
+    Boolean_t	first_data;
     char	*line_in;
     Signal	*sig_ptr;
     long	time_stamp;
@@ -1167,11 +1203,11 @@ void decsim_read_ascii (
 
     char	*header_start, *header_ptr;
     long	header_length, header_lines=0;
-    Boolean	got_start=FALSE, hit_start=FALSE, in_comment=FALSE;
+    Boolean_t	got_start=FALSE, hit_start=FALSE, in_comment=FALSE;
     long	base_chars_left=0;
 
     char	*t;
-    Boolean	chango_format=FALSE;
+    Boolean_t	chango_format=FALSE;
     long	sig_start_pos, sig_end_pos;
     char	*data_begin_ptr;
 
@@ -1197,22 +1233,22 @@ void decsim_read_ascii (
     /* Read characters */
     while (! got_start && (EOF != (ch = getc (readfp)))) {
 	switch (ch) {
-	  case '\n':
-	  case '\r':
+	case '\n':
+	case '\r':
 	    in_comment = FALSE;
 	    got_start = hit_start;
 	    header_lines ++;
 	    break;
-	  case '!':
+	case '!':
 	    in_comment = TRUE;
 	    break;
-	  case ' ':
-	  case '\t':
+	case ' ':
+	case '\t':
 	    break;
-	  case '#':
+	case '#':
 	    if (!in_comment) base_chars_left = 2;
 	    break;
-	  default:	/* starting digit */
+	default:	/* starting digit */
 	    if (!in_comment) {
 		hit_start = TRUE;
 	    }
@@ -1296,7 +1332,7 @@ void decsim_read_ascii (
 
     /* Make the busses */
     /* Any lines that were all spaces will be pulled off.  This will strip off the time section of the lines */
-    read_make_busses (trace, TRUE);
+    fil_make_busses (trace, TRUE);
 
     /* Loop to read trace data and reformat */
     first_data = TRUE;

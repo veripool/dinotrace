@@ -56,11 +56,11 @@
  *****************************************************************************/
 
 char dt_post[] = "% $Id$\n\
-% Contact snyder@segsrv.hlo.dec.com with any problems with this document\n\
+% Contact wsnyder@ultranet.com with any problems with this document\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
 \n\
-/PAGESCALE      % stack: height width sigrf paper_heignt paper_width\n\
+/PAGESCALE      % stack: height width sigrf paper_height paper_width\n\
 { newpath\n\
   /PG_WID exch def		% def PG_WID = 11 * 72\n\
   /PG_HGT exch def		% def PG_HGT = 8.5 * 72\n\

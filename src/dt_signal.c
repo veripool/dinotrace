@@ -87,8 +87,8 @@ void sig_free (
     /* Free a signal structure, and unlink all traces of it */
     Trace	*trace,
     Signal	*sig_ptr,	/* Pointer to signal to be deleted */
-    Boolean	select,		/* True = selectively pick trace's signals from the list */
-    Boolean	recursive)	/* True = recursively do the entire list */
+    Boolean_t	select,		/* True = selectively pick trace's signals from the list */
+    Boolean_t	recursive)	/* True = recursively do the entire list */
 {
     Signal	*del_sig_ptr;
     Trace	*trace_ptr;
@@ -287,7 +287,7 @@ void	sig_wildmat_select (
 {
     Signal		*sig_ptr;
     SignalList		*siglst_ptr;
-    Boolean		trace_list;
+    Boolean_t		trace_list;
     
     trace_list = (trace == NULL);
 
@@ -338,7 +338,7 @@ void	sig_move (
 void	sig_delete (
     Trace	*trace,
     Signal	*sig_ptr,	/* Signal to remove */
-    Boolean	preserve)	/* TRUE if should preserve deletion on rereading */
+    Boolean_t	preserve)	/* TRUE if should preserve deletion on rereading */
     /* Delete the given signal */
 {
     if (sig_ptr) {
@@ -395,15 +395,15 @@ void	sig_update_search ()
     }
 }
 
-Boolean sig_is_constant (
+Boolean_t sig_is_constant (
     Trace	*trace,
     Signal	*sig_ptr,
-    Boolean	ignorexz)		/* TRUE = ignore xz */
+    Boolean_t	ignorexz)		/* TRUE = ignore xz */
 {
-    Boolean 	changes;
+    Boolean_t 	changes;
     Value_t	*cptr;
     Value_t	old_value;
-    Boolean	old_got_value;
+    Boolean_t	old_got_value;
 
     /* Is there a transition? */
     changes=FALSE;
@@ -419,7 +419,7 @@ Boolean sig_is_constant (
 	}
 
 	if (!old_got_value) {
-	    value_cpy (&old_value, cptr);
+	    val_copy (&old_value, cptr);
 	    old_got_value = TRUE;
 	    continue;
 	}
@@ -475,6 +475,23 @@ void    sig_highlight_selected (
 	/* Change the color */
 	sig_ptr->color = color;
 	sig_ptr->search = 0;
+    }
+
+    draw_all_needed ();
+}
+
+void    sig_base_selected (
+    Base_t	*base_ptr)
+{
+    Signal	*sig_ptr;
+    SignalList	*siglst_ptr;
+    
+    if (DTPRINT_ENTRY) printf ("In sig_base_selected\n");
+    
+    for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
+	sig_ptr = siglst_ptr->signal;
+	/* Change the color */
+	sig_ptr->base = base_ptr;
     }
 
     draw_all_needed ();
@@ -552,8 +569,8 @@ void    sig_copy_selected (
 
 
 void    sig_delete_selected (
-    Boolean	constant_flag,		/* FALSE = only delete constants */
-    Boolean	ignorexz)		/* TRUE = if deleting constants, ignore xz */
+    Boolean_t	constant_flag,		/* FALSE = only delete constants */
+    Boolean_t	ignorexz)		/* TRUE = if deleting constants, ignore xz */
 {
     Trace	*trace;
     Signal	*sig_ptr;
@@ -581,7 +598,7 @@ void    sig_goto_pattern (
     Signal	*sig_ptr;
     uint_t	numprt;
     int		inc;
-    Boolean	on_screen, found;
+    Boolean_t	on_screen, found;
     
     if (DTPRINT_ENTRY) printf ("In sig_goto_pattern - trace=%p pat='%s'\n",trace, pattern);
     
@@ -622,6 +639,41 @@ void    sig_goto_pattern (
 }
 
 
+/****************************** EXAMINE ******************************/
+
+char *sig_examine_string (
+    /* Return string with examine information in it */
+    Trace	*trace,
+    Signal	*sig_ptr)
+{
+    static char	strg[2000];
+    char	strg2[2000];
+    
+    if (DTPRINT_ENTRY) printf ("val_examine_popup_sig_string\n");
+
+    strcpy (strg, sig_ptr->signame);
+
+    sprintf (strg2, "\nBase: %s\n", sig_ptr->base->name);
+    strcat (strg, strg2);
+	
+    /* Debugging information */
+    if (DTDEBUG) {
+	sprintf (strg2, "\nType %d   Blocks %ld\n",
+		 sig_ptr->type, sig_ptr->blocks);
+	strcat (strg, strg2);
+	sprintf (strg2, "Bits %d   Index %d - %d\n",
+		 sig_ptr->bits, sig_ptr->msb_index, sig_ptr->lsb_index);
+	strcat (strg, strg2);
+	sprintf (strg2, "File_type %x  File_Pos %d-%d  Mask %08x\n",
+		 sig_ptr->file_type.flags, sig_ptr->file_pos, sig_ptr->file_end_pos, sig_ptr->pos_mask);
+	strcat (strg, strg2);
+	sprintf (strg2, "Value_mask %08x %08x %08x %08x\n",
+		 sig_ptr->value_mask[3], sig_ptr->value_mask[2], sig_ptr->value_mask[1], sig_ptr->value_mask[0]);
+	strcat (strg, strg2);
+    }
+    return (strg);
+}
+	
 /****************************** MENU OPTIONS ******************************/
 
 void    sig_add_cb (
@@ -721,13 +773,11 @@ void    sig_mov_cb (
     Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_mov_cb - trace=%p\n",trace);
     
-    /* remove any previous events */
-    remove_all_events (trace);
-    
     /* guarantee next button press selects a signal to be moved */
     global->selected_sig = NULL;
     
     /* process all subsequent button presses as signal moves */ 
+    remove_all_events (trace);
     add_event (ButtonPressMask, sig_move_ev);
     set_cursor (trace, DC_SIG_MOVE_1);
 }
@@ -738,13 +788,11 @@ void    sig_copy_cb (
     Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_copy_cb - trace=%p\n",trace);
     
-    /* remove any previous events */
-    remove_all_events (trace);
-    
     /* guarantee next button press selects a signal to be moved */
     global->selected_sig = NULL;
     
     /* process all subsequent button presses as signal moves */ 
+    remove_all_events (trace);
     add_event (ButtonPressMask, sig_copy_ev);
     set_cursor (trace, DC_SIG_COPY_1);
 }
@@ -755,12 +803,26 @@ void    sig_del_cb (
     Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_del_cb - trace=%p\n",trace);
     
-    /* remove any previous events */
-    remove_all_events (trace);
-    
     /* process all subsequent button presses as signal deletions */ 
+    remove_all_events (trace);
     set_cursor (trace, DC_SIG_DELETE);
     add_event (ButtonPressMask, sig_delete_ev);
+}
+
+void    sig_base_cb (
+    Widget	w)
+{
+    Trace *trace = widget_to_trace(w);
+    int basenum = submenu_to_color (trace, w, trace->menu.sig_base_pds);
+    if (DTPRINT_ENTRY) printf ("In sig_base_cb - trace=%p basenum=%d\n",trace, basenum);
+    
+    /* Grab color number from the menu button pointer */
+    global->selected_base = global->bases[basenum];
+
+    /* process all subsequent button presses as signal deletions */ 
+    remove_all_events (trace);
+    set_cursor (trace, DC_SIG_BASE);
+    add_event (ButtonPressMask, sig_base_ev);
 }
 
 void    sig_highlight_cb (
@@ -769,13 +831,11 @@ void    sig_highlight_cb (
     Trace *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_highlight_cb - trace=%p\n",trace);
     
-    /* remove any previous events */
-    remove_all_events (trace);
-     
     /* Grab color number from the menu button pointer */
     global->highlight_color = submenu_to_color (trace, w, trace->menu.sig_highlight_pds);
 
     /* process all subsequent button presses as signal deletions */ 
+    remove_all_events (trace);
     set_cursor (trace, DC_SIG_HIGHLIGHT);
     add_event (ButtonPressMask, sig_highlight_ev);
 }
@@ -1126,6 +1186,25 @@ void    sig_highlight_ev (
 }
 
 
+void    sig_base_ev (
+    Widget	w,
+    Trace	*trace,
+    XButtonPressedEvent	*ev)
+{
+    Signal	*sig_ptr;
+    
+    if (DTPRINT_ENTRY) printf ("In sig_base_ev - trace=%p\n",trace);
+    if (ev->type != ButtonPress || ev->button!=1) return;
+    
+    sig_ptr = posy_to_signal (trace, ev->y);
+    if (!sig_ptr) return;
+    
+    /* Change the base */
+    sig_ptr->base = global->selected_base;
+
+    draw_all_needed ();
+}
+
 /****************************** SELECT OPTIONS ******************************/
 
 void    sig_select_cb (
@@ -1253,7 +1332,7 @@ void    sig_select_cb (
 	/*** Delete (existing list) section ***/
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Delete Signal Pattern"));
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[2], XmNleftWidget, trace->select.add_sigs);
+	XtSetArg (arglist[2], XmNleftWidget, trace->select.add_sigs_form);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_FORM );
 	trace->select.label4 = XmCreateLabel (trace->select.select,"label4",arglist,4);
 	DManageChild (trace->select.label4, trace, MC_NOKEYS);
@@ -1805,14 +1884,14 @@ void sig_modify_en_signal (
     Trace	*trace,
     Signal	*en_sig_ptr,
     Signal	*base_sig_ptr,
-    Boolean	is_cosmos)
+    Boolean_t	is_cosmos)
 {
     Signal	*new_sig_ptr;
     Value_t	*base_cptr, *en_cptr;
     Value_t	new_value, base_value, en_value;
     int		has_ones;
     int		has_zeros;
-    Boolean	first_last_data=TRUE;
+    Boolean_t	first_last_data=TRUE;
     
     /*DTPRINT = (!strncmp(base_sig_ptr->signame, "k->MEMDATA", 10));*/
 
@@ -1832,13 +1911,13 @@ void sig_modify_en_signal (
     new_sig_ptr->blocks = BLK_SIZE;
     new_sig_ptr->bptr = (Value_t *)XtMalloc ((new_sig_ptr->blocks*sizeof(uint_t))
 						+ (sizeof(Value_t)*2 + 2));
-    value_zero (new_sig_ptr->bptr);	/* So we know is empty */
+    val_zero (new_sig_ptr->bptr);	/* So we know is empty */
     new_sig_ptr->cptr = new_sig_ptr->bptr;
 
     base_cptr = base_sig_ptr->bptr;
     en_cptr = en_sig_ptr->bptr;
-    value_cpy (&base_value, base_cptr);
-    value_cpy (&en_value, en_cptr);
+    val_copy (&base_value, base_cptr);
+    val_copy (&en_value, en_cptr);
 
     has_ones = has_zeros = 0;
     while ((CPTR_TIME(base_cptr) != EOT) 
@@ -1849,28 +1928,28 @@ void sig_modify_en_signal (
 	    }*/
 	 
 	if (CPTR_TIME(base_cptr) == CPTR_TIME(en_cptr)) {
-	    value_cpy (&en_value, en_cptr);
-	    value_cpy (&base_value, base_cptr);
+	    val_copy (&en_value, en_cptr);
+	    val_copy (&base_value, base_cptr);
 	}
 	else if (CPTR_TIME(base_cptr) < CPTR_TIME(en_cptr)) {
-	    value_cpy (&base_value, base_cptr);
+	    val_copy (&base_value, base_cptr);
 	}
 	else {
-	    value_cpy (&en_value, en_cptr);
+	    val_copy (&en_value, en_cptr);
 	}
 
 	/** start of determining new value **/
 	switch (en_value.siglw.stbits.state) {
-	  case STATE_0:
+	case STATE_0:
 	    has_ones = 0;
 	    has_zeros = 1;
 	    break;
-	  case STATE_1:
+	case STATE_1:
 	    has_ones = 1;
 	    has_zeros = 0;
 	    break;
-	  case STATE_B32:
-	  case STATE_B128:
+	case STATE_B32:
+	case STATE_B128:
 	    has_ones =
 		( (en_value.number[0] & en_sig_ptr->value_mask[0])
 		 | (en_value.number[1] & en_sig_ptr->value_mask[1])
@@ -1886,7 +1965,7 @@ void sig_modify_en_signal (
 
 	/* printf ("has0=%d has1=%d\n", has_zeros, has_ones); */
 
-	value_cpy (&new_value, &base_value);
+	val_copy (&new_value, &base_value);
 
 	if (is_cosmos) {
 	    if (has_ones) {
@@ -1897,8 +1976,9 @@ void sig_modify_en_signal (
 	else {
 	    if (has_zeros) {
 		if (has_ones) {
-		    /* Non-cosmos	mixed enables	-> U */
+		    /* Non-cosmos	mixed enables	-> U/F32/F128 */
 		    new_value.siglw.stbits.state = STATE_U;
+		    /*WPSFIX*/
 		}
 		else {
 		    /* Non-cosmos	zero enables	-> Z */
@@ -1968,8 +2048,8 @@ void sig_modify_enables (
 {
     Signal	*sig_ptr, *en_sig_ptr, *base_sig_ptr;
     char	*tp, *nonenablename;
-    Boolean	did_one=FALSE;
-    Boolean	is_cosmos=FALSE;
+    Boolean_t	did_one=FALSE;
+    Boolean_t	is_cosmos=FALSE;
 
     for (sig_ptr = trace->firstsig; sig_ptr; ) {
 	for (tp=sig_ptr->signame; *tp; tp++) {

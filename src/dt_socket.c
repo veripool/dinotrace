@@ -97,7 +97,7 @@ void socket_input_cb (
 {
     int	sock_client = *sock_client_ptr;
     char c;
-    Boolean cont=TRUE;
+    Boolean_t cont=TRUE;
     int len;
 
     /*

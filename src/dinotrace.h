@@ -108,8 +108,10 @@
 #define MAXSTATENAMES	512	/* Maximum number of state name translations */
 #define MAXVALUELEN	40	/* Maximum length of values or state names, 32hex digits + 4 sep + NULL */
 #define MAXGRIDS	4	/* Maximum number of grids */
+#define MAXBASES	10	/* Maximum number of number bases on menus */
 #define MAXSCREENWIDTH	5000	/* Maximum width of screen */
 #define MAXCFGFILES	5	/* Maximum number of config files */
+#define BASE_MAX_MENU	20	/* Maximum number of base menu entries */
 #define	MIN_GRID_RES	5	/* Minimum grid resolution, in pixels between grid lines */
 #define BLK_SIZE	512	/* Trace data block size (512 transitions/signal == 2K min/sig) */
 #define	CLICKCLOSE	20	/* Number of pixels that are "close" for click-to-edges */
@@ -121,6 +123,7 @@
 #define Y_TOP_BOTTOM 	4	/* Y Pixels to leave empty on top and bottom of display */
 #define Y_CURSOR_TOP 	7	/* Y Pixels cursor drawn before first signal */
 #define Y_GRID_TOP 	15	/* Y Pixels grid drawn before first signal */
+#define Y_DASH_TOP 	4	/* Y Pixels margin before first signal */
 #define Y_GRID_BOTTOM	2	/* Y Pixels grid drawn after last potential signal */
 #define Y_TEXT_SPACE	1	/* Y Pixels between text fields */
 #define Y_SIG_SPACE	5	/* Space between high and low adjacent signals */
@@ -137,6 +140,7 @@
 #define DC_SIG_COPY_1	3	/* XC_sb_right_arrow	Signal Copy (pick) */
 #define DC_SIG_DELETE	4	/* XC_hand1		Signal Delete */
 #define DC_SIG_HIGHLIGHT 10	/* XC_spraycan		Signal Highlight */
+#define DC_SIG_BASE	13	/* XC_dotbox		Signal Base */
 #define DC_CUR_ADD	5	/* XC_center_ptr	Cursor Add */
 #define DC_CUR_MOVE	6	/* XC_sb_h_double_arrow	Cursor Move (drag) */
 #define DC_CUR_DELETE	7	/* XC_X_cursor		Cursor Delete */
@@ -146,21 +150,22 @@
 #define DC_VAL_EXAM	11	/* XC_question_arrow	Value Examine */
 #define DC_VAL_HIGHLIGHT 12	/* XC_cross		Value Highlight */
 
-/* All of the states a signal can be in (have only 3 bits so 0-7) */
-#define STATE_0   0
-#define STATE_1   1
-#define STATE_U   2
-#define STATE_Z   3
-#define STATE_B32 4		/* 2-32 bit vector */
-#define STATE_B128 5		/* 33-128 bit vector */
-#define STATE_UN6 6		/* not used */
-#define STATE_UN7 7		/* not used */
+/* All of the states a signal can be in (stored in siglw.state: 8 bits */
+#define STATE_0		0	/* MUST=0! All bits 0 */	/* SIGLW TIME */
+#define STATE_1		1	/* MUST=1! single-bit 1 */	/* SIGLW TIME */
+#define STATE_U		2	/* MUST=2! All bits U */	/* SIGLW TIME */
+#define STATE_Z		3	/* MUST=3! All bits Z */	/* SIGLW TIME */
+#define STATE_B32	4	/* 2-32 bits */			/* SIGLW TIME V */
+#define STATE_F32	5	/* four-state 2-32 bits */	/* SIGLW TIME V T*/	
+#define STATE_B128	6	/* 33-128 bit vector */		/* SIGLW TIME V V V V*/	
+#define STATE_F128	7	/* four-state 33-128 bits */	/* SIGLW TIME V T V T V T V T */
 /* Size in LWs for each state.  Note st may be invalid, which must return a small non-zero value */
-#define STATE_SIZE(st) (((st)==STATE_B32)?3:(((st)==STATE_B128)?6:2))
+#define STATE_SIZE(st) (((st)<=STATE_Z)?2:(((st)<=STATE_B32)?3:\
+	   (((st)==STATE_F32)?4:(((st)==STATE_B128)?6:10))))
 
 #define PDASH_HEIGHT	2	/* Heigth of primary dash, <= SIG_SPACE, in pixels */
 #define SDASH_HEIGHT	2	/* Heigth of primary dash, <= SIG_SPACE, in pixels */
-#define SIG_RF		2	/* Rise fall number of pixels */
+#define SIG_RF		1	/* Rise fall number of pixels */
 #define DELU	 	5	/* Delta distance for drawing U's */
 #define DELU2		10	/* 2x DELU */
 
@@ -180,6 +185,7 @@
 /* Basic Types */
 
 typedef	int 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
+typedef char	Boolean_t;
 
 /**********************************************************************/
 /* Enums */
@@ -197,19 +203,12 @@ typedef enum {
     PAGEINC_QUARTER=4
 } PageInc_t;
 
-/* Bus representation enums */
-typedef enum {
-    BUSREP_OCT_UN=1,
-    BUSREP_HEX_UN=2,
-    BUSREP_DEC_UN=3
-} BusRep_t;
-
 /* Time representation enums */
 #define TIMEREP_PS 1.0
 #define TIMEREP_NS 1000.0
 #define TIMEREP_US 1000000.0
 #define TIMEREP_CYC -1.0
-typedef double TimeRep;
+typedef double TimeRep_t;
 
 /* Print page sizes */
 typedef enum {
@@ -217,7 +216,7 @@ typedef enum {
     PRINTSIZE_B,
     PRINTSIZE_EPSPORT,
     PRINTSIZE_EPSLAND
-} PrintSize;
+} PrintSize_t;
 
 /* Colors */
 #define MAX_SRCH	9		/* Maximum number of search values, or cursor/signal colors */
@@ -227,7 +226,7 @@ typedef enum {
 typedef	int	ColorNum;
 typedef	int	VSearchNum;
 
-extern Boolean	DTDEBUG;		/* Debugging mode */
+extern Boolean_t	DTDEBUG;		/* Debugging mode */
 extern uint_t	DTPRINT;		/* Information printing mode */
 extern int	DebugTemp;		/* Temp value for trying things */
 
@@ -252,7 +251,7 @@ extern int	DebugTemp;		/* Temp value for trying things */
 #define	FF_NUMFORMATS	6		/* Number of formats */
 extern uint_t		file_format;	/* Type of trace to support */
 extern struct st_filetypes {
-    Boolean		selection;	/* True if user can select this format */
+    Boolean_t		selection;	/* True if user can select this format */
     char	       	*name;		/* Name of this file type */
     char		*extension;	/* File extension */
     char		*mask;		/* File Open mask */
@@ -279,13 +278,14 @@ typedef struct {
     Widget	pdsep[10];
     Widget	pdentry[22];
     Widget	pdentrybutton[72];
-    Widget	pdsubbutton[4+(MAX_SRCH+2)*5];
+    Widget	pdsubbutton[4+(MAX_SRCH+2)*5+BASE_MAX_MENU];
     uint_t	sig_highlight_pds;
+    uint_t	sig_base_pds;
     uint_t	cur_highlight_pds;
     uint_t	cur_add_pds;
     uint_t	val_highlight_pds;
     uint_t	pdm, pdmsep, pde, pds;		/* Temp for loading structure */
-} MenuWidgets;
+} MenuWidgets_t;
 
 typedef struct {
     Widget form;
@@ -300,7 +300,7 @@ typedef struct {
     Widget refresh_but;
     /* Slider */
     Widget namescroll;
-} CommandWidgets;
+} CommandWidgets_t;
 
 typedef struct {
     Widget dialog;
@@ -308,7 +308,7 @@ typedef struct {
     Widget page_label;
     Widget rpage, tpage1, tpage2, tpage3;
     Widget bus_label;
-    Widget rbus, tbus1, tbus2, tbus3, tbus4, tbus5;
+    Widget rbus;
     Widget time_label;
     Widget rtime, ttimens, ttimecyc, ttimeus, ttimeps;
     Widget sighgt_label;
@@ -321,7 +321,7 @@ typedef struct {
     Widget b1;
     Widget b2;
     Widget b3;
-} CustomWidgets;
+} CustomWidgets_t;
 
 typedef struct {
     Trace *trace;		/* Link back, as callbacks won't know without it */
@@ -333,7 +333,7 @@ typedef struct {
     Widget time_pulldownbutton[4];
     Widget time_option;
     Widget time_text;
-} RangeWidgets;
+} RangeWidgets_t;
 
 typedef struct {
     Widget dialog;
@@ -350,13 +350,13 @@ typedef struct {
     Widget notelabel;
     Widget pagelabel;
     Widget all_signals;
-    RangeWidgets begin_range;
-    RangeWidgets end_range;
+    RangeWidgets_t begin_range;
+    RangeWidgets_t end_range;
     Widget sep;
     Widget print;
     Widget defaults;
     Widget cancel;
-} PrintWidgets;
+} PrintWidgets_t;
 
 typedef struct {
     Widget dialog;
@@ -369,7 +369,7 @@ typedef struct {
     Widget ok;
     Widget apply;
     Widget cancel;
-} AnnotateWidgets;
+} AnnotateWidgets_t;
 
 typedef struct {
     Widget search;
@@ -383,7 +383,7 @@ typedef struct {
     Widget ok;
     Widget apply;
     Widget cancel;
-} SignalWidgets;
+} SignalWidgets_t;
 
 typedef struct {
     Widget search;
@@ -398,14 +398,14 @@ typedef struct {
     Widget ok;
     Widget apply;
     Widget cancel;
-} ValueWidgets;
+} ValueWidgets_t;
 
 typedef struct {
     Widget dialog;
     Widget work_area;
     Widget format_menu, format_option, format_item[FF_NUMFORMATS];
     Widget save_ordering;
-} FileWidgets;
+} FileWidgets_t;
 
 typedef struct {
     Widget dialog;
@@ -415,12 +415,12 @@ typedef struct {
     Widget config_label;
     Widget config_enable[MAXCFGFILES];
     Widget config_filename[MAXCFGFILES];
-} CusReadWidgets;
+} CusReadWidgets_t;
 
 typedef struct {
     Widget popup;
     Widget label;
-} ExamineWidgets;
+} ExamineWidgets_t;
 
 typedef struct {
     Widget dialog;
@@ -433,7 +433,7 @@ typedef struct {
     Widget sep;
     Widget ok;
     Widget cancel;
-} GotoWidgets;
+} GotoWidgets_t;
 
 typedef struct {
     Widget label1;
@@ -454,17 +454,17 @@ typedef struct {
     Widget pulldown;
     Widget pulldownbutton[MAX_SRCH+1];
     Widget options;
-} GridWidgets;
+} GridWidgets_t;
 
 typedef struct {
     Widget dialog;
     Widget form;
-    GridWidgets  grid[MAXGRIDS];
+    GridWidgets_t  grid[MAXGRIDS];
     Widget sep;
     Widget ok;
     Widget apply;
     Widget cancel;
-} GridsWidgets;
+} GridsWidgets_t;
 
 typedef struct {
     Widget select;
@@ -485,14 +485,14 @@ typedef struct {
     Signal   **add_signals;
     uint_t    del_size;
     uint_t    add_size;
-} SelectWidgets;
+} SelectWidgets_t;
 
 /**********************************************************************/
 /* Structures */
 
 typedef struct {
     Position		x, y, height, width;	
-    Boolean		xp, yp, heightp, widthp;	/* Above element is a percentage */
+    Boolean_t		xp, yp, heightp, widthp;	/* Above element is a percentage */
 } Geometry;
 
 /* Structure for each signal-state assignment */
@@ -503,11 +503,34 @@ typedef struct st_signalstate {
     char statename[MAXSTATENAMES][MAXVALUELEN];	/* Name for each state, nil=keep */
 } SignalState;
 
+/* These serve as both a index into the Base_t structure (if type < MAXBASE) */
+/* and also as a type within Base_t */
+/* This order MUST match the adding order in val_bases_init */
+typedef enum {
+    BASE_HEX_UN=0,
+    BASE_OCT_UN,
+    BASE_BIN_UN,
+    BASE_DEC_UN,
+    BASE_ASCII,
+    BASE_MAX		/* Number of bases, exclusive maximum */
+} BaseType_t;
+
+/* Base information structure (one per numeric base) */
+/* Signal states may be folded in here at some point */
+typedef struct st_base {
+    struct st_base	*next;		/* Forward link to next base */
+    char		*name;		/* Name for putting into menus */
+    char		*prefix;	/* Prefix in front of values */
+    /*struct st_base	*fallback;	/ * Alternative base if can't fit width */
+    BaseType_t		type;		/* Type for printing */
+} Base_t;
+
 /* Signal LW: A integer broken down into control fields */
 /* 32/64/96/256 state signals have an additional 1, 2, or 3 LWs after this */
 typedef union {
     struct {
-	uint_t pad:8;		/* Unused */
+	uint_t pad:7;		/* Unused */
+	uint_t allhigh:1;	/* Value is all high bits */
 	uint_t color:8;		/* (>4bits) Color to use when drawing this edge */
 	uint_t state:8;		/* (>4bits) State of this value */
 	uint_t size_prev:4;	/* (>4bits) Size of previous cptr array, 0 if end */
@@ -533,14 +556,15 @@ typedef struct {
     ColorNum	color;		/* Color number (index into trace->xcolornum) 0=OFF*/
     ColorNum	cursor;		/* Enable cursors, color or 0=OFF */
     Value_t	value;		/* Value to search for, (128 bit LW format) */
+    Base_t	*base;		/* Base user entered */
     char	signal[MAXSIGLEN];	/* Signal to search for */
-} ValSearch;
+} ValSearch_t;
 
 /* Signal searching structure */
 typedef struct {
     ColorNum	color;		/* Color number (index into trace->xcolornum) 0=OFF*/
     char 	string[MAXSIGLEN];	/* Signal to search for */
-} SigSearch;
+} SigSearch_t;
 
 /* Cursor information structure (one per cursor) */
 typedef enum {
@@ -548,7 +572,7 @@ typedef enum {
     SEARCH,	/* Value search, replace as needed */
     SEARCHOLD,	/* Old search, used by val_update_search only */
     CONFIG	/* Config file read in, replace when reread */
-} CursorType;
+} CursorType_t;
 
 typedef struct st_cursor {
     struct st_cursor	*next;		/* Forward link to next cursor */
@@ -556,17 +580,19 @@ typedef struct st_cursor {
 
     DTime		time;		/* Time cursor is placed at */
     ColorNum		color;		/* Color number (index into trace->xcolornum) */
-    CursorType		type;		/* Type of cursor */
+    CursorType_t	type;		/* Type of cursor */
 } DCursor; /* Not 'Cursor', as that's defined in X11.h */
 
 typedef struct {
     DTime		period;		/* Grid period (time between ticks) */
     DTime		alignment;	/* Grid alignment (time grid starts at) */
+    int			grid_num;	/* Number of this grid */
     enum { PA_USER=0, PA_AUTO=1, PA_EDGE=2 } period_auto;	/* Status of automatic grid resolution */
     enum { AA_USER=0, AA_ASS=1, AA_DEASS=2 } align_auto; /* Status of automatic grid alignment */
-    Boolean		visible;	/* True if grid is visible */
-    Boolean		wide_line;	/* True to draw a double-width line */
+    Boolean_t		visible;	/* True if grid is visible */
+    Boolean_t		wide_line;	/* True to draw a double-width line */
     char 		signal[MAXSIGLEN];	/* Signal name of the clock */
+    Signal		*signal_synced;	/* Which signal grid is synced to */
     ColorNum		color;		/* Color to print in, 0 = black */
 } Grid;
 
@@ -590,14 +616,14 @@ struct st_signal {
     ColorNum		color;		/* Signal line's Color number (index into trace->xcolornum) */
     ColorNum		search;		/* Number of search color is for, 0 = manual */
 
-    Boolean		srch_ena[MAX_SRCH];	/* Searching is enabled */
-    Boolean		deleted;	/* Signal is deleted */
-    Boolean		deleted_preserve; /* Preserve the deletion of this signal (not deleted because constant) */
-    Boolean		preserve_done;	/* Preservation process has moved this signal to new link structure */
+    Boolean_t		deleted;	/* Signal is deleted */
+    Boolean_t		deleted_preserve; /* Preserve the deletion of this signal (not deleted because constant) */
+    Boolean_t		preserve_done;	/* Preservation process has moved this signal to new link structure */
+
+    Base_t		*base;		/* Number base represtation */
+    SignalState		*decode;	/* Pointer to decode information, NULL if none */
 
     uint_t		type;		/* Type of signal, STATE_B32, _B64, etc */
-    SignalState		*decode;	/* Pointer to decode information, NULL if none */
-    char *		(*decode_fptr)(); /* Pointer to function that decodes statenames, NULL if none */
     ulong_t		blocks;		/* Number of time data blocks allocated, in # of ints */
     int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20), -1=none */
     int			lsb_index;	/* Bit subscript of last index in a signal (<20:10> == 10), -1=none */
@@ -648,20 +674,20 @@ struct st_trace {
     Pixel		barcolornum;	/* X color number for the signal bar background */
     GC                  gc;
 
-    MenuWidgets		menu;
+    MenuWidgets_t	menu;
     Widget		menu_close;	/* Pointer to menu_close widget */
-    CommandWidgets	command;
-    CustomWidgets	custom;
-    PrintWidgets	prntscr;
-    AnnotateWidgets	annotate;
-    SignalWidgets	signal;
-    ExamineWidgets	examine;
-    GotoWidgets		gotos;
-    ValueWidgets	value;
-    GridsWidgets	gridscus;
-    SelectWidgets	select;
-    FileWidgets		fileselect;
-    CusReadWidgets	cusread;
+    CommandWidgets_t	command;
+    CustomWidgets_t	custom;
+    PrintWidgets_t	prntscr;
+    AnnotateWidgets_t	annotate;
+    SignalWidgets_t	signal;
+    ExamineWidgets_t	examine;
+    GotoWidgets_t	gotos;
+    ValueWidgets_t	value;
+    GridsWidgets_t	gridscus;
+    SelectWidgets_t	select;
+    FileWidgets_t	fileselect;
+    CusReadWidgets_t	cusread;
     Widget		shell;
     Widget		main;
     Widget		work;
@@ -679,7 +705,7 @@ struct st_trace {
     char		printname[MAXFNAMELEN];	/* Print filename */
     struct stat		filestat;	/* Information on the current file */
     uint_t		fileformat;	/* Type of trace file (see FF_*) */
-    Boolean		loaded;		/* True if the filename is loaded in */
+    Boolean_t		loaded;		/* True if the filename is loaded in */
     char		vector_separator;	/* Bus separator character, usually "<" */
     char		vector_endseparator;	/* Bus ending separator character, usually ">" */
 
@@ -700,11 +726,10 @@ struct st_trace {
     Position		xstart_last;	/* Last start X pos of signals on display */
 
     uint_t		sigrf;		/* Signal rise/fall time spec */
-    BusRep_t		busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS/DBUS */
-    TimeRep		timerep;	/* Time representation = TIMEREP_NS/TIMEREP_CYC */
+    TimeRep_t		timerep;	/* Time representation = TIMEREP_NS/TIMEREP_CYC */
 
     Grid		grid[MAXGRIDS];	/* Grid information */
-    Boolean		cursor_vis;	/* True if cursors are visible */
+    Boolean_t		cursor_vis;	/* True if cursors are visible */
 
     DTime		start_time;	/* Time of beginning of trace */
     DTime		end_time;	/* Time of ending of trace */
@@ -718,19 +743,20 @@ typedef struct {
 
     Signal		*selected_sig;	/* Selected signal to move or add */
     Trace		*selected_trace; /* Selected signal's trace */
+    Base_t		*selected_base;	/* Selected base to change to */
     SignalList		*select_head;	/* Pointer to selected signal list head */
 
     DCursor		*cursor_head;	/* Pointer to first cursor */
 
-    ValSearch		val_srch[MAX_SRCH];	/* Value search information */
+    ValSearch_t		val_srch[MAX_SRCH];	/* Value search information */
 
-    SigSearch		sig_srch[MAX_SRCH];	/* Signal search information */
+    SigSearch_t		sig_srch[MAX_SRCH];	/* Signal search information */
 
     SignalState		*signalstate_head;	/* Head of signal state information */
 
     XtAppContext	appcontext;	/* X App context */
     Display		*display;	/* X display pointer */
-    Cursor		xcursors[13];	/* X cursors */
+    Cursor		xcursors[14];	/* X cursors */
     Pixmap		dpm,bdpm;	/* X pixmaps for the icons */
 
     uint_t		argc;		/* Program argc for X stuff */
@@ -754,28 +780,28 @@ typedef struct {
     Geometry		open_geometry;	/* Geometry to open later traces with */
     Geometry		shrink_geometry; /* Geometry to shrink trace->open traces with */
 
-    Boolean		anno_poppedup;	/* Annotation has been poped up on some window */
-    Boolean		anno_ena_signal[MAX_SRCH+1];   /* Annotation signal enables */
-    Boolean		anno_ena_cursor[MAX_SRCH+1];    /* Annotation cursor enables */
-    Boolean		anno_ena_cursor_dotted[MAX_SRCH+1];    /* Annotation cursor enables */
+    Boolean_t		anno_poppedup;	/* Annotation has been poped up on some window */
+    Boolean_t		anno_ena_signal[MAX_SRCH+1];   /* Annotation signal enables */
+    Boolean_t		anno_ena_cursor[MAX_SRCH+1];    /* Annotation cursor enables */
+    Boolean_t		anno_ena_cursor_dotted[MAX_SRCH+1];    /* Annotation cursor enables */
     char		anno_filename[MAXFNAMELEN]; /* Annotation file name */
     char		anno_socket[MAXFNAMELEN];	/* Annotation socket number */
 
     PageInc_t		pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
-    Boolean		click_to_edge;	/* True if clicking to edges is enabled */
-    TimeRep		time_precision;	/* Time precision = TIMEREP_NS/TIMEREP_CYC */
+    Boolean_t		click_to_edge;	/* True if clicking to edges is enabled */
+    TimeRep_t		time_precision;	/* Time precision = TIMEREP_NS/TIMEREP_CYC */
     char		time_format[12]; /* Time format = printf format or *NULL */
     uint_t		tempest_time_mult;	/* Time multiplier for tempest */
-    Boolean		save_enables;	/* True to save enable wires */
-    Boolean		save_ordering;	/* True to save signal ordering */
+    Boolean_t		save_enables;	/* True to save enable wires */
+    Boolean_t		save_ordering;	/* True to save signal ordering */
 
     char		printnote[MAXFNAMELEN];	/* Note to print */
-    PrintSize		print_size;	/* Size of paper for dt_printscreen */
-    Boolean		print_all_signals; /* Print all signals in the trace */
+    PrintSize_t		print_size;	/* Size of paper for dt_printscreen */
+    Boolean_t		print_all_signals; /* Print all signals in the trace */
     DTime		print_begin_time;  /* Starting time for printing */
     DTime		print_end_time;	/* Ending time for printing */
 
-    Boolean		redraw_manually;/* True if in manual refreshing mode */
+    Boolean_t		redraw_manually;/* True if in manual refreshing mode */
     uint_t		redraw_needed;	/* Some trace needs to refresh the screen when get a chance, GRD_* bit fielded */
 #define				GRD_TRACE	0x1U
 #define				GRD_ALL		0x2U
@@ -788,7 +814,7 @@ typedef struct {
 
     DTime		time;		/* Time of trace at left edge of screen */
     float		res;		/* Resolution of graph width (gadgets) */
-    Boolean		res_default;	/* True if resolution has never changed from initial value */
+    Boolean_t		res_default;	/* True if resolution has never changed from initial value */
     Position		xstart;		/* Start X pos of signals on display */
     uint_t		namepos;	/* Position of first visible character based on xstart */
     uint_t		namepos_hier;	/* Maximum hiearchy width in chars */
@@ -797,7 +823,9 @@ typedef struct {
     DTime		click_time;	/* time clicked on for res_zoom_click */
     Grid		*click_grid;	/* grid being set by grid_align */
 
-    Boolean		config_enable[MAXCFGFILES];/* Read in this config file */
+    Base_t		*bases[BASE_MAX];	/* Base storage (standard types only) */
+
+    Boolean_t		config_enable[MAXCFGFILES];/* Read in this config file */
     char		config_filename[MAXCFGFILES][MAXFNAMELEN];	/* Config files */
 } Global;
 

@@ -94,9 +94,10 @@
 #	signal_copy	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
 #	signal_move	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
 #	signal_rename	<signal_pattern> <new_signal_name>	[<color>]
-#	signal_highlight <color> <signal_pattern>
-#	cursor_add	<color> <time>	[-USER]
-#	value_highlight <color>	<value>	[<signal_pattern>] [-CURSOR] [-VALUE]
+#	signal_highlight <signal_pattern> <color> 
+#	signal_base	<signal_pattern>	[<after_signal_first_matches>]	[<color>]
+#	cursor_add	<time> <color>	[-USER]
+#	value_highlight <value>	<color>	[<signal_pattern>] [-CURSOR] [-VALUE]
 # Display changes:
 #	time_goto	<time>
 #	signal_goto	<signal_pattern>	(if not on screen, first match)
@@ -121,10 +122,10 @@
 
 
 /* File locals */
-static Boolean config_report_errors;
+static Boolean_t config_report_errors;
 static char *config_file="";
 static int config_line_num=0;
-static Boolean config_reading_socket;
+static Boolean_t config_reading_socket;
 
 /**********************************************************************
 *	READING FUNCTIONS
@@ -483,7 +484,7 @@ int	config_read_color (
     Trace	*trace,
     char 	*line,
     ColorNum	*color,
-    Boolean	warn)
+    Boolean_t	warn)
     /* Read color name from line, return <= 0 and print msg if bad */
 {
     int outlen;
@@ -579,7 +580,7 @@ int	config_process_state (
 void	config_process_line_internal (
     Trace	*trace,
     char	*line,
-    Boolean	eof)		/* Final call of process_line with EOF */
+    Boolean_t	eof)		/* Final call of process_line with EOF */
 {
     char cmd[MAXSIGLEN];
     int value;
@@ -588,7 +589,7 @@ void	config_process_line_internal (
     char *cmt;
     
     static SignalState newsigst;
-    static Boolean processing_sig_state = FALSE;
+    static Boolean_t processing_sig_state = FALSE;
 
   re_process_line:
     
@@ -698,10 +699,10 @@ void	config_process_line_internal (
 	else if (!strcmp(cmd, "SIGNAL_HEIGHT")) {
 	    value = trace->sighgt;
 	    line += config_read_int (line, &value);
-	    if (value >= 15 && value <= 50)
+	    if (value >= 10 && value <= 50)
 		trace->sighgt = value;
 	    else {
-		config_error_ack (trace, "Signal_height must be 15-50\n");
+		config_error_ack (trace, "Signal_height must be 10-50\n");
 	    }
 	}
 	else if (!strcmp(cmd, "GRID")) {
@@ -893,15 +894,33 @@ void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "SIGNAL_HIGHLIGHT")) {
 	    ColorNum color;
-	    line += config_read_color (trace, line, &color, TRUE);
-	    if (color >= 0) {
-		line += config_read_signal (line, pattern);
-		if (!pattern[0]) {
-		    config_error_ack (trace, "Signal_Highlight signal name must not be null\n");
-		}
-		else {
+	    line += config_read_signal (line, pattern);
+	    if (!pattern[0]) {
+		config_error_ack (trace, "Signal_highlight signal name must not be null\n");
+	    }
+	    else {
+		line += config_read_color (trace, line, &color, TRUE);
+		if (color >= 0) {
 		    sig_wildmat_select (NULL, pattern);
 		    sig_highlight_selected (color);
+		}
+	    }
+	}
+	else if (!strcmp(cmd, "SIGNAL_BASE")) {
+	    line += config_read_signal (line, pattern);
+	    if (!pattern[0]) {
+		config_error_ack (trace, "Signal_highlight signal name must not be null\n");
+	    }
+	    else {
+		Base_t *base_ptr;
+		char strg[MAXSIGLEN];
+		line += config_read_signal (line, strg);
+		base_ptr = val_base_find (strg);
+		if (base_ptr==NULL) {
+		    config_error_ack (trace, "Undefined base name\n");
+		} else {
+		    sig_wildmat_select (NULL, pattern);
+		    sig_base_selected (base_ptr	);
 		}
 	    }
 	}
@@ -985,7 +1004,7 @@ void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "SIGNAL_DELETE_CONSTANT")) {
 	    char flag[MAXSIGLEN];
-	    Boolean ignorexz = FALSE;
+	    Boolean_t ignorexz = FALSE;
 	    line += config_read_signal (line, pattern);
 	    if (!pattern[0]) {
 		config_error_ack (trace, "Signal_Delete_Constant signal name must not be null\n");
@@ -1002,12 +1021,13 @@ void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "VALUE_HIGHLIGHT")) {
 	    char strg[MAXSIGLEN],flag[MAXSIGLEN],signal[MAXSIGLEN]="*";
-	    Boolean show_value=FALSE, add_cursor=FALSE;
+	    ValSearch_t *vs_ptr;
+	    Boolean_t show_value=FALSE, add_cursor=FALSE;
 	    VSearchNum search_pos;
+	    line += config_read_signal (line, strg);
 	    line += config_read_color (trace, line, &search_pos, TRUE);
 	    search_pos--;
 	    if (search_pos >= 0) {
-		line += config_read_signal (line, strg);
 		do {
 		    line += config_read_signal (line, flag);
 		    upcase_string (flag);
@@ -1016,10 +1036,11 @@ void	config_process_line_internal (
 		    else if (flag[0]) strcpy (signal, flag);
 		} while (flag[0]);
 		/* Add it */
-		global->val_srch[search_pos].color = (show_value) ? search_pos+1 : 0;
-		global->val_srch[search_pos].cursor = (add_cursor) ? search_pos+1 : 0;
-		string_to_value (trace, strg, &global->val_srch[search_pos].value);
-		strcpy (global->val_srch[search_pos].signal, signal);
+		vs_ptr = &global->val_srch[search_pos];
+		vs_ptr->color = (show_value) ? search_pos+1 : 0;
+		vs_ptr->cursor = (add_cursor) ? search_pos+1 : 0;
+		string_to_value (&vs_ptr->base, strg, &vs_ptr->value);
+		strcpy (vs_ptr->signal, signal);
 		draw_needupd_val_search ();
 	    }
 	}
@@ -1030,8 +1051,8 @@ void	config_process_line_internal (
 	    
 	    line += config_read_color (trace, line, &color, TRUE);
 	    if (color >= 0) {
-		line += config_read_signal (line, strg);
 		ctime = string_to_time (trace, strg);
+		line += config_read_signal (line, strg);
 		line += config_read_signal (line, flag);
 		upcase_string (flag);
 		if (!strcmp(flag, "-USER"))
@@ -1130,8 +1151,8 @@ void	config_process_eof (Trace *trace)
 void config_read_file (
     Trace	*trace,
     char	*filename,	/* Specific filename of CONFIG file */
-    Boolean	report_notfound,
-    Boolean	report_errors)
+    Boolean_t	report_notfound,
+    Boolean_t	report_errors)
 {
     FILE	*readfp;
     char line[1000];
@@ -1198,7 +1219,7 @@ void config_read_socket (
     char	*line,
     char	*name,
     int		cmdnum,
-    Boolean	eof
+    Boolean_t	eof
     )
 {
     config_report_errors = TRUE;
@@ -1247,7 +1268,7 @@ void config_update_filenames (Trace *trace)
 
 void config_read_defaults (
     Trace	*trace,
-    Boolean	report_errors)
+    Boolean_t	report_errors)
 {
     int		cfg_num;
 
@@ -1361,6 +1382,7 @@ void config_write_file (
     cur_print (writefp);
     
     fprintf (writefp, "\n! ** Trace INFORMATION **\n");
+    fprintf (writefp, "\n!  * Signal Highlighting *\n");
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
 	fprintf (writefp, "!set_trace %s\n", trace->filename);
 	/* Save signal colors */
@@ -1368,6 +1390,16 @@ void config_write_file (
 	    if (sig_ptr->color && !sig_ptr->search) {
 		fprintf (writefp, "signal_highlight %d %s\n", sig_ptr->color, sig_ptr->signame);
 	    }
+	}
+    }
+
+    fprintf (writefp, "\n!  * Signal Ordering *\n");
+    for (trace = global->trace_head; trace; trace = trace->next_trace) {
+	fprintf (writefp, "!set_trace %s\n", trace->filename);
+	fprintf (writefp, "!signal_delete *\n");
+	/* Save signal colors */
+	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	    fprintf (writefp, "!signal_add %s\n", sig_ptr->signame);
 	}
     }
 

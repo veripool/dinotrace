@@ -138,19 +138,19 @@ void	verilog_read_timescale (
     time_scale = atol (line);
     while (isdigit (*line)) line++;
     switch (*line) {
-      case 's':
+    case 's':
 	time_scale *= 1000;
-      case 'm':
+    case 'm':
 	time_scale *= 1000;
 	dino_warning_ack (trace, "Timescale of trace may be too big.");
-      case 'u':
+    case 'u':
 	time_scale *= 1000;
-      case 'n':
+    case 'n':
 	time_scale *= 1000;
-      case 'p':
+    case 'p':
 	break;
-      case 'f':
-      default:
+    case 'f':
+    default:
 	sprintf (message,"Unknown time scale unit '%c' on line %d of %s\n",
 		 *line, verilog_line_num, current_file);
 	dino_error_ack (trace, message);
@@ -216,6 +216,7 @@ void	verilog_process_var (
     /* Allocate new signal structure */
     new_sig_ptr = DNewCalloc (Signal);
     new_sig_ptr->trace = trace;
+    new_sig_ptr->base = global->bases[0];
     new_sig_ptr->file_pos = VERILOG_ID_TO_POS(code);
     new_sig_ptr->bits = bits - 1;
     new_sig_ptr->msb_index = 0;
@@ -224,7 +225,7 @@ void	verilog_process_var (
     new_sig_ptr->file_type.flags = 0;
     new_sig_ptr->file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
 
-    value_zero (&(new_sig_ptr->file_value));
+    val_zero (&(new_sig_ptr->file_value));
 
     /* initialize all the pointers that aren't NULL */
     if (last_sig_ptr) last_sig_ptr->forward = new_sig_ptr;
@@ -406,7 +407,7 @@ void	verilog_process_definitions (
     
     /* Make the busses */
     /* The pos creation is first because there may be vectors that map to single signals. */
-    read_make_busses (trace, TRUE);
+    fil_make_busses (trace, TRUE);
 
     /* Assign signals to the pos array **AGAIN**. */
     /* Since busses now exist, the pointers will all be different */
@@ -440,9 +441,18 @@ void	verilog_enter_busses (
 	if (sig_ptr->file_value.siglw.stbits.state) {
 	    /*if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } */
 
+	    /* Fix cptr to correct state */
+	    val_minimize (&(sig_ptr->file_value));
+
 	    /* Enter the cptr */
 	    sig_ptr->file_value.time = time;
 	    fil_add_cptr (sig_ptr, &(sig_ptr->file_value), first_data);
+
+	    /* If T32, switch back to T128 form for next comparison */
+	    if (sig_ptr->file_value.siglw.stbits.state == STATE_F32) {
+		sig_ptr->file_value.number[4] = sig_ptr->file_value.number[1];
+		sig_ptr->file_value.number[1] = 0;
+	    }
 
 	    /* Zero the state and keep the value for next time */
 	    sig_ptr->file_value.siglw.number = 0;
@@ -459,9 +469,9 @@ void	verilog_read_data (
 {
     char	*value_strg, *line, *code;
     DTime	time;
-    Boolean	first_data=TRUE;
-    Boolean	got_data=FALSE;
-    Boolean	got_time=FALSE;
+    Boolean_t	first_data=TRUE;
+    Boolean_t	got_data=FALSE;
+    Boolean_t	got_time=FALSE;
     Value_t	value;
     Signal	*sig_ptr;
     int		pos;
@@ -484,16 +494,16 @@ void	verilog_read_data (
 
 	switch (*line++) {
 	    /* Single bits are most common */
-	  case '0':
+	case '0':
 	    state = STATE_0;
 	    goto common;
-	  case '1':
+	case '1':
 	    state = STATE_1;
 	    goto common;
-	  case 'z':
+	case 'z':
 	    state = STATE_Z;
 	    goto common;
-	  case 'x':
+	case 'x':
 	    state = STATE_U;
 	    goto common;
 
@@ -508,101 +518,36 @@ void	verilog_read_data (
 		/* printf ("\tsignal '%s'=%d %s  state %d\n", code, pos, sig_ptr->signame, state); */
 		if (sig_ptr->bits == 0) {
 		    /* Not a vector.  This is easy */
+		    val_zero (&value);
 		    value.siglw.stbits.state = state;
 		    value.time = time;
 		    fil_add_cptr (sig_ptr, &value, first_data);
 		}
 		else {	/* Unary signal made into a vector */
+		    register int bit = sig_ptr->bits - (pos - sig_ptr->file_pos); 
 		    /* Mark this for update at next time stamp */
 		    *(signal_update_array_last_pptr++) = sig_ptr;
+		    sig_ptr->file_value.siglw.stbits.state = STATE_F128;
 		    /* printf ("Pre: "); print_cptr (&(sig_ptr->file_value)); */
-		    switch (state) {
-		      case STATE_U:
-		      default:
-			sig_ptr->file_value.siglw.stbits.state = STATE_U;
-			break;
-
-		      case STATE_Z:
-			/* Make a U if the signal has any 0, 1, or Us */
-			sig_ptr->file_value.siglw.stbits.state = 
-			    ( (sig_ptr->file_value.siglw.stbits.state == STATE_Z)
-			     || (sig_ptr->file_value.siglw.stbits.state == STATE_0) )
-				? STATE_Z : STATE_U;
-			break;
-
-		      case STATE_0:
-			if ( (sig_ptr->file_value.siglw.stbits.state == STATE_Z)
-			    || (sig_ptr->file_value.siglw.stbits.state == STATE_U)) {
-			    sig_ptr->file_value.siglw.stbits.state = STATE_U;
-			}
-			else {
-			    register int bit = sig_ptr->bits - (pos - sig_ptr->file_pos); 
-
-			    sig_ptr->file_value.siglw.stbits.state = sig_ptr->type;
-			    if (bit < 32) {
-				sig_ptr->file_value.number[0] = 
-				    ( sig_ptr->file_value.number[0] & (~ (1<<bit)) );
-			    }
-			    else if (bit < 64) {
-				bit -= 32;
-				sig_ptr->file_value.number[1] = 
-				    ( sig_ptr->file_value.number[1] & (~ (1<<bit)) );
-			    }
-			    else if (bit < 96) {
-				bit -= 64;
-				sig_ptr->file_value.number[2] = 
-				    ( sig_ptr->file_value.number[2] & (~ (1<<bit)) );
-			    }
-			    else if (bit < 128) {
-				bit -= 96;
-				sig_ptr->file_value.number[3] = 
-				    ( sig_ptr->file_value.number[3] & (~ (1<<bit)) );
-			    }
-			    else printf ("%%E, Signal too wide on line %d of %s\n",
-					 verilog_line_num, current_file);
-			}
-			break;
-
-		      case STATE_1:
-			if ( (sig_ptr->file_value.siglw.stbits.state == STATE_Z)
-			    || (sig_ptr->file_value.siglw.stbits.state == STATE_U)) {
-			    sig_ptr->file_value.siglw.stbits.state = STATE_U;
-			}
-			else {
-			    register int bit = sig_ptr->bits - (pos - sig_ptr->file_pos); 
-
-			    sig_ptr->file_value.siglw.stbits.state = sig_ptr->type;
-			    if (bit < 32) {
-				sig_ptr->file_value.number[0] = 
-				    ( sig_ptr->file_value.number[0] | (1<<bit) );
-			    }
-			    else if (bit < 64) {
-				bit -= 32;
-				sig_ptr->file_value.number[1] = 
-				    ( sig_ptr->file_value.number[1] | (1<<bit) );
-			    }
-			    else if (bit < 96) {
-				bit -= 64;
-				sig_ptr->file_value.number[2] = 
-				    ( sig_ptr->file_value.number[2] | (1<<bit) );
-			    }
-			    else if (bit < 128) {
-				bit -= 96;
-				sig_ptr->file_value.number[3] = 
-				    ( sig_ptr->file_value.number[3] | (1<<bit) );
-			    }
-			    else printf ("%%E, Signal too wide on line %d of %s\n",
-					 verilog_line_num, current_file);
-			}
-			break;
+		    if (state & 0) {
+			sig_ptr->file_value.number[(bit>>5)] |= (1<<(bit&31));
+		    } else {
+			sig_ptr->file_value.number[(bit>>5)] &= ~(1<<(bit&31));
 		    }
-		    /* if (DTPRINT_FILE) print_cptr (&(sig_ptr->file_value)); */
+		    if (state & 1) {
+			sig_ptr->file_value.number[4 + (bit>>5)] |= (1<<(bit&31));
+		    } else {
+			sig_ptr->file_value.number[4 + (bit>>5)] &= ~(1<<(bit&31));
+		    }
+		    if (bit>127) printf ("%%E, Signal too wide on line %d of %s\n",
+					 verilog_line_num, current_file);
 		}
-	    }
+		/* if (DTPRINT_FILE) print_cptr (&(sig_ptr->file_value)); */
+	    } /* if sig_ptr */
 	    else printf ("%%E, Unknown <identifier_code> '%s'\n", code);
 	    break;
 
-	  case 'b':
+	case 'b':
 	    if (first_data) {
 		trace->start_time = time;
 		trace->end_time = time;
@@ -645,7 +590,7 @@ void	verilog_read_data (
 			    if (DTPRINT_FILE) printf ("Sign extended %s to %s\n", value_strg, line);
 			    XtFree (line_copy);
 			}
-	
+
 			/* Store the file information */
 			/* if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %s  value %s\n", code, pos, sig_ptr->signame, value_strg); */
 			fil_string_add_cptr (sig_ptr, value_strg, time, first_data);
@@ -660,7 +605,7 @@ void	verilog_read_data (
 	    break;
 
 	    /* Times are next most common */
-	  case '#':	/* Time stamp */
+	case '#':	/* Time stamp */
 	    verilog_enter_busses (trace, first_data, time);
 	    time = (atol (line) * time_scale) / time_divisor;	/* 1% of time in this division! */
 	    if (DTPRINT_FILE) {
@@ -681,12 +626,12 @@ void	verilog_read_data (
 	    break;
 
 	    /* Things to ignore, uncommon */
-	  case '\n':
-	  case '$':	/* Command, $end, $dump, etc (ignore) */
-	  case 'r':	/* Real number */
+	case '\n':
+	case '$':	/* Command, $end, $dump, etc (ignore) */
+	case 'r':	/* Real number */
 	    break;
 
-	  default:
+	default:
 	    printf ("%%E, Unknown line character in verilog trace '%c' on line %d of %s\n",
 		    *(line-1), verilog_line_num, current_file);
 	}

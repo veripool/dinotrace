@@ -394,17 +394,20 @@ void init_globals (void)
     strcat (global->anno_filename, "dinotrace.danno");
 #endif
 
+    val_bases_init ();
+
     /* Search stuff */
     for (i=0; i<MAX_SRCH; i++) {
 	/* Colors */
 	global->color_names[i] = NULL;
 
 	/* Value */
-	memset ((char *)&global->val_srch[i], 0, sizeof (ValSearch));
+	memset ((char *)&global->val_srch[i], 0, sizeof (ValSearch_t));
 	strcpy (global->val_srch[i].signal, "*");
+	global->val_srch[i].base = global->bases[0];
 
 	/* Signal */
-	memset ((char *)&global->sig_srch[i], 0, sizeof (SigSearch));
+	memset ((char *)&global->sig_srch[i], 0, sizeof (SigSearch_t));
     }
 
     /* Config stuff */
@@ -436,7 +439,7 @@ void init_globals (void)
 void create_globals (
     int		argc,
     char	**argv,
-    Boolean	sync)
+    Boolean_t	sync)
 {
     int		argc_copy;
     char	**argv_copy;
@@ -484,6 +487,7 @@ void create_globals (
     global->xcursors[10] = XCreateFontCursor (global->display, XC_spraycan);
     global->xcursors[11] = XCreateFontCursor (global->display, XC_question_arrow);
     global->xcursors[12] = XCreateFontCursor (global->display, XC_cross);
+    global->xcursors[13] = XCreateFontCursor (global->display, XC_dotbox);
 
     config_global_defaults ();
 }
@@ -501,7 +505,6 @@ Trace *malloc_trace (void)
     if (global->deleted_trace_head) global->deleted_trace_head->next_trace = global->trace_head;
 
     /* Initialize Various Parameters */
-    trace->busrep = BUSREP_HEX_UN;
     trace->ystart = 30;
 
     return (trace);
@@ -620,6 +623,30 @@ void dm_menu_subentry_colors (
     }
     dm_menu_subentry (trace, (cur_accel ? "Curr":"Current"), 'C', cur_accel, cur_accel_string, callback);
     dm_menu_subentry (trace, "Next", 'N', next_accel, next_accel_string, callback);
+}
+
+
+void dm_menu_subentry_bases (
+    Trace *trace,
+    void (*callback)()
+    )
+{
+    int basenum;
+    Base_t *base_ptr;
+    char name[100];
+
+    for (basenum=0; basenum<BASE_MAX; basenum++) {
+	base_ptr=global->bases[basenum];
+	if (base_ptr) {
+	    strcpy (name, base_ptr->name);
+	    if (base_ptr->prefix[0]) {
+		strcat (name, " (");
+		strcat (name, base_ptr->prefix);
+		strcat (name, ")");
+	    }
+	    dm_menu_subentry (trace, name, '\0', NULL, NULL, callback);
+	}
+    }
 }
 
 
@@ -794,6 +821,9 @@ Trace *create_trace (
     dm_menu_entry (trace, 	"Move",		'M',	NULL, NULL,	sig_mov_cb);
     dm_menu_entry (trace, 	"Copy",		'C',	NULL, NULL,	sig_copy_cb);
     dm_menu_entry (trace, 	"Delete",	'D',	NULL, NULL,	sig_del_cb);
+    dm_menu_subtitle (trace, 	"Base",		'B');
+    trace->menu.sig_base_pds = trace->menu.pds+1;
+    dm_menu_subentry_bases (trace, sig_base_cb);
     dm_menu_entry (trace, 	"Search...",	'S', "<Key>F:", "f/C-f", sig_search_cb);
     dm_menu_entry (trace, 	"Select...",	'e',	NULL, NULL,	sig_select_cb);
     dm_menu_entry (trace, 	"Cancel", 	'l',	"!<Key>Escape:", "esc",	cancel_all_events_cb);

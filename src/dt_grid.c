@@ -90,6 +90,7 @@ void	grid_calc_auto (
     int		fall1=0, fall2=0;
 
     if (DTPRINT_ENTRY) printf ("In grid_calc_auto\n");
+    grid_ptr->signal_synced = NULL;
 
     /* Determine period, rise point and fall point of first signal */
     sig_ptr = sig_wildmat_signame (trace, grid_ptr->signal);
@@ -119,16 +120,18 @@ void	grid_calc_auto (
     while ( cptr > sig_ptr->bptr) {
 	cptr = CPTR_PREV(cptr);
 	switch (cptr->siglw.stbits.state) {
-	  case STATE_1:
+	case STATE_1:
 	    if (!rise2) rise2 = CPTR_TIME(cptr);
 	    else if (!rise1) rise1 = CPTR_TIME(cptr);
 	    break;
-	  case STATE_0:
+	case STATE_0:
 	    if (!fall2) fall2 = CPTR_TIME(cptr);
 	    else if (!fall1) fall1 = CPTR_TIME(cptr);
 	    break;
-	  case STATE_B32:
-	  case STATE_B128:
+	case STATE_B32:
+	case STATE_B128:
+	case STATE_F32:
+	case STATE_F128:
 	    if (!rise2) rise2 = CPTR_TIME(cptr);
 	    else if (!rise1) rise1 = CPTR_TIME(cptr);
 	    if (!fall2) fall2 = CPTR_TIME(cptr);
@@ -139,30 +142,33 @@ void	grid_calc_auto (
     
     /* Set defaults based on changes */
     switch (grid_ptr->period_auto) {
-      case PA_AUTO:
+    case PA_AUTO:
+	grid_ptr->signal_synced = sig_ptr;
 	if (rise1 < rise2)	grid_ptr->period = rise2 - rise1;
 	else if (fall1 < fall2) grid_ptr->period = fall2 - fall1;
 	break;
-      default: break;	/* User defined */
+    default: break;	/* User defined */
     }
     if (grid_ptr->period < 1) grid_ptr->period = 1;	/* Prevents round-down to 0 causing infinite loop */
     
     /* Alignment */
     switch (grid_ptr->align_auto) {
-      case AA_ASS:
+    case AA_ASS:
+	grid_ptr->signal_synced = sig_ptr;
 	if (rise1) grid_ptr->alignment = rise1 % grid_ptr->period;
 	break;
-      case AA_DEASS:
+    case AA_DEASS:
+	grid_ptr->signal_synced = sig_ptr;
 	if (fall1) grid_ptr->alignment = fall1 % grid_ptr->period;
 	break;
-      default: break;	/* User defined */
+    default: break;	/* User defined */
     }
     
     if (DTPRINT_FILE) printf ("grid autoset signal %s align=%d %d\n", sig_ptr->signame,
-       grid_ptr->align_auto, grid_ptr->period_auto);
+			      grid_ptr->align_auto, grid_ptr->period_auto);
     if (DTPRINT_FILE) printf ("grid rises=%d,%d, falls=%d,%d, period=%d, align=%d\n",
-       rise1,rise2, fall1,fall2,
-       grid_ptr->period, grid_ptr->alignment);
+			      rise1,rise2, fall1,fall2,
+			      grid_ptr->period, grid_ptr->alignment);
 }
 
 void	grid_calc_autos (
@@ -175,6 +181,38 @@ void	grid_calc_autos (
     }
 
     draw_needed (trace);
+}
+
+/****************************** EXAMINE ******************************/
+
+char *grid_examine_string (
+    /* Return string with examine information in it */
+    Trace	*trace,
+    Grid	*grid_ptr,
+    DTime	time)
+{
+    static char	strg[2000];
+    char	strg2[2000];
+    
+    if (DTPRINT_ENTRY) printf ("val_examine_popup_grid_string\n");
+
+    sprintf (strg, "Grid #%d at Time ", grid_ptr->grid_num);
+    time_to_string (trace, strg2, time, FALSE);
+    strcat (strg, strg2);
+    strcat (strg, "\nEvery ");
+    time_to_string (trace, strg2, grid_ptr->period, FALSE);
+    strcat (strg, strg2);
+    strcat (strg, " starting at ");
+    time_to_string (trace, strg2, (grid_ptr->alignment % grid_ptr->period), FALSE);
+    strcat (strg, strg2);
+    strcat (strg, "\n");
+    if (grid_ptr->signal_synced) {
+	strcat (strg, "Synced to ");
+	strcat (strg, grid_ptr->signal_synced->signame);
+	strcat (strg, "\n");
+    }
+
+    return (strg);
 }
 
 /****************************** MENU OPTIONS ******************************/
@@ -307,8 +345,9 @@ void grid_reset_cb (
     for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 	grid_ptr = &(trace->grid[grid_num]);
 
+	grid_ptr->grid_num = grid_num;
 	strcpy (grid_ptr->signal, "*");
-	grid_ptr->color = grid_num;
+	grid_ptr->color = grid_num+1;
 	grid_ptr->period = 100;
 	grid_ptr->alignment = 0;
 	grid_ptr->period_auto = PA_AUTO;
