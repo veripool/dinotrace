@@ -998,15 +998,12 @@ static void    val_examine_popup (
     /* Don't.  It was that way, but the keyboard grab proved problematic */
     /* Don't manage this guy, he's just a container */
     XtSetArg (arglist[0], XmNallowShellResize, FALSE);
-    trace->examine.popup = XtCreatePopupShell
-	("examinepopup", overrideShellWidgetClass, trace->main, arglist, 1);
+    XtSetArg (arglist[1], XmNshadowThickness, 2);
+    trace->examine.popup = (Widget)XmCreateGrabShell (trace->main, "examinepopup", arglist, 2);
     
     /* Row column for a nice border */
-#if HAVE_LESSTIF
-    XtSetArg (arglist[0], XmNrowColumnType, XmMENU_POPUP);
-#else
+    /* For Lesstif we used to have MENU_POPUP, but that has mouse side effects */
     XtSetArg (arglist[0], XmNrowColumnType, XmWORK_AREA);
-#endif
     XtSetArg (arglist[1], XmNborderWidth, 1);
     XtSetArg (arglist[2], XmNentryAlignment, XmALIGNMENT_CENTER);
     XtSetArg (arglist[3], XmNshadowThickness, 2);
@@ -1055,6 +1052,7 @@ void    val_examine_ev (
     XEvent	event;
     XButtonPressedEvent *em;
     int		update_pending = FALSE;
+    extern char *events[];
     
     if (DTPRINT_ENTRY) printf ("In val_examine_ev, button=%d state=%d\n", ev->button, ev->state);
     if (ev->type != ButtonPress) return;	/* Used for both button 1 & 2. */
@@ -1066,15 +1064,15 @@ void    val_examine_ev (
     /* select the events the widget will respond to */
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonReleaseMask|PointerMotionMask|StructureNotifyMask|ExposureMask);
-    
 
     /* Create */
     val_examine_popup (trace, ev);
-    
+
     /* loop and service events until button is released */
     while ( 1 ) {
 	/* wait for next event */
 	XNextEvent (global->display, &event);
+	/* if (DTPRINT) { printf ("[ExEvent %s] ", events[ev->type]);fflush(stdout); } */
 	
 	/* Mark an update as needed */
 	if (event.type == MotionNotify) {
@@ -1109,7 +1107,7 @@ void    val_examine_ev (
     XSync (global->display, FALSE);
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonPressMask|StructureNotifyMask|ExposureMask);
-    
+      
     /* unmanage popup */
     val_examine_popdown (trace);
     draw_needed (trace);

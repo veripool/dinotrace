@@ -326,7 +326,7 @@ static void draw_cursors (
 		XSetLineAttributes (global->display,trace->gc,0,LineSolid,0,0);
 	    }
             else if (csr_ptr->type==SIMVIEW) {
-		//XSetLineAttributes (global->display,trace->gc,0,LineDoubleDash,0,0);
+		/*XSetLineAttributes (global->display,trace->gc,0,LineDoubleDash,0,0);*/
 		XSetLineAttributes (global->display, trace->gc, 0, LineOnOffDash, 0,0);
 		XSetDashes (global->display, trace->gc, 0, "\010\002", 2);
             }

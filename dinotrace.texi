@@ -64,7 +64,7 @@
 @ifinfo
 This file documents the Dinotrace package for viewing signal waveforms.
 
-Copyright (C) 2000 by Wilson Snyder. @email{wsnyder@@wsnyder.org}
+Copyright (C) 2002 by Wilson Snyder. @email{wsnyder@@wsnyder.org}
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice

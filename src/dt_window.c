@@ -406,8 +406,8 @@ void res_zoom_click_ev (
 {
     DTime_t		time,tmp;
 
-    if (DTPRINT_ENTRY) printf ("In res_zoom_click1_ev - trace=%p x=%d y=%d\n",trace,ev->x,ev->y);
-    if (ev->type != ButtonPress || ev->button!=1) return;
+    if (DTPRINT_ENTRY) printf ("In res_zoom_click1_ev - trace=%p x=%d y=%d b=%d\n",trace,ev->x,ev->y,ev->button);
+    if (ev->type != ButtonPress || (ev->button!=1 && ev->button!=3)) return;
 
     /* convert x value to a time value */
     time = posx_to_time (trace, ev->x);

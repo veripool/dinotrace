@@ -276,7 +276,7 @@ See the Help menu for more information.");
 	}
 
 	XtAppNextEvent (global->appcontext, &event);
-	/*printf ("Event %s ", events[event.type]);*/
+	/*if (DTPRINT) { printf ("[Event %s] ", events[event.type]);fflush(stdout); }*/
 	XtDispatchEvent (&event);
     }
 }
@@ -316,7 +316,7 @@ Configured %s for %s\n\
 Written by Wilson Snyder\n\
 <wsnyder@wsnyder.org> or <wsnyder@iname.com>\n\
 \n\
-Copyright 1998-2000 by Wilson Snyder\n\
+Copyright 1998-2002 by Wilson Snyder\n\
 Copyright 1993-1997 by Digital Equipment Corporation.\n\
 This software is covered by the GNU Public License,\n\
 and is WITHOUT ANY WARRANTY.\n\

@@ -12,7 +12,7 @@
  *
  * Some of the code in this file was originally developed for Digital
  * Semiconductor, a division of Digital Equipment Corporation.  They
- * gratefuly have agreed to share it, and thus the bas version has been
+ * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
  * 
@@ -497,7 +497,7 @@ void ascii_read (
 
     /* No timestamps, or uniform timestamps, so include last line as valid data */
     /* We'll always include some time so we don't loose the last line's info */
-    if (smallest_delta_time < 0) smallest_delta_time = 100;	// Occurs when only 1 line
+    if (smallest_delta_time < 0) smallest_delta_time = 100;	/* Occurs when only 1 line */
     trace->end_time += smallest_delta_time;
 
     DFree (header_start);

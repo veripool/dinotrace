@@ -12,7 +12,7 @@
  *
  * Some of the code in this file was originally developed for Digital
  * Semiconductor, a division of Digital Equipment Corporation.  They
- * gratefuly have agreed to share it, and thus the bas version has been
+ * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
  * 
@@ -405,8 +405,8 @@ void 	add_event (
     Trace_t	*trace;
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
-	XtAddEventHandler (trace->work, type, TRUE,
-			   (XtEventHandler)callback, trace);
+	XtInsertEventHandler (trace->work, type, TRUE,
+			      (XtEventHandler)callback, trace, XtListHead);
     }
 }
 
