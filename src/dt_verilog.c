@@ -544,7 +544,7 @@ void	verilog_read_data (
 		}
 		/* if (DTPRINT_FILE) print_cptr (&(sig_ptr->file_value)); */
 	    } /* if sig_ptr */
-	    else printf ("%%E, Unknown <identifier_code> '%s'\n", code);
+	    else if (DTDEBUG || DTPRINT_FILE) printf ("%%E, Unknown <identifier_code> '%s'\n", code);
 	    break;
 
 	case 'b':
@@ -556,8 +556,20 @@ void	verilog_read_data (
 	    sig_ptr = signal_by_pos[ pos ];
 	    if (sig_ptr) {
 		if ((sig_ptr->bits < 2) || !sig_ptr->file_type.flag.perm_vector) {
-		    printf ("%%E, Vector decode on single-bit or non perm_vector signal on line %d of %s\n",
-			    verilog_line_num, current_file);
+		    /* For some idiotic reason vpd2vcd likes to do this! */
+		    /* This costs extra bytes and time... Oh well... */
+		    switch (value_strg[0]) {
+		    case '0': state = STATE_0; break;
+		    case '1': state = STATE_1; break;
+		    case 'z': state = STATE_Z; break;
+		    case 'x': state = STATE_U; break;
+		    default: printf ("%%E, Strange bit value %c on line %d of %s\n",
+				     value_strg[0], verilog_line_num, current_file);
+		    }
+		    val_zero (&value);
+		    value.siglw.stbits.state = state;
+		    value.time = time;
+		    fil_add_cptr (sig_ptr, &value, first_data);
 		}
 		else {
 		    register int len;
@@ -594,8 +606,9 @@ void	verilog_read_data (
 		    }
 		}
 	    }
-	    else printf ("%%E, Unknown <identifier_code> '%s' on line %d of %s\n",
-			 code, verilog_line_num, current_file);
+	    else if (DTDEBUG || DTPRINT_FILE)
+		printf ("%%E, Unknown <identifier_code> '%s' on line %d of %s\n",
+			code, verilog_line_num, current_file);
 	    break;
 
 	    /* Times are next most common */
@@ -639,6 +652,7 @@ void	verilog_read_data (
 	    /* Things to ignore, uncommon */
 	case '\n':
 	case '$':	/* Command, $end, $dump, etc (ignore) */
+	case 'D':	/* 'Done' from vpd2vcd */
 	    break;
 
 	default:
@@ -718,6 +732,9 @@ void	verilog_process_lines (
 	else if (!strcmp (cmd, "enddefinitions")) {
 	    verilog_process_definitions (trace);
 	    verilog_read_data (trace, readfp);
+	}
+	else if (!strcmp(cmd, "Done")) {
+	    /* vpd2vcd crap */
 	}
 	else {
 	    if (DTPRINT_FILE) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, verilog_line_num);

@@ -906,10 +906,14 @@ void	config_process_line_internal (
 		file_format = FF_TEMPEST;
 		break;
 	      case 'V':
-		file_format = FF_VERILOG;
+		if (toupper(line[1]) == 'P') {
+		    file_format = FF_VERILOG_VPD;
+		} else {
+		    file_format = FF_VERILOG;
+		}
 		break;
 	      default:
-		config_error_ack (trace, "File_Format must be DECSIM, TEMPEST, or VERILOG\n");
+		config_error_ack (trace, "File_Format must be DECSIM, TEMPEST, VPD or VERILOG\n");
 	    }
 	    if (DTPRINT_CONFIG) printf ("File_format = %d\n", file_format);
 	}

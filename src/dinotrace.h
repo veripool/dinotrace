@@ -267,9 +267,10 @@ extern int	DebugTemp;		/* Temp value for trying things */
 #define	FF_DECSIM	1		/* May be ascii or binary */
 #define	FF_TEMPEST	2
 #define	FF_VERILOG	3
-#define	FF_DECSIM_BIN	4
-#define	FF_DECSIM_ASCII	5
-#define	FF_NUMFORMATS	6		/* Number of formats */
+#define	FF_VERILOG_VPD	4
+#define	FF_DECSIM_BIN	5
+#define	FF_DECSIM_ASCII	6
+#define	FF_NUMFORMATS	7		/* Number of formats */
 extern uint_t		file_format;	/* Type of trace to support */
 extern struct st_filetypes {
     Boolean_t		selection;	/* True if user can select this format */

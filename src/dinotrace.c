@@ -78,7 +78,8 @@ struct st_filetypes filetypes[FF_NUMFORMATS] = {
     { 0, "Auto",		"?",	"*.*"		},
     { 1, "DECSIM",		"TRA",	"*.tra*"	},
     { 1, "Tempest CCLI",	"BT",	"*.bt*"		},
-    { 1, "Verilog",		"DMP",	"*.dmp*"	},
+    { 1, "Verilog VCD",		"DMP",	"*.dmp*"	},
+    { 1, "Verilog VPD+",	"VPD",	"*.vpd*"	},
     { 0, "DECSIM Binary",	"TRA",	"*.tra*"	},
     { 0, "DECSIM Ascii",	"TRA",	"*.tra*"	},
 };
@@ -145,6 +146,9 @@ int    main (
 	    }
 	    else if ( !strcmp (sw, "verilog") ) {
 		file_format = FF_VERILOG;
+	    }
+	    else if ( !strcmp (sw, "vpd") ) {
+		file_format = FF_VERILOG_VPD;
 	    }
 	    else if ( !strcmp (sw, "sync") ) {
 		sync = TRUE;

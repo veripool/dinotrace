@@ -303,31 +303,42 @@ void fil_read (
     /* If compressed, close the file and open as uncompressed */
     pipecmd[0]='\0';
     if ((pchar=strrchr(trace->filename,'.')) != NULL ) {
-
 	if (!strcmp (pchar, ".Z")) sprintf (pipecmd, "uncompress -c %s", trace->filename);
 	if (!strcmp (pchar, ".gz")) sprintf (pipecmd, "gunzip -c %s", trace->filename);
+    }
 	
+    if (trace->fileformat == FF_VERILOG_VPD) {
+	if (pipecmd[0]) {
+	    /* Because vpd2vcd fseeks, it won't take a pipe as input, and we... */
+	    sprintf (message,"Can't unzip/uncompress VPD traces.");
+	    dino_error_ack (trace, message);
+	    return;
+	}
+	sprintf (pipecmd, "vpd2vcd %s 2>/dev/null", trace->filename);
+    }
+
+    if (pipecmd[0]) {
+
+	if (DTPRINT_FILE) printf ("Piping: %s\n", pipecmd);
+
 	/* Decsim must be ASCII because of record format */
 	if (trace->fileformat == FF_DECSIM_BIN) trace->fileformat = FF_DECSIM_ASCII;
-
-	if (pipecmd[0]) {
-
-	    /* Close compressed file and open uncompressed file */
-	    close (read_fd);
-
-	    read_fp = popen (pipecmd, "r");
-	    read_fd = fileno (read_fp);
-	    if (!read_fp) {
-		/* Similar above! */
-		sprintf (message,"Can't create pipe with command '%s'", pipecmd);
-		dino_error_ack (trace, message);
-
-		/* Clear cursor and return */
-		sig_cross_restore (trace);
-		change_title (trace);
-		set_cursor (DC_NORMAL);
-		return;
-	    }
+	
+	/* Close compressed file and open uncompressed file */
+	close (read_fd);
+	
+	read_fp = popen (pipecmd, "r");
+	read_fd = fileno (read_fp);
+	if (!read_fp) {
+	    /* Similar above! */
+	    sprintf (message,"Can't create pipe with command '%s'", pipecmd);
+	    dino_error_ack (trace, message);
+	    
+	    /* Clear cursor and return */
+	    sig_cross_restore (trace);
+	    change_title (trace);
+	    set_cursor (DC_NORMAL);
+	    return;
 	}
     }
 #endif
@@ -345,6 +356,7 @@ void fil_read (
 	tempest_read (trace, read_fd);
 	break;
       case	FF_VERILOG:
+      case	FF_VERILOG_VPD:
 	verilog_read (trace, read_fd);
 	break;
       case	FF_DECSIM_ASCII:
@@ -818,14 +830,15 @@ void fil_make_busses (
 	if ((sig_ptr->signame[0]=='\0')
 	    || (sig_ptr->bits > 2048)) {
 	    /* Null, remove this signal */
-	    printf ("Remove %s %d\n", sig_ptr->signame, sig_ptr->bits);
+	    if (DTDEBUG) printf ("Removed %s %d\n", sig_ptr->signame, sig_ptr->bits);
 	    sig_free (trace, sig_ptr, FALSE, FALSE);
 	}
 	sig_ptr = bus_sig_ptr->forward;
     }
     
     
-    if (trace->fileformat == FF_VERILOG) {
+    if (trace->fileformat == FF_VERILOG
+	|| trace->fileformat == FF_VERILOG_VPD) {
 	/* Verilog may have busses > 128 bits, other formats should have one record per
 	   bit, so it shouldn't matter.  Make consistent sometime in the future */
 	verilog_womp_128s (trace);
@@ -862,7 +875,7 @@ void fil_make_busses (
 		&& ((trace->fileformat != FF_TEMPEST)
 		    || (((bus_sig_ptr->file_pos) == (sig_ptr->file_pos + sig_ptr->bits))
 			&& trace->vector_separator=='<'))
-		&& (trace->fileformat != FF_VERILOG
+		&& ((trace->fileformat != FF_VERILOG && trace->fileformat != FF_VERILOG_VPD)
 		    || ((bus_sig_ptr->file_pos + bus_sig_ptr->bits) == sig_ptr->file_pos))
 		&& ! (sig_ptr->file_type.flag.vector_msb)
 		/*	& not (verilog trace which had a signal already as a vector) */
@@ -962,12 +975,13 @@ void fil_make_busses (
 static void fil_mark_cptr_end (
     Trace	*trace)
 {
-    Signal	*sig_ptr;
+    Signal	*sig_ptr, *sig_next_ptr;
     Value_t	value;
     Boolean_t	msg=FALSE;
 
     /* loop thru each signal */
-    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_next_ptr) {
+	sig_next_ptr = sig_ptr->forward;
 
 	/* Must be a cptr which has the same time as the last time on the screen */
 	/* If none exists, create it */
@@ -984,6 +998,8 @@ static void fil_mark_cptr_end (
 		printf ("%%W, No data for signal %s\n\tAdditional messages suppressed\n", sig_ptr->signame);
 		msg = TRUE;
 	    }
+	    sig_free (trace, sig_ptr, FALSE, FALSE);
+	    continue;
 	}
 
 	/* Mark end of time */
@@ -1026,6 +1042,7 @@ void fil_trace_end (
 	sig_modify_enables (trace);
 	break;
     case	FF_VERILOG:
+    case	FF_VERILOG_VPD:
     default:
 	break;
     }
