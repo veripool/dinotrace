@@ -35,6 +35,8 @@
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
 #include <Xm/PushB.h>
+#include <Xm/RowColumn.h>
+#include <Xm/ToggleB.h>
 #include <Xm/Text.h>
 #include <Xm/BulletinB.h>
 #include <Xm/Scale.h>
@@ -115,7 +117,7 @@ void    ps_dialog(w,trace,cb)
 	XtSetArg(arglist[0], XmNshowValue, 1);
 	XtSetArg(arglist[1], XmNx, 20);
 	XtSetArg(arglist[2], XmNy, 95);
-	XtSetArg(arglist[3], XmNwidth, 200);
+	XtSetArg(arglist[3], XmNwidth, 150);
 	XtSetArg(arglist[4], XmNvalue, trace->numpag);
 	XtSetArg(arglist[5], XmNminimum, 1);
 	XtSetArg(arglist[6], XmNmaximum, 50);
@@ -125,6 +127,22 @@ void    ps_dialog(w,trace,cb)
 	XtAddCallback(trace->prntscr.s1, XmNvalueChangedCallback, ps_numpag, trace);
 	XtManageChild(trace->prntscr.s1);
 	
+	/* Create radio box for page size */
+	XtSetArg(arglist[0], XmNx, 200);
+	XtSetArg(arglist[1], XmNy, 75);
+	XtSetArg(arglist[2], XmNspacing, 2);
+	trace->prntscr.rsize = XmCreateRadioBox(trace->prntscr.customize,"rsize",arglist,3);
+	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("A-Sized"));
+	trace->prntscr.rsizea = XmCreateToggleButton(trace->prntscr.rsize,"rsizea",arglist,1);
+	XtManageChild(trace->prntscr.rsizea);
+	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("B-Sized"));
+	trace->prntscr.rsizeb = XmCreateToggleButton(trace->prntscr.rsize,"tsizeb",arglist,1);
+	XtManageChild(trace->prntscr.rsizeb);
+	
+	XtManageChild(trace->prntscr.rsize);
+
 	/* Create Print button */
 	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Print") );
 	XtSetArg(arglist[1], XmNx, 10 );
@@ -155,6 +173,12 @@ void    ps_dialog(w,trace,cb)
     XtSetArg(arglist[0], XmNvalue, trace->numpag);
     XtSetValues(trace->prntscr.s1,arglist,1);
     
+    /* reset page size */
+    XtSetArg(arglist[0], XmNset, !(trace->bsized));
+    XtSetValues(trace->prntscr.rsizea,arglist,1);
+    XtSetArg(arglist[0], XmNset, (trace->bsized));
+    XtSetValues(trace->prntscr.rsizeb,arglist,1);
+
     /* if a file has been read in, make printscreen buttons active */
     XtSetArg(arglist[0],XmNsensitive, (trace->loaded==NULL)?FALSE:TRUE);
     XtSetValues(trace->prntscr.b1,arglist,1);
@@ -216,6 +240,9 @@ void    ps_print(w,trace,cb)
     
     if (DTPRINT) printf("In ps_print - trace=%d\n",trace);
     
+    /* get page size */
+    trace->bsized = XmToggleButtonGetState (trace->prntscr.rsizeb);
+    
     /* open output file */
     psfilename = XmTextGetString (trace->prntscr.text);
 
@@ -259,17 +286,23 @@ void    ps_print(w,trace,cb)
 	
 	ns = (int)((trace->width - global->xstart)/global->res);
 	
-	/* output the page header macro */
-	fprintf(psfile,"(%d-%d) %d (%s) (%s) %d PAGEHDR\n",
-		global->time + ns,                                  /* end time */
-		global->time,					     /* start time */
-		ns,						     /* resolution */
-		date.dsc$a_pointer,                              /* time & date */
-		trace->filename,                                   /* filename */
-		i+1);                                            /* page number */
-	
 	/* output the page scaling and rf time */
-	fprintf(psfile,"%d %d %d PAGESCALE\n",trace->height,trace->width,trace->sigrf);
+	fprintf(psfile,"%d %d %d %d %d PAGESCALE\n",
+		trace->height, trace->width, trace->sigrf,
+		(int) ( ( trace->bsized ? 11.0 :  8.5) * 72.0),
+		(int) ( ( trace->bsized ? 17.0 : 11.0) * 72.0)
+		);
+	
+	/* output the page header macro */
+	fprintf(psfile,"(%d-%d) %d (%s) (%s) %d (%s) PAGEHDR\n",
+		global->time + ns,		/* end time */
+		global->time,			/* start time */
+		ns,				/* resolution */
+		date.dsc$a_pointer,		/* time & date */
+		trace->filename,		/* filename */
+		i+1,				/* page number */
+		DTVERSION			/* version (for title) */
+		);
 	
 	/* draw the signal names and the traces */
 	ps_drawsig(trace,psfile);
@@ -357,9 +390,10 @@ ps_draw(trace,psfile)
     int x1,y1,x2,y2;
     float iff,xlocf,xtimf;
     SIGNAL_LW *cptr,*nptr;
-    SIGNAL_SB *sig_ptr;
-    char tmp[32];
+    SIGNAL *sig_ptr;
+    char strg[32];
     unsigned int value;
+    CURSOR *csr_ptr;			/* Current cursor being printed */
     
     if (DTPRINT) printf("In ps_draw - filename=%s\n",trace->filename);
     
@@ -436,39 +470,39 @@ ps_draw(trace,psfile)
 		if ( (sig_ptr->decode != NULL) &&
 		    (value<MAXSTATENAMES) &&
 		    (sig_ptr->decode->statename[value][0] != '\0')) {
-		    strcpy (tmp, sig_ptr->decode->statename[value]);
+		    strcpy (strg, sig_ptr->decode->statename[value]);
 		    }
 		else {
 		    if (trace->busrep == HBUS)
-			sprintf(tmp,"%X", value);
+			sprintf(strg,"%X", value);
 		    else if (trace->busrep == OBUS)
-			sprintf(tmp,"%o", value);
+			sprintf(strg,"%o", value);
 		    }
 		
-		fprintf(psfile,"%d (%s) STATE_B32\n",xloc,tmp);
+		fprintf(psfile,"%d (%s) STATE_B32\n",xloc,strg);
 		break;
 		
 	      case STATE_B64: if ( xloc > xend ) xloc = xend;
 		if (trace->busrep == HBUS)
-		    sprintf(tmp,"%X %08X",*((unsigned int *)cptr+1),
+		    sprintf(strg,"%X %08X",*((unsigned int *)cptr+1),
 			    *((unsigned int *)cptr+2));
 		else if (trace->busrep == OBUS)
-		    sprintf(tmp,"%o %o",*((unsigned int *)cptr+1),
+		    sprintf(strg,"%o %o",*((unsigned int *)cptr+1),
 			    *((unsigned int *)cptr+2));
 		
-		fprintf(psfile,"%d (%s) STATE_B32\n",xloc,tmp);
+		fprintf(psfile,"%d (%s) STATE_B32\n",xloc,strg);
 		break;
 		
 	      case STATE_B96: if ( xloc > xend ) xloc = xend;
 		if (trace->busrep == HBUS)
-		    sprintf(tmp,"%X %08X %08X",*((unsigned int *)cptr+1),
+		    sprintf(strg,"%X %08X %08X",*((unsigned int *)cptr+1),
 			    *((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+2));
 		else if (trace->busrep == OBUS)
-		    sprintf(tmp,"%o %o %o",*((unsigned int *)cptr+1),
+		    sprintf(strg,"%o %o %o",*((unsigned int *)cptr+1),
 			    *((unsigned int *)cptr+2),
 			    *((unsigned int *)cptr+2));
-		fprintf(psfile,"%d (%s) STATE_B32\n",xloc,tmp);
+		fprintf(psfile,"%d (%s) STATE_B32\n",xloc,strg);
 		break;
 		
 	      default: printf("Error: State=%d\n",cptr->state); break;
@@ -495,11 +529,11 @@ ps_draw(trace,psfile)
     y2 = trace->sighgt;
     
     /* create the dash pattern for the vertical grid lines */
-    tmp[0] = SIG_SPACE/2;
-    tmp[1] = trace->sighgt - tmp[0];
+    strg[0] = SIG_SPACE/2;
+    strg[1] = trace->sighgt - strg[0];
     
     /* set the line attributes as the specified dash pattern */
-    fprintf(psfile,"stroke\n[%d YTRN %d YTRN] 0 setdash\n",tmp[0],tmp[1]);
+    fprintf(psfile,"stroke\n[%d YTRN %d YTRN] 0 setdash\n",strg[0],strg[1]);
     
     /* check if there is a reasonable amount of increments to draw the time grid */
     if ( ((float)xend - xlocf)/(trace->grid_res*global->res) < MIN_GRID_RES )
@@ -507,11 +541,11 @@ ps_draw(trace,psfile)
         for (iff=xlocf;iff<(float)xend; iff+=trace->grid_res*global->res)
 	    {
 	    /* compute the time value and draw it if it fits */
-	    sprintf(tmp,"%d",x1);
-	    if ( (int)iff - i >= XTextWidth(trace->text_font,tmp,strlen(tmp)) + 5 )
+	    time_to_string (trace, strg, x1, FALSE);
+	    if ( (int)iff - i >= XTextWidth(trace->text_font,strg,strlen(strg)) + 5 )
 		{
 		fprintf(psfile,"%d XADJ %d YADJ MT (%s) show\n",
-			(int)iff,yt-10,tmp);
+			(int)iff,yt-10,strg);
 	        i = (int)iff;
 		}
 	    
@@ -540,28 +574,29 @@ ps_draw(trace,psfile)
 	y1 = trace->height - 25 - 10;
 	y2 = trace->height - ( (int)((trace->height-trace->ystart)/trace->sighgt)-1) *
 	    trace->sighgt - trace->sighgt/2 - trace->ystart - 2;
-	for (i=0; i < global->numcursors; i++)
-	    {
+
+	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
+
 	    /* check if cursor is on the screen */
-	    if (global->cursors[i] > global->time)
-		{
+	    if (csr_ptr->time > global->time) {
+
 		/* draw the vertical cursor line */
-		x1 = global->cursors[i] * global->res - adj;
+		x1 = csr_ptr->time * global->res - adj;
 		fprintf(psfile,"%d XADJ %d YADJ MT %d XADJ %d YADJ LT\n",
 			x1,y1,x1,y2);
 		
 		/* draw the cursor value */
-		sprintf(tmp,"%d",global->cursors[i]);
- 		len = XTextWidth(trace->text_font,tmp,strlen(tmp));
+		time_to_string (trace, strg, csr_ptr->time, FALSE);
+ 		len = XTextWidth(trace->text_font,strg,strlen(strg));
 		fprintf(psfile,"%d XADJ %d YADJ MT (%s) show\n",
-			x1-len/2,y2-8,tmp);
+			x1-len/2,y2-8,strg);
 		
 		/* if there is a previous visible cursor, draw delta line */
-		if ( i != 0 && global->cursors[i-1] > global->time )
-		    {
-		    x2 = global->cursors[i-1] * global->res - adj;
-		    sprintf(tmp,"%d",global->cursors[i] - global->cursors[i-1]);
- 		    len = XTextWidth(trace->text_font,tmp,strlen(tmp));
+		if ( csr_ptr->prev && csr_ptr->prev->time > global->time ) {
+
+		    x2 = csr_ptr->prev->time * global->res - adj;
+		    time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
+ 		    len = XTextWidth(trace->text_font,strg,strlen(strg));
 		    
 		    /* write the delta value if it fits */
  		    if ( x1 - x2 >= len + 6 )
@@ -574,7 +609,7 @@ ps_draw(trace,psfile)
 				mid+len/2+2,y2+5,x1,y2+5);
 			
 			fprintf(psfile,"%d XADJ %d YADJ MT (%s) show\n",
-				mid-len/2,y2+2,tmp);
+				mid-len/2,y2+2,strg);
 			}
  		    /* or just draw the delta line */
  		    else
@@ -592,7 +627,7 @@ int    ps_drawsig(trace,psfile)
     TRACE	*trace;
     FILE		*psfile;
 {
-    SIGNAL_SB *sig_ptr;
+    SIGNAL *sig_ptr;
     int c=0,numprt,ymdpt;
     int		x1,y1;
     

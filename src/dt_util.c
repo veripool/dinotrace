@@ -93,6 +93,8 @@ void    update_scrollbar(w,value,inc,min,max,size)
     if (value > (max - size)) value = max - size;
     if (value < min) value = min;
 
+    if (size > (max - min)) size = max - min;
+
     XtSetArg(arglist[1], XmNvalue, value);
     XtSetArg(arglist[2], XmNincrement, inc);
     XtSetArg(arglist[3], XmNsliderSize, size);
@@ -150,7 +152,7 @@ void    remove_all_events(trace)
 void new_time(trace)
     TRACE *trace;
 {
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
     
     if ( global->time > trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res) ) {
         if (DTPRINT) printf("At end of trace...\n");
@@ -211,7 +213,7 @@ void get_geometry( trace )
     trace->numsigvis = MIN(trace->numsig - trace->numsigstart,max_y);
     
     /* if there are cursors showing, subtract one to make room for cursor */
-    if ( global->numcursors > 0 &&
+    if ( (global->cursor_head != NULL) &&
 	trace->cursor_vis &&
 	trace->numsigvis > 1 &&
 	trace->numsigvis >= max_y ) {
@@ -429,23 +431,26 @@ void    cb_prompt_ok(w, trace, reason)
 	    }
 	break;
 	
+      case IO_TIME:
+	if (tempi < 0) {
+	    sprintf(message,"Value %d out of range",tempi);
+	    dino_error_ack(trace,message);
+	    return;
+	    }
+	else {
+	    /* Center it on the screen */
+	    global->time = int_to_time (trace, tempi)
+		- (int)((trace->width-global->xstart)/global->res/2);
+
+	    new_time(trace);
+	    }
+	break;
+	
       default:
 	printf("Error - bad type %d\n",trace->prompt_type);
 	}
     }
 
-
-void dino_message_info(trace,msg)
-    TRACE	*trace;
-    char		*msg;
-{
-    if (DTPRINT) printf("In dino_message_info msg=%s\n",msg);
-    
-    /* display message at terminal */
-    printf("DINO_MESSAGE_INFO: %s\n",msg);
-    
-    /* display message in main_wid window */
-    }
 
 void dino_message_ack(trace, type, msg)
     TRACE	*trace;
@@ -454,7 +459,10 @@ void dino_message_ack(trace, type, msg)
 {
     static	MAPPED=FALSE;
     static Widget message;
+    char	aline[200];
     Arg		arglist[10];
+    XmString	xsout,xsnew,xsfree;
+    char	*ptr,*nptr;
     
     if (DTPRINT) printf("In dino_message_ack msg=%s\n",msg);
     
@@ -463,6 +471,9 @@ void dino_message_ack(trace, type, msg)
 	{
 	XtSetArg(arglist[0], XmNdefaultPosition, TRUE);
 	switch (type) {
+	  case 2:
+	    message = XmCreateInformationDialog(trace->work, "info", arglist, 1);
+	    break;
 	  case 1:
 	    message = XmCreateWarningDialog(trace->work, "warning", arglist, 1);
 	    break;
@@ -475,9 +486,37 @@ void dino_message_ack(trace, type, msg)
 	XtUnmanageChild( XmMessageBoxGetChild (message, XmDIALOG_HELP_BUTTON));
 	MAPPED=TRUE;
 	}
+
+    /* create string w/ seperators */
+    xsout = NULL;
+    for (ptr=msg; ptr && *ptr; ptr = nptr) {
+	nptr = strchr (ptr, '\n');
+	if (nptr) {
+	    strncpy (aline, ptr, nptr-ptr);
+	    aline[nptr-ptr] = '\0';
+	    nptr++;
+	    xsnew = XmStringCreateSimple (aline);
+	    }
+	else {
+	    xsnew = XmStringCreateSimple (ptr);
+	    }
+
+	if (xsout) {
+	    xsout = XmStringConcat (xsfree=xsout, XmStringSeparatorCreate());
+	    XmStringFree (xsfree);
+	    if (!XmStringEmpty (xsnew)) {
+		xsout = XmStringConcat (xsfree=xsout, xsnew);
+		XmStringFree (xsfree);
+		}
+	    XmStringFree (xsnew);
+	    }
+	else {
+	    xsout = xsnew;
+	    }
+	}
     
     /* change the label value and location */
-    XtSetArg(arglist[0], XmNmessageString, XmStringCreateSimple(msg));
+    XtSetArg(arglist[0], XmNmessageString, xsout);
     XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple("Dinotrace Message") );
     XtSetValues(message,arglist,2);
     
@@ -569,7 +608,7 @@ void    print_screen_traces(w,trace)
     TRACE	*trace;
 {
     int		i,adj,num;
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
     SIGNAL_LW	*cptr;
     
     printf("There are %d signals currently visible.\n",trace->numsigvis);
@@ -584,9 +623,9 @@ void    print_screen_traces(w,trace)
     adj = global->time * global->res - global->xstart;
     printf("Adjustment value is %d\n",adj);
     
-    sig_ptr = (SIGNAL_SB *)trace->dispsig;
+    sig_ptr = (SIGNAL *)trace->dispsig;
     for (i=0; i<num; i++) {
-	sig_ptr = (SIGNAL_SB *)sig_ptr->forward;	
+	sig_ptr = (SIGNAL *)sig_ptr->forward;	
 	}
     
     cptr = (SIGNAL_LW *)sig_ptr->cptr;
@@ -723,12 +762,12 @@ int	posx_to_time(trace,x)
 
 
 #pragma inline (posy_to_signal)
-SIGNAL_SB	*posy_to_signal(trace,y)
+SIGNAL	*posy_to_signal(trace,y)
     /* convert y value to a signal pointer, return NULL if invalid click */
     TRACE *trace;
     int y;
 {
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
     int num,i,max_y;
 
     /* return if there is no file */
@@ -752,34 +791,99 @@ SIGNAL_SB	*posy_to_signal(trace,y)
     }
 
 
-
 #pragma inline (posx_to_cursor)
-int	posx_to_cursor(trace, x)
-    /* convert x value to the index of the nearest cursor, return -1 if invalid click */
+CURSOR *posx_to_cursor(trace, x)
+    /* convert x value to the index of the nearest cursor, return NULL if invalid click */
     TRACE *trace;
     int x;
 {
+    CURSOR *csr_ptr;
     int time;
-    int i;
 
     /* check if there are any cursors */
-    if (global->numcursors <= 0) {
-	return (-1);
+    if (!global->cursor_head) {
+	return (NULL);
 	}
     
     time = posx_to_time (trace, x);
-    if (time<0) return (-1);
+    if (time<0) return (NULL);
     
     /* find the closest cursor */
-    i = 0;
-    while ( (time > global->cursors[i]) && ((i+1) < global->numcursors) ) {
-	i++;
+    csr_ptr = global->cursor_head;
+    while ( (time > csr_ptr->time) && csr_ptr->next ) {
+	csr_ptr = csr_ptr->next;
 	}
     
     /* i is between cursors[i-1] and cursors[i] - determine which is closest */
-    if ( i && ( (global->cursors[i] - time) > (time - global->cursors[i-1]) ) ) {
-	i--;
+    if ( csr_ptr->prev && ( (csr_ptr->time - time) > (time - csr_ptr->prev->time) ) ) {
+	csr_ptr = csr_ptr->prev;
 	}
 
-    return (i);
+    return (csr_ptr);
     }
+
+
+#pragma inline (time_to_cursor)
+CURSOR *time_to_cursor (time)
+    /* convert specific time value to the index of the nearest cursor, return NULL if none */
+    /* Unlike posx_to_cursor, this will not return a "close" one */
+    int time;
+{
+    CURSOR *csr_ptr;
+
+    /* find the closest cursor */
+    csr_ptr = global->cursor_head;
+    while ( csr_ptr && (time > csr_ptr->time) ) {
+	csr_ptr = csr_ptr->next;
+	}
+    
+    if (csr_ptr && (time == csr_ptr->time))
+	return (csr_ptr);
+    else return (NULL);
+    }
+
+#pragma inline (int_to_time)
+int int_to_time (trace, value)
+    /* convert integer to time value */
+    TRACE *trace;
+    int value;
+{
+    if (trace->timerep == TIMEREP_CYC) {
+	return (value * trace->grid_res);
+	}
+    else return (value);
+    }
+
+#pragma inline (time_to_strg)
+void time_to_string (trace, strg, time, relative)
+    /* convert specific time value into the string passed in */
+    int time;
+    char *strg;
+    TRACE *trace;
+    int relative;	/* true = time is relative, so don't adjust */
+{
+    int remain;
+
+    if (trace->timerep == TIMEREP_CYC) {
+	if (!relative) {
+
+	    /* Adjust within one cycle so that grids are on .0 boundaries */
+	    time -= trace->grid_align % trace->grid_res;
+	    }
+
+	remain = ((time * 10)/ trace->grid_res) % 10;
+	
+	if (!remain) {
+	    sprintf (strg, "%d", 
+		     (int)(time / trace->grid_res));
+	    }
+	else {
+	    sprintf (strg, "%d.%d", 
+		     (int)(time / trace->grid_res), remain);
+	    }
+	}
+    else {
+	sprintf (strg, "%d", time);
+	}
+    }
+

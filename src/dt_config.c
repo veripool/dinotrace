@@ -60,6 +60,7 @@
 		       (ch)=='_' || (ch)=='>'|| (ch)=='<' || (ch)==':')
 #define isstatechr(ch)  (isalnum(ch) || (ch)=='%' || (ch)=='.' || \
 		       (ch)=='_' || (ch)=='/'|| (ch)=='*' || (ch)=='(' || (ch)==')')
+#define isstatesep(ch)  (!isstatechr(ch) && (ch)!='}' )
 
 int line_num=0;
 char *current_file="";
@@ -136,7 +137,7 @@ int	config_read_state (line, out, statenum_ptr)
     char *tp;
     int outlen=0;
 
-    while (*line && !isstatechr(*line)) {
+    while (*line && isstatesep(*line)) {
 	line++;
 	outlen++;
 	}
@@ -365,7 +366,6 @@ void	config_process_states (trace, oldline, readfp)
 	}
 
     add_signal_state (trace, &newsigst);
-
     /*
     printf ("Signal '%s' Assigned States:\n",newsigst.signame);
     for (t=0; t<MAXSTATENAMES; t++)
@@ -514,6 +514,19 @@ void	config_process_line (trace, line, readfp)
 	    dino_error_ack(trace,message);
 	    }
 	}
+    else if (!strcmp(cmd, "TIME_REP")) {
+	value = trace->timerep;
+	if (toupper(line[0])=='N')
+		trace->timerep = TIMEREP_NS;
+	    else if (toupper(line[0])=='C')
+		trace->timerep = TIMEREP_CYC;
+	    else {
+		sprintf (message, "timerep must be NS or CYCLE\non line %d of %s\n",
+			 line_num, current_file);
+		dino_error_ack(trace,message);
+		}
+	if (DTPRINT) printf ("timerep = %d\n", trace->timerep);
+	}
     else if (!strcmp(cmd, "SIGNAL_STATES")) {
 	config_process_states (trace, line, readfp);
 	}
@@ -578,7 +591,7 @@ void config_read_defaults(trace)
     char *pchar;
 
 #ifdef VMS
-    config_read_file (trace, "DINO$DISK:DINOTRACE.DINO", 0);
+    config_read_file (trace, "DINODISK:DINOTRACE.DINO", 0);
     config_read_file (trace, "SYS$LOGIN:DINOTRACE.DINO", 0);
 #else
     newfilename[0] = '\0';
@@ -634,6 +647,7 @@ void config_restore_defaults(trace)
     trace->numpag = 1;
     trace->sigrf = SIG_RF;
     trace->pageinc = FPAGE;
+    trace->timerep = TIMEREP_NS;
 
     update_signal_states (trace);
     }

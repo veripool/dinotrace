@@ -40,7 +40,7 @@ void read_decsim(trace)
     int		len;
     int		time;
     char	*t1;
-    SIGNAL_SB		*sig_ptr,*last_sig_ptr;
+    SIGNAL		*sig_ptr,*last_sig_ptr;
     int		eof_next=FALSE;
 
     int	pass=0;
@@ -107,7 +107,6 @@ void read_decsim(trace)
 
 		/**** TYPE: End Of Signal Section ****/
 	      case tra$k_nss:
-		/* if (DTPRINT) read_trace_dump(trace); */
 		read_binary_make_busses(trace);
 		if (DTPRINT) read_trace_dump(trace);
 		break;
@@ -124,8 +123,8 @@ void read_decsim(trace)
 
 		/**** TYPE: Node format data ****/
 	      case tra$k_nfd:
-		sig_ptr = (SIGNAL_SB *)XtMalloc(sizeof(SIGNAL_SB));
-		memset (sig_ptr, 0, sizeof (SIGNAL_SB));
+		sig_ptr = (SIGNAL *)XtMalloc(sizeof(SIGNAL));
+		memset (sig_ptr, 0, sizeof (SIGNAL));
 		sig_ptr->binary_type = buf->TRA$B_DATTYP;
 		sig_ptr->binary_pos = buf->TRA$L_BITPOS;
 		sig_ptr->bits = 0;	/* = buf->TRA$W_BITLEN; */
@@ -204,7 +203,7 @@ void read_decsim(trace)
 read_binary_make_busses (trace)
     TRACE	*trace;
 {
-    SIGNAL_SB		*sig_ptr,*bus_sig_ptr;	/* ptr to signal which is being bussed */
+    SIGNAL		*sig_ptr,*bus_sig_ptr;	/* ptr to signal which is being bussed */
     char *bbeg, *bcol, *bnew, *sbeg;
 
     /* Vectorize signals */
@@ -235,7 +234,7 @@ read_binary_make_busses (trace)
 		/* Delete this signal */
 		bus_sig_ptr->forward = sig_ptr->forward;
 		if (sig_ptr->forward)
-		    ((SIGNAL_SB *)(sig_ptr->forward))->backward = bus_sig_ptr;
+		    ((SIGNAL *)(sig_ptr->forward))->backward = bus_sig_ptr;
 		XtFree (sig_ptr->signame);
 		XtFree (sig_ptr);
 		sig_ptr = bus_sig_ptr;
@@ -277,7 +276,7 @@ read_binary_make_busses (trace)
 
 #pragma inline (read_2state_to_value, read_4state_to_value)
 int	read_4state_to_value (sig_ptr, buf, value)
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
     char *buf;
     unsigned int *value;
 {
@@ -397,7 +396,7 @@ int	read_4state_to_value (sig_ptr, buf, value)
     }
 
 int	read_2state_to_value (sig_ptr, buf, value)
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
     char *buf;
     unsigned int *value;
 {
@@ -454,7 +453,7 @@ read_binary_time (trace, buf, time, flag )
     unsigned int value[3];
     int		state;
     unsigned int *vptr,diff;
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
 
     /*
     if (DTPRINT) printf ("read time %d\n", time);

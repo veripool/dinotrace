@@ -48,10 +48,10 @@ int	separator=0;		/* File temporary, true if | in trace file */
 
 void free_signals (trace, sig_pptr, select)
     TRACE	*trace;
-    SIGNAL_SB	**sig_pptr;	/* Pointer to head of the linked list */
+    SIGNAL	**sig_pptr;	/* Pointer to head of the linked list */
     int		select;		/* True = selectively pick trace's signals from the list */
 {
-    SIGNAL_SB	*sig_ptr,*tmp_sig_ptr, *back_ptr=NULL;
+    SIGNAL	*sig_ptr,*tmp_sig_ptr, *back_ptr=NULL;
 
     /* loop and free signal data and each signal structure */
     sig_ptr = *sig_pptr;
@@ -203,6 +203,16 @@ void quit(w,trace,cb)
     exit(1);
     }
 
+void help_cb (w,trace,cb)
+    Widget		w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    if (DTPRINT) printf("in help_cb\n");
+
+    dino_information_ack(trace, help_message());
+    }
+
 void read_decsim_ascii(trace)
     TRACE	*trace;
 {
@@ -211,7 +221,7 @@ void read_decsim_ascii(trace)
     char		inline[MAX_SIG+20],tmp[MAX_SIG+20],*t1,*t2,*t3;  
     char		*sp8 = "        ";
     int			i,j,k,DONE;
-    SIGNAL_SB		*sig_ptr,*last_sig_ptr;
+    SIGNAL		*sig_ptr,*last_sig_ptr;
 
     separator = 0;
 
@@ -318,8 +328,8 @@ void read_decsim_ascii(trace)
     /* Allocate 1 block of memory to each signal initially */
     for (i=0; i < trace->numsig; i++) {
 	/* allocate the memory */
-	if ( !(sig_ptr = (SIGNAL_SB *)malloc(sizeof(SIGNAL_SB))) ) {
-	    dino_error_ack(trace,"Can't allocate memory for SIGNAL_SB.");
+	if ( !(sig_ptr = (SIGNAL *)malloc(sizeof(SIGNAL))) ) {
+	    dino_error_ack(trace,"Can't allocate memory for SIGNAL.");
 	    return;
 	    }
 	
@@ -345,7 +355,7 @@ void read_decsim_ascii(trace)
 	last_sig_ptr = sig_ptr;
 	}
 
-    /* make SIGNAL_SB signame point to correct signal name */
+    /* make SIGNAL signame point to correct signal name */
     pshort = trace->bus;
     sig_ptr = trace->firstsig;
     for (i=0,j=0; i < trace->numsig; i++) {
@@ -423,7 +433,7 @@ void read_decsim_ascii(trace)
 void read_trace_end (trace)
     TRACE	*trace;
 {
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
 
     if (DTPRINT) printf ("In read_trace_end\n");
 
@@ -460,7 +470,7 @@ void read_trace_end (trace)
 read_trace_dump (trace)
     TRACE	*trace;
 {
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
 
     if (DTPRINT) printf ("In read_trace_dump\n");
 
@@ -491,7 +501,7 @@ cvd2d(trace, line, bus, flag )
     char	tmp[100];
     unsigned int diff;
     register	char *cp;
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
 
     /* initialize the string to 96 Z's */
     for (i=0;i<96;i++) {
@@ -684,7 +694,7 @@ void read_hlo_tempest(trace)
     unsigned int	data[128];
     int		i,j,state;
     int		pad_len;
-    SIGNAL_SB	*sig_ptr,*last_sig_ptr;
+    SIGNAL	*sig_ptr,*last_sig_ptr;
 
     /*
      ** Set the debugging variables
@@ -755,8 +765,8 @@ void read_hlo_tempest(trace)
 	/*
 	 ** Allocate memory for a signal description block
 	 */
-	if ( !(sig_ptr = (SIGNAL_SB *)malloc(sizeof(SIGNAL_SB))) ) {
-	    dino_error_ack(trace,"Can't allocate memory for SIGNAL_SB.");
+	if ( !(sig_ptr = (SIGNAL *)malloc(sizeof(SIGNAL))) ) {
+	    dino_error_ack(trace,"Can't allocate memory for SIGNAL.");
 	    return;
 	    }
 
@@ -990,7 +1000,7 @@ void read_hlo_tempest(trace)
 	    /*
 	     ** Get next signal block
 	     */
-	    sig_ptr = (SIGNAL_SB *)sig_ptr->forward;
+	    sig_ptr = (SIGNAL *)sig_ptr->forward;
 	    
 	    }/* end while */
 	}/* end for */
@@ -1013,7 +1023,7 @@ void read_hlo_tempest(trace)
 void	update_signal_states (trace)
     TRACE	*trace;
 {
-    SIGNAL_SB *sig_ptr;
+    SIGNAL *sig_ptr;
     SIGNAL_LW	*cptr;
     int rise1=0, fall1=0, rise2=0, fall2=0;
 
@@ -1032,7 +1042,7 @@ void	update_signal_states (trace)
 	}
 
     /* Determine period, rise point and fall point of first signal */
-    cptr = (SIGNAL_LW *)((SIGNAL_SB *)trace->firstsig)->cptr;
+    cptr = (SIGNAL_LW *)((SIGNAL *)trace->firstsig)->cptr;
     /* Skip first one, as is not representative of period */
     if ( cptr->time != 0x1FFFFFFF) cptr++;
     while( cptr->time != 0x1FFFFFFF) {

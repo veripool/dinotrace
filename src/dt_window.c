@@ -34,23 +34,12 @@
 
 
 
-void cb_window_expose(w,trace)
+void win_expose_cb(w,trace)
     Widget		w;
     TRACE		*trace;
 {
-    if (DTPRINT) printf("In Window Expose - trace=%d\n",trace);
+    if (DTPRINT) printf("In win_expose_cb - trace=%d\n",trace);
     if (!trace->loaded) return;
-
-    /* redraw the entire screen */
-    get_geometry (trace);
-    draw (trace);
-    }
-
-void cb_window_focus(w,trace)
-    Widget		w;
-    TRACE		*trace;
-{
-    if (DTPRINT) printf("In Window Focus - trace=%d\n",trace);
 
     /* redraw the entire screen */
     get_geometry (trace);
@@ -226,7 +215,7 @@ void vscroll_pagedec(w,trace,cb)
     /* Not numsigvis because may not be limited by screen size */
     sigs = (int)((trace->height-trace->ystart)/trace->sighgt);
 
-    if ( global->numcursors > 0 &&
+    if ( (global->cursor_head != NULL) &&
 	 trace->cursor_vis &&
 	 trace->numsigvis > 1 &&
 	 trace->numsigvis >= sigs ) {
@@ -281,6 +270,18 @@ void cb_chg_res(w,trace,cb)
 {
     if (DTPRINT) printf("In cb_chg_res - trace=%d\n",trace);
     get_data_popup(trace,"Resolution",IO_RES);
+    }
+
+
+void win_goto_cb (w,trace,cb)
+    Widget		w;
+    TRACE		*trace;
+    XmAnyCallbackStruct	*cb;
+{
+    if (DTPRINT) printf("In win_goto_cb - trace=%d\n",trace);
+    get_data_popup(trace,
+		   (trace->timerep == TIMEREP_CYC)?"Goto Cycle Number":"Goto Time",
+		   IO_TIME);
     }
 
 

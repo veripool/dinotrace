@@ -28,9 +28,13 @@
 
 #include <X11/Xlib.h>
 #include <Xm/Xm.h>
+#include <Xm/ScrollBar.h>
+#include <Xm/ScrollBarP.h>
 
 #include "dinotrace.h"
 #include "callbacks.h"
+
+extern void draw_hscroll ();
 
 /*
  *
@@ -100,10 +104,12 @@ void draw(trace)
     float iff,xlocf,xtimf;
     char strg[MAXSTATELEN+16];		/* String value to print out */
     register SIGNAL_LW *cptr,*nptr;	/* Current value pointer and next value pointer */
-    SIGNAL_SB *sig_ptr;			/* Current signal being printed */
+    SIGNAL *sig_ptr;			/* Current signal being printed */
+    CURSOR *csr_ptr;			/* Current cursor being printed */
     unsigned int value;
     int temp_color=0;
     char temp_strg[20];
+    int end_time;
     
     if (DTPRINT) printf("In draw - filename=%s\n",trace->filename);
     
@@ -118,8 +124,10 @@ void draw(trace)
     
     xend = trace->width - XMARGIN;
     adj = global->time * global->res - global->xstart;
+    end_time = ( xend + adj ) / global->res;
     
-    if (DTPRINT) printf("global->res=%f adj=%d\n",global->res,adj);
+    if (DTPRINT) printf("global->res=%f adj=%d time=%d-%d\n",global->res,adj,
+			     global->time, end_time);
     
     /* Loop and draw each signal individually */
     for (sig_ptr = trace->dispsig, numprt = 0; sig_ptr && numprt<trace->numsigvis;
@@ -258,8 +266,8 @@ void draw(trace)
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch_value[i][2]==value ) ) {
-			    srch_this_color = global->srch_color[i];
+			if ( ( global->srch[i].value[2]==value ) ) {
+			    srch_this_color = global->srch[i].color;
 			    break;
 			    }
 			}
@@ -280,9 +288,9 @@ void draw(trace)
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch_value[i][2]== *((unsigned int *)cptr+2) )
-			    && ( global->srch_value[i][1]== *((unsigned int *)cptr+1) ) ) {
-			    srch_this_color = global->srch_color[i];
+			if ( ( global->srch[i].value[2]== *((unsigned int *)cptr+2) )
+			    && ( global->srch[i].value[1]== *((unsigned int *)cptr+1) ) ) {
+			    srch_this_color = global->srch[i].color;
 			    break;
 			    }
 			}
@@ -305,10 +313,10 @@ void draw(trace)
 		srch_this_color = 0;
 		if (sig_ptr->srch_ena) {
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch_value[i][2]== *((unsigned int *)cptr+3) )
-			    && ( global->srch_value[i][1]== *((unsigned int *)cptr+2) )
-			    && ( global->srch_value[i][0]== *((unsigned int *)cptr+1) ) ) {
-			    srch_this_color = global->srch_color[i];
+			if ( ( global->srch[i].value[2]== *((unsigned int *)cptr+3) )
+			    && ( global->srch[i].value[1]== *((unsigned int *)cptr+2) )
+			    && ( global->srch[i].value[0]== *((unsigned int *)cptr+1) ) ) {
+			    srch_this_color = global->srch[i].color;
 			    break;
 			    }
 			}
@@ -394,29 +402,25 @@ void draw(trace)
     XSetDashes(global->display,trace->gc,0,strg,2);
     
     /* check if there is a reasonable amount of increments to draw the time grid */
-    if ( ((float)xend - xlocf)/(trace->grid_res*global->res) < MIN_GRID_RES )
-	{
-        for (iff=xlocf;iff<(float)xend; iff+=trace->grid_res*global->res)
-	    {
+    if ( ((float)xend - xlocf)/(trace->grid_res*global->res) < MIN_GRID_RES ) {
+        for (iff=xlocf;iff<(float)xend; iff+=trace->grid_res*global->res) {
 	    /* compute the time value and draw it if it fits */
-	    sprintf(strg,"%d",x1);
-	    if ( (int)iff - i >= XTextWidth(trace->text_font,strg,strlen(strg)) + 5 )
-		{
+	    time_to_string (trace, strg, x1, FALSE);
+
+	    if ( (int)iff - i >= XTextWidth(trace->text_font,strg,strlen(strg)) + 5 ) {
 	        XDrawString(global->display,trace->wind,
 			    trace->gc, (int)iff, yt, strg, strlen(strg));
 	        i = (int)iff;
 		}
 	    
 	    /* if the grid is visible, draw a vertical dashed line */
-	    if (trace->grid_vis)
-		{
+	    if (trace->grid_vis) {
 	        XDrawLine(global->display, trace->wind,trace->gc,(int)iff,y1,(int)iff,y2);
 		}
 	    x1 += trace->grid_res;
 	    }
 	}
-    else
-	{
+    else {
 	/* grid res is useless - must increase the spacing */
 	/*	dino_warning_ack(trace, "Grid Spacing Too Small - Increase Res"); */
 	}
@@ -425,41 +429,40 @@ void draw(trace)
     XSetLineAttributes(global->display,trace->gc,0,LineSolid,0,0);
     
     /* draw the cursors if they are visible */
-    if ( trace->cursor_vis )
-	{
+    if ( trace->cursor_vis ) {
 	/* initial the y colors for drawing */
 	y1 = 25;
 	y2 = ( (int)((trace->height-trace->ystart)/trace->sighgt) - 1 ) *
 	    trace->sighgt + trace->sighgt/2 + trace->ystart + 2;
 
-	for (i=0; i < global->numcursors; i++) {
+	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
+
 	    /* check if cursor is on the screen */
-	    if (global->cursors[i] > global->time) {
+	    if ((csr_ptr->time > global->time) && (csr_ptr->time < end_time)) {
 
 		/* Change color */
 		XSetForeground (global->display, trace->gc,
-				trace->xcolornums[global->cursor_color[i]]);
+				trace->xcolornums[csr_ptr->color]);
 
 		/* draw the cursor */
-		x1 = global->cursors[i] * global->res - adj;
+		x1 = csr_ptr->time * global->res - adj;
 		XDrawLine(global->display,trace->wind,trace->gc,x1,y1,x1,y2);
 		
 		/* draw the cursor value */
-		sprintf(strg,"%d",global->cursors[i]);
+		time_to_string (trace, strg, csr_ptr->time, FALSE);
  		len = XTextWidth(trace->text_font,strg,strlen(strg));
 		XDrawString(global->display,trace->wind,
 			    trace->gc, x1-len/2, y2+10, strg, strlen(strg));
 		
 		/* if there is a previous visible cursor, draw delta line */
-		if ( i != 0 && global->cursors[i-1] > global->time )
-		    {
-		    x2 = global->cursors[i-1] * global->res - adj;
-		    sprintf(strg,"%d",global->cursors[i] - global->cursors[i-1]);
+		if ( csr_ptr->prev && (csr_ptr->prev->time > global->time) ) {
+
+		    x2 = csr_ptr->prev->time * global->res - adj;
+		    time_to_string (trace, strg, csr_ptr->time - csr_ptr->prev->time, TRUE);
  		    len = XTextWidth(trace->text_font,strg,strlen(strg));
 		    
 		    /* write the delta value if it fits */
- 		    if ( x1 - x2 >= len + 6 )
-			{
+ 		    if ( x1 - x2 >= len + 6 ) {
 			/* calculate the mid pt of the segment */
 			mid = x2 + (x1 - x2)/2;
 			XDrawLine(global->display, trace->wind, trace->gc,
@@ -471,26 +474,74 @@ void draw(trace)
 				    trace->gc, mid-len/2, y2, strg, strlen(strg));
 			}
  		    /* or just draw the delta line */
- 		    else
-			{
+ 		    else {
  		        XDrawLine(global->display, trace->wind,
-				  trace->gc, x1, y2-5, x2, y2-5);
+				  trace->gc, x2, y2-5, x1, y2-5);
 			}
 		    }
 		}
 	    }
 	}
+
+    /* Draw the scroll bar */
+    draw_hscroll (trace);
     
     /* Back to default color */
     XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
-
     } /* End of DRAW */
+
+
+void	draw_hscroll (trace)
+    TRACE *trace;
+    /* Draw on the horizontal scroll bar - needs guts of the ScrollBarWidget */
+{
+    int y1,y2,x1,xbase,xmax,slider_x1,slider_x2;
+    float xscale;
+    CURSOR *csr_ptr;			/* Current cursor being printed */
+
+    if (!trace->loaded || (trace->end_time == trace->start_time)) return;
+
+    /* initial the y colors for drawing */
+    y1 = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_y;
+    y2 = y1 + ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_height;
+    slider_x1 = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_x;
+    slider_x2 = slider_x1 + ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_width;
+    xbase = ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_x;
+    xmax = xbase + ((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_width;
+    xscale =
+	(float)((XmScrollBarRec *)trace->hscroll)->scrollBar.slider_area_width	/* sc width */
+	/ (float)(trace->end_time - trace->start_time);		/* range of times */
+
+    /* Blank area to either side of slider */
+    XSetForeground (global->display, trace->gc,
+		    ((XmScrollBarRec *)trace->hscroll)->scrollBar.trough_color );
+    XFillRectangle(global->display, XtWindow (trace->hscroll), trace->gc,
+		   xbase, y1, slider_x1 - xbase, y2-y1);
+    XFillRectangle(global->display, XtWindow (trace->hscroll), trace->gc,
+		   slider_x2, y1, xmax - slider_x2 , y2-y1);
+
+    if ( trace->cursor_vis ) {
+	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
+	    /* draw the cursor */
+	    x1 = xbase + xscale * (csr_ptr->time - trace->start_time);
+
+	    /* Don't plot if it would overwrite the slider */
+	    if ((x1 < slider_x1) || (x1 > slider_x2)) {
+		/* Change color */
+		XSetForeground (global->display, trace->gc, trace->xcolornums[csr_ptr->color]);
+
+		XDrawLine(global->display, XtWindow (trace->hscroll),
+			  trace->gc, x1,y1,x1,y2);
+		}
+	    }
+	}
+    }
 
 
 void	update_globals ()
 {
     TRACE *trace;
-    SIGNAL_SB *sig_ptr;
+    SIGNAL *sig_ptr;
     int xstarttemp;
     char *t1;
 
@@ -498,7 +549,7 @@ void	update_globals ()
     xstarttemp=XSTART_MIN;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
-	    for (sig_ptr = (SIGNAL_SB *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
+	    for (sig_ptr = (SIGNAL *)trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 		for (t1=sig_ptr->signame; *t1==' '; t1++);
 		if (strncmp (t1, "%NET.",5)==0) t1+=5;
 		/* if (DTPRINT) printf("Signal = '%s'  xstart=%d\n",t1,xstarttemp); */
@@ -537,12 +588,18 @@ void redraw_all (trace)
 void	update_search ()
 {
     TRACE	*trace;
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
     SIGNAL_LW	*cptr;
-    int		found;
-    int		i;
+    int		found, cursorize;
+    register int i;
+    CURSOR	*csr_ptr,*new_csr_ptr;
 
     if (DTPRINT) printf("In update_search\n");
+
+    /* Mark all cursors that are a result of a search as old (-1) */
+    for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
+	if (csr_ptr->search) csr_ptr->search = -1;
+	}
 
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	/* don't do anything if no file is loaded */
@@ -555,17 +612,18 @@ void	update_search ()
 		}
 	    
 	    found=0;
+	    cursorize=0;
 	    cptr = (SIGNAL_LW *)(sig_ptr)->bptr;
 	    
-	    for (; !found && (cptr->time != EOT); cptr += sig_ptr->inc) {
+	    for (; (cptr->time != EOT); cptr += sig_ptr->inc) {
 		switch (cptr->state) {
 		  case STATE_B32:
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch_value[i][2]== *((unsigned int *)cptr+1) )
-			    && ( global->srch_value[i][1] == 0) 
-			    && ( global->srch_value[i][0] == 0)
-			    && ( global->srch_color[i] != 0) ) {
-			    found=1;
+			if ( ( global->srch[i].value[2]== *((unsigned int *)cptr+1) )
+			    && ( global->srch[i].value[1] == 0) 
+			    && ( global->srch[i].value[0] == 0) ) {
+			    found |= ( global->srch[i].color != 0) ;
+			    if ( global->srch[i].cursor != 0) cursorize = global->srch[i].cursor;
 			    break;
 			    }
 			}
@@ -573,11 +631,11 @@ void	update_search ()
 		    
 		  case STATE_B64:
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch_value[i][2]== *((unsigned int *)cptr+2) )
-			    && ( global->srch_value[i][1]== *((unsigned int *)cptr+1) )
-			    && ( global->srch_value[i][0] == 0) 
-			    && ( global->srch_color[i] != 0) ) {
-			    found=1;
+			if ( ( global->srch[i].value[2]== *((unsigned int *)cptr+2) )
+			    && ( global->srch[i].value[1]== *((unsigned int *)cptr+1) )
+			    && ( global->srch[i].value[0] == 0) ) {
+			    found |= ( global->srch[i].color != 0) ;
+			    if ( global->srch[i].cursor != 0) cursorize = global->srch[i].cursor;
 			    break;
 			    }
 			}
@@ -585,16 +643,35 @@ void	update_search ()
 		    
 		  case STATE_B96:
 		    for (i=0; i<MAX_SRCH; i++) {
-			if ( ( global->srch_value[i][2]== *((unsigned int *)cptr+3) )
-			    && ( global->srch_value[i][1]== *((unsigned int *)cptr+2) )
-			    && ( global->srch_value[i][0]== *((unsigned int *)cptr+1) )
-			    && ( global->srch_color[i] != 0) ) {
-			    found=1;
+			if ( ( global->srch[i].value[2]== *((unsigned int *)cptr+3) )
+			    && ( global->srch[i].value[1]== *((unsigned int *)cptr+2) )
+			    && ( global->srch[i].value[0]== *((unsigned int *)cptr+1) ) ) {
+			    found |= ( global->srch[i].color != 0) ;
+			    if ( global->srch[i].cursor != 0) cursorize = global->srch[i].cursor;
 			    break;
 			    }
 			}
 		    break;
 		    } /* switch */
+
+		if (cursorize) {
+		    if (NULL != (csr_ptr = time_to_cursor(cptr->time))) {
+			if (csr_ptr->search == -1) {
+			    /* mark the old cursor as new so won't be deleted */
+			    csr_ptr->search = cursorize;
+			    }
+			}
+		    else {
+			/* Make new cursor at this location */
+			csr_ptr = (CURSOR *)XtMalloc(sizeof(CURSOR));
+			csr_ptr->time = cptr->time;
+			csr_ptr->color = cursorize;
+			csr_ptr->search = cursorize;
+			add_cursor (csr_ptr);
+			}
+		    cursorize = 0;
+		    }
+
 		} /* for cptr */
 	    
 	    sig_ptr->srch_ena = found;
@@ -602,5 +679,15 @@ void	update_search ()
 	    
 	    } /* for sig */
 	} /* for trace */
+
+    /* Deleate all old cursors */
+    for (csr_ptr = global->cursor_head; csr_ptr; ) {
+	new_csr_ptr = csr_ptr;
+	csr_ptr = csr_ptr->next;
+	if (new_csr_ptr->search==-1) {
+	    remove_cursor (new_csr_ptr);
+	    XtFree (new_csr_ptr);
+	    }
+	}
     }
 

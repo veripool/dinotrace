@@ -78,6 +78,7 @@ void trace_open_cb(w,trace)
     TRACE		*trace;
 {
     int xp,yp,xs,ys;
+    TRACE	*trace_new;
 
     if (DTPRINT) printf("In trace_open - trace=%d\n",trace);
 
@@ -90,7 +91,11 @@ void trace_open_cb(w,trace)
     XtSetArg(arglist[0], XmNheight, ys/2);
     XtSetValues(trace->toplevel, arglist, 1);
 
-    create_trace (xs, ys/2, xp, yp+ys/2);
+    trace_new = create_trace (xs, ys/2, xp, yp+ys/2);
+
+    /* Ask for a file in the new window */
+    XSync(global->display,0);
+    trace_read_cb (NULL, trace_new);
     }
 
 void trace_close_cb(w,trace)
@@ -181,17 +186,14 @@ void init_globals ()
 
     global->delsig = NULL;
     global->selected_sig = NULL;
+    global->cursor_head = NULL;
     global->xstart = 200;
     global->time = 0;
 
-    /* Initialize cursor array to zero */
-    global->numcursors = 0;
-    for (i=0; i<MAX_CURSORS; i++)
-	global->cursors[i] = 0;
-
     for (i=0; i<MAX_SRCH; i++) {
-	global->srch_color[i] = global->srch_value[i][0] = 
-	    global->srch_value[i][1] = global->srch_value[i][2] = 0;
+	global->srch[i].color = global->srch[i].cursor =
+	    global->srch[i].value[0] = global->srch[i].value[1] =
+		global->srch[i].value[2] = 0;
 	}
     }
 
@@ -326,22 +328,22 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg (arglist[1], XmNforeground, &(trace->xcolornums[0]));
     XtGetValues (trace->main, arglist, 2);
     trace->xcolornums[1] = XWhitePixel (global->display, 0);
-    XAllocNamedColor (global->display, cmap, "Red", &xcolor, &xcolor2);
-    trace->xcolornums[2] = xcolor.pixel;
-    XAllocNamedColor (global->display, cmap, "ForestGreen", &xcolor, &xcolor2);
-    trace->xcolornums[3] = xcolor.pixel;
-    XAllocNamedColor (global->display, cmap, "Blue", &xcolor, &xcolor2);
-    trace->xcolornums[4] = xcolor.pixel;
-    XAllocNamedColor (global->display, cmap, "Magenta", &xcolor, &xcolor2);
-    trace->xcolornums[5] = xcolor.pixel;
-    XAllocNamedColor (global->display, cmap, "Cyan", &xcolor, &xcolor2);
-    trace->xcolornums[6] = xcolor.pixel;
-    XAllocNamedColor (global->display, cmap, "Yellow", &xcolor, &xcolor2);
-    trace->xcolornums[7] = xcolor.pixel;
-    XAllocNamedColor (global->display, cmap, "Salmon", &xcolor, &xcolor2);
-    trace->xcolornums[8] = xcolor.pixel;
-    XAllocNamedColor (global->display, cmap, "NavyBlue", &xcolor, &xcolor2);
-    trace->xcolornums[9] = xcolor.pixel;
+    if (XAllocNamedColor (global->display, cmap, "Red", &xcolor, &xcolor2))
+	trace->xcolornums[2] = xcolor.pixel;	else trace->xcolornums[2] = trace->xcolornums[1];
+    if (XAllocNamedColor (global->display, cmap, "ForestGreen", &xcolor, &xcolor2))
+	trace->xcolornums[3] = xcolor.pixel;	else trace->xcolornums[3] = trace->xcolornums[1];
+    if (XAllocNamedColor (global->display, cmap, "Blue", &xcolor, &xcolor2))
+	trace->xcolornums[4] = xcolor.pixel;	else trace->xcolornums[4] = trace->xcolornums[1];
+    if (XAllocNamedColor (global->display, cmap, "Magenta", &xcolor, &xcolor2))
+	trace->xcolornums[5] = xcolor.pixel;	else trace->xcolornums[5] = trace->xcolornums[1];
+    if (XAllocNamedColor (global->display, cmap, "Cyan", &xcolor, &xcolor2))
+	trace->xcolornums[6] = xcolor.pixel;	else trace->xcolornums[6] = trace->xcolornums[1];
+    if (XAllocNamedColor (global->display, cmap, "Yellow", &xcolor, &xcolor2))
+	trace->xcolornums[7] = xcolor.pixel;	else trace->xcolornums[7] = trace->xcolornums[1];
+    if (XAllocNamedColor (global->display, cmap, "Salmon", &xcolor, &xcolor2))
+	trace->xcolornums[8] = xcolor.pixel;	else trace->xcolornums[8] = trace->xcolornums[1];
+    if (XAllocNamedColor (global->display, cmap, "NavyBlue", &xcolor, &xcolor2))
+	trace->xcolornums[9] = xcolor.pixel;	else trace->xcolornums[9] = trace->xcolornums[1];
 
     /*
     for (i=0; i<63; i++) {
@@ -477,7 +479,12 @@ TRACE *create_trace (xs,ys,xp,yp)
 	dt_menu_entry	("Print Signal Names", 'N', print_sig_names);
 	dt_menu_entry	("Print Signal Info (Screen Only)", 'I', print_screen_traces);
 	}
-    
+
+    dt_menu_title ("Help", 'H');
+    dt_menu_entry	("On Version",	'V',	help_cb);
+    XtSetArg (arglist[0], XmNmenuHelpWidget, trace->menu.pdmenubutton[pde]);
+    XtSetValues (trace->menu.menu, arglist, 1);
+
     /****************************************
      * create the command widget
      ****************************************/
@@ -493,6 +500,16 @@ TRACE *create_trace (xs,ys,xp,yp)
     trace->command.begin_but = XmCreatePushButton(trace->command.command, "begin", arglist, 4);
     XtAddCallback(trace->command.begin_but, XmNactivateCallback, cb_begin, trace);
     XtManageChild(trace->command.begin_but);
+    
+    /*** create goto button in command region ***/
+    XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Goto") );
+    XtSetArg(arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
+    XtSetArg(arglist[2], XmNleftOffset, 7);
+    XtSetArg(arglist[3], XmNbottomAttachment, XmATTACH_FORM );
+    XtSetArg(arglist[4], XmNleftWidget, trace->command.begin_but);
+    trace->command.goto_but = XmCreatePushButton(trace->command.command, "goto", arglist, 5);
+    XtAddCallback(trace->command.goto_but, XmNactivateCallback, win_goto_cb, trace);
+    XtManageChild(trace->command.goto_but);
     
     /*** create end button in command region ***/
     XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("End") );
@@ -537,6 +554,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg(arglist[4], XmNrightAttachment, XmATTACH_WIDGET );
     XtSetArg(arglist[5], XmNrightWidget, trace->vscroll);
     XtSetArg(arglist[6], XmNheight, 18);
+
     trace->hscroll = XmCreateScrollBar( trace->command.command, "hscroll", arglist, 7);
     XtAddCallback(trace->hscroll, XmNincrementCallback, hscroll_unitinc, trace);
     XtAddCallback(trace->hscroll, XmNdecrementCallback, hscroll_unitdec, trace);
@@ -571,7 +589,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg(arglist[0], XmNrightAttachment, XmATTACH_WIDGET );
     XtSetArg(arglist[1], XmNrightWidget, trace->command.resfull_but);
     XtSetArg(arglist[2], XmNrightOffset, 2);
-    XtSetArg(arglist[3], XmNheight, 33);
+    XtSetArg(arglist[3], XmNheight, 32);
     XtSetArg(arglist[4], XmNbottomAttachment, XmATTACH_FORM );
     XtSetArg(arglist[5], XmNarrowDirection, XmARROW_LEFT );
     trace->command.resdec_but = XmCreateArrowButton(trace->command.command, "decres", arglist, 6);
@@ -582,7 +600,7 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg(arglist[0], XmNleftAttachment, XmATTACH_WIDGET );
     XtSetArg(arglist[1], XmNleftWidget, trace->command.reszoom_but);
     XtSetArg(arglist[2], XmNleftOffset, 2);
-    XtSetArg(arglist[3], XmNheight, 33);
+    XtSetArg(arglist[3], XmNheight, 32);
     XtSetArg(arglist[4], XmNbottomAttachment, XmATTACH_FORM );
     XtSetArg(arglist[5], XmNarrowDirection, XmARROW_RIGHT );
     trace->command.resinc_but = XmCreateArrowButton(trace->command.command, "incres", arglist, 6);
@@ -601,9 +619,9 @@ TRACE *create_trace (xs,ys,xp,yp)
     XtSetArg(arglist[5], XmNbottomWidget, trace->hscroll);
     trace->work = XmCreateDrawingArea(trace->command.command,"work", arglist, 6);
 
-    XtAddCallback(trace->work, XmNexposeCallback, cb_window_expose, trace);
+    XtAddCallback(trace->work, XmNexposeCallback, win_expose_cb, trace);
 /*
-    XtAddCallback(trace->work, XmNresizeCallback, cb_window_expose, trace);
+    XtAddCallback(trace->work, XmNresizeCallback, win_expose_cb, trace);
 */
     XtManageChild(trace->work);
     
@@ -661,11 +679,12 @@ TRACE *create_trace (xs,ys,xp,yp)
     
     XtSetArg(arglist[0],XmNbackground,back);
     XtSetValues(trace->work,arglist,1);
-#endif    
-
     trace->gc = XCreateGC(global->display,trace->wind,
 			  GCLineWidth|GCForeground|GCBackground,&xgcv);
-    
+#endif    
+
+    trace->gc = XCreateGC(global->display,trace->wind, NULL, NULL);
+
     /* get font information */
     trace->text_font = XQueryFont(global->display,XGContextFromGC(trace->gc));
     
@@ -677,3 +696,5 @@ TRACE *create_trace (xs,ys,xp,yp)
 
     return (trace);
     }
+
+

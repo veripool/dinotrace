@@ -123,6 +123,7 @@
 #define tra$s_nfd_rec_siz 152
 #define tra$s_nnr_rec_siz 32
 #define tra$s_ems_rec_siz 48
+#pragma nomember_alignment
 struct bintrarec {
     unsigned char tra$b_class;
     unsigned char tra$b_type;

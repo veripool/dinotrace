@@ -6,33 +6,40 @@ char dinopost[] = "%\n\
 %\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
-/PG_HGT 612 def			% def PG_HGT = 8.5 * 72\n\
-/PG_WID 792 def			% def PG_WID = 11 * 72\n\
-/XADJ { PG_WID width div mul } def\n\
-/YADJ { PG_HGT 50 sub height div mul 50 add } def\n\
-/YTRN { PG_HGT 50 sub height div mul } def\n\
-/DEL { 3 XADJ } def		% def DEL\n\
-/DELB { 2 XADJ } def		% define DELB\n\
-/DELU { 5 XADJ } def		% define DELU\n\
-/DELU2 { 10 XADJ } def		% define DELU2\n\
 \n\
-/PAGEHDR      % stack: pagenum file date signum res st_end_time\n\
-{ newpath			    % clear current path\n\
-  90 rotate                         % rotates to landscape\n\
-  0 8.5 72 mul neg translate        % translates so you can see the image\n\
-  3 setlinewidth		    % set the line width or the border\n\
+/PAGESCALE      % stack: paper_wid paper_height sigrf width height \n\
+{ newpath\n\
+  /PG_WID exch def		% def PG_WID = 11 * 72\n\
+  /PG_HGT exch def		% def PG_HGT = 8.5 * 72\n\
+  /sigrf exch def		% signal rf time\n\
+  /width exch def		% width of DINOTRACE window\n\
+  /height exch def		% height of DINOTRACE window\n\
+  /XADJ { PG_WID width div mul } def\n\
+  /YADJ { PG_HGT 50 sub height div mul 50 add } def\n\
+  /YTRN { PG_HGT 50 sub height div mul } def\n\
+  /DEL { 3 XADJ } def		% def DEL\n\
+  /DELB { 2 XADJ } def		% define DELB\n\
+  /DELU { 5 XADJ } def		% define DELU\n\
+  /DELU2 { 10 XADJ } def	% define DELU2\n\
+} def \n\
+\n\
+/PAGEHDR      % stack: dtversion pagenum file date signum res st_end_time\n\
+{ newpath			% clear current path\n\
+  90 rotate			% rotates to landscape\n\
+  0 PG_HGT neg translate	% translates so you can see the image\n\
+  3 setlinewidth		% set the line width of the border\n\
 \n\
   0 0 MT 0 PG_HGT LT PG_WID PG_HGT LT PG_WID 0 LT 0 0 LT stroke % draw bounding box\n\
 \n\
   /Helvetica-BoldOblique findfont 30 scalefont setfont % choose large font\n\
-  1 setlinecap 1 setlinejoin 1 setlinewidth            % set line char\n\
+  1 setlinecap 1 setlinejoin 1 setlinewidth	% set line char\n\
 \n\
-  20 20 MT (Dinotrace V6.1) true charpath stroke   % draw logo\n\
-  650 20 MT (Page ) true charpath		   % draw PAGE\n\
-  3 string cvs true charpath stroke		   % draw page number\n\
+  20 20 MT 15 string cvs true charpath stroke	% draw logo\n\
+  650 20 MT (Page ) true charpath		% draw PAGE\n\
+  3 string cvs true charpath stroke		% draw page number\n\
 \n\
-  /Times-Roman findfont 10 scalefont setfont       % choose normal font\n\
-  1 setlinecap 1 setlinejoin 1 setlinewidth        % set line char\n\
+  /Times-Roman findfont 10 scalefont setfont    % choose normal font\n\
+  1 setlinecap 1 setlinejoin 1 setlinewidth     % set line char\n\
 \n\
   250 40 MT (File: ) show 100 string cvs show\n\
   250 30 MT (Date: ) show 25 string cvs show\n\
@@ -42,19 +49,12 @@ char dinopost[] = "%\n\
   stroke /Times-Roman findfont 8 scalefont setfont\n\
   } def\n\
 \n\
-/PAGESCALE      % stack order \n\
-{ newpath\n\
-  /sigrf exch def       % signal rf time\n\
-  /width exch def       % width of DINOTRACE window\n\
-  /height exch def      % height of DINOTRACE window\n\
-} def \n\
-\n\
-/RIGHTSHOW      % right justify the signal names adj=(x2-x1-stringwidth)\n\
-{ dup stringwidth pop   % get width of string\n\
-  100 XADJ 5 sub        % calculate right edge of text position\n\
-%  currentpoint pop sub  % patched WPS - get starting location of text and sub\n\
-  exch sub              % subtract stringwidth\n\
-  0 rmoveto show        % adjust strating location of text and show\n\
+/RIGHTSHOW	% right justify the signal names adj=(x2-x1-stringwidth)\n\
+{ dup stringwidth pop	% get width of string\n\
+  100 XADJ 5 sub	% calculate right edge of text position\n\
+%  currentpoint pop sub	% patched WPS - get starting location of text and sub\n\
+  exch sub		% subtract stringwidth\n\
+  0 rmoveto show	% adjust strating location of text and show\n\
 } def \n\
 \n\
 /START { stroke YADJ exch XADJ exch MT } def\n\

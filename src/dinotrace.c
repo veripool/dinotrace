@@ -42,7 +42,6 @@ XGCValues	xgcv;
 Arg		arglist[20];
 GLOBAL		*global;
 
-
 int    main(argc, argv)
     unsigned int	argc;
     char		**argv;
@@ -97,6 +96,7 @@ int    main(argc, argv)
             printf("Invalid %s Option: %s\n", DTVERSION, argv[i]);
             printf("DINOTRACE\t[-debug] [-print] [-tempest] [-screen #] [-size #,#]\n");
             printf("\t\t[-pos #,#] [-res #]   file_name\n");
+            printf("\n%s\n", help_message());
             exit(-1);
 	    }
 	}
@@ -117,4 +117,42 @@ int    main(argc, argv)
     /* loop forever */
     XtAppMainLoop(global->appcontext);
     }
+
+char	*help_message()
+    {
+    static char msg[2000];
+
+    sprintf (msg,
+	     "%s\n\
+\n\
+Version 4.3 up by Wilson Snyder, RICKS::SNYDER\n\
+Prior versions by Allen Gallotta.\n\
+\n\
+Please see %sDINOTRACE.TXT for documentation.\n\
+\n\
+For configuration information, Dinotrace reads:\n\
+     %sDinotrace.dino\n\
+     %sDinotrace.dino\n\
+     %sDinotrace.dino\n\
+     %sCURRENT_TRACE_NAME.dino\n",
+	     DTVERSION,
+#ifdef VMS
+	     "DINODISK:",
+	     "DINODISK:",
+	     "SYS$LOGIN:",
+	     "[current.trace.directory]",
+	     "[current.trace.directory]"
+#else
+	     "$DINODISK/",
+	     "$DINODISK/",
+	     "~/",
+	     "/current/trace/directory/",
+	     "/current/trace/directory/"
+#endif
+	     );
+
+    return (msg);
+    }
+
+
 

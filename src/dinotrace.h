@@ -26,7 +26,9 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V6.1"	/* also change in dinopost.h */
+#define DTVERSION	"Dinotrace V6.2"
+
+#pragma member_alignment
 
 #define MAXSIGLEN	128	/* Maximum length of signal names */
 #define MAXFNAMELEN	128	/* Maximum length of file names */
@@ -69,6 +71,7 @@
 /* dino_message_ack types */
 #define	dino_error_ack(tr,msg)		dino_message_ack (tr, 0, msg)
 #define	dino_warning_ack(tr,msg)	dino_message_ack (tr, 1, msg)
+#define	dino_information_ack(tr,msg)	dino_message_ack (tr, 2, msg)
 
 /* Encodings for dt_file cvd2d */
 #define CHECK      0
@@ -95,11 +98,16 @@
 #define OBUS 3
 #define HBUS 4
 
+/* Time representation enums */
+#define TIMEREP_NS	0	/* Must be zero */
+#define TIMEREP_CYC	1
+
 #define IO_GRIDRES	1
 #define IO_GRIDALIGN	2
 #define IO_RES		3
 #define IO_READCUSTOM	4
 #define IO_SAVECUSTOM	5
+#define IO_TIME		6
 
 #define XSTART_MIN	50		/* Min Start X pos of signals on display (read_DECSIM) */
 #define XSTART_MARGIN	10		/* Additional added fudge factor for xstart */
@@ -130,29 +138,10 @@ extern Arg		arglist[20];
 #define GRID_AUTO_ASS	-2
 #define GRID_AUTO_DEASS	-1
 
-/* 5.0: Structure for each signal-state assignment */
-typedef struct struct_signalstate {
-    struct struct_signalstate *next;	/* Next structure in a linked list */
-    char signame[MAXSIGLEN];		/* Signal name to translate, Nil = wildcard */
-    char statename[MAXSTATENAMES][MAXSTATELEN];	/* Name for each state, nil=keep */
-    } SIGNALSTATE;
-
-/* Signal LW: A structure for each transition of each signal, */
-/* 32/64/96 state signals have an additional 1, 2, or 3 LWs after this */
-typedef struct {
-    unsigned int state:3;
-    unsigned int time:29;
-    } SIGNAL_LW;
-#define EOT	0x1FFFFFFF	/* SIGNAL_LW End of time indicator */
-
-typedef struct {
-    char array[MAXSIGLEN];
-    } SIGNALNAMES;
-
 typedef struct {
     Widget	menu;
-    Widget	pdmenu[10];
-    Widget	pdmenubutton[10];
+    Widget	pdmenu[11];
+    Widget	pdmenubutton[11];
     Widget	pdentry[20];
     Widget	pdentrybutton[63];
     Widget	pdsubbutton[2+MAX_SRCH*4];
@@ -164,93 +153,114 @@ typedef struct {
 typedef struct {
     Widget command;
     Widget begin_but;
+    Widget goto_but;
     Widget resdec_but;
-    Widget reschg_but;
-    Widget resinc_but;
     Widget resfull_but;
+    Widget reschg_but;
     Widget reszoom_but;
+    Widget resinc_but;
     Widget end_but;
     } COMMAND_WDGTS;
 
 typedef struct {
     Widget customize;
+    Widget page_label;
     Widget rpage;
     Widget tpage1;
     Widget tpage2;
     Widget tpage3;
+    Widget bus_label;
     Widget rbus;
     Widget tbus1;
     Widget tbus2;
     Widget tbus3;
     Widget tbus4;
+    Widget time_label;
+    Widget rtime;
+    Widget ttimens;
+    Widget ttimecyc;
+    Widget sighgt_label;
     Widget s1;
     Widget rfwid;
     Widget cursor_state;
     Widget grid_state;
     Widget grid_width;
     Widget grid_label;
-    Widget page_label;
-    Widget bus_label;
-    Widget sighgt_label;
     Widget b1;
     Widget b2;
     Widget b3;
-    int			pageinc;
-    int			busrep;
-    int			sigrf;
-    int			cursor_vis;
-    int			grid_vis;
-    int			sighgt;
     } CUSTOM_DATA;
 
 typedef struct {
     Widget customize;
-    Widget rpage;
-    Widget tpage1;
-    Widget tpage2;
-    Widget tpage3;
-    Widget rbus;
-    Widget tbus1;
-    Widget tbus2;
-    Widget tbus3;
-    Widget tbus4;
-    Widget s1;
-    Widget rfwid;
-    Widget cursor_state;
+    Widget rsize;
+    Widget rsizea;
+    Widget rsizeb;
     Widget text;
     Widget label;
     Widget pagelabel;
+    Widget s1;
     Widget b1;
     Widget b2;
     Widget b3;
-
-    /* Values to allow cancel to work */
-    int			pageinc;
-    int			busrep;
-    int			sigrf;
-    int			cursor_vis;
-    int			grid_vis;
-    int			grid_res;
-    int			grid_align;
-    int			sighgt;
     } PRINT_WDGTS;
 
 typedef struct {
     Widget add;
     Widget search;
+    Widget label1, label2, label3;
+    Widget label4, label5;
     Widget enable[MAX_SRCH];
+    Widget cursor[MAX_SRCH];
     Widget text[MAX_SRCH];
     Widget ok;
     Widget apply;
     Widget cancel;
     } SIGNAL_WDGTS;
 
-/* Signal information structure */
-typedef struct st_signal_sb {
-    struct st_signal_sb *forward;	/* Forward link to next signal */
-    struct st_signal_sb *backward;	/* Backward link to previous signal */
+/* 5.0: Structure for each signal-state assignment */
+typedef struct st_signalstate {
+    struct st_signalstate *next;	/* Next structure in a linked list */
+    char signame[MAXSIGLEN];		/* Signal name to translate, Nil = wildcard */
+    char statename[MAXSTATENAMES][MAXSTATELEN];	/* Name for each state, nil=keep */
+    } SIGNALSTATE;
 
-    struct st_signal_sb *copyof;	/* Link to signal this is copy of (or NULL) */
+/* Signal LW: A structure for each transition of each signal, */
+/* 32/64/96 state signals have an additional 1, 2, or 3 LWs after this */
+typedef struct st_signal_lw {
+    unsigned int state:3;
+    unsigned int time:29;
+    } SIGNAL_LW;
+#define EOT	0x1FFFFFFF	/* SIGNAL_LW End of time indicator if in .time */
+
+typedef struct {
+    char array[MAXSIGLEN];
+    } SIGNALNAMES;
+
+/* Cursor information structure */
+typedef struct st_search {
+    int			color;		/* Color number (index into trace->xcolornum) 0=OFF*/
+    int			cursor;		/* Enable cursors, color or 0=OFF */
+    int			value[3];	/* Value to search for, (96 bit LW format) */
+    } SEARCH;
+
+/* Cursor information structure (one per cursor) */
+typedef struct st_cursor {
+    struct st_cursor	*next;		/* Forward link to next cursor */
+    struct st_cursor	*prev;		/* Backward link to previous cursor */
+
+    int			time;		/* Time cursor is placed at */
+    int			color;		/* Color number (index into trace->xcolornum) */
+
+    int			search;		/* Number of search cursor is for, 0 = manual */
+    } CURSOR;
+
+/* Signal information structure (one per each signal in a trace window) */
+typedef struct st_signal {
+    struct st_signal	*forward;	/* Forward link to next signal */
+    struct st_signal	*backward;	/* Backward link to previous signal */
+
+    struct st_signal	*copyof;	/* Link to signal this is copy of (or NULL) */
     struct st_trace	*trace;		/* Trace signal belongs to */
 
     char		*signame;	/* Signal name */
@@ -269,13 +279,14 @@ typedef struct st_signal_sb {
     int			binary_pos;	/* position of bits in binary trace */
     int			*bptr;		/* begin of time data ptr */
     int			*cptr;		/* current time data ptr */
-    } SIGNAL_SB;
+    } SIGNAL;
 
+/* Trace information structure (one per window) */
 typedef struct st_trace {
     struct st_trace	*next_trace;	/* Pointer to the next trace display */
 
-    SIGNAL_SB		*firstsig;	/* Linked list of all nondeleted signals */
-    SIGNAL_SB		*dispsig;	/* Pointer within sigque to first signal on screen */
+    SIGNAL		*firstsig;	/* Linked list of all nondeleted signals */
+    SIGNAL		*dispsig;	/* Pointer within sigque to first signal on screen */
 
     int			numsig;		/* Total number of signals, excluding deleted */
     int			numsigvis;	/* Number of signals visible on the screen */
@@ -283,6 +294,9 @@ typedef struct st_trace {
 
     Window		wind;		/* X window */
     Pixel		xcolornums[11];	/* X color numbers (pixels) for normal/highlight */
+    XFontStruct		*text_font;	/* Display's Text font */
+    GC                  gc;
+    GC                  hscroll_gc;
 
     Widget		shell;
     Widget		main;
@@ -311,51 +325,50 @@ typedef struct st_trace {
     int			sigrf;		/* Signal rise/fall time spec */
     int			pageinc;	/* Page increment = HPAGE/QPAGE/FPAGE */
     int			busrep;		/* Bus representation = IBUS/BBUS/OBUS/HBUS */
+    int			timerep;	/* Time representation = TIMEREP_NS/TIMEREP_CYC */
 
     int			grid_res;	/* Grid resolution (time between ticks) */
     int			grid_align;	/* Grid alignment (time grid starts at) */
     int			grid_vis;	/* True if grid is visible */
     int			grid_res_auto;	/* Number or status of automatic grid resolution */
     int			grid_align_auto; /* Number or status of automatic grid alignment */
-
     int			cursor_vis;	/* True if cursors are visible */
+
+    int			numpag;		/* Number of pages in dt_printscreen */
+    int			bsized;		/* True if b-sized printing in dt_printscreen */
 
     SIGNALNAMES		*signame;
     short int		*bus;
-    GC                  gc;
+
     int			start_time;	/* Time of beginning of trace */
     int			end_time;	/* Time of ending of trace */
     int			click_time;	/* time clicked on for res_zoom_click */
 
-    XFontStruct		*text_font;	/* Display's Text font */
-    int			numpag;		/* Number of pages in dt_printscreen */
-
     SIGNALSTATE		*signalstate_head;	/* Head of signal state information */
     } TRACE;
 
+/* Global information */
 typedef struct {
     TRACE		*trace_head;	/* Pointer to first trace */
 
-    SIGNAL_SB	 	*delsig;       	/* Linked list of deleted signals */
-    SIGNAL_SB		*selected_sig;	/* Selected signal to move or add */
+    SIGNAL	 	*delsig;       	/* Linked list of deleted signals */
+    SIGNAL		*selected_sig;	/* Selected signal to move or add */
     TRACE		*selected_trace; /* Selected signal's trace */
+
+    CURSOR		*cursor_head;	/* Pointer to first cursor */
+
+    SEARCH		srch[MAX_SRCH];	/* Color to highlight with (0=none/normal) */
 
     XtAppContext	appcontext;	/* X App context */
     Display		*display;	/* X display pointer */
     Cursor		xcursors[11];	/* X cursors */
     Pixmap		dpm,bdpm;	/* X pixmaps for the icons */
 
-    int		srch_color[MAX_SRCH];	/* Color to highlight with (0=none/normal) */
-    int		srch_value[MAX_SRCH][3]; /* Value of signal to be highlighted */
-
     int			argc;		/* Program argc for X stuff */
     char		**argv;		/* Program argv for X stuff */
 
     char		directory[200];	/* Current directory name */
 
-    int			numcursors;	/* Number of cursors */
-    int		cursors[MAX_CURSORS];	/* Time of each cursor */
-    int		cursor_color[MAX_CURSORS]; /* Color of each cursor */
     int			highlight_color; /* Color selected for sig/cursor highlight */
 
     int			time;		/* Time of trace at left edge of screen */

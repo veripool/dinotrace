@@ -44,10 +44,10 @@
 
 void    remove_signal_from_queue(trace, sig_ptr)
     TRACE	*trace;
-    SIGNAL_SB	*sig_ptr;	/* Signal to remove */
+    SIGNAL	*sig_ptr;	/* Signal to remove */
     /* Removes the signal from the current and any other ques that it is in */
 {
-    SIGNAL_SB	*next_sig_ptr, *prev_sig_ptr;
+    SIGNAL	*next_sig_ptr, *prev_sig_ptr;
     
     if (DTPRINT) printf("In remove_signal_from_queue - trace=%d\n",trace);
     
@@ -79,11 +79,11 @@ void    remove_signal_from_queue(trace, sig_ptr)
 
 void    add_signal_to_queue(trace,sig_ptr,loc_sig_ptr,top_pptr)
     TRACE	*trace;
-    SIGNAL_SB	*sig_ptr;	/* Signal to add */
-    SIGNAL_SB	*loc_sig_ptr;	/* Pointer to signal ahead of one to add, NULL=1st */
-    SIGNAL_SB	**top_pptr;	/* Pointer to where top of list is stored */
+    SIGNAL	*sig_ptr;	/* Signal to add */
+    SIGNAL	*loc_sig_ptr;	/* Pointer to signal ahead of one to add, NULL=1st */
+    SIGNAL	**top_pptr;	/* Pointer to where top of list is stored */
 {
-    SIGNAL_SB		*next_sig_ptr, *prev_sig_ptr;
+    SIGNAL		*next_sig_ptr, *prev_sig_ptr;
     
     if (DTPRINT) printf("In add_signal_to_queue - trace=%d\n",trace);
     
@@ -124,20 +124,20 @@ void    add_signal_to_queue(trace,sig_ptr,loc_sig_ptr,top_pptr)
 	}
     }
 
-SIGNAL_SB *replicate_signal (trace, sig_ptr)
+SIGNAL *replicate_signal (trace, sig_ptr)
     TRACE	*trace;
-    SIGNAL_SB	*sig_ptr;	/* Signal to remove */
+    SIGNAL	*sig_ptr;	/* Signal to remove */
     /* Makes a duplicate copy of the signal */
 {
-    SIGNAL_SB	*new_sig_ptr;
+    SIGNAL	*new_sig_ptr;
     
     if (DTPRINT) printf("In replicate_signal - trace=%d\n",trace);
     
     /* Create new structure */
-    new_sig_ptr = (SIGNAL_SB *)XtMalloc(sizeof(SIGNAL_SB));
+    new_sig_ptr = (SIGNAL *)XtMalloc(sizeof(SIGNAL));
 
     /* Copy data */
-    memcpy (new_sig_ptr, sig_ptr, sizeof (SIGNAL_SB));
+    memcpy (new_sig_ptr, sig_ptr, sizeof (SIGNAL));
 
     /* Erase new links */
     new_sig_ptr->forward = NULL;
@@ -156,7 +156,7 @@ void    sig_add_cb(w,trace,cb)
     TRACE	*trace;
     XmSelectionBoxCallbackStruct *cb;
 {
-    SIGNAL_SB	*sig_ptr;
+    SIGNAL	*sig_ptr;
     Widget	list_wid;
     
     if (DTPRINT) printf("In sig_add_cb - trace=%d\n",trace);
@@ -202,7 +202,7 @@ void    sig_selected_cb(w,trace,cb)
     TRACE			*trace;
     XmSelectionBoxCallbackStruct *cb;
 {
-    SIGNAL_SB		*sig_ptr;
+    SIGNAL		*sig_ptr;
     
     if (DTPRINT) printf("In sig_selected_cb - trace=%d\n",trace);
     
@@ -342,7 +342,7 @@ void    sig_add_ev(w,trace,ev)
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    SIGNAL_SB		*sig_ptr;
+    SIGNAL		*sig_ptr;
     
     if (DTPRINT) printf("In sig_add_ev - trace=%d\n",trace);
     
@@ -398,7 +398,7 @@ void    sig_move_ev(w,trace,ev)
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    SIGNAL_SB		*sig_ptr;
+    SIGNAL		*sig_ptr;
     
     if (DTPRINT) printf("In sig_move_ev - trace=%d\n",trace);
     
@@ -449,7 +449,7 @@ void    sig_copy_ev(w,trace,ev)
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    SIGNAL_SB		*sig_ptr, *new_sig_ptr;
+    SIGNAL		*sig_ptr, *new_sig_ptr;
     
     if (DTPRINT) printf("In sig_copy_ev - trace=%d\n",trace);
     
@@ -491,7 +491,7 @@ void    sig_delete_ev(w,trace,ev)
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    SIGNAL_SB		*sig_ptr;
+    SIGNAL		*sig_ptr;
     
     if (DTPRINT) printf("In sig_delete_ev - trace=%d\n",trace);
     
@@ -540,7 +540,7 @@ void    sig_highlight_ev(w,trace,ev)
     TRACE		*trace;
     XButtonPressedEvent	*ev;
 {
-    SIGNAL_SB		*sig_ptr;
+    SIGNAL		*sig_ptr;
     
     if (DTPRINT) printf("In sig_highlight_ev - trace=%d\n",trace);
     
@@ -623,39 +623,78 @@ void    sig_search_cb(w,trace,cb)
     XmSelectionBoxCallbackStruct *cb;
 {
     int		i;
-    int		y=20;
+    int		y=10;
     char	strg[40];
     
     if (DTPRINT) printf("In sig_search_cb - trace=%d\n",trace);
     
     if (!trace->signal.search) {
 	XtSetArg(arglist[0], XmNdefaultPosition, TRUE);
-	XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple
-		 ( (trace->busrep == HBUS)? "Search Values In HEX":"Search Values In OCTAL" ) );
+	XtSetArg(arglist[1], XmNdialogTitle, XmStringCreateSimple ("Search Requester") );
 	XtSetArg(arglist[2], XmNwidth, 500);
 	XtSetArg(arglist[3], XmNheight, 400);
 	trace->signal.search = XmCreateBulletinBoardDialog(trace->work,"search",arglist,4);
 	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Color"));
+	XtSetArg(arglist[1], XmNx, 5);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.label1 = XmCreateLabel(trace->signal.search,"label1",arglist,3);
+	XtManageChild(trace->signal.label1);
+	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Place"));
+	XtSetArg(arglist[1], XmNx, 60);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.label2 = XmCreateLabel(trace->signal.search,"label2",arglist,3);
+	XtManageChild(trace->signal.label2);
+	
+	y += 15;
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Value"));
+	XtSetArg(arglist[1], XmNx, 5);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.label4 = XmCreateLabel(trace->signal.search,"label4",arglist,3);
+	XtManageChild(trace->signal.label4);
+	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple("Cursor"));
+	XtSetArg(arglist[1], XmNx, 60);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.label5 = XmCreateLabel(trace->signal.search,"label5",arglist,3);
+	XtManageChild(trace->signal.label5);
+	
+	XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple
+		 ( (trace->busrep == HBUS)? "Search value in HEX":"Search value in OCTAL" ) );
+	XtSetArg(arglist[1], XmNx, 140);
+	XtSetArg(arglist[2], XmNy, y);
+	trace->signal.label3 = XmCreateLabel(trace->signal.search,"label3",arglist,3);
+	XtManageChild(trace->signal.label3);
+	
+	y += 25;
+
 	for (i=0; i<MAX_SRCH; i++) {
 	    /* enable button */
-	    sprintf (strg, "%d", i+1);
-	    XtSetArg(arglist[0], XmNlabelString, XmStringCreateSimple(strg));
-	    XtSetArg(arglist[1], XmNx, 10);
-	    XtSetArg(arglist[2], XmNy, y);
-	    XtSetArg(arglist[3], XmNshadowThickness, 1);
-	    XtSetArg(arglist[3], XmNfillOnSelect, TRUE);
-	    XtSetArg(arglist[3], XmNselectColor, trace->xcolornums[i+1]);
+	    XtSetArg(arglist[0], XmNx, 15);
+	    XtSetArg(arglist[1], XmNy, y);
+	    XtSetArg(arglist[2], XmNselectColor, trace->xcolornums[i+1]);
+	    XtSetArg(arglist[3], XmNlabelString, XmStringCreateSimple (""));
 	    trace->signal.enable[i] = XmCreateToggleButton(trace->signal.search,"togglen",arglist,4);
 	    XtManageChild(trace->signal.enable[i]);
+
+	    /* enable button */
+	    XtSetArg(arglist[0], XmNx, 70);
+	    XtSetArg(arglist[1], XmNy, y);
+	    XtSetArg(arglist[2], XmNselectColor, trace->xcolornums[i+1]);
+	    XtSetArg(arglist[3], XmNlabelString, XmStringCreateSimple (""));
+	    trace->signal.cursor[i] = XmCreateToggleButton(trace->signal.search,"cursorn",arglist,4);
+	    XtManageChild(trace->signal.cursor[i]);
 
 	    /* create the file name text widget */
 	    XtSetArg(arglist[0], XmNrows, 1);
 	    XtSetArg(arglist[1], XmNcolumns, 30);
-	    XtSetArg(arglist[2], XmNx, 80);
+	    XtSetArg(arglist[2], XmNx, 120);
 	    XtSetArg(arglist[3], XmNy, y);
 	    XtSetArg(arglist[4], XmNresizeHeight, FALSE);
 	    XtSetArg(arglist[5], XmNeditMode, XmSINGLE_LINE_EDIT);
 	    trace->signal.text[i] = XmCreateText(trace->signal.search,"textn",arglist,6);
+	    XtAddCallback(trace->signal.text[i], XmNactivateCallback, sig_search_ok_cb, trace);
 	    XtManageChild(trace->signal.text[i]);
 	    
 	    y += 40;
@@ -691,11 +730,15 @@ void    sig_search_cb(w,trace,cb)
     /* Copy settings to local area to allow cancel to work */
     for (i=0; i<MAX_SRCH; i++) {
 	/* Update with current search enables */
-	XtSetArg (arglist[0], XmNset, (global->srch_color[i] != 0));
+	XtSetArg (arglist[0], XmNset, (global->srch[i].color != 0));
 	XtSetValues (trace->signal.enable[i], arglist, 1);
 
+	/* Update with current cursor enables */
+	XtSetArg (arglist[0], XmNset, (global->srch[i].cursor != 0));
+	XtSetValues (trace->signal.cursor[i], arglist, 1);
+
 	/* Update with current search values */
-	value_to_string (trace, strg, global->srch_value[i]);
+	value_to_string (trace, strg, global->srch[i].value);
 	XmTextSetString (trace->signal.text[i], strg);
 	}
 
@@ -716,17 +759,22 @@ void    sig_search_ok_cb(w,trace,cb)
     for (i=0; i<MAX_SRCH; i++) {
 	/* Update with current search enables */
 	if (XmToggleButtonGetState (trace->signal.enable[i]))
-	    global->srch_color[i] = i+1;
-	else global->srch_color[i] = 0;
+	    global->srch[i].color = i+1;
+	else global->srch[i].color = 0;
+	
+	/* Update with current cursor enables */
+	if (XmToggleButtonGetState (trace->signal.cursor[i]))
+	    global->srch[i].cursor = i+1;
+	else global->srch[i].cursor = 0;
 	
 	/* Update with current search values */
 	strg = XmTextGetString (trace->signal.text[i]);
-	string_to_value (trace, strg, global->srch_value[i]);
+	string_to_value (trace, strg, global->srch[i].value);
 
 	if (DTPRINT) {
 	    char strg2[40];
-	    value_to_string (trace, strg2, global->srch_value[i]);
-	    printf ("Search %d) %d   '%s' -> '%s'\n", i, global->srch_color[i], strg, strg2);
+	    value_to_string (trace, strg2, global->srch[i].value);
+	    printf ("Search %d) %d   '%s' -> '%s'\n", i, global->srch[i].color, strg, strg2);
 	    }
 	}
     
