@@ -360,7 +360,9 @@ void decsim_read_binary (
 
 		/**** TYPE: Node format data ****/
 	      case tra$k_nfd:
-		sig_ptr = DNewCalloc (Signal);
+		/* This should be rewritten to use signal_new_file */
+		error_needs_rewrite_to_use_signal_new_file__contact_wsnyder; /* Comment this out, and it might work though!*/
+		sig_ptr = DNewCalloc (Signal_t);
 		sig_ptr->trace = trace;
 		sig_ptr->dfile = &(trace->dfile);
 		sig_ptr->radix = global->radixs[0];
@@ -595,7 +597,6 @@ void tempest_read (
 {
     uint_t	status;
     uint_t	numBytes,numRows,numBitsRow,numBitsRowPad;
-    uint_t	sigChars,sigFlags,sigOffset,sigWidth;
     char	chardata[1024];
     uint_t	*data;
     uint_t	*data_xor;
@@ -605,8 +606,6 @@ void tempest_read (
     uint_t	pad_len;
     uint_t	time, last_time=EOT;
     Signal_t	*sig_ptr=NULL;
-    Signal_t	*last_sig_ptr=NULL;
-    int 	index;
     Boolean_t	verilator_xor_format;
 
     /* Read the file identification block */
@@ -636,8 +635,10 @@ void tempest_read (
      ** for the trace data, current trace location, etc.
      */
     trace->firstsig=NULL;
-    for (i=0;i<trace->numsig;i++)
-    {
+    for (i=0;i<trace->numsig;i++) {
+	union sig_file_type_u file_type;
+	uint_t	sigChars,sigFlags,sigOffset,sigWidth;
+
 	sigFlags  = bin_read_little_uint_t32 (read_fd);
 	sigOffset = bin_read_little_uint_t32 (read_fd);
 	sigWidth  = bin_read_little_uint_t32 (read_fd);
@@ -650,61 +651,31 @@ void tempest_read (
 		   sigFlags,sigOffset,sigWidth,sigChars,chardata);
 	}
 	
-	for (index=sigWidth-1 ; index>=0; index--) {
-	    /* Initialize all pointers and other stuff in the signal block */
-	    sig_ptr = DNewCalloc (Signal_t);
-	    sig_ptr->trace = trace;
-	    sig_ptr->dfile = &(trace->dfile);
-	    sig_ptr->radix = global->radixs[0];
-	    sig_ptr->forward = NULL;
-	    if (trace->firstsig==NULL) {
-		trace->firstsig = sig_ptr;
-		sig_ptr->backward = NULL;
-	    }
-	    else {
-		last_sig_ptr->forward = sig_ptr;
-		sig_ptr->backward = last_sig_ptr;
-	    }
-	    if (sigWidth>1) {
-		sig_ptr->bit_index = index;
-		sig_ptr->bits = sigWidth+1;	/* Special, will be decomposed */
-	    }
-	    else {
-		sig_ptr->bit_index = -1;
-		sig_ptr->bits = 1;
-	    }
-	    if ((unsigned)index == sigWidth-1) sig_ptr->file_type.flag.vector_msb = TRUE;
-	    sig_ptr->file_pos = sigOffset + index;
+	/* These could be simplified as they map 1:1, but safer not to */
+	file_type.flags = 0;
+	file_type.flag.pin_input  = ((sigFlags & 1) != 0);
+	file_type.flag.pin_output = ((sigFlags & 2) != 0);
+	file_type.flag.pin_psudo  = ((sigFlags & 4) != 0);
+	file_type.flag.pin_timestamp = ((sigFlags & 8) != 0);
+	file_type.flag.four_state = ((sigFlags & 16) != 0);
 	    
-	    /* These could be simplified as they map 1:1, but safer not to */
-	    sig_ptr->file_type.flags = 0;
-	    sig_ptr->file_type.flag.pin_input  = ((sigFlags & 1) != 0);
-	    sig_ptr->file_type.flag.pin_output = ((sigFlags & 2) != 0);
-	    sig_ptr->file_type.flag.pin_psudo  = ((sigFlags & 4) != 0);
-	    sig_ptr->file_type.flag.pin_timestamp = ((sigFlags & 8) != 0);
-	    sig_ptr->file_type.flag.four_state = ((sigFlags & 16) != 0);
+	sig_new_file (trace, chardata, 
+		      sigOffset, 0, 
+		      sigWidth, -1/*msb*/, -1/*lsb*/, 
+		      file_type);
 	    
-	    /* Copy the signal name, add EOS delimiter and initialize the pointer to it */
-	    sig_ptr->signame = (char *)XtMalloc (10+sigChars); /* allow extra space in case becomes vector */
-	    for (j=0;j<sigChars;j++)
-		sig_ptr->signame[j] = chardata[j];
-	    sig_ptr->signame[sigChars] = '\0';
-	    
-	    /* Detect phase signal -- not completely reliable */
-	    /* This prevents a bug when a trace starts on phase b */
-	    if (sig_ptr->file_pos == 63
-		&& (0==strcmp ("Phase", chardata+sigChars-5)
-		    || 0==strcmp ("phase", chardata+sigChars-5))) {
-		if (DTPRINT_FILE) printf ("Have Phase indication\n");
-		have_phase = TRUE;
-	    }
-
-	    last_sig_ptr = sig_ptr;
+	/* Detect phase signal -- not completely reliable */
+	/* This prevents a bug when a trace starts on phase b */
+	if (sigOffset < 64
+	    && (0==strcmp ("Phase", chardata+sigChars-5)
+		|| 0==strcmp ("phase", chardata+sigChars-5))) {
+	    if (DTPRINT_FILE) printf ("Have Phase indication\n");
+	    have_phase = TRUE;
 	}
     
 	/* Checks */
-	if (sig_ptr->file_type.flag.four_state != 0) {
-	    sprintf (message,"Four state tempest not supported.\nSignal %s will be wrong.",sig_ptr->signame);
+	if (file_type.flag.four_state != 0) {
+	    sprintf (message,"Four state tempest not supported.\nSignal %s will be wrong.",chardata);
 	    dino_warning_ack (trace, message);
 	}
 
@@ -712,7 +683,6 @@ void tempest_read (
 	pad_len = (sigChars%8) ? 8 - (sigChars%8) : 0;
 	status = read (read_fd, chardata, pad_len);
     }
-    trace->lastsig = last_sig_ptr;
 
     /* Make the busses */
     fil_make_busses (trace, FALSE);

@@ -628,6 +628,20 @@ typedef struct {
     ColorNum_t		color;		/* Color to print in, 0 = black */
 } Grid_t;
 
+/* Signal file information */
+union sig_file_type_u {
+    struct {
+	uint_t	pin_input:1;	/* (Tempest) Pin is an input */
+	uint_t	pin_output:1;	/* (Tempest) Pin is an output */
+	uint_t	pin_psudo:1;	/* (Tempest) Pin is an psudo-pin */
+	uint_t	pin_timestamp:1; /* (Tempest) Pin is a time-stamp */
+	uint_t	four_state:1;	/* (Tempest, Binary) Signal is four state (U, Z) */
+	uint_t	perm_vector:1;	/* (Verilog) Signal is a permanent vector, don't vectorize */
+	uint_t	real:1;		/* (Verilog) Signal known to be real number */
+    } flag;
+    uint_t		flags;
+};		/* File specific type of signal, two/fourstate, etc */
+
 /* Signal information structure (one per each signal in a trace window) */
 struct st_signal {
     struct st_signal	*forward;	/* Forward link to next signal */
@@ -663,24 +677,11 @@ struct st_signal {
     ulong_t		blocks;		/* Number of time data blocks allocated, in # of ints */
     int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20), -1=none */
     int			lsb_index;	/* Bit subscript of last index in a signal (<20:10> == 10), -1=none */
-    int			bit_index;	/* Bit subscript of this bit, ignoring <>'s, tempest only */
     int			bits;		/* Number of bits in a bus, 1=single */
+    uint_t		file_code;	/* Code for signal in file (verilog) */
     uint_t		file_pos;	/* Position of the bits in the file line */
     uint_t		file_end_pos;	/* Ending position of the bits in the file line */
-
-    union {
-	struct {
-	    uint_t	pin_input:1;	/* (Tempest) Pin is an input */
-	    uint_t	pin_output:1;	/* (Tempest) Pin is an output */
-	    uint_t	pin_psudo:1;	/* (Tempest) Pin is an psudo-pin */
-	    uint_t	pin_timestamp:1; /* (Tempest) Pin is a time-stamp */
-	    uint_t	four_state:1;	/* (Tempest, Binary) Signal is four state (U, Z) */
-	    uint_t	perm_vector:1;	/* (Verilog) Signal is a permanent vector, don't vectorize */
-	    uint_t	vector_msb:1;	/* (Tempest) Signal starts a defined vector, may only be new MSB */
-	} flag;
-	uint_t		flags;
-    }		file_type;	/* File specific type of trace, two/fourstate, etc */
-
+    union sig_file_type_u file_type;	/* File specific type of signal, two/fourstate, etc */
     uint_t		value_mask[4];	/* Value Mask with 1s in bits that are to be set */
     uint_t		pos_mask;	/* Mask to translate file positions */
     Value_t		file_value;	/* current state/time LW information for reading in */

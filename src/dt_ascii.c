@@ -208,43 +208,16 @@ static void decsim_read_ascii_header (
     int		header_lines)
 {
     int		line,col;
-    Signal_t	*sig_ptr,*last_sig_ptr=NULL;
     char	*line_ptr, *tmp_ptr;
     char	*signame_array;
+    char	*signame;
     Boolean_t	hit_name_block, past_name_block, no_names;
 
 #define	SIGLINE(_l_) (signame_array+(_l_)*(sig_end_pos+5))
 
     /* make array:  [header_lines+5][sig_end_pos+5]; */
     signame_array = XtMalloc ((header_lines+5)*(sig_end_pos+5));
-
-    /* Make a signal structure for each signal */
-    trace->firstsig = NULL;
-    for ( col=sig_start_pos; col < sig_end_pos; col++) {
-	sig_ptr = DNewCalloc (Signal_t);
-
-	/* initialize all the pointers that aren't NULL */
-	if (trace->firstsig==NULL) {
-	    trace->firstsig = sig_ptr;
-	    sig_ptr->backward = NULL;
-	}
-	else {
-	    last_sig_ptr->forward = sig_ptr;
-	    sig_ptr->backward = last_sig_ptr;
-	}
-
-	/* allow extra space in case becomes vector - don't know size yet */
-	sig_ptr->signame = (char *)XtMalloc (20+header_lines);
-	sig_ptr->trace = trace;
-	sig_ptr->dfile = &(trace->dfile);
-	sig_ptr->radix = global->radixs[0];
-	sig_ptr->file_type.flags = 0;
-	sig_ptr->file_pos = col;
-	sig_ptr->bits = 1;	/* = buf->TRA$W_BITLEN; */
-
-	last_sig_ptr = sig_ptr;
-    }
-    trace->lastsig = last_sig_ptr;
+    signame = XtMalloc ((header_lines+5));
 
     /* Save where lines begin */
     line=0;
@@ -280,41 +253,41 @@ static void decsim_read_ascii_header (
 	SIGLINE(0)[0]='\0';
     }
 
-    /* Read Signal Names Into Structure */
+    /* Extend short lines with spaces */
+    no_names=TRUE;
     for (line=0; line<header_lines; line++) {
-	/*printf ("%d):	'%s'\n", line, SIGLINE(line));*/
-	/* Extend short lines with spaces */
+	for (col=sig_start_pos; col < sig_end_pos; col++) {
+	    if (SIGLINE(line)[col]!='!' && SIGLINE(line)[col]!=' ')
+		no_names = FALSE;
+	}
 	col=strlen(SIGLINE(line));
 	if (SIGLINE(line)[0]!='!') col=0;
 	for ( ; col<sig_end_pos; col++) SIGLINE(line)[col]=' '; 
-	/* Load signal into name array */
-	for (col=sig_start_pos, sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward, col++) {
-	    sig_ptr->signame[line] = SIGLINE(line)[col];
-	}
     }
 
-    /* Add EOS delimiter to each signal name */
-    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	sig_ptr->signame[header_lines] = '\0';
-	/*printf ("Sig '%s'\n", sig_ptr->signame);*/
-    }
+    /* Make a signal structure for each signal */
+    trace->firstsig = NULL;
+    for ( col=sig_start_pos; col < sig_end_pos; col++) {
+	union sig_file_type_u file_type;
+	file_type.flags = 0;
 
-    /* See if no header at all */
-    no_names=TRUE;
-    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	for (tmp_ptr=sig_ptr->signame; *tmp_ptr; tmp_ptr++)
-	    if (!isspace (*tmp_ptr)) {
-		no_names=FALSE;
-		break;
+	/* Read Signal Names Into Structure */
+	if (no_names) {
+	    sprintf (signame, "SIG %d", col);
+	} else {
+	    for (line=0; line<header_lines; line++) {
+		signame[line] = SIGLINE(line)[col];
 	    }
-	if (*tmp_ptr) break;
-    }
-    if (no_names) {
-	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	    sprintf (sig_ptr->signame, "SIG %d", sig_ptr->file_pos);
+	    signame[line] = '\0';
 	}
+
+	sig_new_file (trace, signame,
+		      col, 0,
+		      1/*bits*/, -1/*msb*/, -1/*lsb*/,
+		      file_type);
     }
 
+    DFree (signame);
     DFree (signame_array);
 }
 

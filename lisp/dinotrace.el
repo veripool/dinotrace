@@ -219,6 +219,8 @@ that buffer type.")
   (define-key dinotrace-mode-map "\C-x\C-aC" 'dinotrace-goto-and-cursor-time-next-color)
   (define-key dinotrace-mode-map "\C-x\C-as" 'dinotrace-goto-and-highlight-signal)
   (define-key dinotrace-mode-map "\C-x\C-aS" 'dinotrace-goto-and-highlight-signal-next-color)
+  (define-key dinotrace-mode-map "\C-x\C-al" 'dinotrace-goto-and-list-signal)
+  (define-key dinotrace-mode-map "\C-x\C-aL" 'dinotrace-goto-and-list-signal-next-color)
   (define-key dinotrace-mode-map "\C-x\C-av" 'dinotrace-highlight-value)
   (define-key dinotrace-mode-map "\C-x\C-a<" 'dinotrace-cursor-step-backward)
   (define-key dinotrace-mode-map "\C-x\C-a>" 'dinotrace-cursor-step-forward)
@@ -249,6 +251,8 @@ that buffer type.")
     ["     Next Color"			dinotrace-goto-and-cursor-time-next-color t]
     ["SIGNAL Goto & Highlight"		dinotrace-goto-and-highlight-signal t]
     ["     Next Color"			dinotrace-goto-and-highlight-signal-next-color t]
+    ["SIGNAL Add to List"		dinotrace-goto-and-list-signal t]
+    ["     Next Color"			dinotrace-goto-and-list-signal-next-color t]
     ["VALUE Highlight"			dinotrace-highlight-value t]
     ["     Next Color"			dinotrace-highlight-value-next-color t]
     ["CURSOR Step Forward"		dinotrace-cursor-step-forward t]
@@ -421,6 +425,8 @@ Mostly, the last letters in these commands match the Dinotrace program keys.
   \\[dinotrace-goto-and-cursor-time-next-color]	- Goto time next color
   \\[dinotrace-goto-and-highlight-signal]	- Goto and highlight signal
   \\[dinotrace-goto-and-highlight-signal-next-color]	- Goto signal next color
+  \\[dinotrace-goto-and-list-signal]	- Add signal to bottom of display list
+  \\[dinotrace-goto-and-list-signal-next-color]	- Add signal next color
   \\[dinotrace-highlight-value]	- Highlight value
   \\[dinotrace-highlight-value-next-color]	- Highlight value next color
 
@@ -1115,6 +1121,19 @@ For example if point is before [1162], it will goto 1162."
 	"refresh\n")
       )))
 
+(defun dinotrace-move-signal (point)
+  "Copy signal near point.  Add to top of display."
+  (interactive "d")
+  (let ((signal (dinotrace-find-signal-default point)))
+    (when signal
+      (dinotrace-send-command
+	(format "signal_move *%s%s[* *\n" dinotrace-hierarchy-separator signal)
+	(format "signal_move *%s%s   *\n" dinotrace-hierarchy-separator signal)
+	(format "signal_move %s[*    *\n" signal)
+	(format "signal_move %s      *\n" signal)
+	"refresh\n")
+      )))
+
 (defun dinotrace-highlight-signal (point &optional color)
   "Highlight signal near POINT with optional COLOR."
   (interactive "d")
@@ -1175,6 +1194,14 @@ If prefix-arg, then also put cursors where that value occurs."
   (dinotrace-highlight-signal point)
   (dinotrace-goto-signal point))
 
+(defun dinotrace-goto-and-list-signal (point &optional next-color)
+  "Add signal near point and highlight"
+  (interactive "d")
+  (if next-color (dinotrace-increment-highlight-color))
+  (dinotrace-move-signal point)
+  (dinotrace-highlight-signal point)
+  (dinotrace-goto-signal point))
+
 (defun dinotrace-goto-and-cursor-time-next-color (point)
   "Goto time near point and add a cursor of next color"
   (interactive "d")
@@ -1184,6 +1211,11 @@ If prefix-arg, then also put cursors where that value occurs."
   "Goto signal near point and highlight of next color"
   (interactive "d")
   (dinotrace-goto-and-highlight-signal point t))
+
+(defun dinotrace-goto-and-list-signal-next-color (point)
+  "Add signal near point and highlight of next color"
+  (interactive "d")
+  (dinotrace-goto-and-list-signal point t))
 
 (defun dinotrace-highlight-value-next-color (point)
   "Goto signal near point and highlight of next color

@@ -75,10 +75,10 @@ static char	*verilog_text = NULL;
 static Boolean_t verilog_eof;
 
 /* Pointer to array of signals sorted by pos. (Special hash table) */
-/* *(signal_by_pos[VERILOG_ID_TO_POS ("abc")]) gives signal ABC */
-static Signal_t	**signal_by_pos;	
-static uint_t	signal_by_pos_max;
-static uint_t	verilog_max_bits;
+/* *(signal_by_code[VERILOG_ID_TO_POS ("abc")]) gives signal ABC */
+static Signal_t	**signal_by_code;	
+static uint_t	signal_by_code_max;
+static uint_t	verilog_max_bits = 128;
 
 /* List of signals that need updating */
 static Signal_t	**signal_update_array;	
@@ -97,7 +97,7 @@ static Signal_t	**signal_update_array_last_pptr;
 		):0)
 
 #define VERILOG_POS_TO_SIG(_pos_) \
-    (((_pos_)<signal_by_pos_max)?signal_by_pos[(_pos_)]:0)
+    (((_pos_)<signal_by_code_max)?signal_by_code[(_pos_)]:0)
 
 /**********************************************************************/
 
@@ -246,20 +246,205 @@ static void	verilog_read_timescale (
     verilog_read_till_end ();
 }
 
+/* Create a new signal for reading in from a file.  Does not return the
+   signal structure, as many records can be created for one signal.  All
+   relevant info must be passed in. */
+void sig_new_file (
+    Trace_t	*trace,
+    char 	*signame,
+    int		file_pos,
+    int		file_code,
+    int		bits, int msb, int lsb,
+    union sig_file_type_u file_type
+    )
+{
+    Signal_t 	*new_sig_ptr;
+    char	*endcp, *sep, *bbeg;
+    char	*signame_buspos;	/* Text after the bus information */
+
+    if (DTPRINT_BUSSES) printf ("sig_new_file    (%s, %d, (%d)%d-%d )\n", signame, file_pos, bits,msb,lsb);
+
+    /* Preprocess signal name */
+    while (isspace(*signame)) signame++;		/* Drop leading spaces */
+    for (endcp = signame + strlen(signame) - 1;	/* Drop trailing spaces */
+	 (endcp >= signame) && isspace (*endcp);  endcp--)  *endcp = '\0';
+
+    /* Use the separator character to split signals into vector and base */
+    /* IE "signal_1" becomes "signal" with index=1 if the separator is _ */
+    {
+	char	sepchar = trace->dfile.vector_separator;
+	if (sepchar == '\0') sepchar='<';	/* Allow both '\0' and '<' for DANGER::DORMITZER */
+	sep = strrchr (signame, sepchar);
+	bbeg = sep+1;
+	if (!sep || !isdigit (*bbeg)) {
+	    if (trace->dfile.vector_separator == '\0') {
+		/* Allow numbers at end to be stripped off as the vector bit */
+		for (sep = signame + strlen (signame) - 1;
+		     (sep > signame) && isdigit (*sep);
+		     sep --) ;
+		if (sep) sep++;
+		bbeg = sep;
+	    }
+	}
+    }
+	
+    /* Extract the bit subscripts from the name of the signal */
+    signame_buspos = 0;	/* Presume nothing after the vector */
+    if (sep && isdigit (*(bbeg))) {
+	/* Is a named bus, with <subscript> */
+	msb = atoi (bbeg);
+	lsb = msb - bits + 1;
+	if (lsb < 0) {
+	    msb += -lsb;
+	    lsb += -lsb;
+	}
+	/* Don't need to search for :'s, as the bits should already be computed */
+	/* Mark this first digit, _, whatever as null (truncate the name) */
+	*sep++ = '\0';
+	/* Hunt for the end of the vector */
+	while (*sep && *sep!=trace->dfile.vectorend_separator) sep++;
+	/* Remember if there is stuff after the vector */
+	if (*sep && *(sep+1)) signame_buspos = sep+1;
+    }
+    else {
+	if (bits>1) {
+	    /* Is a unnamed bus */
+	    msb = bits - 1;
+	    lsb = 0;
+	} else {
+	    /* Is a unnamed single signals */
+	    msb = -1;
+	    lsb = -1;
+	}
+    }
+
+    /* Remove null names and huge memories */
+    /* FIX? What if composed of many small bits? */
+    if (*signame == '\0') {
+	if (DTDEBUG) printf ("Dropping null signal name\n");
+	return;
+    }
+    if (bits > 2048) {
+	if (DTDEBUG) printf ("Dropping huge memory %s\n", signame);
+	return;
+    }
+
+    /* Vectorize signals */
+    {
+	Signal_t	*bus_sig_ptr;	/* ptr to signal which is being bussed (upper bit number) */
+	bus_sig_ptr = trace->lastsig;
+	/* Can we merge this new signal to be created with the previous signal? */
+	if (bus_sig_ptr) {
+	    if (DTPRINT_BUSSES) printf ("  '%s'%d:/#%d/p%d/c%d\t'%s'%d:/#%d/p%d/c%d\n",
+					bus_sig_ptr->signame, bus_sig_ptr->msb_index,
+					bus_sig_ptr->bits, bus_sig_ptr->file_pos, bus_sig_ptr->file_code, 
+					signame, msb, bits, file_pos, file_code);
+	    /* Combine signals with same base name, if */
+	    /*  are a vector */
+	    if (msb >= 0
+		/*  & the result would have < 128 bits */
+		&& (ABS(bus_sig_ptr->msb_index - lsb) < 128 )
+		/* 	& have subscripts that are different by 1  (<20:10> and <9:5> are separated by 10-9=1) */
+		&& ( ((bus_sig_ptr->lsb_index >= msb)
+		      && ((bus_sig_ptr->lsb_index - 1) == msb)))
+		/*	& are placed next to each other in the source */
+		/*	& not a tempest trace (because the bit ordering is backwards, <31:0> would look line 0:31 */
+		&& ((trace->dfile.fileformat != FF_TEMPEST)
+		    || trace->dfile.fileformat == FF_VERILOG || trace->dfile.fileformat == FF_VERILOG_VPD
+		    || (((bus_sig_ptr->file_pos) == (file_pos + bits))
+			&& (trace->dfile.vector_separator=='<'
+			    || trace->dfile.vector_separator=='('
+			    )))
+		&& ((trace->dfile.fileformat != FF_VERILOG && trace->dfile.fileformat != FF_VERILOG_VPD)
+		    || (( (   (bus_sig_ptr->file_pos + bus_sig_ptr->bits) == file_pos)
+			  || ((bus_sig_ptr->file_code + bus_sig_ptr->bits) == file_code))
+			&& (trace->dfile.vector_separator=='[')))
+		/*	& not (verilog trace which had a signal already as a vector) */
+		&& ! (file_type.flag.perm_vector || bus_sig_ptr->file_type.flag.perm_vector)
+		/* Signal name following bus separator is identical (slow) */
+		&& (signame_buspos==NULL || 0==strcmp (signame_buspos, bus_sig_ptr->signame_buspos))
+		/* Signal name match (last, as is slowest) */
+		&& 0==strcmp (signame, bus_sig_ptr->signame)
+		) {
+
+		/* Can be bussed with previous signal */
+		bus_sig_ptr->bits += bits;
+		bus_sig_ptr->lsb_index = lsb;
+		if (trace->dfile.fileformat == FF_TEMPEST) bus_sig_ptr->file_pos = file_pos;
+
+		/* We can "delete" this signal.  Never added it, so just return */
+		if (DTPRINT_BUSSES) printf ("       bussed    %s\n", signame);
+		return;
+	    }
+	}
+    }
+
+    while (bits) {
+	/* May need multiple signals if there are > 128 bits to be added */
+	int bits_this = bits;
+	int msb_this = msb;
+	int file_pos_this = file_pos;
+	if (bits>128) {
+	    int chop = bits % 128;
+	    if (chop==0) chop = 128;
+	    bits_this = chop;
+	    bits = bits - chop;
+	    msb = msb - chop;
+	    file_pos += chop;
+	} else {
+	    bits = 0;
+	}
+	if (bits_this>1) lsb = msb_this - bits_this + 1;
+	else lsb = msb_this;
+
+	/* Create the new signal */
+	new_sig_ptr = DNewCalloc (Signal_t);
+	new_sig_ptr->trace = trace;
+	new_sig_ptr->dfile = &(trace->dfile);
+	new_sig_ptr->file_type = file_type;
+	if (file_type.flag.real) {
+	    new_sig_ptr->radix = global->radixs[RADIX_REAL];
+	} else {
+	    new_sig_ptr->radix = global->radixs[0];
+	}
+	new_sig_ptr->file_pos = file_pos_this;
+	new_sig_ptr->file_code = file_code;	/* Codes are constant, so don't change with bit loop */
+	new_sig_ptr->bits = bits_this;
+	new_sig_ptr->msb_index = msb_this;
+	new_sig_ptr->lsb_index = lsb;
+
+	/* initialize all the pointers that aren't NULL */
+	if (trace->lastsig) trace->lastsig->forward = new_sig_ptr;
+	new_sig_ptr->backward = trace->lastsig;
+	if (trace->firstsig==NULL) trace->firstsig = new_sig_ptr;
+	trace->lastsig = new_sig_ptr;
+
+	/* copy signal info */
+	new_sig_ptr->signame = (char *)XtMalloc(10+strlen (signame));	/* allow extra space in case becomes vector */
+	strcpy (new_sig_ptr->signame, signame);
+	new_sig_ptr->signame_buspos = (signame_buspos
+				       ? ((signame_buspos - signame) + new_sig_ptr->signame)
+				       : NULL); /* Adj pointer to right base */
+
+	if (DTPRINT_BUSSES) printf ("       donefile (%s, %d, (%d)%d-%d )\n", signame, 
+				    new_sig_ptr->file_pos, new_sig_ptr->bits, new_sig_ptr->msb_index, new_sig_ptr->lsb_index);
+    }
+}
+
+
 static void	verilog_process_var (
     /* Process a VAR statement (read a signal) */
     Trace_t	*trace)
 {
     char	*cmd;
-    Boolean_t	is_real;
     int		bits;
     int		msb = 0, lsb = 0;
-    Signal_t	*new_sig_ptr;
     char	signame[10000];
     char	basename[10000];
-    int		t, len;
+    int		t;
     char	code[10];
     char	*refer;
+    union sig_file_type_u file_type;
 
     /*
       $var reg       5 :    r [4:0] $end
@@ -274,11 +459,13 @@ static void	verilog_process_var (
 
     /* Read <vartype> */
     cmd = verilog_gettok();
-    is_real = (!strcmp(cmd,"real"));
+    file_type.flags = 0;
+    file_type.flag.real = (!strcmp(cmd,"real"));
 	
     /* Read <size> */
     cmd = verilog_gettok();
     bits = atoi (cmd);
+    verilog_max_bits = MAX (verilog_max_bits, bits);	/* Count before we break into 128 bit pieces */
 
     /* read next token */
     /* if token == ":", msb and lsb are given */
@@ -326,38 +513,14 @@ static void	verilog_process_var (
 	strcat (signame, cmd);
     }
     
-    /* Allocate new signal structure */
-    new_sig_ptr = DNewCalloc (Signal_t);
-    new_sig_ptr->trace = trace;
-    new_sig_ptr->dfile = &(trace->dfile);
-    new_sig_ptr->radix = global->radixs[0];
-    if (is_real) {
-	new_sig_ptr->radix = global->radixs[RADIX_REAL];
-    }
-
-    new_sig_ptr->file_pos = VERILOG_ID_TO_POS(code);
-    new_sig_ptr->bits = bits;
-    new_sig_ptr->msb_index = msb;
-    new_sig_ptr->lsb_index = lsb;
-
-    new_sig_ptr->file_type.flags = 0;
-    new_sig_ptr->file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
-
     if (DTPRINT_FILE) printf ("var %s %d %s %s\n",
-			      is_real?"real":"reg/wire", bits, code, signame);
+			      (file_type.flag.real)?"real":"reg/wire", bits, code, signame);
 
-    val_zero (&(new_sig_ptr->file_value));
-
-    /* initialize all the pointers that aren't NULL */
-    if (trace->lastsig) trace->lastsig->forward = new_sig_ptr;
-    new_sig_ptr->backward = trace->lastsig;
-    if (trace->firstsig==NULL) trace->firstsig = new_sig_ptr;
-    trace->lastsig = new_sig_ptr;
-
-    /* copy signal info */
-    len = strlen (signame);
-    new_sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
-    strcpy (new_sig_ptr->signame, signame);
+    /* Allocate new signal structure */
+    file_type.flag.perm_vector = (bits>1);	/* If a vector already then we won't vectorize it */
+    sig_new_file (trace, signame,
+		  0, VERILOG_ID_TO_POS(code),
+		  bits, msb, lsb, file_type);
 }
 
 
@@ -375,63 +538,6 @@ For a large trace, here's a table of frequency of signals of each number of bits
 										  12  256
 */
 
-void	verilog_womp_128s (
-    /* Take signals of 128+ signals and split into several signals */
-    Trace_t	*trace)
-{
-    Signal_t	*new_sig_ptr;
-    Signal_t	*sig_ptr;
-    int		len;
-    int		chop;
-
-    /*sig_print_names (NULL, trace);*/
-    for (sig_ptr = trace->firstsig; sig_ptr; /* increment below */ ) {
-
-	if (sig_ptr->bits > 128) {
-	    if (DTPRINT_FILE) printf ("Adjusting signal %s [%d - %d]   %d > 128\n",
-				      sig_ptr->signame, sig_ptr->lsb_index, sig_ptr->msb_index, sig_ptr->bits);
-	    /* Allocate new signal structure */
-	    new_sig_ptr = XtNew (Signal_t);
-	    memcpy (new_sig_ptr, sig_ptr, sizeof (Signal_t));
-	    len = strlen (sig_ptr->signame);
-	    new_sig_ptr->signame = (char *)XtMalloc(10+len);	/* allow extra space in case becomes vector */
-	    strcpy (new_sig_ptr->signame, sig_ptr->signame);
-
-	    new_sig_ptr->forward = sig_ptr->forward;
-	    sig_ptr->forward = new_sig_ptr;
-	    new_sig_ptr->backward = sig_ptr;
-	    if (new_sig_ptr->forward) new_sig_ptr->forward->backward = new_sig_ptr;
-	    
-	    /* Remember there are multiple signals under this coding */
-	    new_sig_ptr->copyof = sig_ptr->copyof;
-	    new_sig_ptr->verilog_next = sig_ptr->verilog_next;
-	    sig_ptr->verilog_next = new_sig_ptr;
-
-	    /* How much to remove */
-	    chop = (sig_ptr->bits) % 128;
-	    if (chop==0) chop=128;
-	    /*printf ("chopping %d\n",chop);*/
-
- 	    /* Make new be remainders */
- 	    new_sig_ptr->bits = sig_ptr->bits - chop;
- 	    new_sig_ptr->msb_index = sig_ptr->msb_index - chop;
-  
-  	    /* Shorten bits of old */
- 	    sig_ptr->bits = chop;
- 	    sig_ptr->lsb_index = sig_ptr->msb_index - sig_ptr->bits + 1;
-
-	    /* Next is new guy, may be >> 128 also */
-	    sig_ptr = new_sig_ptr->backward;
-	}
-	else {
-	    sig_ptr = sig_ptr->forward;
-	}
-    }
-
-    /*sig_print_names (NULL, trace);*/
-}
-
-
 static void	verilog_print_pos (void)
     /* Print the pos array */
 {
@@ -439,8 +545,8 @@ static void	verilog_print_pos (void)
     Signal_t	*pos_sig_ptr, *sig_ptr;
 
     printf ("POS array:\n");
-    for (pos=0; pos<signal_by_pos_max; pos++) {
-	pos_sig_ptr = signal_by_pos[pos];
+    for (pos=0; pos<signal_by_code_max; pos++) {
+	pos_sig_ptr = signal_by_code[pos];
 	if (pos_sig_ptr) {
 	    printf ("\t%d\t%s\n", pos, pos_sig_ptr->signame);
 	    for (sig_ptr=pos_sig_ptr->verilog_next; sig_ptr; sig_ptr=sig_ptr->verilog_next) {
@@ -455,7 +561,7 @@ static void	verilog_process_definitions (
     Trace_t	*trace)
 {
     Signal_t	*sig_ptr;
-    Signal_t	*pos_sig_ptr, *last_sig_ptr;
+    Signal_t	*pos_sig_ptr;
     uint_t	pos_level, level;
     uint_t	pos;
     char	*tp;
@@ -463,19 +569,17 @@ static void	verilog_process_definitions (
     /* if (DTPRINT_FILE) sig_print_names (trace); */
     
     /* Find the highest pos used & max number of bits */
-    signal_by_pos_max = 0;
-    verilog_max_bits = 0;
+    signal_by_code_max = 0;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	signal_by_pos_max = MAX (signal_by_pos_max, sig_ptr->file_pos + sig_ptr->bits - 1 + 1);
-	verilog_max_bits = MAX (verilog_max_bits, sig_ptr->bits);
+	signal_by_code_max = MAX (signal_by_code_max, sig_ptr->file_code + sig_ptr->bits - 1 + 1);
     }
     
     /* Allocate space for one signal pointer for each of the possible codes */
     /* This will, of course, use a lot of memory for large traces.  It will be very fast though */
-    signal_by_pos = (Signal_t **)XtCalloc (sizeof (Signal_t *), (signal_by_pos_max + 1));
+    signal_by_code = (Signal_t **)XtCalloc (sizeof (Signal_t *), (signal_by_code_max + 1));
 
     /* Also set aside space so every signal could change in a single cycle */
-    signal_update_array = (Signal_t **)XtMalloc (sizeof (Signal_t *) * (signal_by_pos_max + 1));
+    signal_update_array = (Signal_t **)XtMalloc (sizeof (Signal_t *) * (signal_by_code_max + 1));
     signal_update_array_last_pptr = signal_update_array;
     
     /* Assign signals to the pos array.  The array points to the "original" */
@@ -483,13 +587,13 @@ static void	verilog_process_definitions (
     /* The original then has a linked list to other copies, the sig_ptr->verilog_next field */
     /* The original is signal highest in hiearchy, OR first to occur if at the same level */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	for (pos = sig_ptr->file_pos; 
-	     pos <= sig_ptr->file_pos
+	for (pos = sig_ptr->file_code; 
+	     pos <= sig_ptr->file_code
 		 + ((sig_ptr->file_type.flag.perm_vector)?0:(sig_ptr->bits-1));
 	     pos++) {
-	    pos_sig_ptr = signal_by_pos[pos];
+	    pos_sig_ptr = signal_by_code[pos];
 	    if (!pos_sig_ptr) {
-		signal_by_pos[pos] = sig_ptr;
+		signal_by_code[pos] = sig_ptr;
 	    }
 	    else {
 		for (level=0, tp=sig_ptr->signame; *tp; tp++) {
@@ -500,10 +604,11 @@ static void	verilog_process_definitions (
 		}
 		/*printf ("Compare %d %d  %s %s\n",level, pos_level, sig_ptr->signame, pos_sig_ptr->signame);*/
 		if (level < pos_level) {
-		    signal_by_pos[pos] = sig_ptr;
+		    /* Put first */
+		    signal_by_code[pos] = sig_ptr;
 		    sig_ptr->verilog_next = pos_sig_ptr;
 		}
-		else {
+		else { /* Put second */
 		    sig_ptr->verilog_next = pos_sig_ptr->verilog_next;
 		    pos_sig_ptr->verilog_next = sig_ptr;
 		}
@@ -512,28 +617,30 @@ static void	verilog_process_definitions (
     }
 
     /* Print the pos array */
-    /* if (DTPRINT_FILE) verilog_print_pos (); */
+    if (DTPRINT_FILE) verilog_print_pos ();
 
     /* Kill all but the first copy of the signals.  This may be changed in later releases. */
-    for (pos=0; pos<signal_by_pos_max; pos++) {
-	pos_sig_ptr = signal_by_pos[pos];
+    for (pos=0; pos<signal_by_code_max; pos++) {
+	Signal_t *next_sig_ptr;
+	pos_sig_ptr = signal_by_code[pos];
 	if (pos_sig_ptr) {
-	    last_sig_ptr = pos_sig_ptr;
-	    while (NULL!=(sig_ptr=last_sig_ptr->verilog_next)) {
-		/* Delete this signal */
-		if (global->save_duplicates
-		    && sig_ptr->bits == pos_sig_ptr->bits) {
-		    sig_ptr->copyof = pos_sig_ptr;
-		    last_sig_ptr = sig_ptr;
-		    /*printf ("Dup %s\t  %s\n", pos_sig_ptr->signame, sig_ptr->signame);*/
-		} else {
-		    last_sig_ptr->verilog_next = sig_ptr->verilog_next;
-		    sig_free (trace, sig_ptr, FALSE, FALSE);
+	    for (sig_ptr = pos_sig_ptr->verilog_next; sig_ptr; sig_ptr=next_sig_ptr) {
+		next_sig_ptr = sig_ptr->verilog_next;
+		if (sig_ptr->file_pos == pos_sig_ptr->file_pos) {	/* Else is a > 128bit breakup copy */
+		    /* Delete this signal */
+		    if (global->save_duplicates
+			&& sig_ptr->bits == pos_sig_ptr->bits) {
+			sig_ptr->copyof = pos_sig_ptr;
+			/*printf ("Dup %s\t  %s\n", pos_sig_ptr->signame, sig_ptr->signame);*/
+		    } else {
+			sig_free (trace, sig_ptr, FALSE, FALSE);
+		    }
 		}
+		sig_ptr->verilog_next = NULL;		/* Zero in prep of make_busses */
 	    }
 	    pos_sig_ptr->verilog_next = NULL;		/* Zero in prep of make_busses */
+	    signal_by_code[pos] = NULL;			/* Zero in prep of make_busses */
 	}
-	signal_by_pos[pos] = NULL;			/* Zero in prep of make_busses */
     }
     
     /* Make the busses */
@@ -543,10 +650,10 @@ static void	verilog_process_definitions (
     /* Assign signals to the pos array **AGAIN**. */
     /* Since busses now exist, the pointers will all be different */
     if (DTPRINT_FILE) printf ("Reassigning signals to pos array.\n");
-    memset (signal_by_pos, 0, sizeof (Signal_t *) * (signal_by_pos_max + 1));
+    memset (signal_by_code, 0, sizeof (Signal_t *) * (signal_by_code_max + 1));
     for (pos_sig_ptr = trace->firstsig; pos_sig_ptr; pos_sig_ptr = pos_sig_ptr->forward) {
-	for (pos = pos_sig_ptr->file_pos; 
-	     pos <= pos_sig_ptr->file_pos
+	for (pos = pos_sig_ptr->file_code; 
+	     pos <= pos_sig_ptr->file_code
 		 + ((pos_sig_ptr->file_type.flag.perm_vector)?0:(pos_sig_ptr->bits-1));
 	     pos++) {
 	    if (pos_sig_ptr->copyof) {
@@ -554,11 +661,13 @@ static void	verilog_process_definitions (
 		pos_sig_ptr->cptr = pos_sig_ptr->copyof->cptr;
 		if (DTPRINT_FILE) printf ("StillDup %s\t  %s\n", pos_sig_ptr->signame, pos_sig_ptr->copyof->signame);
 	    } else {
-		if (!signal_by_pos[pos]) {
-		    signal_by_pos[pos] = pos_sig_ptr;
+		if (!signal_by_code[pos]) {
+		    signal_by_code[pos] = pos_sig_ptr;
 		} else {
 		    /* If already assigned, this is a signal that was womp_128ed. */
 		    /* or, we're saving duplicates */
+		    pos_sig_ptr->verilog_next = signal_by_code[pos];
+		    signal_by_code[pos] = pos_sig_ptr;
 		}
 	    }
 	}
@@ -686,13 +795,13 @@ static void	verilog_read_data (
     Boolean_t	got_time=FALSE;
     Value_t	value;
     Signal_t	*sig_ptr;
-    int		pos;
+    int		poscode;
     int		state = STATE_Z;
     char	*scratchline;
     char	*scratchline2;
     double	dnum; 
 
-    if (DTPRINT_ENTRY) printf ("In verilog_read_data\n");
+    if (DTPRINT_ENTRY) printf ("In verilog_read_data (max_bits = %d)\n", verilog_max_bits);
 
     time = 0;
     scratchline = (char *)XtMalloc(100+verilog_max_bits);
@@ -723,8 +832,8 @@ static void	verilog_read_data (
 	    got_data = TRUE;
 
 	    code = line;
-	    pos = VERILOG_ID_TO_POS(code);
-	    sig_ptr = VERILOG_POS_TO_SIG(pos);
+	    poscode = VERILOG_ID_TO_POS(code);
+	    sig_ptr = VERILOG_POS_TO_SIG(poscode);
 	    if (sig_ptr) {
 		/* printf ("\tsignal '%s'=%d %s  state %d\n", code, pos, sig_ptr->signame, state); */
 		if (sig_ptr->bits < 2) {
@@ -735,7 +844,7 @@ static void	verilog_read_data (
 		    fil_add_cptr (sig_ptr, &value, first_data);
 		}
 		else {	/* Unary signal made into a vector */
-		    register int bit = sig_ptr->bits - 1 - (pos - sig_ptr->file_pos); 
+		    register int bit = sig_ptr->bits - 1 - (poscode - sig_ptr->file_code); 
 		    /* Mark this for update at next time stamp */
 		    verilog_prep_busses (sig_ptr, bit, state, first_data);
 		}
@@ -751,8 +860,8 @@ static void	verilog_read_data (
 	    strcpy (scratchline2, line);
 	    value_strg = scratchline2;
 	    code = verilog_gettok();
-	    pos = VERILOG_ID_TO_POS(code);
-	    sig_ptr = VERILOG_POS_TO_SIG(pos);
+	    poscode = VERILOG_ID_TO_POS(code);
+	    sig_ptr = VERILOG_POS_TO_SIG(poscode);
 	    if (sig_ptr) {
 		if ((sig_ptr->bits < 2) || !sig_ptr->file_type.flag.perm_vector) {
 		    /* For some idiotic reason vpd2vcd likes to do this! */
@@ -797,11 +906,8 @@ static void	verilog_read_data (
 			    }
 			    
 			    /* Store the file information */
-			    /*if (DTPRINT_FILE) printf ("\tsignal '%s'=%d %d %s  value %s\n", code, pos, time, sig_ptr->signame, value_strg);*/
-			    ascii_string_add_cptr (sig_ptr, value_strg, time, first_data);
-			    
-			    /* Push string past this signal's bits */
-			    value_strg += sig_ptr->bits;
+			    /*if (DTPRINT_FILE) printf ("\tsignal '%s'=%d @%d %s  fp %d value %s\n", code, poscode, time, sig_ptr->signame, sig_ptr->file_pos, value_strg);*/
+			    ascii_string_add_cptr (sig_ptr, value_strg + sig_ptr->file_pos, time, first_data);
 			}
 		    }
 		}
@@ -832,8 +938,8 @@ static void	verilog_read_data (
 	case 'r':	/* Real number */
 	    dnum = atof (line);
 	    code = verilog_gettok();
-	    pos = VERILOG_ID_TO_POS(code);
-	    sig_ptr = VERILOG_POS_TO_SIG(pos);
+	    poscode = VERILOG_ID_TO_POS(code);
+	    sig_ptr = VERILOG_POS_TO_SIG(poscode);
 	    if (sig_ptr && sig_ptr->bits == 64) {
 		val_zero (&value);
 		if (dnum==0) value.siglw.stbits.state = STATE_0;
@@ -941,7 +1047,7 @@ void verilog_read (
     /* Signal description data */
     trace->firstsig = NULL;
     trace->lastsig = NULL;
-    signal_by_pos = NULL;
+    signal_by_code = NULL;
     scope_level = 0;
 
     current_file = trace->dfile.filename;
@@ -949,7 +1055,7 @@ void verilog_read (
     verilog_process_lines (trace);
 
     /* Free up */
-    DFree (signal_by_pos);
+    DFree (signal_by_code);
 }
 
 

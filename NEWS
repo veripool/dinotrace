@@ -7,6 +7,12 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
+* Changes in Dinotrace 9.0h  5/1/2000
+
+**	Major speed improvement in reading Tempest traces.
+	All trace formats now have less processing when building busses from
+	individual bits. [Steve Hoover]
+
 * Changes in Dinotrace 9.0g  1/17/2000
 
 **	Configuration file commands that require times now take times

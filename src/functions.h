@@ -311,6 +311,7 @@ extern Signal_t *sig_find_signame (const Trace_t *trace, const char *signame);
 extern Signal_t *sig_wildmat_signame (const Trace_t *trace, const char *signame);
 extern void	sig_print_names (Trace_t *trace);
 extern char *	sig_examine_string (const Trace_t *trace, const Signal_t *sig_ptr);
+extern void	sig_new_file (Trace_t *trace, char *signame, int file_pos, int file_code, int bits, int msb, int lsb, union sig_file_type_u file_type);
 
 extern void	sig_add_cb (Widget w);
 extern void	sig_mov_cb (Widget w);
@@ -492,7 +493,6 @@ extern Pixmap	icon_dinos (void);
 
 /* dt_verilog */
 extern void	verilog_read (Trace_t *trace, int read_fd);
-extern void	verilog_womp_128s (Trace_t *);
 
 /* SimView Hooks */
 extern void	simview_init (char *cmdlinearg);
