@@ -545,8 +545,8 @@ void	config_process_line_internal (trace, line, eof)
 	else if (!strcmp(cmd, "PRINT")) {
 	    value=DTPRINT;
 	    if (toupper(line[0])=='O' && toupper(line[0])=='N') DTPRINT = -1;
-	    if (toupper(line[0])=='O' && toupper(line[0])=='F') DTPRINT = 0;
-	    if (value >= 0) {
+	    else if (toupper(line[0])=='O' && toupper(line[0])=='F') DTPRINT = 0;
+	    else if (value >= 0) {
 		sscanf (line, "%lx", &value);
 		DTPRINT=value;
 		}
