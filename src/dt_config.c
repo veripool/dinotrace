@@ -431,7 +431,7 @@ static void	signalstate_write (
 
 void	config_parse_geometry (
     char	*line,
-    Geometry	*geometry)
+    Geometry_t	*geometry)
     /* Like XParseGeometry, but handles percentages */
 {
     int		flags;
@@ -475,7 +475,7 @@ void	config_parse_geometry (
 }
 
 static void	config_geometry_string (
-    Geometry	*geometry,
+    Geometry_t	*geometry,
     char *strg)
 {
     sprintf (strg, "%d%sx%d%s+%d%s+%d%s",
@@ -700,6 +700,9 @@ static void	config_process_line_internal (
 	    }
 	    if (DTPRINT) printf ("Config: DTPRINT=0x%x\n",value);
 	}
+	/************************************************************/
+	/* Commands needed before a file is read */
+	/* These should be only global or dfile parameters (not trace parameters) */
 	else if (!strcmp(cmd, "FILE_FORMAT")) {
 	    char *tp;
 	    for (tp = line; *tp && *tp!='Z' && *tp!='z'; tp++) ;
@@ -776,29 +779,29 @@ static void	config_process_line_internal (
 	else if (!strcmp(cmd, "HIERARCHY_SEPARATOR")) {
 	    line += config_read_string (trace, line, pattern);
 	    if (pattern[0]) {
-		trace->hierarchy_separator = pattern[0];
+		trace->dfile.hierarchy_separator = pattern[0];
 	    }
 	}
 	else if (!strcmp(cmd, "VECTOR_SEPERATOR")	/* Backward compatible spelling! */
 		 || !strcmp(cmd, "VECTOR_SEPARATOR")) {
 	    if (*line=='"') line++;
 	    if (*line && *line!='"') {
-		trace->vector_separator = line[0];
+		trace->dfile.vector_separator = line[0];
 	    }
 	    else {
-		trace->vector_separator = '\0';
+		trace->dfile.vector_separator = '\0';
 	    }
 	    /* Take a stab at the ending character */
-	    switch (trace->vector_separator) {
-	      case '`':	trace->vectorend_separator = '\''; break;
-	      case '(':	trace->vectorend_separator = ')'; break;
-	      case '[':	trace->vectorend_separator = ']'; break;
-	    case '{':	trace->vectorend_separator = '}'; break;
-	      case '<':	trace->vectorend_separator = '>'; break;
-	      default:  trace->vectorend_separator = trace->vector_separator; break;	/* a wild guess SIG$20:1$? */
+	    switch (trace->dfile.vector_separator) {
+	      case '`':	trace->dfile.vectorend_separator = '\''; break;
+	      case '(':	trace->dfile.vectorend_separator = ')'; break;
+	      case '[':	trace->dfile.vectorend_separator = ']'; break;
+	    case '{':	trace->dfile.vectorend_separator = '}'; break;
+	      case '<':	trace->dfile.vectorend_separator = '>'; break;
+	      default:  trace->dfile.vectorend_separator = trace->dfile.vector_separator; break;	/* a wild guess SIG$20:1$? */
 	    }
 	    if (DTPRINT_CONFIG) printf ("vector_separator = '%c'  End='%c'\n", 
-					trace->vector_separator, trace->vectorend_separator);
+					trace->dfile.vector_separator, trace->dfile.vectorend_separator);
 	}
 	else if (format_only) {
 	    return;
@@ -1301,15 +1304,15 @@ void config_update_filenames (Trace *trace)
     global->config_filename[4][0] = '\0';
 
     /* Same directory as trace, dinotrace.dino */
-    if (trace->filename != '\0') {
-	strcpy (global->config_filename[3], trace->filename);
+    if (trace->dfile.filename != '\0') {
+	strcpy (global->config_filename[3], trace->dfile.filename);
 	file_directory (global->config_filename[3]);
 	strcat (global->config_filename[3], "dinotrace.dino");
     }
 
     /* Same file as trace, but .dino extension */
-    if (trace->filename != '\0') {
-	strcpy (global->config_filename[4], trace->filename);
+    if (trace->dfile.filename != '\0') {
+	strcpy (global->config_filename[4], trace->dfile.filename);
 	if ((pchar=strrchr(global->config_filename[4],'.')) != NULL )
 	    *pchar = '\0';
 	if ((pchar=strrchr(global->config_filename[4],'.')) != NULL )
@@ -1459,10 +1462,10 @@ void config_write_file (
 		continue;
 	    }
 	    if (trace->loaded) {
-		fprintf (writefp, "###set_trace\t%s\n", trace->filename);
-		fprintf (writefp, "%sfile_format\t%s\n",c, filetypes[trace->fileformat].name);
-		fprintf (writefp, "%svector_separator\t\"%c\"\n",c, trace->vector_separator);
-		fprintf (writefp, "%shierarchy_separator\t\"%c\"\n",c, trace->hierarchy_separator);
+		fprintf (writefp, "###set_trace\t%s\n", trace->dfile.filename);
+		fprintf (writefp, "%sfile_format\t%s\n",c, filetypes[trace->dfile.fileformat].name);
+		fprintf (writefp, "%svector_separator\t\"%c\"\n",c, trace->dfile.vector_separator);
+		fprintf (writefp, "%shierarchy_separator\t\"%c\"\n",c, trace->dfile.hierarchy_separator);
 		fprintf (writefp, "%stime_multiplier\t%d\n",c, global->tempest_time_mult);
 		fprintf (writefp, "%stime_precision\t%s\n",c, time_units_to_string (global->time_precision, TRUE));
 	    }
@@ -1477,7 +1480,7 @@ void config_write_file (
 		continue;
 	    }
 	    if (trace->loaded) {
-		fprintf (writefp, "###set_trace\t%s\n", trace->filename);
+		fprintf (writefp, "###set_trace\t%s\n", trace->dfile.filename);
 		for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 		    grid_ptr = &(trace->grid[grid_num]);
 		    
@@ -1508,7 +1511,7 @@ void config_write_file (
 		|| (global->cuswr_traces == TRACESEL_ALL && trace==global->deleted_trace_head)) {
 		continue;
 	    }
-	    fprintf (writefp, "###set_trace %s\n", trace->filename);
+	    fprintf (writefp, "###set_trace %s\n", trace->dfile.filename);
 	    /* Save signal colors */
 	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 		if (sig_ptr->color && !sig_ptr->search) {
@@ -1529,7 +1532,7 @@ void config_write_file (
 		|| (global->cuswr_traces == TRACESEL_ALL && trace==global->deleted_trace_head)) {
 		continue;
 	    }
-	    fprintf (writefp, "###set_trace %s\n", trace->filename);
+	    fprintf (writefp, "###set_trace %s\n", trace->dfile.filename);
 	    fprintf (writefp, "%ssignal_delete *\n",c);
 	    /* Save signal colors */
 	    for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -1551,9 +1554,9 @@ void config_write_file (
 void config_trace_defaults (
     Trace	*trace)
 {
-    trace->hierarchy_separator = '.';
-    trace->vector_separator = '[';
-    trace->vectorend_separator = ']';
+    trace->dfile.hierarchy_separator = '.';
+    trace->dfile.vector_separator = '[';
+    trace->dfile.vectorend_separator = ']';
 
     grid_reset_cb (trace->main);
 }

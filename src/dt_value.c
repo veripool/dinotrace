@@ -1591,15 +1591,15 @@ void    val_annotate_do_cb (
     }
 
     fprintf (dump_fp, "(setq dinotrace-hierarchy-separator \"%c\")\n\n",
-	     global->trace_head->hierarchy_separator);
+	     global->trace_head->dfile.hierarchy_separator);
 
     /* Trace info */
     fprintf (dump_fp, "(setq dinotrace-traces '(\n");
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	if (trace->loaded) {
 	    fprintf (dump_fp, "	[\"%s\"\t\"%s\"]\n",
-		     trace->filename,
-		     date_string (trace->filestat.st_ctime));
+		     trace->dfile.filename,
+		     date_string (trace->dfile.filestat.st_ctime));
 	}
     }
     fprintf (dump_fp, "\t))\n");

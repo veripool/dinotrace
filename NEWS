@@ -7,9 +7,13 @@ The contributors that suggested a given feature is shown in [].
 	
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-* Changes in Dinotrace 9.0d  10/30/98
+* Changes in Dinotrace 9.1a  10/30/98
 
 ** Enhancements:
+
+**	Signal Select now allows for deleting signals with X & Zs.
+
+**	Signal Select now has two sorting functions.
 
 ***	Added hooks for linking other C programs to Dinotrace.  [Steve Hoover]
 

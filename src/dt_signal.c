@@ -78,7 +78,11 @@ extern void
     sig_sel_ok_cb(), sig_sel_apply_cb(),
     sig_add_sel_cb(), sig_sel_pattern_cb(),
     sig_sel_add_all_cb(), sig_sel_add_list_cb(),
-    sig_sel_del_all_cb(), sig_sel_del_list_cb(), sig_sel_del_const_cb();
+    sig_sel_del_all_cb(), sig_sel_del_list_cb();
+extern void sig_sel_del_const_cb();
+extern void sig_sel_del_const_xz_cb();
+extern void sig_sel_sort_cb();
+extern void sig_sel_sort_base_cb();
 
 
 /****************************** UTILITIES ******************************/
@@ -261,7 +265,7 @@ char *sig_basename (
     /* First is the basename with hiearchy and bus bits stripped */
     basename = strrchr ((sig_ptr->signame_buspos ?
 			 sig_ptr->signame_buspos : sig_ptr->signame),
-			trace->hierarchy_separator);
+			trace->dfile.hierarchy_separator);
     if (!basename || basename[0]=='\0') basename = sig_ptr->signame;
     else basename++;
     return (basename);
@@ -1271,7 +1275,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Select Signal Requester") );
 	XtSetArg (arglist[2], XmNheight, 400);
-	XtSetArg (arglist[3], XmNverticalSpacing, 7);
+	XtSetArg (arglist[3], XmNverticalSpacing, 5);
 	XtSetArg (arglist[4], XmNhorizontalSpacing, 10);
 	XtSetArg (arglist[5], XmNresizable, FALSE);
 	trace->select.dialog = XmCreateFormDialog (trace->work,"select",arglist,6);
@@ -1388,25 +1392,55 @@ void    sig_select_cb (
 	DAddCallback (trace->select.delete_pat, XmNactivateCallback, sig_sel_pattern_cb, trace);
 	DManageChild (trace->select.delete_pat, trace, MC_NOKEYS);
 
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Delete All") );
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Sort Wholename") );
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[2], XmNleftWidget, trace->select.add_sigs_form);
 	XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[4], XmNbottomWidget, trace->select.okapply.sep);
-	trace->select.delete_all = XmCreatePushButton (trace->select.dialog,"dall",arglist,5);
-	XtRemoveAllCallbacks (trace->select.delete_all, XmNactivateCallback);
-	DAddCallback (trace->select.delete_all, XmNactivateCallback, sig_sel_del_all_cb, trace);
-	DManageChild (trace->select.delete_all, trace, MC_NOKEYS);
+	trace->select.sort_full = XmCreatePushButton (trace->select.dialog,"dcon",arglist,5);
+	XtRemoveAllCallbacks (trace->select.sort_full, XmNactivateCallback);
+	DAddCallback (trace->select.sort_full, XmNactivateCallback, sig_sel_sort_cb, trace);
+	DManageChild (trace->select.sort_full, trace, MC_NOKEYS);
 
-	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Delete Constant Valued") );
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Sort Basename") );
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[2], XmNleftWidget, trace->select.delete_all);
+	XtSetArg (arglist[2], XmNleftWidget, trace->select.sort_full);
 	XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[4], XmNbottomWidget, trace->select.okapply.sep);
+	trace->select.sort_nopath = XmCreatePushButton (trace->select.dialog,"dconxz",arglist,5);
+	XtRemoveAllCallbacks (trace->select.sort_nopath, XmNactivateCallback);
+	DAddCallback (trace->select.sort_nopath, XmNactivateCallback, sig_sel_sort_base_cb, trace);
+	DManageChild (trace->select.sort_nopath, trace, MC_NOKEYS);
+
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Delete Constants") );
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[2], XmNleftWidget, trace->select.add_sigs_form);
+	XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNbottomWidget, trace->select.sort_full);
 	trace->select.delete_const = XmCreatePushButton (trace->select.dialog,"dcon",arglist,5);
 	XtRemoveAllCallbacks (trace->select.delete_const, XmNactivateCallback);
 	DAddCallback (trace->select.delete_const, XmNactivateCallback, sig_sel_del_const_cb, trace);
 	DManageChild (trace->select.delete_const, trace, MC_NOKEYS);
+
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Delete Const or X/Z") );
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[2], XmNleftWidget, trace->select.delete_const);
+	XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNbottomWidget, trace->select.sort_full);
+	trace->select.delete_const_xz = XmCreatePushButton (trace->select.dialog,"dconxz",arglist,5);
+	XtRemoveAllCallbacks (trace->select.delete_const_xz, XmNactivateCallback);
+	DAddCallback (trace->select.delete_const_xz, XmNactivateCallback, sig_sel_del_const_xz_cb, trace);
+	DManageChild (trace->select.delete_const_xz, trace, MC_NOKEYS);
+
+	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Delete All") );
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[2], XmNleftWidget, trace->select.add_sigs_form);
+	XtSetArg (arglist[3], XmNbottomAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNbottomWidget, trace->select.delete_const);
+	trace->select.delete_all = XmCreatePushButton (trace->select.dialog,"dall",arglist,5);
+	XtRemoveAllCallbacks (trace->select.delete_all, XmNactivateCallback);
+	DAddCallback (trace->select.delete_all, XmNactivateCallback, sig_sel_del_all_cb, trace);
+	DManageChild (trace->select.delete_all, trace, MC_NOKEYS);
 
 	XtSetArg (arglist[0], XmNlabelString, string_create_with_cr ("Select a signal to delete it\nfrom the displayed signals."));
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
@@ -1578,10 +1612,9 @@ void    sig_sel_del_all_cb (
     sig_sel_pattern_cb (NULL, trace, NULL);
 }
 
-void    sig_sel_del_const_cb (
-    Widget	w,
+void    sig_sel_del_const (
     Trace	*trace,
-    XmAnyCallbackStruct 	*cb)
+    Boolean_t	ignorexz)		/* TRUE = ignore xz */
 {
     Signal	*sig_ptr;
     int		i;
@@ -1594,11 +1627,27 @@ void    sig_sel_del_const_cb (
 	if (!sig_ptr) break;
 
 	/* Delete it */
-	if (sig_is_constant (trace, sig_ptr, FALSE)) {
+	if (sig_is_constant (trace, sig_ptr, ignorexz)) {
 	    sig_delete (trace, sig_ptr, FALSE);
 	}
     }
     sig_sel_pattern_cb (NULL, trace, NULL);
+}
+
+void    sig_sel_del_const_xz_cb (
+    Widget	w,
+    Trace	*trace,
+    XmAnyCallbackStruct 	*cb)
+{
+    sig_sel_del_const (trace, TRUE);
+}
+
+void    sig_sel_del_const_cb (
+    Widget	w,
+    Trace	*trace,
+    XmAnyCallbackStruct 	*cb)
+{
+    sig_sel_del_const (trace, FALSE);
 }
 
 void    sig_sel_add_list_cb (
@@ -1645,6 +1694,68 @@ void    sig_sel_del_list_cb (
     sig_sel_pattern_cb (NULL, trace, NULL);
 }
 
+/**********************************************************************/
+
+typedef int (*qsort_compar) (const void *, const void *);
+static int sig_sel_sort_cmp (
+    Signal	**siga_pptr,
+    Signal	**sigb_pptr)
+{
+    return (strcmp((*siga_pptr)->key, (*sigb_pptr)->key));
+}
+
+void	sig_sel_sort (
+    Trace	*trace,
+    Boolean_t	usebasename)
+{
+    Signal	*sig_ptr;
+    char *name, *cp;
+    int i;
+    int nel = 0;
+    if (DTPRINT_ENTRY) printf ("In sig_sel_sort - trace=%p\n",trace);
+
+    /* loop thru signals on deleted queue and add to list */
+    for (i=0; 1; i++) {
+	sig_ptr = (trace->select.del_signals)[i];
+	if (!sig_ptr) break;
+	/* Add to sort list */
+	nel = i+1;
+	sig_ptr->key = usebasename ? sig_basename (trace, sig_ptr)
+	    : sig_ptr->signame;
+	/*printf ("sortn %s\n", sig_ptr->key);*/
+    }
+
+    /* sortem */
+    qsort ((trace->select.del_signals), nel, sizeof (Signal *), (qsort_compar)sig_sel_sort_cmp);
+
+    /* reextract */
+    for (i=0; i<nel; i++) {
+	sig_ptr = (trace->select.del_signals)[i];
+	/*printf ("sorted %s\n", sig_ptr->key);*/
+	sig_move (trace, sig_ptr, trace, ADD_LAST);
+    }
+
+    sig_sel_apply_cb (NULL, trace, NULL);
+}
+
+void    sig_sel_sort_cb (
+    Widget	w,
+    Trace	*trace,
+    XmAnyCallbackStruct 	*cb)
+{
+    sig_sel_sort (trace, FALSE);
+}
+
+void    sig_sel_sort_base_cb (
+    Widget	w,
+    Trace	*trace,
+    XmAnyCallbackStruct 	*cb)
+{
+    sig_sel_sort (trace, TRUE);
+}
+
+/**********************************************************************/
+/**********************************************************************/
 /****************************** PRESERVATION  ****************************************/
 
 /* Preserving signal ordering and other information across trace reading

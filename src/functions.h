@@ -277,7 +277,7 @@ extern void	config_read_defaults (Trace *trace, Boolean_t);
 extern void	config_read_file (Trace *trace, char *, Boolean_t, Boolean_t);
 extern void	config_trace_defaults (Trace *);
 extern void	config_global_defaults (void);
-extern void	config_parse_geometry (char *, Geometry *);
+extern void	config_parse_geometry (char *, Geometry_t *);
 extern void	config_update_filenames (Trace *trace);
 extern void	config_read_socket (char *line, char *name, int cmdnum, Boolean_t eof);
 extern void	config_write_file (Trace *trace, char *filename);

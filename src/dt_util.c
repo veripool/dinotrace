@@ -987,7 +987,7 @@ void    debug_integrity_check_cb (
 {
     Trace *trace;
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
-	debug_signal_integrity (trace, trace->firstsig, trace->filename, 
+	debug_signal_integrity (trace, trace->firstsig, trace->dfile.filename, 
 				(trace==global->deleted_trace_head));
     }
 }
@@ -1021,13 +1021,13 @@ void change_title (
     strcpy (title,DTVERSION);
     if (trace->loaded) {
 	strcat (title," - ");
-	strcat (title,trace->filename);
+	strcat (title,trace->dfile.filename);
     }
     
     /* For icon title drop extension and directory */
     strcpy (icontitle, DTVERSION);
     if (trace->loaded) {
-	strcpy (icontitle, trace->filename);
+	strcpy (icontitle, trace->dfile.filename);
 	if ((pchar=strrchr (icontitle,'/')) != NULL )
 	    strcpy_overlap (icontitle, pchar+1);
 	if ((pchar=strrchr (icontitle,'\\')) != NULL )
@@ -1035,14 +1035,14 @@ void change_title (
 #ifdef VMS
 	if ((pchar=strrchr (icontitle,']')) != NULL )
 	    strcpy_overlap (icontitle, pchar+1);
-	if ((pchar=strrchr (trace->filename,':')) != NULL )
+	if ((pchar=strrchr (trace->dfile.filename,':')) != NULL )
 	    strcpy_overlap (icontitle, pchar+1);
 	if ((pchar=strchr (icontitle,';')) != NULL )
 	    * (pchar) = '\0';
 #endif
 #ifdef VMS
 	/* Tack back on the version number */
-	if ((pchar=strrchr (trace->filename,';')) != NULL )
+	if ((pchar=strrchr (trace->dfile.filename,';')) != NULL )
 	    strcat (icontitle, pchar);
 #endif
     }

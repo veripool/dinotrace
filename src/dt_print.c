@@ -245,7 +245,7 @@ static void print_draw_val (
     int unstroked=0;		/* Number commands not stroked */
     int numprt;
     
-    if (DTPRINT_ENTRY) printf ("In print_draw - filename=%s, printtime=%d sig=%s\n",trace->filename, printtime, sig_ptr->signame);
+    if (DTPRINT_ENTRY) printf ("In print_draw - filename=%s, printtime=%d sig=%s\n",trace->dfile.filename, printtime, sig_ptr->signame);
     
     xend = trace->width - XMARGIN;
     xsigrf = MAX(1,global->sigrf);
@@ -419,7 +419,7 @@ static void print_draw_sig (
 {
     int		numprt=0;
     
-    if (DTPRINT_ENTRY) printf ("In print_drawsig - filename=%s\n",trace->filename);
+    if (DTPRINT_ENTRY) printf ("In print_drawsig - filename=%s\n",trace->dfile.filename);
     
     /* don't draw anything if there is no file is loaded */
     if (!trace->loaded) return;
@@ -654,7 +654,7 @@ void    print_internal (Trace *trace)
 		     timeunits,
 		     date_string(0),		/* time & date */
 		     global->printnote,		/* filenote */
-		     trace->filename,		/* filename */
+		     trace->dfile.filename,	/* filename */
 		     pagenum,			/* page number */
 		     DTVERSION,			/* version (for title) */
 		     ( (global->print_size==PRINTSIZE_EPSPORT)

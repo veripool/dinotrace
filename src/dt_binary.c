@@ -356,6 +356,7 @@ void decsim_read_binary (
 	      case tra$k_nfd:
 		sig_ptr = DNewCalloc (Signal);
 		sig_ptr->trace = trace;
+		sig_ptr->dfile = &(trace->dfile);
 		sig_ptr->radix = global->radixs[0];
 		sig_ptr->file_pos = buf->TRA$L_BITPOS;
 		/* if (DTPRINT_FILE) printf ("Reading signal format data, ptr=%d\n", sig_ptr); */
@@ -651,6 +652,7 @@ void tempest_read (
 	     */
 	    sig_ptr = DNewCalloc (Signal);
 	    sig_ptr->trace = trace;
+	    sig_ptr->dfile = &(trace->dfile);
 	    sig_ptr->radix = global->radixs[0];
 	    sig_ptr->forward = NULL;
 	    if (trace->firstsig==NULL) {

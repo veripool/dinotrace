@@ -110,7 +110,7 @@ void trace_read_cb (
     if (DTPRINT_ENTRY) printf ("In trace_read_cb - trace=%p\n",trace);
 
     /* Clear the file format */
-    trace->fileformat = FF_AUTO;
+    trace->dfile.fileformat = FF_AUTO;
 
     if (!trace->fileselect.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
@@ -198,19 +198,19 @@ void trace_reread_cb (
 	trace_read_cb (w,trace);
     else {
 	/* Drop ;xxx */
-	if ((semi = strchr (trace->filename,';')))
+	if ((semi = strchr (trace->dfile.filename,';')))
 	    *semi = '\0';
 	
-	if (DTPRINT_ENTRY) printf ("In trace_reread_cb - rereading file=%s\n",trace->filename);
+	if (DTPRINT_ENTRY) printf ("In trace_reread_cb - rereading file=%s\n",trace->dfile.filename);
 	
 	/* check the date first */
-	read_fd = open (trace->filename, O_RDONLY, 0);
+	read_fd = open (trace->dfile.filename, O_RDONLY, 0);
 	if (read_fd>=1) {
 	    /* Opened ok */
 	    fstat (read_fd, &newstat);
 	    close (read_fd);
-	    if ((newstat.st_mtime == trace->filestat.st_mtime)
-		&& (newstat.st_ctime == trace->filestat.st_ctime)) {
+	    if ((newstat.st_mtime == trace->dfile.filestat.st_mtime)
+		&& (newstat.st_ctime == trace->dfile.filestat.st_ctime)) {
 		if (DTPRINT_FILE) printf ("  file has not changed.\n");
 		return;
 	    }
@@ -231,10 +231,10 @@ void fil_read (
     pipecmd[0]='\0';	/* MIPS: no automatic aggregate initialization */
     read_fp = NULL;	/* MIPS: no automatic aggregate initialization */
 
-    if (DTPRINT_ENTRY) printf ("In fil_read trace=%p filename=%s\n",trace,trace->filename);
+    if (DTPRINT_ENTRY) printf ("In fil_read trace=%p filename=%s\n",trace,trace->dfile.filename);
     
     /* Update directory name */
-    strcpy (global->directory, trace->filename);
+    strcpy (global->directory, trace->dfile.filename);
     file_directory (global->directory);
 
     /* Clear the data structures & the screen */
@@ -250,31 +250,31 @@ void fil_read (
     config_read_defaults (trace, TRUE);
     
     /* Compute the file format */
-    if (trace->fileformat == FF_AUTO) {
-	trace->fileformat =	file_format;
+    if (trace->dfile.fileformat == FF_AUTO) {
+	trace->dfile.fileformat =	file_format;
     }
 
     /* Normalize format */
-    switch (trace->fileformat) {
+    switch (trace->dfile.fileformat) {
     case	FF_AUTO:
     case	FF_DECSIM:
     case	FF_DECSIM_BIN:
 #ifdef VMS
-	trace->fileformat =	FF_DECSIM_BIN;
+	trace->dfile.fileformat =	FF_DECSIM_BIN;
 #else
 	/* Binary relys on varible RMS records - Ultrix has no such thing */
-	trace->fileformat =	FF_DECSIM_ASCII;
+	trace->dfile.fileformat =	FF_DECSIM_ASCII;
 #endif
 	break;
 	/* No default */
     }
 
     /* Open file and copy descriptor information */
-    read_fd = open (trace->filename, O_RDONLY, 0);
+    read_fd = open (trace->dfile.filename, O_RDONLY, 0);
     if (read_fd>0) {
-	fstat (read_fd, &(trace->filestat));
+	fstat (read_fd, &(trace->dfile.filestat));
 #ifndef VMS
-	if (! S_ISREG(trace->filestat.st_mode)) {
+	if (! S_ISREG(trace->dfile.filestat.st_mode)) {
 	    /* Not regular file */
 	    close (read_fd);
 	    read_fd = -1;
@@ -283,7 +283,7 @@ void fil_read (
     }
     if (read_fd<1) {
 	/* Similar code below! */
-	sprintf (message,"Can't open file %s", trace->filename);
+	sprintf (message,"Can't open file %s", trace->dfile.filename);
 	dino_error_ack (trace, message);
 
 	/* Clear cursor and return*/
@@ -296,19 +296,19 @@ void fil_read (
 #ifndef VMS
     /* If compressed, close the file and open as uncompressed */
     pipecmd[0]='\0';
-    if ((pchar=strrchr(trace->filename,'.')) != NULL ) {
-	if (!strcmp (pchar, ".Z")) sprintf (pipecmd, "uncompress -c %s", trace->filename);
-	if (!strcmp (pchar, ".gz")) sprintf (pipecmd, "gunzip -c %s", trace->filename);
+    if ((pchar=strrchr(trace->dfile.filename,'.')) != NULL ) {
+	if (!strcmp (pchar, ".Z")) sprintf (pipecmd, "uncompress -c %s", trace->dfile.filename);
+	if (!strcmp (pchar, ".gz")) sprintf (pipecmd, "gunzip -c %s", trace->dfile.filename);
     }
 	
-    if (trace->fileformat == FF_VERILOG_VPD) {
+    if (trace->dfile.fileformat == FF_VERILOG_VPD) {
 	if (pipecmd[0]) {
 	    /* Because vpd2vcd fseeks, it won't take a pipe as input, and we... */
 	    sprintf (message,"Can't unzip/uncompress VPD traces.");
 	    dino_error_ack (trace, message);
 	    return;
 	}
-	sprintf (pipecmd, "vpd2vcd %s 2>/dev/null", trace->filename);
+	sprintf (pipecmd, "vpd2vcd %s 2>/dev/null", trace->dfile.filename);
     }
 
     if (pipecmd[0]) {
@@ -316,7 +316,7 @@ void fil_read (
 	if (DTPRINT_FILE) printf ("Piping: %s\n", pipecmd);
 
 	/* Decsim must be ASCII because of record format */
-	if (trace->fileformat == FF_DECSIM_BIN) trace->fileformat = FF_DECSIM_ASCII;
+	if (trace->dfile.fileformat == FF_DECSIM_BIN) trace->dfile.fileformat = FF_DECSIM_ASCII;
 	
 	/* Close compressed file and open uncompressed file */
 	close (read_fd);
@@ -340,7 +340,7 @@ void fil_read (
     /*
      ** Read in the trace file using the format selected by the user
      */
-    switch (trace->fileformat) {
+    switch (trace->dfile.fileformat) {
       case	FF_DECSIM_BIN:
 #ifdef VMS
 	decsim_read_binary (trace, read_fd);
@@ -420,7 +420,7 @@ void    fil_format_option_cb (
     for (i=0; i<FF_NUMFORMATS; i++) {
 	if (w == trace->fileselect.format_item[i]) {
 	    file_format = i;	/* Change global verion */
-	    trace->fileformat = i;	/* Specifically make this file use this format */
+	    trace->dfile.fileformat = i;	/* Specifically make this file use this format */
 	    fil_select_set_pattern (trace, trace->fileselect.dialog, filetypes[file_format].mask);
 	}
     }
@@ -448,11 +448,11 @@ void fil_ok_cb (
     
     global->save_ordering = XmToggleButtonGetState (trace->fileselect.save_ordering);
     
-    strcpy (trace->filename, tmp);
+    strcpy (trace->dfile.filename, tmp);
     
     DFree (tmp);
     
-    if (DTPRINT_FILE) printf ("In fil_ok_cb Filename=%s\n",trace->filename);
+    if (DTPRINT_FILE) printf ("In fil_ok_cb Filename=%s\n",trace->dfile.filename);
     fil_read (trace);
 }
 
@@ -478,15 +478,15 @@ void help_trace_cb (
 	sprintf (msg, "No trace is loaded.\n");
     }
     else {
-	sprintf (msg, "%s\n\n", trace->filename);
+	sprintf (msg, "%s\n\n", trace->dfile.filename);
 
-	sprintf (msg2, "File Format: %s\n", filetypes[trace->fileformat].name);
+	sprintf (msg2, "File Format: %s\n", filetypes[trace->dfile.fileformat].name);
 	strcat (msg, msg2);
 
-	sprintf (msg2, "File Modified Date: %s\n", date_string (trace->filestat.st_ctime));
+	sprintf (msg2, "File Modified Date: %s\n", date_string (trace->dfile.filestat.st_ctime));
 	strcat (msg, msg2);
 
-	sprintf (msg2, "File Creation Date: %s\n", date_string (trace->filestat.st_mtime));
+	sprintf (msg2, "File Creation Date: %s\n", date_string (trace->dfile.filestat.st_mtime));
 	strcat (msg, msg2);
 
 	sprintf (msg2, "\nTimes stored to nearest: %s\n", time_units_to_string (global->time_precision, TRUE));
@@ -630,12 +630,12 @@ void fil_make_busses (
 
 	/* Use the separator character to split signals into vector and base */
 	/* IE "signal_1" becomes "signal" with index=1 if the separator is _ */
-	sepchar = trace->vector_separator;
+	sepchar = trace->dfile.vector_separator;
 	if (sepchar == '\0') sepchar='<';	/* Allow both '\0' and '<' for DANGER::DORMITZER */
 	sep = strrchr (sig_ptr->signame, sepchar);
 	bbeg = sep+1;
 	if (!sep || !isdigit (*bbeg)) {
-	    if (trace->vector_separator == '\0') {
+	    if (trace->dfile.vector_separator == '\0') {
 		/* Allow numbers at end to be stripped off as the vector bit */
 		for (sep = sig_ptr->signame + strlen (sig_ptr->signame) - 1;
 		     (sep > sig_ptr->signame) && isdigit (*sep);
@@ -662,7 +662,7 @@ void fil_make_busses (
 	    /* Mark this first digit, _, whatever as null (truncate the name) */
 	    *sep++ = '\0';
 	    /* Hunt for the end of the vector */
-	    while (*sep && *sep!=trace->vectorend_separator) sep++;
+	    while (*sep && *sep!=trace->dfile.vectorend_separator) sep++;
 	    /* Remember if there is stuff after the vector */
 	    if (*sep && *(sep+1)) sig_ptr->signame_buspos = sep+1;
 	}
@@ -701,8 +701,8 @@ void fil_make_busses (
     }
     
     
-    if (trace->fileformat == FF_VERILOG
-	|| trace->fileformat == FF_VERILOG_VPD) {
+    if (trace->dfile.fileformat == FF_VERILOG
+	|| trace->dfile.fileformat == FF_VERILOG_VPD) {
 	/* Verilog may have busses > 128 bits, other formats should have one record per
 	   bit, so it shouldn't matter.  Make consistent sometime in the future */
 	verilog_womp_128s (trace);
@@ -736,10 +736,10 @@ void fil_make_busses (
 			&& ((bus_sig_ptr->lsb_index + 1) == sig_ptr->msb_index)))
 		/*	& are placed next to each other in the source */
 		/*	& not a tempest trace (because the bit ordering is backwards, <31:0> would look line 0:31 */
-		&& ((trace->fileformat != FF_TEMPEST)
+		&& ((trace->dfile.fileformat != FF_TEMPEST)
 		    || (((bus_sig_ptr->file_pos) == (sig_ptr->file_pos + sig_ptr->bits))
-			&& trace->vector_separator=='<'))
-		&& ((trace->fileformat != FF_VERILOG && trace->fileformat != FF_VERILOG_VPD)
+			&& trace->dfile.vector_separator=='<'))
+		&& ((trace->dfile.fileformat != FF_VERILOG && trace->dfile.fileformat != FF_VERILOG_VPD)
 		    || ((bus_sig_ptr->file_pos + bus_sig_ptr->bits) == sig_ptr->file_pos))
 		&& ! (sig_ptr->file_type.flag.vector_msb)
 		/*	& not (verilog trace which had a signal already as a vector) */
@@ -748,7 +748,7 @@ void fil_make_busses (
 		/* Can be bussed with previous signal */
 		bus_sig_ptr->bits += sig_ptr->bits;
 		bus_sig_ptr->lsb_index = sig_ptr->lsb_index;
-		if (trace->fileformat == FF_TEMPEST) bus_sig_ptr->file_pos = sig_ptr->file_pos;
+		if (trace->dfile.fileformat == FF_TEMPEST) bus_sig_ptr->file_pos = sig_ptr->file_pos;
 
 		/* Delete this signal */
 		sig_free (trace, sig_ptr, FALSE, FALSE);
@@ -899,7 +899,7 @@ void fil_trace_end (
     /* Mark as loaded */
     trace->loaded = TRUE;
 
-    switch (trace->fileformat) {
+    switch (trace->dfile.fileformat) {
     case	FF_TEMPEST:
     case	FF_DECSIM_ASCII:
     case	FF_DECSIM_BIN:
@@ -924,9 +924,9 @@ void fil_trace_end (
     config_read_defaults (trace, FALSE);
 
     /* Modify deleted trace to have latest options */
-    global->deleted_trace_head->hierarchy_separator = trace->hierarchy_separator;
-    global->deleted_trace_head->vector_separator = trace->hierarchy_separator;
-    global->deleted_trace_head->vectorend_separator = trace->vectorend_separator;
+    global->deleted_trace_head->dfile.hierarchy_separator = trace->dfile.hierarchy_separator;
+    global->deleted_trace_head->dfile.vector_separator = trace->dfile.hierarchy_separator;
+    global->deleted_trace_head->dfile.vectorend_separator = trace->dfile.vectorend_separator;
 
     /* Apply the statenames */
     draw_needupd_val_states ();

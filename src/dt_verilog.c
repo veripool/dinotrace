@@ -211,6 +211,7 @@ static void	verilog_process_var (
     /* Allocate new signal structure */
     new_sig_ptr = DNewCalloc (Signal);
     new_sig_ptr->trace = trace;
+    new_sig_ptr->dfile = &(trace->dfile);
     new_sig_ptr->radix = global->radixs[0];
     if (!strncmp (type, "real", 4)) {
 	new_sig_ptr->radix = global->radixs[RADIX_REAL];
@@ -770,7 +771,7 @@ void verilog_read (
     signal_by_pos = NULL;
 
     verilog_line_num=0;
-    current_file = trace->filename;
+    current_file = trace->dfile.filename;
     verilog_process_lines (trace, readfp);
 
     /* Free up */

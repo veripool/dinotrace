@@ -20,9 +20,9 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set ID 9.0d
-@set VERSION 9.0d
-@set UPDATED September 1998
+@set VERSION 9.1a
+@set UPDATED November 1998
+@set ID @value{VERSION}
 @c All functions use these for searching ease
 @macro dmenu{f}
 @code{\f\}
@@ -1009,8 +1009,17 @@ will add it to the bottom of the other list.  Clicking on the
 list.  By specifying a pattern then @widget{Add All} or @widget{Delete
 All}, signals which match a pattern can be added or deleted.
 
-The @widget{Delete Constant Value} button will delete only those signals
-which have a single constant value for all times in the trace.
+The @widget{Delete Constants} button will delete only those signals
+which have a single constant value for all times in the trace.  Likewise
+the @widget{Delete Const or X/Z} button will delete only those signals
+which have a constant value, or are unknown or tristated.  This is
+useful for deleting those signals which have uninitialized values before
+reset then later in the trace are initalized to constants.
+
+The @widget{Sort Wholename} and @widget{Sort Basename} buttons will sort
+the selected signals and place them at the bottom of the trace.  The
+former uses the entire signal name, while the latter sorts by the
+basename, ignoring the hierarchy portion of the signal name.
 
 @node Signal Cancel,  , Signal Select..., Signal Menu
 @subsection Signal Cancel
@@ -2351,7 +2360,7 @@ with the lines:
 
 @example
 vector_separator "<"
-hierarchy_separator "-"
+hierarchy_separator ">"
 @end example
 
 To save disk space you may wish to store files as gziped.  This

@@ -99,10 +99,10 @@ void cus_dialog_cb (
     if (DTPRINT_ENTRY) printf ("In custom - trace=%p\n",trace);
     
     if (!trace->custom.dialog) {
-	if (trace->filename[0] == '\0')
+	if (trace->dfile.filename[0] == '\0')
 	    sprintf (title,"Customize Window");
 	else
-	    sprintf (title,"Customize %s",trace->filename);
+	    sprintf (title,"Customize %s",trace->dfile.filename);
 	
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple (title) );
@@ -454,7 +454,7 @@ void cus_read_ok_cb (
     tmp = extract_first_xms_segment (cb->value);
     strcpy (filename, tmp);
     DFree (tmp);
-    if (DTPRINT_FILE) printf ("In cus_read_ok_cb Filename=%s\n",trace->filename);
+    if (DTPRINT_FILE) printf ("In cus_read_ok_cb Filename=%s\n",trace->dfile.filename);
 
     config_read_file (trace, filename, TRUE, FALSE);
 

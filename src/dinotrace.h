@@ -289,6 +289,7 @@ extern Widget		dmanage_last;	/* Last DManageChild()'d widget */
 
 /* Define some types that are needed before defined */
 typedef struct st_trace Trace;
+typedef struct st_dfile DFile_t;
 typedef struct st_signal Signal;
 
 /**********************************************************************/
@@ -490,7 +491,8 @@ typedef struct {
     Widget enable[MAX_SRCH];
     Widget cursor[MAX_SRCH];
     Widget add_sigs, add_sigs_form, add_pat, add_all;
-    Widget delete_sigs, delete_pat, delete_all, delete_const;
+    Widget delete_sigs, delete_pat, delete_all;
+    Widget delete_const, delete_const_xz, sort_full, sort_nopath;
     OkApplyWidgets_t okapply;
 
     XmString *del_strings;
@@ -505,9 +507,9 @@ typedef struct {
 /* Structures */
 
 typedef struct {
-    Position		x, y, height, width;	
-    Boolean_t		xp, yp, heightp, widthp;	/* Above element is a percentage */
-} Geometry;
+    Position	x, y, height, width;	
+    Boolean_t	xp, yp, heightp, widthp;	/* Above element is a percentage */
+} Geometry_t;
 
 /* Structure for each signal-state assignment */
 typedef struct st_signalstate {
@@ -626,6 +628,7 @@ struct st_signal {
     Value_t		*cptr;		/* current time data ptr */
 
     struct st_signal	*copyof;	/* Link to signal this is copy of (or NULL) */
+    DFile_t		*dfile;		/* File signal belongs to (originally) */
     Trace		*trace;		/* Trace signal belongs to (originally) */
     struct st_signal	*verilog_next;	/* Next verilog signal with same coding */
 
@@ -633,6 +636,7 @@ struct st_signal {
     XmString		xsigname;	/* Signal name as XmString */
     char		*signame_buspos;/* Signal name portion where bus bits begin (INSIDE signame) */
     char		*note;		/* Information for user, or NULL */
+    char		*key;		/* Sort key for sorting functions (temporary use only) */
 
     Radix_t		*radix;		/* Number radix represtation */
     SignalState_t	*decode;	/* Pointer to decode information, NULL if none */
@@ -678,9 +682,22 @@ typedef struct st_signal_list {
     Signal		*signal;	/* Selected signal */
 } SignalList;
 
+/* File information structure (one per filename that was read) */
+struct st_dfile {
+    char		filename[MAXFNAMELEN];	/* Current file */
+    uint_t		fileformat;	/* Type of trace file (see FF_*) */
+
+    struct stat		filestat;	/* Information on the current file */
+    char		hierarchy_separator;	/* Hiearchy separator character, usually "." */
+    char		vector_separator;	/* Bus separator character, usually "[" */
+    char		vectorend_separator;	/* Bus ending separator character, usually "]" */
+}; /*DFile_t;  typedef'd above */
+
 /* Trace information structure (one per window) */
 struct st_trace {
     struct st_trace	*next_trace;	/* Pointer to the next trace display */
+
+    DFile_t		dfile;		/* File trace came from (to be independant later) */
 
     Signal		*firstsig;	/* Linked list of all nondeleted signals */
     Signal		*dispsig;	/* Pointer within sigque to first signal on screen */
@@ -722,14 +739,8 @@ struct st_trace {
     Widget		help_doc;	/* Help documentation */
     Widget		help_doc_text;	/* Help documentation */
 
-    char		filename[MAXFNAMELEN];	/* Current file */
     char 		printname[MAXFNAMELEN];	/* Print filename */
-    struct stat		filestat;	/* Information on the current file */
-    uint_t		fileformat;	/* Type of trace file (see FF_*) */
     Boolean_t		loaded;		/* True if the filename is loaded in */
-    char		hierarchy_separator;	/* Hiearchy separator character, usually "." */
-    char		vector_separator;	/* Bus separator character, usually "[" */
-    char		vectorend_separator;	/* Bus ending separator character, usually "]" */
 
     uint_t		redraw_needed;	/* Need to refresh the screen when get a chance, TRD_* bit fielded */
 #define				TRD_REDRAW	0x1
@@ -801,9 +812,9 @@ typedef struct {
     XFontStruct		*time_font;		/* Time Text font */
     XFontStruct		*value_font;		/* Value Text font */
 
-    Geometry		start_geometry;	/* Geometry to open first trace with */
-    Geometry		open_geometry;	/* Geometry to open later traces with */
-    Geometry		shrink_geometry; /* Geometry to shrink trace->open traces with */
+    Geometry_t		start_geometry;	/* Geometry to open first trace with */
+    Geometry_t		open_geometry;	/* Geometry to open later traces with */
+    Geometry_t		shrink_geometry; /* Geometry to shrink trace->open traces with */
 
     Trace		*anno_last_trace;	/* Last trace annotated */
     TraceSel_t		anno_traces;	/* Which traces to include */

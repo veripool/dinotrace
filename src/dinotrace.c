@@ -223,7 +223,7 @@ int    main (
     config_read_defaults (trace, FALSE);
 
     /* Make the temporary trace the deleted signal trace */
-    strcpy (trace->filename, "DELETED");
+    strcpy (trace->dfile.filename, "DELETED");
     global->deleted_trace_head = trace;
     global->trace_head = NULL;
 
@@ -254,7 +254,7 @@ See the Help menu for more information.");
 		trace = trace_create_split_window (trace);
 	    }
 	    XSync (global->display,0);
-	    strcpy (trace->filename, argv[i]);
+	    strcpy (trace->dfile.filename, argv[i]);
 	    fil_read (trace);
 	}
     }
