@@ -71,11 +71,6 @@ int    main (argc, argv)
     TRACE	*trace;
     
     /* Create global structure */
-    global = XtNew (GLOBAL);
-    memset (global, 0, sizeof (GLOBAL));
-    global->trace_head = NULL;
-    global->directory[0] = '\0';
-    global->res = RES_SCALE/ (float)(250);
     init_globals ();
 
     /* Parse parameters */

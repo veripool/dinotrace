@@ -931,7 +931,7 @@ void	config_process_line_internal (trace, line, eof)
 
 	    if ((ctime < global->time) || (ctime > end_time)) {
 		/* Slide time if it isn't on the screen already */
-		global->time = ctime - (int)((trace->width-global->xstart)/global->res/2);
+		global->time = ctime - ( TIME_WIDTH (trace) /2 );
 		new_time (trace);
 		}
 	    }
@@ -943,8 +943,7 @@ void	config_process_line_internal (trace, line, eof)
 	    restime = string_to_time (trace, strg);
 
 	    if (restime > 0) {
-		global->res = RES_SCALE / (float)restime;
-		new_res (trace);
+		new_res (trace, RES_SCALE / (float)restime);
 		}
 	    }
 	else if (!strcmp(cmd, "SIGNAL_GOTO")) {

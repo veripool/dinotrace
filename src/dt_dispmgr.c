@@ -281,6 +281,13 @@ void init_globals ()
 
     if (DTPRINT_ENTRY) printf ("in init_globals\n");
 
+    global = XtNew (GLOBAL);
+    memset (global, 0, sizeof (GLOBAL));
+    global->trace_head = NULL;
+    global->directory[0] = '\0';
+    global->res = RES_SCALE/ (float)(250);
+    global->res_default = TRUE;
+
     global->preserved_trace = NULL;
     global->delsig = NULL;
     global->selected_sig = NULL;
@@ -308,7 +315,6 @@ void init_globals ()
     global->shrink_geometry.heightp = global->shrink_geometry.widthp = TRUE;
 
     global->goto_color = -1;
-    global->res_default = TRUE;
 
     /* Annotate stuff */
     global->anno_poppedup = FALSE;
@@ -898,7 +904,7 @@ TRACE *create_trace (xs,ys,xp,yp)
 
     XSetFont (global->display, trace->gc, global->signal_font->fid);
 
-    new_res (trace);
+    new_res (trace, global->res);
 
     set_cursor (trace, DC_NORMAL);
 

@@ -75,7 +75,7 @@ void    ps_range_sensitives_cb (w, range_ptr, cb)
       case 3:	/* Window */
 	active = FALSE;
 	range_ptr->dastime = (range_ptr->type == BEGIN) ? global->time 
-	    :   (global->time + (( trace->width - XMARGIN - global->xstart ) / global->res));
+	    :   (global->time + TIME_WIDTH (trace));
 	break;
       case 2:	/* Trace */ 
 	active = FALSE;
@@ -446,7 +446,7 @@ void    ps_print_internal (trace)
     XSync (global->display,0);
     
     /* calculate time per page */
-    time_per_page = (int)((trace->width - global->xstart)/global->res);
+    time_per_page = TIME_WIDTH (trace);
     sigs_per_page = trace->numsigvis;
     
     /* Reset stuff if doing all times */
@@ -633,7 +633,7 @@ void ps_draw_grid (trace, psfile, printtime, grid_ptr, draw_numbers)
     
     /* Start to left of right edge */
     xtime = printtime;
-    end_time = printtime + (( trace->width - XMARGIN - global->xstart) / global->res);
+    end_time = printtime + TIME_WIDTH (trace);
 
     /* Move starting point to the right to hit where a grid line is aligned */
     xtime = ((xtime / grid_ptr->period) * grid_ptr->period) + (grid_ptr->alignment % grid_ptr->period);

@@ -361,7 +361,7 @@ void	cus_ok_cb (w,trace,cb)
     XtUnmanageChild (trace->custom.customize);
     
     /* res units may have changed, fix it & redraw the display */
-    new_res (trace);
+    new_res (trace, global->res);
     }
 
 void	cus_apply_cb (w,trace,cb)

@@ -147,7 +147,7 @@ void draw_grid (trace, textoccupied, grid_ptr)
 
     /* Start to left of right edge */
     xtime = global->time;
-    end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
+    end_time = global->time + TIME_WIDTH (trace);
 
     /***** Draw the grid lines */
 
@@ -218,7 +218,7 @@ void draw_cursors (trace)
 
     XSetFont (global->display, trace->gc, global->time_font->fid);
 
-    end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
+    end_time = global->time + TIME_WIDTH (trace);
 
     /* initial the y colors for drawing */
     y2 = ( (int)((trace->height-trace->ystart)/trace->sighgt) - 1 ) *
@@ -346,7 +346,7 @@ void draw_cursors (trace)
 void draw_trace (trace)                                 
     TRACE	*trace;                        
 {         
-    int c=0,i,cnt,adj,ymdpt,xloc,xend,du,len,mid,yfntloc;
+    int c=0,i,cnt,ymdpt,xloc,xend,du,len,mid,yfntloc;
     int last_drawn_xloc;
     unsigned int last_drawn_state=EOT;
     int	x1,y1,y2;
@@ -376,11 +376,9 @@ void draw_trace (trace)
     yfntloc = (trace->sighgt - yfntloc - SIG_SPACE)/2;
     
     xend = trace->width - XMARGIN;
-    adj = global->time * global->res - global->xstart;
-    end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
+    end_time = global->time + TIME_WIDTH (trace);
     
-    if (DTPRINT_DRAW) printf ("global->res=%f adj=%d time=%d-%d\n",global->res,adj,
-			     global->time, end_time);
+    if (DTPRINT_DRAW) printf ("global->res=%f time=%d-%d\n",global->res, global->time, end_time);
     
     /* Loop and draw each signal individually */
     for (sig_ptr = trace->dispsig, numprt = 0; sig_ptr && numprt<trace->numsigvis;

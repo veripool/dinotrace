@@ -317,9 +317,9 @@ void new_time_sigs (sig_first_ptr)
 void new_time (trace)
     TRACE 	*trace;
 {
-    if ( global->time > trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res) ) {
+    if ( global->time > (trace->end_time - TIME_WIDTH (trace)) ) {
         if (DTPRINT_ENTRY) printf ("At end of trace...\n");
-        global->time = trace->end_time - (int)((trace->width-XMARGIN-global->xstart)/global->res);
+        global->time = trace->end_time - TIME_WIDTH (trace);
 	}
     
     if ( global->time < trace->start_time ) {
@@ -365,7 +365,7 @@ void get_geometry ( trace )
     update_scrollbar (trace->hscroll, global->time,
 		      trace->grid[0].period,
 		      trace->start_time, trace->end_time, 
-		      (int)((trace->width-global->xstart)/global->res) );
+		      (int)TIME_WIDTH(trace) );
 
     update_scrollbar (trace->vscroll, trace->numsigstart, 1,
 		      0, trace->numsig, trace->numsigvis); 
@@ -572,11 +572,8 @@ void    prompt_ok_cb (w, trace, cb)
     switch (trace->prompt_type)
 	{
       case IO_RES:
-	/* get the data and store in display structure */
-	global->res = RES_SCALE / (float)restime;
-	    
 	/* change the resolution string on display */
-	new_res (trace);
+	new_res (trace, RES_SCALE / (float)restime);
 	break;
 	
       default:
@@ -733,7 +730,7 @@ void    print_screen_traces (w,trace)
     Widget	w;
     TRACE	*trace;
 {
-    int		i,adj,num;
+    int		i,num;
     SIGNAL	*sig_ptr;
     
     printf ("There are up to %d signals currently visible.\n",trace->numsigvis);
@@ -744,9 +741,6 @@ void    print_screen_traces (w,trace)
 	printf ("Illegal Value.\n");
 	return;
 	}
-    
-    adj = global->time * global->res - global->xstart;
-    printf ("Adjustment value is %d\n",adj);
     
     sig_ptr = (SIGNAL *)trace->dispsig;
     for (i=0; i<num; i++) {

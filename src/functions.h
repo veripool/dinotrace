@@ -28,6 +28,57 @@
 #define draw_all_needed() 		{ global->redraw_needed |= GRD_ALL; }
 #define draw_manual_needed() 		{ global->redraw_needed |= GRD_MANUAL; }
 
+
+/* Utilities */
+#ifndef MAX
+# if __GNUC__
+#   define MAX(a,b) \
+       ({typedef _ta = (a), _tb = (b);  \
+         _ta _a = (a); _tb _b = (b);     \
+         _a > _b ? _a : _b; })
+# else
+#  define MAX(_a_,_b_) ( ( ( _a_ ) > ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
+# endif
+#endif
+
+#ifndef MIN
+# if __GNUC__
+#   define MIN(a,b) \
+       ({typedef _ta = (a), _tb = (b);  \
+         _ta _a = (a); _tb _b = (b);     \
+         _a < _b ? _a : _b; })
+# else
+#   define MIN(_a_,_b_) ( ( ( _a_ ) < ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
+# endif
+#endif
+
+#ifndef ABS
+# if __GNUC__
+#   define ABS(a) \
+       ({typedef _ta = (a);  \
+         _ta _a = (a);     \
+         _a < 0 ? - _a : _a; })
+# else
+#   define ABS(_a_) ( ( ( _a_ ) < 0 ) ? ( - (_a_) ) : ( _a_ ) )
+# endif
+#endif
+
+#define max_sigs_on_screen(_trace_) \
+        ((int)(((_trace_)->height - (_trace_)->ystart) / (_trace_)->sighgt))
+
+#define TIME_TO_XPOS(_xtime_) \
+        ( ((_xtime_) - global->time) * global->res + global->xstart )
+
+#define	TIME_WIDTH(_trace_) \
+	((DTime)( ((_trace_)->width - XMARGIN - global->xstart) / global->res ))
+
+/* Avoid binding error messages on XtFree, NOTE ALSO clears the pointer! */
+#define DFree(ptr) { XtFree((char *)ptr); ptr = NULL; }
+
+/* Useful for debugging messages */
+#define DeNull(_str_) ( ((_str_)==NULL) ? "NULL" : (_str_) )
+#define DeNullSignal(_sig_) ( ((_sig_)==NULL) ? "NULLPTR" : (DeNull((_sig_)->signame) ) )
+
 #define	cptr_to_value(cptr,value_ptr) \
 {\
      (value_ptr)->siglw.number = (cptr)[0].number;\
@@ -177,7 +228,7 @@ extern void
     unmanage_cb(),
     add_event(), remove_all_events(), 
     file_directory(), change_title(),
-    new_time(TRACE *), new_res(), get_geometry(),
+    new_time(TRACE *), new_res(TRACE *, float), get_geometry(),
     get_file_name(),
     cancel_all_events(),
     dino_message_ack(), 

@@ -106,13 +106,13 @@ void hscroll_pageinc (w,trace,cb)
 
     switch ( global->pageinc ) {
       case QPAGE:
-	global->time += (int) (( (trace->width-global->xstart)/global->res)/4);
+	global->time += (int) ( TIME_WIDTH (trace) /4);
 	break;
       case HPAGE:
-	global->time += (int) (( (trace->width-global->xstart)/global->res)/2);
+	global->time += (int) ( TIME_WIDTH (trace) /2);
 	break;
       case FPAGE:
-	global->time += (int) ((trace->width-global->xstart)/global->res);
+	global->time += (int) ( TIME_WIDTH (trace)   );
 	break;
 	}
 
@@ -130,13 +130,13 @@ void hscroll_pagedec (w,trace,cb)
 
     switch ( global->pageinc ) {
       case QPAGE:
-	global->time -= (int) (( (trace->width-global->xstart)/global->res)/4);
+	global->time -= (int) ( TIME_WIDTH (trace) /4);
 	break;
       case HPAGE:
-	global->time -= (int) (( (trace->width-global->xstart)/global->res)/2);
+	global->time -= (int) ( TIME_WIDTH (trace) /2);
 	break;
       case FPAGE:
-	global->time -= (int) ((trace->width-global->xstart)/global->res);
+	global->time -= (int) ( TIME_WIDTH (trace)   );
 	break;
 	}
 
@@ -174,7 +174,7 @@ void win_end_cb (w, trace )
     TRACE		*trace;
 {
     if (DTPRINT_ENTRY) printf ("In win_end_cb trace=%d\n",trace);
-    global->time = trace->end_time - (int) ((trace->width-XMARGIN-global->xstart)/global->res);
+    global->time = trace->end_time - TIME_WIDTH (trace);
     new_time (trace);
     }
 
@@ -310,12 +310,20 @@ void win_chg_res_cb (w,trace,cb)
     }
 
 
-void new_res (trace)
-    TRACE	*trace;
+void new_res
+(
+ TRACE		*trace,
+ float		res_new		/* Desired res, pass global->res to not change */
+ )
 {
     char	string[MAXTIMELEN+30], timestrg[MAXTIMELEN];
 
-    if (DTPRINT_ENTRY) printf ("In new_res - res = %f\n",global->res);
+    if (DTPRINT_ENTRY) printf ("In new_res - res = %f\n",res_new);
+
+    if (res_new != global->res) {
+	global->res_default = FALSE;	/* Has changed */
+	global->res = res_new;
+    }
 
     if (global->res==0.0) global->res=0.1;	/* prevent div zero error */
 
@@ -339,9 +347,7 @@ void win_inc_res_cb (w,trace,cb)
     if (DTPRINT_ENTRY) printf ("In win_inc_res_cb - trace=%d\n",trace);
 
     /* increase the resolution by 10% */
-    global->res = global->res*1.1;
-    global->res_default = FALSE;	/* Has changed */
-    new_res (trace);
+    new_res (trace, global->res * 1.1);
     }
 
 void win_dec_res_cb (w,trace,cb)
@@ -352,9 +358,7 @@ void win_dec_res_cb (w,trace,cb)
     if (DTPRINT_ENTRY) printf ("In win_dec_res_cb - trace=%d\n",trace);
 
     /* decrease the resolution by 10% */
-    global->res = global->res*0.9;
-    global->res_default = FALSE;	/* Has changed */
-    new_res (trace);
+    new_res (trace, global->res * 0.9);
     }
 
 void win_full_res_cb (w,trace,cb)
@@ -370,10 +374,10 @@ void win_full_res_cb (w,trace,cb)
     /* set resolution  */
     if (trace->end_time != trace->start_time) {
 	global->time = trace->start_time;
-	global->res = ( (float)(trace->width - global->xstart)) /
-	    ((float)(trace->end_time - trace->start_time));
-	global->res_default = FALSE;	/* Has changed */
-	new_res (trace);
+	new_res (trace,
+		 ( ((float)(trace->width - global->xstart)) /
+		   ((float)(trace->end_time - trace->start_time)) )
+		 );
 	new_time (trace);
 	}
     }
@@ -425,13 +429,11 @@ void res_zoom_click_ev (w, trace, ev)
 	    }
        
 	/* Set new res & time */
-	global->res = ((float)(trace->width - global->xstart)) /
-	    ((float)(time - global->click_time));
-	global->res_default = FALSE;	/* Has changed */
-	
 	global->time = global->click_time;
-
-	new_res (trace);
+	new_res (trace,
+		 ( ((float)(trace->width - global->xstart)) /
+		   ((float)(time - global->click_time)) )
+		 );
 	new_time (trace);
 	}
 
@@ -611,7 +613,7 @@ void    win_goto_ok_cb (w,trace,cb)
 
     if (time > 0) {
 	/* Center it on the screen */
-	global->time = time - (int)((trace->width-global->xstart)/global->res/2);
+	global->time = time - ( TIME_WIDTH (trace) / 2);
 	
 	/* Limit time extent */
 	/* V6.3 bug - Don't subtract the window length */

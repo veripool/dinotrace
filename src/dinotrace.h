@@ -26,7 +26,7 @@
  *
  */
 
-#define DTVERSION	"Dinotrace V8.0e"
+#define DTVERSION	"Dinotrace V8.1a"
 /*#define EXPIRATION	((60*60*24)*6*30) / * 6months - In seconds - Comment out define for no expiration dates */
 #undef	EXPIRATION
 
@@ -135,54 +135,6 @@ typedef enum {
 
 #define DIALOG_WIDTH	75
 #define DIALOG_HEIGHT	50
-
-
-/* Utilities */
-#ifndef MAX
-# if __GNUC__
-#   define MAX(a,b) \
-       ({typedef _ta = (a), _tb = (b);  \
-         _ta _a = (a); _tb _b = (b);     \
-         _a > _b ? _a : _b; })
-# else
-#  define MAX(_a_,_b_) ( ( ( _a_ ) > ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
-# endif
-#endif
-
-#ifndef MIN
-# if __GNUC__
-#   define MIN(a,b) \
-       ({typedef _ta = (a), _tb = (b);  \
-         _ta _a = (a); _tb _b = (b);     \
-         _a < _b ? _a : _b; })
-# else
-#   define MIN(_a_,_b_) ( ( ( _a_ ) < ( _b_ ) ) ? ( _a_ ) : ( _b_ ) )
-# endif
-#endif
-
-#ifndef ABS
-# if __GNUC__
-#   define ABS(a) \
-       ({typedef _ta = (a);  \
-         _ta _a = (a);     \
-         _a < 0 ? - _a : _a; })
-# else
-#   define ABS(_a_) ( ( ( _a_ ) < 0 ) ? ( - (_a_) ) : ( _a_ ) )
-# endif
-#endif
-
-#define max_sigs_on_screen(_trace_) \
-        ((int)(((_trace_)->height - (_trace_)->ystart) / (_trace_)->sighgt))
-
-#define TIME_TO_XPOS(_xtime_) \
-        ( ((_xtime_) - global->time) * global->res + global->xstart )
-
-/* Avoid binding error messages on XtFree, NOTE ALSO clears the pointer! */
-#define DFree(ptr) { XtFree((char *)ptr); ptr = NULL; }
-
-/* Useful for debugging messages */
-#define DeNull(_str_) ( ((_str_)==NULL) ? "NULL" : (_str_) )
-#define DeNullSignal(_sig_) ( ((_sig_)==NULL) ? "NULLPTR" : (DeNull((_sig_)->signame) ) )
 
 typedef	int 	DTime;			/* Note "Time" is defined by X.h - some uses of -1 */
 
