@@ -211,7 +211,7 @@ void trace_reread (
 	    if ((newstat.st_mtime == trace->dfile.filestat.st_mtime)
 		&& (newstat.st_ctime == trace->dfile.filestat.st_ctime)) {
 		if (DTPRINT_FILE) printf ("  file has not changed.\n");
-		if (DTDEBUG) printf ("  file has not changed, but rereading anyways.\n");
+		if (DTPRINT_FILE) printf ("  file has not changed, but rereading anyways.\n");
 		else return;
 	    }
 	}
