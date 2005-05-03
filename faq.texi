@@ -7,8 +7,8 @@
 @finalout
 @c %**end of header
 
-@set UPDATED December 2004
-@set VERSION 9.2a
+@set UPDATED May 2005
+@set VERSION 9.2b
 
 @c DESCRIPTION: TexInfo: DOCUMENT source run through texinfo to produce FAQ file
 @c Use 'make FAQ' to produce the output file
