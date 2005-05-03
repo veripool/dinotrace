@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in [].
 
 ****    Fix traces containing only real numbers.  [Vitor Antunes]
 
+****	Fix segfault when doing signal adds.  [Guy Hutchinson]
+
 * Dinotrace 9.2a 12/20/2004
 
 **      NEWS file is now renamed Changes.

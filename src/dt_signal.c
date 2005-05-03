@@ -916,7 +916,7 @@ void    sig_add_sel_cb (
 	set_cursor (DC_SIG_ADD);
 	add_event (ButtonPressMask, sig_add_ev);
 
-	/* unmanage the popup on the screen */
+	/* unmanage the popup on the screen - we'll pop it back later */
 	XtUnmanageChild (trace->signal.add);
     }
     else {
@@ -927,6 +927,7 @@ void    sig_add_sel_cb (
 void    sig_cancel_cb (
     Widget	w)
 {
+    Widget	list_wid;
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_cancel_cb - trace=%p\n",trace);
     
@@ -935,6 +936,10 @@ void    sig_cancel_cb (
     
     /* unmanage the popup on the screen */
     XtUnmanageChild (trace->signal.add);
+
+    /* cleanup list in case the trace gets reloaded */
+    list_wid = XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_LIST);
+    XmListDeleteAllItems (list_wid);
 }
 
 void    sig_mov_cb (
