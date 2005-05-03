@@ -2,7 +2,7 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 	
-* Dinotrace 9.2**
+* Dinotrace 9.2b 05/03/2005
 
 ***	The default extension for Verilog dumps is now .vcd instead of .dmp.
 
