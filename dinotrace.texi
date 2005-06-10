@@ -20,8 +20,8 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set VERSION 9.2b
-@set UPDATED May 2005
+@set VERSION 9.3a
+@set UPDATED June 2005
 @set ID @value{VERSION}
 
 @c DESCRIPTION: TexInfo: DOCUMENT source run through texinfo to produce documentation file

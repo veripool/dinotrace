@@ -104,7 +104,7 @@ void socket_sig_hup (int sig)
 
 void socket_set_os_signals ()
 {
-    signal (SIGUSR1, &socket_sig_hup);	// Reread All
+    signal (SIGUSR1, &socket_sig_hup);	/* Reread All*/
 }
 
 /*** MAIN ********************************************************************/

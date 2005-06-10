@@ -414,7 +414,7 @@ void cus_read_cb (
 	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_WIDGET );
 	    XtSetArg (arglist[2], XmNtopWidget, last);
 	    XtSetArg (arglist[3], XmNleftOffset, 15);
-	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));  // Else openmotif makes small button
+	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));  /* Else openmotif makes small button*/
 	    trace->cusread.config_enable[cfg_num] = XmCreateToggleButton (trace->cusread.form,"",arglist,5);
 	    
 	    /* file name */

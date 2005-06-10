@@ -1109,7 +1109,7 @@ void    sig_search_cb (
 	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_WIDGET );
 	    XtSetArg (arglist[2], XmNtopWidget, above);
 	    XtSetArg (arglist[3], XmNselectColor, trace->xcolornums[i+1]);
-	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));  // Else openmotif makes small button
+	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));  /* Else openmotif makes small button*/
 	    trace->signal.enable[i] = XmCreateToggleButton (trace->signal.dialog,"togglen",arglist,5);
 	    DManageChild (trace->signal.enable[i], trace, MC_NOKEYS);
 
@@ -2431,12 +2431,12 @@ static void sig_modify_en_signal (
 }
 
 static Boolean_t sig_wordcmp(const char* str, const char* word) {
-    // Return true if this signal ends in the specified pattern
+    /* Return true if this signal ends in the specified pattern*/
     while (*word) {
 	if (!*str || *word != *str) return FALSE;
 	word++; str++;
     }
-    // Next character must end a word
+    /* Next character must end a word*/
     return (!*str || (!isalnum(*str) && *str!='_'));
 }
 
