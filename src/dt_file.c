@@ -144,10 +144,8 @@ void trace_read_cb (
 
 	/* Create save_ordering button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Preserve Signal Ordering"));
-	XtSetArg (arglist[1], XmNx, 0);
-	XtSetArg (arglist[2], XmNy, 100);
-	XtSetArg (arglist[3], XmNshadowThickness, 1);
-	trace->fileselect.save_ordering = XmCreateToggleButton (trace->fileselect.work_area,"save_ordering",arglist,4);
+	XtSetArg (arglist[1], XmNshadowThickness, 1);
+	trace->fileselect.save_ordering = XmCreateToggleButton (trace->fileselect.work_area,"save_ordering",arglist,2);
 	DManageChild (trace->fileselect.save_ordering, trace, MC_NOKEYS);
 	
 	DManageChild (trace->fileselect.work_area, trace, MC_NOKEYS);

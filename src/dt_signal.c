@@ -1074,17 +1074,18 @@ void    sig_search_cb (
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Signal Search Requester") );
 	XtSetArg (arglist[2], XmNverticalSpacing, 0);
-	trace->signal.dialog = XmCreateFormDialog (trace->work,"search",arglist,3);
+	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
+	trace->signal.dialog = XmCreateFormDialog (trace->work,"search",arglist,4);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Color"));
-	XtSetArg (arglist[1], XmNx, 5);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[3], XmNtopOffset, 10);
 	trace->signal.label1 = XmCreateLabel (trace->signal.dialog,"label1",arglist,4);
 	DManageChild (trace->signal.label1, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Sig"));
-	XtSetArg (arglist[1], XmNx, 5);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopWidget, dmanage_last);
 	trace->signal.label4 = XmCreateLabel (trace->signal.dialog,"label4",arglist,4);
@@ -1092,34 +1093,37 @@ void    sig_search_cb (
 	
 	XtSetArg (arglist[0], XmNlabelString,
 		 XmStringCreateSimple ("Search value, *? are wildcards" ));
-	XtSetArg (arglist[1], XmNx, 60);
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopWidget, trace->signal.label1);
-	XtSetArg (arglist[4], XmNverticalSpacing, 0);
-	trace->signal.label3 = XmCreateLabel (trace->signal.dialog,"label3",arglist,5);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[2], XmNleftWidget, trace->signal.label4 );
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[4], XmNtopWidget, trace->signal.label1);
+	XtSetArg (arglist[5], XmNverticalSpacing, 0);
+	trace->signal.label3 = XmCreateLabel (trace->signal.dialog,"label3",arglist,6);
 	DManageChild (trace->signal.label3, trace, MC_NOKEYS);
 	
 	above = trace->signal.label3;
 
 	for (i=0; i<MAX_SRCH; i++) {
 	    /* enable button */
-	    XtSetArg (arglist[0], XmNx, 15);
+	    XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
 	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_WIDGET );
 	    XtSetArg (arglist[2], XmNtopWidget, above);
 	    XtSetArg (arglist[3], XmNselectColor, trace->xcolornums[i+1]);
-	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (""));
+	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));  // Else openmotif makes small button
 	    trace->signal.enable[i] = XmCreateToggleButton (trace->signal.dialog,"togglen",arglist,5);
 	    DManageChild (trace->signal.enable[i], trace, MC_NOKEYS);
 
 	    /* create the file name text widget */
 	    XtSetArg (arglist[0], XmNrows, 1);
 	    XtSetArg (arglist[1], XmNcolumns, 30);
-	    XtSetArg (arglist[2], XmNx, 60);
-	    XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	    XtSetArg (arglist[4], XmNtopWidget, above);
-	    XtSetArg (arglist[5], XmNresizeHeight, FALSE);
-	    XtSetArg (arglist[6], XmNeditMode, XmSINGLE_LINE_EDIT);
-	    trace->signal.text[i] = XmCreateText (trace->signal.dialog,"textn",arglist,7);
+	    XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_WIDGET );
+	    XtSetArg (arglist[3], XmNleftWidget, trace->signal.enable[i]);
+	    XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_WIDGET );
+	    XtSetArg (arglist[5], XmNtopWidget, above);
+	    XtSetArg (arglist[6], XmNresizeHeight, FALSE);
+	    XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
+	    XtSetArg (arglist[8], XmNrightAttachment, XmATTACH_FORM );
+	    trace->signal.text[i] = XmCreateText (trace->signal.dialog,"textn",arglist,9);
 	    DAddCallback (trace->signal.text[i], XmNactivateCallback, sig_search_ok_cb, trace);
 	    DManageChild (trace->signal.text[i], trace, MC_NOKEYS);
 

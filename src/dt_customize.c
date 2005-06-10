@@ -382,6 +382,7 @@ void cus_read_cb (
     XmFileSelectionBoxCallbackStruct *cb)
 {
     int		cfg_num;
+    Widget	last;
     
     if (DTPRINT_ENTRY) printf ("In cus_read_cb trace=%p\n",trace);
     
@@ -392,7 +393,7 @@ void cus_read_cb (
 	DAddCallback (trace->cusread.dialog, XmNokCallback, cus_read_ok_cb, trace);
 	DAddCallback (trace->cusread.dialog, XmNcancelCallback, unmanage_cb, trace->cusread.dialog);
 	XtUnmanageChild ( XmFileSelectionBoxGetChild (trace->cusread.dialog, XmDIALOG_HELP_BUTTON));
-	
+
 	XtSetArg (arglist[0], XmNhorizontalSpacing, 10);
 	XtSetArg (arglist[1], XmNverticalSpacing, 7);
 	trace->cusread.form = XmCreateForm (trace->cusread.dialog, "wa", arglist, 2);
@@ -405,33 +406,34 @@ void cus_read_cb (
 	trace->cusread.config_label = XmCreateLabel (trace->cusread.form,"label",arglist,5);
 	DManageChild (trace->cusread.config_label, trace, MC_NOKEYS);
 	
+	last = trace->cusread.config_label;
+
 	for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
 	    /* enable button */
 	    XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
-	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_OPPOSITE_WIDGET );
-	    XtSetArg (arglist[2], XmNtopOffset, 5);
+	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_WIDGET );
+	    XtSetArg (arglist[2], XmNtopWidget, last);
 	    XtSetArg (arglist[3], XmNleftOffset, 15);
-	    trace->cusread.config_enable[cfg_num] = XmCreateToggleButton (trace->cusread.form,"",arglist,4);
+	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));  // Else openmotif makes small button
+	    trace->cusread.config_enable[cfg_num] = XmCreateToggleButton (trace->cusread.form,"",arglist,5);
 	    
 	    /* file name */
 	    XtSetArg (arglist[0], XmNrows, 1);
 	    XtSetArg (arglist[1], XmNcolumns, 30);
 	    XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_WIDGET );
 	    XtSetArg (arglist[3], XmNleftWidget, trace->cusread.config_enable[cfg_num]);
-	    XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_WIDGET );
-	    XtSetArg (arglist[5], XmNtopWidget, 
-		      (cfg_num>0)? trace->cusread.config_filename[cfg_num-1] : trace->cusread.config_label);
-	    XtSetArg (arglist[6], XmNresizeHeight, FALSE);
-	    XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
-	    XtSetArg (arglist[8], XmNsensitive, (cfg_num<3));
+	    XtSetArg (arglist[4], XmNrightAttachment, XmATTACH_FORM );
+	    XtSetArg (arglist[5], XmNtopAttachment, XmATTACH_WIDGET );
+	    XtSetArg (arglist[6], XmNtopWidget, last);
+	    XtSetArg (arglist[7], XmNresizeHeight, FALSE);
+	    XtSetArg (arglist[8], XmNeditMode, XmSINGLE_LINE_EDIT);
+	    XtSetArg (arglist[9], XmNsensitive, (cfg_num<3));
 	    trace->cusread.config_filename[cfg_num] = XmCreateText (trace->cusread.form,"textn",arglist,9);
-
-	    /* Set button x*/
-	    XtSetArg (arglist[0], XmNtopWidget, trace->cusread.config_filename[cfg_num]);
-	    XtSetValues (trace->cusread.config_enable[cfg_num],arglist,1);
 
 	    DManageChild (trace->cusread.config_enable[cfg_num], trace, MC_NOKEYS);
 	    DManageChild (trace->cusread.config_filename[cfg_num], trace, MC_NOKEYS);
+
+	    last = trace->cusread.config_enable[cfg_num];
 	}
 
 	DManageChild (trace->cusread.form, trace, MC_NOKEYS);

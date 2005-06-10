@@ -491,6 +491,7 @@ typedef struct {
 } NoteWidgets_t;
 
 typedef struct {
+    Widget form;
     Widget label1;
     Widget visible;
     Widget wide_line;
@@ -513,6 +514,7 @@ typedef struct {
 
 typedef struct {
     Widget dialog;
+    Widget masterForm;
     GridWidgets_t  grid[MAXGRIDS];
     OkApplyWidgets_t okapply;
 } GridsWidgets_t;

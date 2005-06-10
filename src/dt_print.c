@@ -769,7 +769,7 @@ static void    print_range_create (
 
 	/* Label */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (descrip) );
-	XtSetArg (arglist[1], XmNx, 10);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopOffset, 10);
 	XtSetArg (arglist[4], XmNtopWidget, above);
@@ -810,7 +810,7 @@ static void    print_range_create (
 	DManageChild (range_ptr->time_pulldownbutton[0], trace, MC_NOKEYS);
 
 	XtSetArg (arglist[0], XmNsubMenuId, range_ptr->time_pulldown);
-	XtSetArg (arglist[1], XmNx, 20);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopOffset, 0);
 	XtSetArg (arglist[4], XmNtopWidget, range_ptr->time_label);
@@ -862,11 +862,13 @@ void    print_dialog_cb (
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Print Screen Menu"));
 	XtSetArg (arglist[2], XmNverticalSpacing, 10);
 	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
-	trace->print.dialog = XmCreateFormDialog (trace->work, "print",arglist,3);
+	XtSetArg (arglist[4], XmNhorizontalSpacing, 10);
+	XtSetArg (arglist[5], XmNverticalSpacing, 7);
+	trace->print.dialog = XmCreateFormDialog (trace->work, "print",arglist,5);
 
 	/* create label widget for text widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Name") );
-	XtSetArg (arglist[1], XmNx, 10);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[3], XmNtopOffset, 5);
 	trace->print.label = XmCreateLabel (trace->print.dialog,"",arglist,4);
@@ -875,19 +877,20 @@ void    print_dialog_cb (
 	/* create the file name text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 30);
-	XtSetArg (arglist[2], XmNx, 10);
+	XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[4], XmNtopWidget, dmanage_last);
 	XtSetArg (arglist[5], XmNtopOffset, 0);
 	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
-	trace->print.text = XmCreateText (trace->print.dialog,"",arglist,8);
+	XtSetArg (arglist[8], XmNrightAttachment, XmATTACH_FORM );
+	trace->print.text = XmCreateText (trace->print.dialog,"",arglist,9);
 	DManageChild (trace->print.text, trace, MC_NOKEYS);
 	DAddCallback (trace->print.text, XmNactivateCallback, print_req_cb, trace);
 	
 	/* create label widget for notetext widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Note") );
-	XtSetArg (arglist[1], XmNx, 10);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopOffset, 10);
 	XtSetArg (arglist[4], XmNtopWidget, dmanage_last);
@@ -897,19 +900,20 @@ void    print_dialog_cb (
 	/* create the print note text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 30);
-	XtSetArg (arglist[2], XmNx, 10);
+	XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[4], XmNtopWidget, dmanage_last);
 	XtSetArg (arglist[5], XmNtopOffset, 0);
 	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
-	trace->print.notetext = XmCreateText (trace->print.dialog,"notetext",arglist,8);
+	XtSetArg (arglist[8], XmNrightAttachment, XmATTACH_FORM );
+	trace->print.notetext = XmCreateText (trace->print.dialog,"notetext",arglist,9);
 	DAddCallback (trace->print.notetext, XmNactivateCallback, print_req_cb, trace);
 	DManageChild (trace->print.notetext, trace, MC_NOKEYS);
 
 	/* Radio label (lessTIF bug if put as part of radio) */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Page Size") );
-	XtSetArg (arglist[1], XmNx, 10);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopWidget, dmanage_last);
 	XtSetArg (arglist[4], XmNtopOffset, 10);
@@ -935,7 +939,7 @@ void    print_dialog_cb (
 	trace->print.sizeel = XmCreatePushButtonGadget (trace->print.size_menu,"sizeel",arglist,1);
 	DManageChild (trace->print.sizeel, trace, MC_NOKEYS);
 	
-	XtSetArg (arglist[0], XmNx, 10);
+	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[1], XmNsubMenuId, trace->print.size_menu);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_OPPOSITE_WIDGET );
 	XtSetArg (arglist[3], XmNtopWidget, trace->print.sizelabel);
@@ -944,7 +948,7 @@ void    print_dialog_cb (
 	DManageChild (trace->print.size_option, trace, MC_NOKEYS);
 
 	/* Create all_signals button */
-	XtSetArg (arglist[0], XmNx, 10);
+	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[1], XmNshadowThickness, 1);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopOffset, 10);

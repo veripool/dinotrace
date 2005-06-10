@@ -1214,78 +1214,72 @@ void    val_search_cb (
     if (!trace->value.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Value Search Requester") );
-	/* XtSetArg (arglist[2], XmNwidth, 500);
-	   XtSetArg (arglist[3], XmNheight, 400); */
-	trace->value.dialog = XmCreateFormDialog (trace->work,"search",arglist,2);
+	XtSetArg (arglist[2], XmNverticalSpacing, 7);
+	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
+	trace->value.dialog = XmCreateFormDialog (trace->work,"search",arglist,4);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Color"));
-	XtSetArg (arglist[1], XmNx, 5);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
-	XtSetArg (arglist[3], XmNtopOffset, 5);
-	trace->value.label1 = XmCreateLabel (trace->value.dialog,"label1",arglist,4);
+	trace->value.label1 = XmCreateLabel (trace->value.dialog,"label1",arglist,3);
 	DManageChild (trace->value.label1, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Place"));
-	XtSetArg (arglist[1], XmNx, 60);
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
-	XtSetArg (arglist[3], XmNtopOffset, 5);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[2], XmNleftWidget, trace->value.label1);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_FORM );
 	trace->value.label2 = XmCreateLabel (trace->value.dialog,"label2",arglist,4);
 	DManageChild (trace->value.label2, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Value"));
-	XtSetArg (arglist[1], XmNx, 5);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopOffset, 1);
-	XtSetArg (arglist[4], XmNtopWidget, trace->value.label1);
-	trace->value.label4 = XmCreateLabel (trace->value.dialog,"label4",arglist,5);
+	XtSetArg (arglist[3], XmNtopWidget, trace->value.label1);
+	trace->value.label4 = XmCreateLabel (trace->value.dialog,"label4",arglist,4);
 	DManageChild (trace->value.label4, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cursor"));
-	XtSetArg (arglist[1], XmNx, 60);
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopOffset, 1);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[2], XmNleftWidget, trace->value.label4);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[4], XmNtopWidget, trace->value.label2);
 	trace->value.label5 = XmCreateLabel (trace->value.dialog,"label5",arglist,5);
 	DManageChild (trace->value.label5, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (
 	    "Search value, Hex default, 'd=decimal, 'b=binary"));
-	XtSetArg (arglist[1], XmNx, 140);
-	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopOffset, 1);
+	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[2], XmNleftWidget, trace->value.label5);
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[4], XmNtopWidget, trace->value.label1);
 	trace->value.label3 = XmCreateLabel (trace->value.dialog,"label3",arglist,5);
 	DManageChild (trace->value.label3, trace, MC_NOKEYS);
 	
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Signal Wildcard"));
-	XtSetArg (arglist[1], XmNx, 500);
+	XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[3], XmNtopOffset, 1);
-	XtSetArg (arglist[4], XmNtopWidget, trace->value.label1);
-	trace->value.label6 = XmCreateLabel (trace->value.dialog,"label6",arglist,5);
+	XtSetArg (arglist[3], XmNtopWidget, trace->value.label1);
+	trace->value.label6 = XmCreateLabel (trace->value.dialog,"label6",arglist,4);
 	DManageChild (trace->value.label6, trace, MC_NOKEYS);
 	
 	for (i=0; i<MAX_SRCH; i++) {
 	    /* enable button */
-	    XtSetArg (arglist[0], XmNx, 15);
+	    XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM);
 	    XtSetArg (arglist[1], XmNselectColor, trace->xcolornums[i+1]);
-	    XtSetArg (arglist[2], XmNlabelString, XmStringCreateSimple (""));
+	    XtSetArg (arglist[2], XmNlabelString, XmStringCreateSimple (" "));
 	    XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	    XtSetArg (arglist[4], XmNtopOffset, 5);
-	    XtSetArg (arglist[5], XmNtopWidget, ((i==0)?(trace->value.label4):(trace->value.signal[i-1])));
-	    trace->value.enable[i] = XmCreateToggleButton (trace->value.dialog,"togglen",arglist,6);
+	    XtSetArg (arglist[4], XmNtopWidget, ((i==0)?(trace->value.label4):(trace->value.signal[i-1])));
+	    trace->value.enable[i] = XmCreateToggleButton (trace->value.dialog,"togglen",arglist,5);
 	    DManageChild (trace->value.enable[i], trace, MC_NOKEYS);
 
 	    /* enable button */
 	    XtSetArg (arglist[0], XmNselectColor, trace->xcolornums[i+1]);
-	    XtSetArg (arglist[1], XmNlabelString, XmStringCreateSimple (""));
+	    XtSetArg (arglist[1], XmNlabelString, XmStringCreateSimple (" "));
 	    XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
-	    XtSetArg (arglist[3], XmNtopOffset, 5);
-	    XtSetArg (arglist[4], XmNtopWidget, ((i==0)?(trace->value.label4):(trace->value.signal[i-1])));
-	    XtSetArg (arglist[5], XmNleftAttachment, XmATTACH_WIDGET );
-	    XtSetArg (arglist[6], XmNleftOffset, 20);
-	    XtSetArg (arglist[7], XmNleftWidget, trace->value.enable[i]);
-	    trace->value.cursor[i] = XmCreateToggleButton (trace->value.dialog,"cursorn",arglist,9);
+	    XtSetArg (arglist[3], XmNtopWidget, ((i==0)?(trace->value.label4):(trace->value.signal[i-1])));
+	    XtSetArg (arglist[4], XmNleftAttachment, XmATTACH_WIDGET );
+	    XtSetArg (arglist[5], XmNleftWidget, trace->value.enable[i]);
+	    trace->value.cursor[i] = XmCreateToggleButton (trace->value.dialog,"cursorn",arglist,6);
 	    DManageChild (trace->value.cursor[i], trace, MC_NOKEYS);
 
 	    /* create the file name text widget */
@@ -1294,12 +1288,11 @@ void    val_search_cb (
 	    XtSetArg (arglist[2], XmNresizeHeight, FALSE);
 	    XtSetArg (arglist[3], XmNeditMode, XmSINGLE_LINE_EDIT);
 	    XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_WIDGET );
-	    XtSetArg (arglist[5], XmNtopOffset, 5);
-	    XtSetArg (arglist[6], XmNtopWidget, ((i==0)?(trace->value.label4):(trace->value.signal[i-1])));
-	    XtSetArg (arglist[7], XmNleftAttachment, XmATTACH_WIDGET );
-	    XtSetArg (arglist[8], XmNleftOffset, 20);
-	    XtSetArg (arglist[9], XmNleftWidget, trace->value.cursor[i]);
-	    trace->value.text[i] = XmCreateText (trace->value.dialog,"textn",arglist,10);
+	    XtSetArg (arglist[5], XmNtopWidget, ((i==0)?(trace->value.label4):(trace->value.signal[i-1])));
+	    XtSetArg (arglist[6], XmNleftAttachment, XmATTACH_WIDGET );
+	    XtSetArg (arglist[7], XmNleftOffset, 20);
+	    XtSetArg (arglist[8], XmNleftWidget, trace->value.cursor[i]);
+	    trace->value.text[i] = XmCreateText (trace->value.dialog,"textn",arglist,9);
 	    DAddCallback (trace->value.text[i], XmNactivateCallback, val_search_ok_cb, trace);
 	    DManageChild (trace->value.text[i], trace, MC_NOKEYS);
 	    
@@ -1309,11 +1302,11 @@ void    val_search_cb (
 	    XtSetArg (arglist[2], XmNresizeHeight, FALSE);
 	    XtSetArg (arglist[3], XmNeditMode, XmSINGLE_LINE_EDIT);
 	    XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_WIDGET );
-	    XtSetArg (arglist[5], XmNtopOffset, 5);
-	    XtSetArg (arglist[6], XmNtopWidget, ((i==0)?(trace->value.label4):(trace->value.signal[i-1])));
-	    XtSetArg (arglist[7], XmNleftAttachment, XmATTACH_WIDGET );
-	    XtSetArg (arglist[8], XmNleftOffset, 20);
-	    XtSetArg (arglist[9], XmNleftWidget, trace->value.text[i]);
+	    XtSetArg (arglist[5], XmNtopWidget, ((i==0)?(trace->value.label4):(trace->value.signal[i-1])));
+	    XtSetArg (arglist[6], XmNleftAttachment, XmATTACH_WIDGET );
+	    XtSetArg (arglist[7], XmNleftOffset, 20);
+	    XtSetArg (arglist[8], XmNleftWidget, trace->value.text[i]);
+	    XtSetArg (arglist[9], XmNrightAttachment, XmATTACH_FORM );
 	    trace->value.signal[i] = XmCreateText (trace->value.dialog,"texts",arglist,10);
 	    DAddCallback (trace->value.signal[i], XmNactivateCallback, val_search_ok_cb, trace);
 	    DManageChild (trace->value.signal[i], trace, MC_NOKEYS);
@@ -1442,6 +1435,7 @@ void    val_annotate_cb (
     Widget	w)
 {
     Trace_t *trace = widget_to_trace(w);
+    Widget last;
     int i;
 
     if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%p\n",trace);
@@ -1464,11 +1458,12 @@ void    val_annotate_cb (
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 30);
 	XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_FORM );
-	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
-	XtSetArg (arglist[4], XmNtopWidget, dmanage_last );
-	XtSetArg (arglist[5], XmNresizeHeight, FALSE);
-	XtSetArg (arglist[6], XmNeditMode, XmSINGLE_LINE_EDIT);
-	trace->annotate.text = XmCreateText (trace->annotate.dialog,"filename",arglist,7);
+	XtSetArg (arglist[3], XmNrightAttachment, XmATTACH_FORM );
+	XtSetArg (arglist[4], XmNtopAttachment, XmATTACH_WIDGET );
+	XtSetArg (arglist[5], XmNtopWidget, dmanage_last );
+	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
+	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
+	trace->annotate.text = XmCreateText (trace->annotate.dialog,"filename",arglist,8);
 	DManageChild (trace->annotate.text, trace, MC_NOKEYS);
 	DAddCallback (trace->annotate.text, XmNactivateCallback, val_annotate_ok_cb, trace);
 	
@@ -1480,15 +1475,17 @@ void    val_annotate_cb (
 	trace->annotate.label2 = XmCreateLabel (trace->annotate.dialog,"l2",arglist,4);
 	DManageChild (trace->annotate.label2, trace, MC_NOKEYS);
 	
+	last = trace->annotate.dialog;
 	for (i=0; i<=MAX_SRCH; i++) {
 	    /* enable button */
 	    XtSetArg (arglist[0], XmNx, 15+30*i);
 	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_WIDGET );
 	    XtSetArg (arglist[2], XmNtopWidget, trace->annotate.label2 );
 	    XtSetArg (arglist[3], XmNselectColor, trace->xcolornums[i]);
-	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (""));
+	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));
 	    trace->annotate.cursors[i] = XmCreateToggleButton (trace->annotate.dialog,"togglenc",arglist,5);
 	    DManageChild (trace->annotate.cursors[i], trace, MC_NOKEYS);
+	    last = trace->annotate.cursors[i];
 	}
 
 	/* Cursor enables */
@@ -1505,7 +1502,7 @@ void    val_annotate_cb (
 	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_WIDGET );
 	    XtSetArg (arglist[2], XmNtopWidget, trace->annotate.label4 );
 	    XtSetArg (arglist[3], XmNselectColor, trace->xcolornums[i]);
-	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (""));
+	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));
 	    trace->annotate.cursors_dotted[i] = XmCreateToggleButton (trace->annotate.dialog,"togglencd",arglist,5);
 	    DManageChild (trace->annotate.cursors_dotted[i], trace, MC_NOKEYS);
 	}
@@ -1524,7 +1521,7 @@ void    val_annotate_cb (
 	    XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_WIDGET );
 	    XtSetArg (arglist[2], XmNtopWidget, trace->annotate.label3 );
 	    XtSetArg (arglist[3], XmNselectColor, trace->xcolornums[i]);
-	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (""));
+	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));
 	    trace->annotate.signals[i] = XmCreateToggleButton (trace->annotate.dialog,"togglen",arglist,5);
 	    DManageChild (trace->annotate.signals[i], trace, MC_NOKEYS);
 	}
