@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in [].
 
 ***	Fix too small buttons under openmotif.
 
+***	Fix missing keyboard accelerators under openmotif.
+
 * Dinotrace 9.2b 05/03/2005
 
 ***	The default extension for Verilog dumps is now .vcd instead of .dmp.

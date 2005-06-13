@@ -466,14 +466,17 @@ void    remove_all_events (
 ColorNum_t submenu_to_color (
     Trace_t	*trace,		/* Display information */
     Widget	w,
+    ColorNum_t	overrideColor,
     int		base)		/* Loaded when the menu was loaded */
 {
-    ColorNum_t color;
+    ColorNum_t color = overrideColor;
 
-    /* Grab color number from the menu button pointer (+2 for current and next buttons) */
-    for (color=0; color<=(MAX_SRCH+2); color++) {
-	if (w == trace->menu.pdsubbutton[color + base]) {
-	    break;
+    if (overrideColor != COLOR_CURRENT && overrideColor != COLOR_NEXT) {
+	/* Grab color number from the menu button pointer (+2 for current and next buttons) */
+	for (color=0; color<=(MAX_SRCH+2); color++) {
+	    if (w == trace->menu.pdsubbutton[color + base]) {
+		break;
+	    }
 	}
     }
 

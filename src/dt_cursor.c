@@ -436,7 +436,8 @@ char *cur_examine_string (
 
 static void    cur_add_internal (
     Widget		w,
-    CursorType_t	type
+    CursorType_t	type,
+    ColorNum_t		colorOverride
     )
 {
     Trace_t *trace = widget_to_trace(w);
@@ -446,7 +447,8 @@ static void    cur_add_internal (
 
     /* Grab color number from the menu button pointer */
     global->highlight_color = submenu_to_color
-           (trace, w, (type == SIMVIEW) ? trace->menu.cur_add_simview_pds : trace->menu.cur_add_pds);
+	(trace, w, colorOverride,
+	 (type == SIMVIEW) ? trace->menu.cur_add_simview_pds : trace->menu.cur_add_pds);
 
     /* process all subsequent button presses as cursor adds */
     remove_all_events (trace);
@@ -457,13 +459,25 @@ static void    cur_add_internal (
 void    cur_add_cb (
     Widget		w)
 {
-    cur_add_internal (w, USER);
+    cur_add_internal (w, USER, 0);
+}
+
+void    cur_add_current_cb (
+    Widget		w)
+{
+    cur_add_internal (w, USER, COLOR_CURRENT);
+}
+
+void    cur_add_next_cb (
+    Widget		w)
+{
+    cur_add_internal (w, USER, COLOR_NEXT);
 }
 
 void    cur_add_simview_cb (
     Widget		w)
 {
-    cur_add_internal (w, SIMVIEW);
+    cur_add_internal (w, SIMVIEW, 0);
 }
 
 void    cur_mov_cb (
@@ -520,7 +534,7 @@ void    cur_highlight_cb (
     if (DTPRINT_ENTRY) printf ("In cur_highlight_cb - trace=%p\n",trace);
 
     /* Grab color number from the menu button pointer */
-    global->highlight_color = submenu_to_color (trace, w, trace->menu.cur_highlight_pds);
+    global->highlight_color = submenu_to_color (trace, w, 0, trace->menu.cur_highlight_pds);
 
     /* process all subsequent button presses as signal highlights */
     remove_all_events (trace);

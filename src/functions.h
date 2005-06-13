@@ -238,6 +238,8 @@ extern void	cur_step (DTime_t step);
 extern void	cur_note (DCursor_t* csr_ptr, const char* note);
 
 extern void	cur_add_cb (Widget w);
+extern void	cur_add_current_cb (Widget w);
+extern void	cur_add_next_cb (Widget w);
 extern void     cur_add_simview_cb (Widget w);
 extern void	cur_mov_cb (Widget w);
 extern void	cur_del_cb (Widget w);
@@ -313,6 +315,8 @@ extern void	sig_waveform_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern void	sig_note_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern void	sig_highlight_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern void	sig_highlight_cb (Widget w);
+extern void	sig_highlight_current_cb (Widget w);
+extern void	sig_highlight_next_cb (Widget w);
 extern void	sig_highlight_keep_cb (Widget w);
 extern void	sig_highlight_clear_cb (Widget w);
 extern void	sig_select_cb (Widget w);
@@ -425,7 +429,7 @@ extern void	remove_all_events (Trace_t *trace);
 extern void	change_title (Trace_t *trace);
 extern void	dino_message_ack (Trace_t *trace, int type, char *msg);
 extern XmString	string_create_with_cr (const char *);
-extern ColorNum_t submenu_to_color (Trace_t *trace, Widget, int);
+extern ColorNum_t submenu_to_color (Trace_t *trace, Widget, ColorNum_t, int);
 extern int	option_to_number (Widget w, Widget *entry0_ptr, int maxnumber);
 
 extern void	cancel_all_events_cb (Widget w);

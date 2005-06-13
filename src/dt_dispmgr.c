@@ -124,20 +124,32 @@ extern void    val_examine_popup_act ();
 /* Any actions must be called with (0) so the callbacks will pass */
 /* a null in the trace parameter and thus cause us to search for the right trace */
 static XtActionsRec actions[] = {
-    {"value_examine_popup", val_examine_popup_act},
-    {"hscroll_unitinc", (XtActionProc)hscroll_unitinc_cb},
-    {"hscroll_unitdec", (XtActionProc)hscroll_unitdec_cb},
-    {"hscroll_pageinc", (XtActionProc)hscroll_pageinc_cb},
+    {"cancel_all_events",	(XtActionProc)cancel_all_events_cb},
+    {"cur_add_current",	(XtActionProc)cur_add_current_cb},
+    {"cur_add_next",	(XtActionProc)cur_add_next_cb},
+    {"cur_step_back",	(XtActionProc)cur_step_back_cb},
+    {"cur_step_back",	(XtActionProc)cur_step_back_cb},
+    {"cur_step_fwd",	(XtActionProc)cur_step_fwd_cb},
+    {"debug_event",	(XtActionProc)debug_event_cb},
     {"hscroll_pagedec", (XtActionProc)hscroll_pagedec_cb},
-    {"vscroll_unitinc", (XtActionProc)vscroll_unitinc_cb},
-    {"vscroll_unitdec", (XtActionProc)vscroll_unitdec_cb},
-    {"vscroll_pageinc", (XtActionProc)vscroll_pageinc_cb},
+    {"hscroll_pageinc", (XtActionProc)hscroll_pageinc_cb},
+    {"hscroll_unitdec", (XtActionProc)hscroll_unitdec_cb},
+    {"hscroll_unitinc", (XtActionProc)hscroll_unitinc_cb},
+    {"sig_high_current",(XtActionProc)sig_highlight_current_cb},
+    {"sig_high_next",	(XtActionProc)sig_highlight_next_cb},
+    {"sig_search",	(XtActionProc)sig_search_cb},
+    {"trace_open",	(XtActionProc)trace_open_cb},
+    {"trace_reread_all",(XtActionProc)trace_reread_all_cb},
+    {"val_annotate",	(XtActionProc)val_annotate_cb},
+    {"val_annotate_do",	(XtActionProc)val_annotate_do_cb},
+    {"value_examine_popup", val_examine_popup_act},
     {"vscroll_pagedec", (XtActionProc)vscroll_pagedec_cb},
-    {"val_annotate",	(XtActionProc)val_annotate_do_cb},
+    {"vscroll_pageinc", (XtActionProc)vscroll_pageinc_cb},
+    {"vscroll_unitdec", (XtActionProc)vscroll_unitdec_cb},
+    {"vscroll_unitinc", (XtActionProc)vscroll_unitinc_cb},
     {"win_begin",	(XtActionProc)win_begin_cb},
     {"win_end",		(XtActionProc)win_end_cb},
-    {"win_goto",	(XtActionProc)win_goto_cb},
-    {"debug_event",	(XtActionProc)debug_event_cb}
+    {"win_goto",	(XtActionProc)win_goto_cb}
 };
 
 /* Translations for work area only */
@@ -146,20 +158,33 @@ char *work_translations = "<Btn2Down> : value_examine_popup()\n";
 /* Translations for all main widgets */
 /* As noted above: All actions must have (0), and be designed to take a null TRACE */
 char *key_translations = "\
-!Shift<Key>osfUp:   	vscroll_pagedec(0)\n\
-!Shift<Key>osfDown: 	vscroll_pageinc(0)\n\
-!<Key>osfUp:		vscroll_unitdec(0)\n\
-!<Key>osfDown:		vscroll_unitinc(0)\n\
-!<Key>osfPageUp:   	vscroll_pagedec(0)\n\
-!<Key>osfPageDown: 	vscroll_pageinc(0)\n\
-!Shift<Key>osfLeft:	hscroll_pagedec(0)\n\
-!Shift<Key>osfRight:	hscroll_pageinc(0)\n\
-!<Key>osfLeft:		hscroll_unitdec(0)\n\
-!<Key>osfRight:		hscroll_unitinc(0)\n\
-!<Key>osfBeginLine:	win_begin(0)\n\
-!<Key>osfEndLine:	win_end(0)\n\
-<Key>G:			win_goto(0)\n\
-!<Key>F2:		val_annotate(0)\n\
+:Shift<Key>osfUp:   	vscroll_pagedec(0)\n\
+:Shift<Key>osfDown: 	vscroll_pageinc(0)\n\
+:<Key>osfUp:		vscroll_unitdec(0)\n\
+:<Key>osfDown:		vscroll_unitinc(0)\n\
+:<Key>osfPageUp:   	vscroll_pagedec(0)\n\
+:<Key>osfPageDown: 	vscroll_pageinc(0)\n\
+:Shift<Key>osfLeft:	hscroll_pagedec(0)\n\
+:Shift<Key>osfRight:	hscroll_pageinc(0)\n\
+:<Key>osfLeft:		hscroll_unitdec(0)\n\
+:<Key>osfRight:		hscroll_unitinc(0)\n\
+:<Key>osfBeginLine:	win_begin(0)\n\
+:<Key>osfEndLine:	win_end(0)\n\
+:<Key>Escape:		cancel_all_events(0)\n\
+:<Key>a:		val_annotate_do(0)\n\
+:<Key>c:		cur_add_current(0)\n\
+:<Key>f:		sig_search(0)\n\
+:<Key>s:		sig_high_current(0)\n\
+:<Key>g:		win_goto(0)\n\
+Ctrl<Key>f:		sig_search(0)\n\
+Ctrl<Key>o:		trace_open(0)\n\
+Ctrl<Key>r:		trace_reread_all(0)\n\
+Shift<Key>a:		val_annotate(0)\n\
+Shift<Key>c:		cur_add_next(0)\n\
+Shift<Key>s:		sig_high_next(0)\n\
+:<Key>F2:		val_annotate_do(0)\n\
+:<Key><:		cur_step_back(0)\n\
+:<Key>>:		cur_step_fwd(0)\n\
 ";
 
 static int last_set_cursor_num = DC_NORMAL;

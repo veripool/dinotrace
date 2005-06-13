@@ -813,7 +813,7 @@ void    val_highlight_cb (
     if (DTPRINT_ENTRY) printf ("In val_highlight_cb - trace=%p\n",trace);
     
     /* Grab color number from the menu button pointer */
-    global->highlight_color = submenu_to_color (trace, w, trace->menu.val_highlight_pds);
+    global->highlight_color = submenu_to_color (trace, w, 0, trace->menu.val_highlight_pds);
 
     /* process all subsequent button presses as signal deletions */ 
     remove_all_events (trace);

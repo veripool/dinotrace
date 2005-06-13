@@ -988,7 +988,7 @@ void    sig_radix_cb (
     Widget	w)
 {
     Trace_t *trace = widget_to_trace(w);
-    int radixnum = submenu_to_color (trace, w, trace->menu.sig_radix_pds);
+    int radixnum = submenu_to_color (trace, w, 0, trace->menu.sig_radix_pds);
     if (DTPRINT_ENTRY) printf ("In sig_radix_cb - trace=%p radixnum=%d\n",trace, radixnum);
     
     /* Grab color number from the menu button pointer */
@@ -1004,7 +1004,8 @@ void    sig_waveform_cb (
     Widget	w)
 {
     Trace_t *trace = widget_to_trace(w);
-    int subnum = submenu_to_color (trace, w, trace->menu.sig_waveform_pds);
+    int subnum = submenu_to_color (trace, w, 0, trace->menu.sig_waveform_pds);
+
     if (DTPRINT_ENTRY) printf ("In sig_waveform_digital_cb - trace=%p sub=%d\n",trace, subnum);
     global->selected_waveform = subnum;
 
@@ -1014,19 +1015,38 @@ void    sig_waveform_cb (
     add_event (ButtonPressMask, sig_waveform_ev);
 }
 
-void    sig_highlight_cb (
-    Widget	w)
+static void    sig_highlight_internal (
+    Widget	w,
+    ColorNum_t	overrideColor)
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_highlight_cb - trace=%p\n",trace);
     
     /* Grab color number from the menu button pointer */
-    global->highlight_color = submenu_to_color (trace, w, trace->menu.sig_highlight_pds);
+    global->highlight_color = submenu_to_color (trace, w, overrideColor, trace->menu.sig_highlight_pds);
 
     /* process all subsequent button presses as signal deletions */ 
     remove_all_events (trace);
     set_cursor (DC_SIG_HIGHLIGHT);
     add_event (ButtonPressMask, sig_highlight_ev);
+}
+
+void    sig_highlight_cb (
+    Widget	w)
+{
+    sig_highlight_internal(w,0);
+}
+
+void    sig_highlight_current_cb (
+    Widget	w)
+{
+    sig_highlight_internal(w,COLOR_CURRENT);
+}
+
+void    sig_highlight_next_cb (
+    Widget	w)
+{
+    sig_highlight_internal(w,COLOR_NEXT);
 }
 
 void    sig_highlight_clear_cb (
