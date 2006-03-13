@@ -2,6 +2,8 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 	
+* Dinotrace 9.3b ********
+
 * Dinotrace 9.3a 06/13/2005
 
 ***	Fix too small buttons under openmotif.
@@ -985,7 +987,7 @@ $Id$
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-Copyright (C) 1998-2005 Wilson Snyder.
+Copyright (C) 1998-2006 Wilson Snyder.
 Copyright (C) 1992-1997 Digital Equipment Corportation.
 
    Permission is granted to anyone to make or distribute verbatim copies of
