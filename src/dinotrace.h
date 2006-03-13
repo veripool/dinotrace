@@ -702,8 +702,8 @@ struct st_signal {
 
     uint_t		type;		/* Type of signal, STATE_B32, _B64, etc */
     ulong_t		blocks;		/* Number of time data blocks allocated, in # of ints */
-    int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20), -1=none */
-    int			lsb_index;	/* Bit subscript of last index in a signal (<20:10> == 10), -1=none */
+    int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20, <0:2>==0), -1=none */
+    int			lsb_index;	/* Bit subscript of last index in a signal  (<20:10> == 10, <0:2>==2), -1=none */
     int			bits;		/* Number of bits in a bus, 1=single */
     uint_t		file_code;	/* Code for signal in file (verilog) */
     uint_t		file_pos;	/* Position of the bits in the file line */

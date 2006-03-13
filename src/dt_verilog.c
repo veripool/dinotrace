@@ -62,6 +62,7 @@
 /**********************************************************************/
 /* File locals */
 static int verilog_line_num=0;
+static Boolean_t verilog_line_num_inc=0;
 static char *current_file="";
 
 /* Stack of scopes, 0=top level.  Grows up to MAXSCOPES */
@@ -107,6 +108,7 @@ static void	verilog_gets_init (int read_fd)
 {
     verilog_fd = read_fd;
     verilog_line_num=1;
+    verilog_line_num_inc=0;
     verilog_text = NULL;
     verilog_eof = 0;
 }
@@ -132,6 +134,7 @@ static char *verilog_gettok ()
     }
 
     /* Advance text pointer to EOL + 1 */
+    verilog_line_num += verilog_line_num_inc; verilog_line_num_inc=0;
     while (*verilog_text) verilog_text++;
     verilog_text++;
     while (1) {
@@ -149,9 +152,9 @@ static char *verilog_gettok ()
 	    if (!VERILOG_ISSPACE(*cp)) { cp++; continue;}
 	    /* Done! */
 	    /* Convert newline to null & return */
+	    if (*cp == '\n') verilog_line_num_inc++;
 	    *cp = '\0';
-	    if (*verilog_text == '\n') verilog_line_num++;
-	    if (DTPRINT_FILE) printf ("Got line '%s'\n", verilog_text);
+	    if (DTPRINT_FILE) printf ("Got line %d '%s'\n", verilog_line_num, verilog_text);
 	    return (verilog_text);
 	}
 	if (verilog_text == buf_ptr) {

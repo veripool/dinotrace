@@ -2,7 +2,9 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 	
-* Dinotrace 9.3b ********
+* Dinotrace 9.3b 3/13/2006
+
+***	Fix line number incrementing in Verilog errors. [Uwe Bonnes]
 
 * Dinotrace 9.3a 06/13/2005
 

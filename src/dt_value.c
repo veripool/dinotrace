@@ -834,6 +834,7 @@ char *val_examine_string (
     static char	strg[2000];
     char	strg2[2000];
     int		rows, cols, bit, row, col;
+    int		lesser_index, greater_index;
     char	*format;
     
     if (DTPRINT_ENTRY) printf ("\ttime = %d, signal = %s\n", time, sig_ptr->signame);
@@ -841,6 +842,8 @@ char *val_examine_string (
     /* Get information */
     cptr = value_at_time (sig_ptr, time);
     
+    lesser_index = MIN(sig_ptr->msb_index,sig_ptr->lsb_index);
+    greater_index = MAX(sig_ptr->msb_index,sig_ptr->lsb_index);
     strcpy (strg, sig_ptr->signame);
 	
     if (CPTR_TIME(cptr) == EOT) {
@@ -869,17 +872,18 @@ char *val_examine_string (
     }
 
     if (sig_ptr->bits>1
-	&& sig_ptr->lsb_index > 0
-	&& ((sig_ptr->bits + sig_ptr->lsb_index) <= 32)
+	&& (lesser_index > 0)
+	&& ((sig_ptr->bits + lesser_index) <= 32)
 	&& (cptr->siglw.stbits.state == STATE_B32)) {
 	Value_t shifted;
 	val_zero (&shifted);
 	(&shifted)->siglw     = cptr->siglw;
-	(&shifted)->number[0] = cptr->number[0] << sig_ptr->lsb_index;
+	(&shifted)->number[0] = cptr->number[0] << lesser_index;
 	/* Show decode */
-	sprintf (strg2, "[%d:0] = ", sig_ptr->msb_index);
+	sprintf (strg2, "[%d:0] = ", greater_index);
 	strcat (strg, strg2);
-	val_to_string (sig_ptr->radix, strg2, &shifted, sig_ptr->bits + sig_ptr->lsb_index, FALSE, FALSE);
+	val_to_string (sig_ptr->radix, strg2, &shifted,
+		       sig_ptr->bits + lesser_index, FALSE, FALSE);
 	strcat (strg, strg2);
 	strcat (strg, "\n");
     }
@@ -909,8 +913,8 @@ char *val_examine_string (
 	rows = ceil ((double)(sig_ptr->bits)/ (double)cols);
 	
 	format = "[%01d]=%c ";
-	if (sig_ptr->msb_index >= 10)  format = "[%02d]=%c ";
-	if (sig_ptr->msb_index >= 100) format = "[%03d]=%c ";
+	if (greater_index >= 10)  format = "[%02d]=%c ";
+	if (greater_index >= 100) format = "[%03d]=%c ";
 	
 	bit = 0;
 	for (row=rows - 1; row >= 0; row--) {
@@ -918,8 +922,8 @@ char *val_examine_string (
 		bit = (row * cols + col);
 		if ((bit>=0) && (bit < sig_ptr->bits)) {
 		    uint_t bit_value = val_bit (cptr, bit);
-		    sprintf (strg2, format, sig_ptr->msb_index +
-			     ((sig_ptr->msb_index >= sig_ptr->lsb_index)
+		    sprintf (strg2, format, greater_index +
+			     ((greater_index >= lesser_index)
 			      ? (bit - sig_ptr->bits + 1) : (sig_ptr->bits - bit - 1)),
 			     "01uz"[bit_value]);
 		    strcat (strg, strg2);
