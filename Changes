@@ -2,6 +2,11 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 	
+* Dinotrace 9.3***
+
+****	Fix dinotrace.el complaint about bad verilog-mode.el version.
+	[Joseph Holtgrefe]
+
 * Dinotrace 9.3b 3/13/2006
 
 ***	Fix line number incrementing in Verilog errors. [Uwe Bonnes]
