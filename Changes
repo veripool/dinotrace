@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in [].
 ****	Fix dinotrace.el complaint about bad verilog-mode.el version.
 	[Joseph Holtgrefe]
 
+****	Fix core dump when no fonts are available.  [Dmitri Belimov]
+
 * Dinotrace 9.3b 3/13/2006
 
 ***	Fix line number incrementing in Verilog errors. [Uwe Bonnes]

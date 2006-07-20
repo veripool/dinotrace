@@ -718,16 +718,26 @@ static XFontStruct *grab_font (
 {
     int	num;
     char **list;
+    const char* default_font_name = "-*-*-medium-r-*-*-*-*-*-*-*-*-*-*";
 
     list = XListFonts (global->display, font_name, 1, &num);
     XFreeFontNames(list);
 
+    XFontStruct* fontp;
+
     if (num > 0) {
-	return (XLoadQueryFont (global->display, font_name));
+	fontp = XLoadQueryFont (global->display, font_name);
     }
     else {
-	return (XLoadQueryFont (global->display, "-*-*-medium-r-*-*-*-*-*-*-*-*-*-*"));
+	fontp = XLoadQueryFont (global->display, default_font_name);
     }
+
+    if (!fontp) {
+	fprintf(stderr,"%%Error: Can't allocate any fonts, even '%s'\n", default_font_name);
+	exit(10);
+    }
+
+    return fontp
 }
 
 /* Manage a dinotrace widget */
