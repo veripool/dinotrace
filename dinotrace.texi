@@ -129,7 +129,7 @@ For the latest version, please see
 @uref{http://www.veripool.com/dinotrace}
 
 Please feel free to send comments and suggestions to
-@email{wsnyder@@wsnyder.org} or @email{wsnyder@@iname.com}.  If you install this
+@email{wsnyder@@wsnyder.org}.  If you install this
 tool, please also send mail so that I can inform you of new
 releases.
 

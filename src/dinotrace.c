@@ -4,7 +4,7 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@wsnyder.org> or <wsnyder@iname.com>
+ * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
  * Code available from: http://www.veripool.com/dinotrace
  *
@@ -316,7 +316,7 @@ char	*help_message ()
 Configured %s for %s\n\
 \n\
 Written by Wilson Snyder\n\
-<wsnyder@wsnyder.org> or <wsnyder@iname.com>\n\
+<wsnyder@wsnyder.org>\n\
 \n\
 Copyright 1998-2006 by Wilson Snyder\n\
 Copyright 1993-1997 by Digital Equipment Corporation.\n\

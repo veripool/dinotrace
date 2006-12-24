@@ -4,7 +4,7 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@wsnyder.org> or <wsnyder@iname.com>
+ * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
  * Code available from: http://www.veripool.com/dinotrace
  *
@@ -59,7 +59,6 @@
 /* Standard headers required for everybody */
 
 #include "config.h"
-#include "verilatedos.h"
 
 #ifndef NDEBUG
 #ifndef DEBUG

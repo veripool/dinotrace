@@ -4,7 +4,7 @@
  *
  * This file is part of Dinotrace.  
  *
- * Author: Wilson Snyder <wsnyder@wsnyder.org> or <wsnyder@iname.com>
+ * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
  * Code available from: http://www.veripool.com/dinotrace
  *
@@ -194,10 +194,10 @@
 /***********************************************************************/
 /* Prototypes */
 
-/* Dinotrace.c */
+/* Dinotrace */
 extern char *	help_message (void);
 
-/* dt_dispmgr.c */
+/* dt_dispmgr */
 extern Trace_t *create_trace (int xs, int ys, int xp, int yp);
 extern Trace_t *trace_create_split_window (Trace_t *trace);
 extern Trace_t *malloc_trace (void);
@@ -211,7 +211,7 @@ extern void	trace_close_cb (Widget w);
 extern void	trace_clear_cb (Widget w);
 extern void	trace_exit_cb (Widget w);
 
-/* dt_customize.c routines */
+/* dt_customize routines */
 extern void	cus_dialog_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
 extern void	cus_read_cb (Widget w, Trace_t *trace, XmFileSelectionBoxCallbackStruct *cb);
 extern void	cus_read_ok_cb (Widget w, Trace_t *trace, XmFileSelectionBoxCallbackStruct *cb);
@@ -222,7 +222,7 @@ extern void	cus_reread_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
 extern void	cus_write_cb (Widget w);
 extern void	cus_write_ok_cb (Widget w, Trace_t *trace, XmFileSelectionBoxCallbackStruct *cb);
 
-/* dt_cursor.c routines */
+/* dt_cursor routines */
 extern DCursor_t *cur_add (DTime_t time, ColorNum_t color, CursorType_t type, const char *note);
 extern void	cur_remove (DCursor_t *);
 extern void     cur_new (DTime_t ctime, ColorNum_t color, CursorType_t type, const char *note);
@@ -256,7 +256,7 @@ extern void	cur_delete_ev (Widget w, Trace_t *trace, XButtonPressedEvent *ev);
 extern void	cur_note_ev (Widget w, Trace_t* trace, XButtonPressedEvent* ev);
 extern DCursor_t *cur_id_to_cursor (int id);
 
-/* dt_config.c routines */
+/* dt_config routines */
 extern void	config_read_defaults (Trace_t *trace, Boolean_t);
 extern void	config_read_file (Trace_t *trace, char *, Boolean_t, Boolean_t);
 extern void	config_trace_defaults (Trace_t *);
@@ -267,7 +267,7 @@ extern void	config_read_socket (char *line, char *name, int cmdnum, Boolean_t eo
 extern void	config_write_file (Trace_t *trace, char *filename);
 extern SignalState_t *signalstate_find (const Trace_t *, const char *);
 
-/* dt_grid.c routines */
+/* dt_grid routines */
 extern DTime_t	grid_primary_period (const Trace_t *trace);
 extern void	grid_calc_autos (Trace_t *trace);
 extern char *	grid_examine_string (Trace_t *trace, Grid_t *grid_ptr, DTime_t time);
@@ -275,7 +275,7 @@ extern char *	grid_examine_string (Trace_t *trace, Grid_t *grid_ptr, DTime_t tim
 extern void	grid_customize_cb (Widget w);
 extern void	grid_reset_cb (Widget w);
 
-/* dt_signal.c routines */
+/* dt_signal routines */
 extern void	sig_update_search (void);
 extern void	sig_free (Trace_t *trace, Signal_t *sig_ptr, Boolean_t select, Boolean_t recurse);
 extern void	sig_highlight_selected (int color);
@@ -325,7 +325,7 @@ extern void	sig_search_cb (Widget w);
 extern void	sig_search_ok_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
 extern void	sig_search_apply_cb (Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
 
-/* dt_value.c routines */
+/* dt_value routines */
 extern void	val_minimize (Value_t *value_ptr, Signal_t *sig_ptr);
 extern void	val_update_search (void);
 extern void	val_states_update (void);
@@ -357,15 +357,15 @@ extern void	print_direct_cb (Widget w);
 extern void	print_req_cb (Widget w);
 extern void	print_range_sensitives_cb (Widget w, RangeWidgets_t *range_ptr, XmSelectionBoxCallbackStruct *cb);
 
-/* dt_binary.c routines */
+/* dt_binary routines */
 extern void	tempest_read (Trace_t *trace, int read_fd);
 extern void	decsim_read_binary (Trace_t *trace, int read_fd);
 
-/* dt_ascii.c routines */
+/* dt_ascii routines */
 extern void	ascii_string_add_cptr (Signal_t *sig_ptr, const char *value_strg, DTime_t time, Boolean_t nocheck);
 extern void	ascii_read (Trace_t *trace, int read_fd, FILE *decsim_z_readfp);
 
-/* dt_file.c routines */
+/* dt_file routines */
 extern void	fil_read (Trace_t *trace);
 extern void	free_data (Trace_t *trace);
 extern void	fil_make_busses (Trace_t *trace, Boolean_t not_tempest);
