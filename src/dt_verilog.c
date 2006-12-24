@@ -612,7 +612,7 @@ static void	verilog_process_definitions (
     /* Assign signals to the pos array.  The array points to the "original" */
     /*	-> Note that a single position can have multiple bits (if sig_ptr->file_type is true) */
     /* The original then has a linked list to other copies, the sig_ptr->verilog_next field */
-    /* The original is signal highest in hiearchy, OR first to occur if at the same level */
+    /* The original is signal highest in hierarchy, OR first to occur if at the same level */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	for (pos = sig_ptr->file_code; 
 	     pos <= sig_ptr->file_code

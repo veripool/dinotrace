@@ -59,6 +59,7 @@
 /* Standard headers required for everybody */
 
 #include "config.h"
+#include "verilatedos.h"
 
 #ifndef NDEBUG
 #ifndef DEBUG
@@ -728,7 +729,7 @@ struct st_dfile {
     uint_t		fileformat;	/* Type of trace file (see FF_*) */
 
     struct stat		filestat;	/* Information on the current file */
-    char		hierarchy_separator;	/* Hiearchy separator character, usually "." */
+    char		hierarchy_separator;	/* Hierarchy separator character, usually "." */
     char		vector_separator;	/* Bus separator character, usually "[" */
     char		vectorend_separator;	/* Bus ending separator character, usually "]" */
 }; /*DFile_t;  typedef'd above */
@@ -904,7 +905,7 @@ typedef struct {
     Boolean_t		res_default;	/* True if resolution has never changed from initial value */
     Position		xstart;		/* Start X pos of signals on display */
     int			namepos;	/* Position of first visible character based on xstart */
-    int			namepos_hier;	/* Maximum hiearchy width in chars */
+    int			namepos_hier;	/* Maximum hierarchy width in chars */
     int			namepos_base;	/* Maximum basename width in chars */
     int			namepos_prefix; /* Maximum characters in prefix hieararchy */
     int			namepos_visible;/* Visible size of names in chars */

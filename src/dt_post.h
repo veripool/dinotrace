@@ -165,7 +165,7 @@ char dt_post[] = "% $Id$\n\
 \n\
 /SIGNAME	% (ymdpt hiername basename) draw a signal name\n\
 { /basename exch def	% Base part of signal name\n\
-  /hiername exch def	% Hiearchy part of signal name\n\
+  /hiername exch def	% Hierarchy part of signal name\n\
   /ymdpt exch YADJ def	% ymdpt - Midpoint of signame\n\
   hierwidth ymdpt 3 sub MT	% move to right edge of .\n\
   hiername RIGHTSHOW	% plot hiername to left\n\

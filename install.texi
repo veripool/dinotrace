@@ -298,7 +298,7 @@ Download the Dinotrace kit, if not done previously.
 
 @item
 Set your X11 Display.  If you'll only be using it locally, 
-use the Control Panel/System/Enviornment requester to add a DISPLAY
+use the Control Panel/System/Environment requester to add a DISPLAY
 environment variable with the value :0
 
 Or, in the cygwin shell before each run of Dinotrace do

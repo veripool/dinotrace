@@ -58,7 +58,7 @@ GUI:
 Core:	
   GROUPS!!!
 	Whole groups of hiearchys can be moved
-	Allow hiearchy browsing.  Remap -> to ., then use . for hiearchy.
+	Allow hierarchy browsing.  Remap -> to ., then use . for hierarchy.
 
   Config:
 	Store in .dinotrace directory (list last files; edit dinotrace_recent.dino)

@@ -1605,7 +1605,7 @@ to tristating.
 @config{save_duplicates}	ON | OFF
 
 When reading in verilog traces, Dinotrace by default drops signals that
-connect to a signal higher in the hiearchy.  This saves space and
+connect to a signal higher in the hierarchy.  This saves space and
 reduces clutter.  When @config{save_duplicates} is on, the duplicate
 signals are not deleted, except under rare situations.
 
@@ -2132,9 +2132,9 @@ a} will likewise add annotations of where cursors exist.
 @section Signal Matching
 
 Emacs chooses what to highlight based upon only the base part of the
-signal name; all hiearchy and bus descriptors are stripped.  If multiple
+signal name; all hierarchy and bus descriptors are stripped.  If multiple
 signals exist with the same basename, all signals other then those with
-the desired hiearchy should be deleted so they won't participate in the
+the desired hierarchy should be deleted so they won't participate in the
 annotation.
 
 @node Entering Dinotrace-Mode, Exiting Dinotrace Mode, Signal Matching, Dinotrace and Emacs
@@ -2191,10 +2191,10 @@ These keys configure Dinotrace Mode:
 
 @table @kbd
 @item C-x C-a a
-@itemx M-x dinotrace-hiearchy-set
+@itemx M-x dinotrace-hierarchy-set
 @kindex C-x C-a a
 
-@kbd{C-x C-a a} will specify the hiearchy as a regular expression.  Any
+@kbd{C-x C-a a} will specify the hierarchy as a regular expression.  Any
 signals must match this regular expression in order to be annotated.
 This is useful if the same signal name appears in many modules with
 different values; you can thus choose which modules the signals will

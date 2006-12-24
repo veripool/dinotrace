@@ -262,7 +262,7 @@ char *sig_basename (
     const Signal_t	*sig_ptr)
 {
     char *basename;
-    /* First is the basename with hiearchy and bus bits stripped */
+    /* First is the basename with hierarchy and bus bits stripped */
     basename = strrchr ((sig_ptr->signame_buspos ?
 			 sig_ptr->signame_buspos : sig_ptr->signame),
 			trace->dfile.hierarchy_separator);
