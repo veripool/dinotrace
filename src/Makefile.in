@@ -32,7 +32,9 @@
 #### Start of system configuration section. ####
 
 srcdir = @srcdir@
-VPATH = @srcdir@
+
+abs_srcdir = @abs_srcdir@
+VPATH = @abs_srcdir@
 
 PERL = @PERL@
 INSTALL = @INSTALL@
@@ -94,13 +96,13 @@ ALL_HDRS = $(COMMON_HDRS) bintradef.h dist_date.h dt_post.h dinodoc.h
 
 #### Top executable
 
-../dinotrace: $(OBJS) Makefile
-	$(LINK) $(LDFLAGS) -o ../dinotrace $(LINKOPT) $(OBJS) $(LIBS)
+dinotrace: $(OBJS) Makefile
+	$(LINK) $(LDFLAGS) -o $@ $(LINKOPT) $(OBJS) $(LIBS)
 
 #### Derrived files
 
 dinodoc.h: ../dinotrace.txt dinodoc.pl
-	$(PERL) dinodoc.pl <../dinotrace.txt >dinodoc.h
+	$(PERL) $(abs_srcdir)/dinodoc.pl <../dinotrace.txt >dinodoc.h
 
 ../dinotrace.txt:
 	(cd .. ; $(MAKE) dinotrace.txt)
@@ -108,7 +110,7 @@ dinodoc.h: ../dinotrace.txt dinodoc.pl
 # No dependancy on other files in case user extracted without preserving
 # date stamps
 dist_date.h:
-	$(PERL) dist_date.pl
+	$(PERL) $(abs_srcdir)/dist_date.pl
 
 #### Object links
 

@@ -2,6 +2,9 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 	
+
+***	Builds now take place in "obj_dir" to keep them distinct from sources.
+
 * Dinotrace 9.3***
 
 ****	Fix dinotrace.el complaint about bad verilog-mode.el version.

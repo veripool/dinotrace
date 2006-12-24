@@ -737,7 +737,7 @@ static XFontStruct *grab_font (
 	exit(10);
     }
 
-    return fontp
+    return fontp;
 }
 
 /* Manage a dinotrace widget */

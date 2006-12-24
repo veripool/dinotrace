@@ -173,7 +173,7 @@ void socket_accept_cb (
     XtInputId	*id)
 {
     int sock_client;		/* Specific connection socket number */
-    int	clen;			/* Client packet length */
+    socklen_t	clen;			/* Client packet length */
     struct sockaddr_in sa_client;	/* Socket addresses */
     int		sock_server = *sock_server_ptr;
     Client_t *client;		/* Buffer and other client info */
@@ -221,7 +221,7 @@ void socket_create ()
     /* Create a socket for this dinotrace program */
 {
     int sock_server;		/* Demon socket number */
-    int	clen;			/* Client packet length */
+    socklen_t	clen;			/* Client packet length */
     struct sockaddr_in sa_server;	/* Socket addresses */
     struct hostent *he_server_ptr;	/* Server host name */
     char   host_name[MAXHOSTNAMELEN];	/* Name of host */

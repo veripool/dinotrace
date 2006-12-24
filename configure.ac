@@ -10,6 +10,8 @@ AC_MSG_RESULT([You may want to look in bin/ for a precompiled executable])
 AC_MSG_RESULT([])
 
 dnl Checks host type
+dnl AC_CANONICAL_HOST()
+dnl diabled to simplify builds
 HOST=$host
 AC_SUBST(HOST)
 AC_DEFINE_UNQUOTED(HOST,"$host")

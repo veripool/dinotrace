@@ -58,6 +58,7 @@
 
 #### Start of system configuration section. ####
 
+abs_srcdir = @abs_srcdir@
 srcdir = @srcdir@
 VPATH = @srcdir@
 HOST = @HOST@
@@ -99,7 +100,7 @@ INFOS = dinotrace.info INSTALL FAQ dinotrace.txt
 DISTDEP = $(INFOS) Makefile src/dinodoc.pl src/dist_date.pl
 # Files to distribute.
 DISTBIN = $(wildcard bin/dinotrace-*)
-DISTFILES = $(INFOS) COPYING Changes TODO configure *.in \
+DISTFILES = $(INFOS) COPYING Changes TODO configure *.in *.ac \
 	config.sub config.guess \
 	install-sh mkinstalldirs *.texi *.com \
 	src/*.in src/*.h src/*.c src/*.pl src/*.com lisp/* traces/* \
@@ -107,14 +108,20 @@ DISTFILES = $(INFOS) COPYING Changes TODO configure *.in \
 
 all: dinotrace_exe info
 
+obj_dir:
+	-mkdir -p $@
+bin:
+	-mkdir -p bin
+
 .PHONY:dinotrace_exe
 .PHONY:dinotrace
-dinotrace_exe dinotrace:
-	-mkdir -p bin
+dinotrace_exe dinotrace: obj_dir bin
 	@echo making dinotrace in src
-	cd src && $(MAKE) ../dinotrace
-	(cp dinotrace bin/dinotrace-$(HOST) >/dev/null 2>&1\
-	 || cp dinotrace.exe bin/dinotrace-$(HOST).exe >/dev/null 2>&1)
+	cd obj_dir && $(MAKE) -f $(abs_srcdir)/src/Makefile dinotrace
+	(cp obj_dir/dinotrace ./dinotrace >/dev/null 2>&1\
+	 || cp obj_dir/dinotrace.exe ./dinotrace.exe >/dev/null 2>&1)
+	(cp obj_dir/dinotrace bin/dinotrace-$(HOST) >/dev/null 2>&1\
+	 || cp obj_dir/dinotrace.exe bin/dinotrace-$(HOST).exe >/dev/null 2>&1)
 
 info: $(INFOS)
 
@@ -173,7 +180,7 @@ uninstall:
 
 # autoheader might not change config.h.in, so touch a stamp file.
 ${srcdir}/config.h.in: stamp-h.in
-${srcdir}/stamp-h.in: configure.in Makefile.in ${srcdir}/Makefile.in ${srcdir}/config.h.in
+${srcdir}/stamp-h.in: configure.ac Makefile.in ${srcdir}/Makefile.in ${srcdir}/config.h.in
 	cd ${srcdir} && autoheader
 	echo timestamp > ${srcdir}/stamp-h.in
 config.h: stamp-h
@@ -185,7 +192,7 @@ src/Makefile: src/Makefile.in config.status
 	./config.status
 config.status: configure
 	./config.status --recheck
-configure: configure.in
+configure: configure.ac
 	autoconf
 
 maintainer-clean::
@@ -200,6 +207,7 @@ clean mostlyclean distclean maintainer-clean maintainer-copy::
 	done
 
 clean mostlyclean distclean maintainer-clean::
+	rm -rf obj_*
 	rm -f $(SCRIPTS) *.tmp 
 	rm -f *.aux *.cp *.cps *.dvi *.fn *.fns *.ky *.kys *.log
 	rm -f *.pg *.pgs *.toc *.tp *.tps *.vr *.vrs
@@ -207,7 +215,7 @@ clean mostlyclean distclean maintainer-clean::
 
 distclean maintainer-clean::
 	rm -f Makefile config.status config.cache config.log dinotrace dinotrace.exe TAGS
-
+	rm -rf autom4te.cache
 
 TAGFILES=${srcdir}/src/*.c ${srcdir}/src/*.h ${srcdir}/src/[a-z]*.in \
 	${srcdir}/[a-z]*.in ${srcdir}/*.texi

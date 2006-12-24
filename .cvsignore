@@ -10,3 +10,5 @@ FAQ
 Makefile
 dinotrace
 bin
+autom4te.cache
+obj_dir

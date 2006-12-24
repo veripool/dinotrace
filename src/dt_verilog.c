@@ -116,7 +116,7 @@ static void	verilog_gets_init (int read_fd)
 #define VERILOG_ISSPACE(ch) ((ch)<=32)	/* Fast and very dirty */
 static char *verilog_gettok ()
 {
-    static int buf_length = 0;
+    static uint_t buf_length = 0;
     static char *buf_ptr = NULL;
     static int buf_valid = 0;
     char *cp;
