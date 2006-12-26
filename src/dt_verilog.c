@@ -274,8 +274,8 @@ void sig_new_file (
 
     /* Preprocess signal name */
     while (isspace(*signame)) signame++;		/* Drop leading spaces */
-    pos=signame+strlen(signame);
-    while (isspace(*pos)) *pos-- = '\0';		/* Drop trailing spaces */
+    pos=signame+strlen(signame)-1;
+    while (pos>=signame && isspace(*pos)) *pos-- = '\0';		/* Drop trailing spaces */
 
     /* Use the separator character to split signals into vector and base */
     /* IE "signal_1" becomes "signal" with index=1 if the separator is _ */
