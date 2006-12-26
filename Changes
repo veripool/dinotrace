@@ -3,9 +3,11 @@ Revision history for Dinotrace
 The contributors that suggested a given feature are shown in [].
 	
 
-***	Builds now take place in "obj_dir" to keep them distinct from sources.
-
 * Dinotrace 9.3***
+
+***	Add signed decimal radix.  [by Uwe Bonnes]
+
+***	Builds now take place in "obj_dir" to keep them distinct from sources.
 
 ****	Fix dinotrace.el complaint about bad verilog-mode.el version.
 	[Joseph Holtgrefe]
@@ -16,13 +18,13 @@ The contributors that suggested a given feature are shown in [].
 
 ***	Fix line number incrementing in Verilog errors. [Uwe Bonnes]
 
-* Dinotrace 9.3a 06/13/2005
+* Dinotrace 9.3a 6/13/2005
 
 ***	Fix too small buttons under openmotif.
 
 ***	Fix missing keyboard accelerators under openmotif.
 
-* Dinotrace 9.2b 05/03/2005
+* Dinotrace 9.2b 5/03/2005
 
 ***	The default extension for Verilog dumps is now .vcd instead of .dmp.
 

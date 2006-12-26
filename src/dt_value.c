@@ -244,6 +244,22 @@ static void    val_str_lw (
 	    sprintf (strg,middle?"%010d":"%d", lw);
 	}
 	break;
+    case RADIX_DEC_SN:
+	if (enlw) {
+	    strcpy (strg,"Mixed01XU");
+	} else {
+	    printf ("w=%d  lw = %d    msk=%x  lwm=%x  int=%x\n",
+		    width, lw, (1<<(width-1)),
+		    lw & (1<<(width-1)),
+		    (~lw & ((1<<(width-1))-1)));
+	    if (lw & (1<<(width-1))) {  // Negative
+		int masked = ~lw & ((1<<(width-1))-1);
+		sprintf (strg,"-%d", masked+1);
+	    } else {  // Signed and positive
+		sprintf (strg,middle?"%010d":"%d", lw);
+	    }
+	}
+	break;
     case RADIX_BIN_UN: {
 	for (;bit>=0;bit--) {
 	    *strg++ = val_str_digit (bit, 0x1, lw, enlw);
@@ -409,6 +425,7 @@ void    string_to_value (
     const char *cp = strg;
     char radix_id;
     uint_t *nptr = &(value_ptr->number[0]);
+    Boolean_t negate = FALSE;
 
     val_zero (value_ptr);
 
@@ -427,6 +444,7 @@ void    string_to_value (
     switch (toupper(radix_id)) {
     case 'o': *radix_pptr = global->radixs[RADIX_OCT_UN]; break;
     case 'd': *radix_pptr = global->radixs[RADIX_DEC_UN]; break;
+    case 'i': *radix_pptr = global->radixs[RADIX_DEC_SN]; break;
     case 'b': *radix_pptr = global->radixs[RADIX_BIN_UN]; break;
     case 'r': *radix_pptr = global->radixs[RADIX_REAL]; break;
     case '"':
@@ -469,6 +487,8 @@ void    string_to_value (
 	    value = *cp - ('A' - 10);
 	else if (*cp >= 'a' && *cp <= 'f')
 	    value = *cp - ('a' - 10);
+	else if (*cp == '-')
+	    negate = !negate;
 
 	switch ((*radix_pptr)->type) {
 	case RADIX_HEX_UN:
@@ -496,6 +516,7 @@ void    string_to_value (
 	    }
 	    break;
 	case RADIX_DEC_UN:
+	case RADIX_DEC_SN:
 	    if (value >=0 && value <= 9) {
 		/* This is buggy for large numbers */
 		/* Note in spec that binary is for 32 bit or less numbers */
@@ -517,6 +538,17 @@ void    string_to_value (
 	case RADIX_REAL:
 	    break;
 	}
+    }
+
+    if (negate && (nptr[0] || nptr[1] || nptr[2] || nptr[3])) {
+	nptr[0] = ~nptr[0];
+	nptr[1] = ~nptr[1];
+	nptr[2] = ~nptr[2];
+	nptr[3] = ~nptr[3];
+	nptr[0]++;
+	if (!nptr[0]) nptr[1]++;
+	if (!nptr[0] && !nptr[1]) nptr[2]++;
+	if (!nptr[0] && !nptr[1] && !nptr[2]) nptr[3]++;
     }
 
     val_minimize (value_ptr, NULL);
@@ -768,6 +800,7 @@ void	val_radix_init ()
     val_radix_add (RADIX_OCT_UN, "Octal",	"'o");
     val_radix_add (RADIX_BIN_UN, "Binary", "'b");
     val_radix_add (RADIX_DEC_UN, "Decimal", "'d");
+    val_radix_add (RADIX_DEC_SN, "Signed Decimal", "'i");
     val_radix_add (RADIX_ASCII,  "Ascii", "\"");
     val_radix_add (RADIX_REAL,   "Real", "'r");
 }

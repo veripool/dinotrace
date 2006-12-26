@@ -562,6 +562,7 @@ typedef enum {
     RADIX_OCT_UN,
     RADIX_BIN_UN,
     RADIX_DEC_UN,
+    RADIX_DEC_SN,
     RADIX_ASCII,
     RADIX_REAL,
     RADIX_MAX		/* Number of radixs, exclusive maximum */
