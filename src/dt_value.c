@@ -248,10 +248,6 @@ static void    val_str_lw (
 	if (enlw) {
 	    strcpy (strg,"Mixed01XU");
 	} else {
-	    printf ("w=%d  lw = %d    msk=%x  lwm=%x  int=%x\n",
-		    width, lw, (1<<(width-1)),
-		    lw & (1<<(width-1)),
-		    (~lw & ((1<<(width-1))-1)));
 	    if (lw & (1<<(width-1))) {  // Negative
 		int masked = ~lw & ((1<<(width-1))-1);
 		sprintf (strg,"-%d", masked+1);
