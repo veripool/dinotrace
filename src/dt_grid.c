@@ -74,7 +74,11 @@
 
 /**********************************************************************/
 
-extern void	grid_customize_ok_cb(), grid_customize_apply_cb(), grid_customize_reset_cb(), grid_customize_sensitives_cb(), grid_customize_option_cb();
+extern void	grid_customize_ok_cb(Widget w, Trace_t* trace, XmAnyCallbackStruct* cb);
+extern void	grid_customize_apply_cb(Widget w, Trace_t* trace, XmAnyCallbackStruct* cb);
+extern void	grid_customize_reset_cb(Widget w, Trace_t* trace, XmAnyCallbackStruct* cb);
+extern void	grid_customize_sensitives_cb(Widget w, Trace_t* trace, XmAnyCallbackStruct* cb);
+extern void	grid_customize_option_cb(Widget w, Trace_t* trace, XmAnyCallbackStruct* cb);
 extern void	grid_customize_align_cb (Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
 
 
@@ -455,7 +459,7 @@ void    grid_customize_widget_update_cb (
 	XtSetArg (arglist[0], XmNmenuHistory, trace->gridscus.grid[grid_num].pulldownbutton[grid_ptr->color]);
 	XtSetValues (trace->gridscus.grid[grid_num].options, arglist, 1);
 	/* Must redraw color box on any exposures */
-	XtAddEventHandler (trace->gridscus.dialog, ExposureMask, TRUE, grid_customize_option_cb, trace);
+	XtAddEventHandler (trace->gridscus.dialog, ExposureMask, TRUE, (XtEventHandler)grid_customize_option_cb, trace);
 
 	/* period Mode */
 	opt=(int)grid_ptr->period_auto;	/* Weedy, enums are defined to be equiv to descriptions */
@@ -568,13 +572,13 @@ void    grid_customize_cb (
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Manual Periodic") );
 	    trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoperiod_pulldown,"pdbutton0",arglist,1);
-	    DAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
+	    DAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0], XmNactivateCallback, grid_customize_sensitives_cb, trace);
 	    DManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[0], trace, MC_NOKEYS);
 
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Auto Periodic") );
 	    trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1] =
 		XmCreatePushButtonGadget (trace->gridscus.grid[grid_num].autoperiod_pulldown,"pdbutton0",arglist,1);
-	    DAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1], XmNactivateCallback, (XtCallbackProc)grid_customize_sensitives_cb, trace);
+	    DAddCallback (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1], XmNactivateCallback, grid_customize_sensitives_cb, trace);
 	    DManageChild (trace->gridscus.grid[grid_num].autoperiod_pulldownbutton[1], trace, MC_NOKEYS);
 
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Auto Edges Only") );
@@ -720,8 +724,8 @@ void    grid_customize_ok_cb (
 	grid_ptr->visible = XmToggleButtonGetState (trace->gridscus.grid[grid_num].visible);
 	grid_ptr->wide_line = XmToggleButtonGetState (trace->gridscus.grid[grid_num].wide_line);
 	grid_ptr->color = option_to_number(trace->gridscus.grid[grid_num].options, trace->gridscus.grid[grid_num].pulldownbutton, MAX_SRCH);
-	grid_ptr->period_auto = option_to_number(trace->gridscus.grid[grid_num].autoperiod_options, trace->gridscus.grid[grid_num].autoperiod_pulldownbutton, 2);
-	grid_ptr->align_auto = option_to_number(trace->gridscus.grid[grid_num].autoalign_options, trace->gridscus.grid[grid_num].autoalign_pulldownbutton, 3);
+	grid_ptr->period_auto = (PeriodAuto_t)option_to_number(trace->gridscus.grid[grid_num].autoperiod_options, trace->gridscus.grid[grid_num].autoperiod_pulldownbutton, 2);
+	grid_ptr->align_auto = (AlignAuto_t)option_to_number(trace->gridscus.grid[grid_num].autoalign_options, trace->gridscus.grid[grid_num].autoalign_pulldownbutton, 3);
 	if (grid_ptr->period_auto == PA_USER) {
 	    grid_ptr->period = string_to_time (trace, XmTextGetString (trace->gridscus.grid[grid_num].period));
 	}

@@ -74,15 +74,18 @@
 
 /**********************************************************************/
 
-extern void 
-    sig_sel_ok_cb(), sig_sel_apply_cb(),
-    sig_add_sel_cb(), sig_sel_pattern_cb(),
-    sig_sel_add_all_cb(), sig_sel_add_list_cb(),
-    sig_sel_del_all_cb(), sig_sel_del_list_cb();
-extern void sig_sel_del_const_cb();
-extern void sig_sel_del_const_xz_cb();
-extern void sig_sel_sort_cb();
-extern void sig_sel_sort_base_cb();
+extern void sig_sel_ok_cb(Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
+extern void sig_sel_apply_cb(Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
+extern void sig_add_sel_cb(Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
+extern void sig_sel_add_all_cb(Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
+extern void sig_sel_add_list_cb(Widget w, Trace_t *trace, XmListCallbackStruct *cb);
+extern void sig_sel_del_all_cb(Widget w, Trace_t *trace, XmAnyCallbackStruct *cb);
+extern void sig_sel_del_list_cb(Widget w, Trace_t *trace, XmListCallbackStruct *cb);
+extern void sig_sel_pattern_cb (Widget, Trace_t*, XmAnyCallbackStruct*);
+extern void sig_sel_del_const_cb(Widget, Trace_t*, XmAnyCallbackStruct*);
+extern void sig_sel_del_const_xz_cb(Widget, Trace_t*, XmAnyCallbackStruct*);
+extern void sig_sel_sort_cb(Widget, Trace_t*, XmAnyCallbackStruct*);
+extern void sig_sel_sort_base_cb(Widget, Trace_t*, XmAnyCallbackStruct*);
 
 
 /****************************** UTILITIES ******************************/
@@ -1007,7 +1010,7 @@ void    sig_waveform_cb (
     int subnum = submenu_to_color (trace, w, 0, trace->menu.sig_waveform_pds);
 
     if (DTPRINT_ENTRY) printf ("In sig_waveform_digital_cb - trace=%p sub=%d\n",trace, subnum);
-    global->selected_waveform = subnum;
+    global->selected_waveform = (Waveform_t)subnum;
 
     /* process all subsequent button presses as signal deletions */ 
     remove_all_events (trace);

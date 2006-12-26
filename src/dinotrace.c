@@ -100,7 +100,7 @@ int    main (
     int		argc,
     char	**argv)
 {
-    uint_t	i;
+    int		i;
     Boolean_t	sync = FALSE;
     Boolean_t	opened_a_file = FALSE;
     Trace_t	*trace;
@@ -136,7 +136,7 @@ int    main (
 		    shift;
 		    sscanf (sw, "%x", & DTPRINT );
 		}
-		else DTPRINT = -1;
+		else DTPRINT = ~0;
 	    }
 	    else if ( !strcmp (sw, "tempest") ) {
 		file_format = FF_TEMPEST;

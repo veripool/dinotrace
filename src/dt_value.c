@@ -671,7 +671,7 @@ void	val_update_search ()
 			break;
 		    } /* switch */
 		    
-		    if (color_to_assign != cptr->siglw.stbits.color) {
+		    if (color_to_assign != (int)cptr->siglw.stbits.color) {
 			/* Don't write unless changes to save cache flushing */
 			cptr->siglw.stbits.color = color_to_assign;
 		    }
@@ -937,9 +937,9 @@ char *val_examine_string (
     case STATE_B128:
     case STATE_F128:
 	/* Bitwise information */
-	rows = ceil (sqrt ((double)(sig_ptr->bits)));
-	cols = ceil ((double)(rows) / 4.0) * 4;
-	rows = ceil ((double)(sig_ptr->bits)/ (double)cols);
+	rows = (int)(ceil (sqrt ((double)(sig_ptr->bits))));
+	cols = (int)(ceil ((double)(rows) / 4.0) * 4);
+	rows = (int)(ceil ((double)(sig_ptr->bits)/ (double)cols));
 	
 	format = "[%01d]=%c ";
 	if (greater_index >= 10)  format = "[%02d]=%c ";
@@ -1655,7 +1655,7 @@ void    val_annotate_ok_cb (
     XtGetValues (trace->annotate.trace_option, arglist, 1);
     for (i=0; i<3; i++) {
         if (clicked == trace->annotate.trace_button[i]) {
-	    global->anno_traces = i;
+	    global->anno_traces = (TraceSel_t)(i);
         }
     }
 

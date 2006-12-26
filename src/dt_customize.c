@@ -628,7 +628,7 @@ void cus_write_ok_cb (
     XtGetValues (trace->cuswr.trace_option, arglist, 1);
     for (i=0; i<3; i++) {
         if (clicked == trace->cuswr.trace_button[i]) {
-	    global->cuswr_traces = i;
+	    global->cuswr_traces = (TraceSel_t)i;
         }
     }
 

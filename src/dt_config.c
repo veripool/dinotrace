@@ -367,31 +367,31 @@ static void	signalstate_add (
     Trace_t	*trace,
     SignalState_t *info)
 {
-    SignalState_t *new;
+    SignalState_t *newp;
     int t;
 
-    for (new = global->signalstate_head; new ; new=new->next) {
-      if (!strcmp (new->signame, info->signame)) break;
+    for (newp = global->signalstate_head; newp ; newp=newp->next) {
+      if (!strcmp (newp->signame, info->signame)) break;
     }
-    if (! new) {
+    if (! newp) {
       /* Not found, add & relink */
-      new = XtNew (SignalState_t);
-      memcpy ((void *)new, (void *)info, sizeof(SignalState_t));
-      new->next = global->signalstate_head;
-      global->signalstate_head = new;
+      newp = XtNew (SignalState_t);
+      memcpy ((void *)newp, (void *)info, sizeof(SignalState_t));
+      newp->next = global->signalstate_head;
+      global->signalstate_head = newp;
       draw_needupd_val_states ();
     }
     else {
       /* Found, overwrite old */
-      info->next = new->next;	/* Don't loose the link */
-      memcpy ((void *)new, (void *)info, sizeof(SignalState_t));
+      info->next = newp->next;	/* Don't loose the link */
+      memcpy ((void *)newp, (void *)info, sizeof(SignalState_t));
     }
 
-    /*printf ("Signal '%s' Assigned States:\n", new->signame);*/
+    /*printf ("Signal '%s' Assigned States:\n", newp->signame);*/
     for (t=0; t<MAXSTATENAMES; t++) {
-	if (new->statename[t][0] != '\0') {
-	    new->numstates = t+1;
-	    /*printf ("State %d = '%s'\n", t, new->statename[t]);*/
+	if (newp->statename[t][0] != '\0') {
+	    newp->numstates = t+1;
+	    /*printf ("State %d = '%s'\n", t, newp->statename[t]);*/
 	}
     }
 }
@@ -410,7 +410,7 @@ static void	signalstate_free (void)
 }
 
 static void	signalstate_write (
-    FILE *writefp, char *c)
+    FILE *writefp, const char *c)
 {
     SignalState_t *sstate_ptr;
     int i;
@@ -688,7 +688,7 @@ static void	config_process_line_internal (
 	}
 	else if (!strcmp(cmd, "PRINT")) {
 	    value=DTPRINT;
-	    if (toupper(line[0])=='O' && toupper(line[1])=='N') DTPRINT = -1;
+	    if (toupper(line[0])=='O' && toupper(line[1])=='N') DTPRINT = ~0;
 	    else if (toupper(line[0])=='O' && toupper(line[1])=='F') DTPRINT = 0;
 	    else {
 		sscanf (line, "%x", &value);
@@ -1159,7 +1159,7 @@ static void	config_process_line_internal (
 	else if (!strcmp(cmd, "TIME_GOTO")) {
 	    DTime_t ctime;
 	    char strg[MAXSIGLEN];
-	    DTime_t end_time = global->time + (( trace->width - XMARGIN - global->xstart ) / global->res);
+	    DTime_t end_time = global->time + (DTime_t)(( trace->width - XMARGIN - global->xstart ) / global->res);
 	    
 	    line += config_read_string (trace, line, strg);
 	    ctime = string_to_time (trace, strg);
@@ -1421,7 +1421,7 @@ void config_write_file (
     Grid_t	*grid_ptr;
     int		i;
     char	strg[MAXSIGLEN];
-    char	*c;	/* Comment or null */
+    const char	*c;	/* Comment or null */
     Trace_t	*trace_top = trace;
     
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Writing config file %s\n", filename);

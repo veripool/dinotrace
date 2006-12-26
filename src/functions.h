@@ -117,7 +117,7 @@
 #define	CKPT() printf ("CKPT %s:%d\n", __FILE__, __LINE__)
 
 #define TIME_TO_XPOS_REL(_xtime_, _base_) \
-        ( ((_xtime_) - (_base_)) * global->res + global->xstart )
+        ((int)( ((_xtime_) - (_base_)) * global->res + global->xstart ))
 #define TIME_TO_XPOS(_xtime_) TIME_TO_XPOS_REL ((_xtime_), global->time)
 
 #define	TIME_WIDTH(_trace_) \
@@ -232,7 +232,7 @@ extern void	cur_delete_of_type (CursorType_t type);
 extern void	cur_free (DCursor_t *csr_ptr);
 extern DTime_t	cur_time_first (const Trace_t *trace);
 extern DTime_t	cur_time_last (const Trace_t *trace);
-extern void	cur_write (FILE *, char *c);
+extern void	cur_write (FILE *, const char *c);
 extern char *	cur_examine_string (Trace_t *trace, DCursor_t *cursor_ptr);
 extern void	cur_step (DTime_t step);
 extern void	cur_note (DCursor_t* csr_ptr, const char* note);
@@ -424,7 +424,7 @@ extern void	string_to_value (Radix_t **radix_pptr, const char *strg, Value_t *va
 extern DTime_t	string_to_time (Trace_t *trace, char *strg);
 
 extern void	DManageChild (Widget w, Trace_t *trace, MCKeys_t keys);
-extern void	add_event (int type, void (*callback)());
+extern void	add_event (int type, EventCallback_t callback);
 extern void	remove_all_events (Trace_t *trace);
 extern void	change_title (Trace_t *trace);
 extern void	dino_message_ack (Trace_t *trace, int type, char *msg);

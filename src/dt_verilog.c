@@ -78,8 +78,8 @@ static Boolean_t verilog_eof;
 /* Pointer to array of signals sorted by pos. (Special hash table) */
 /* *(signal_by_code[VERILOG_ID_TO_POS ("abc")]) gives signal ABC */
 static Signal_t	**signal_by_code;	
-static uint_t	signal_by_code_max;
-static uint_t	verilog_max_bits = 128;
+static int	signal_by_code_max;
+static int	verilog_max_bits = 128;
 
 /* List of signals that need updating */
 static Signal_t	**signal_update_array;	
@@ -589,8 +589,8 @@ static void	verilog_process_definitions (
 {
     Signal_t	*sig_ptr;
     Signal_t	*pos_sig_ptr;
-    uint_t	pos_level, level;
-    uint_t	pos;
+    int		pos_level, level;
+    int		pos;
     char	*tp;
     
     /* if (DTPRINT_FILE) sig_print_names (trace); */
@@ -940,7 +940,7 @@ static void	verilog_read_data (
 			char extend_char = (value_strg[0]=='1')?'0':value_strg[0];
 			/*printf ("Extend %d mb %d ll %d size %d\n",offset,verilog_max_bits,strlen(value_strg), size);*/
 			/*printf ("LN: '%s'\n",value_strg);*/
-			if (offset + strlen(value_strg)+1 > (verilog_max_bits+5)) {
+			if (offset + (int)strlen(value_strg)+1 > (verilog_max_bits+5)) {
 			    printf("Bad file reading, verilog bus length off on line %d, %d %d\n", verilog_line_num,size,verilog_max_bits);
 			    for (loop_sig_ptr=sig_ptr; loop_sig_ptr; loop_sig_ptr=loop_sig_ptr->verilog_next) {
 				if (!loop_sig_ptr->copyof) printf("  Includes %d %d %s\n", loop_sig_ptr->bits, loop_sig_ptr->file_pos, loop_sig_ptr->signame);
@@ -967,7 +967,7 @@ static void	verilog_read_data (
 	    /* Times are next most common */
 	case '#':	/* Time stamp */
 	    verilog_enter_busses (trace, first_data, time);
-	    time = (atof (line) * time_mult);	/* 1% of time in this division! */
+	    time = (DTime_t)(atof (line) * time_mult);	/* 1% of time in this division! */
 	    if (first_data && got_time && got_data) {
 		first_data = FALSE;
 	    } else if (first_data) {

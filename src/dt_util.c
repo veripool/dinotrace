@@ -70,8 +70,7 @@
 
 /**********************************************************************/
 
-extern void prompt_ok_cb(), fil_ok_cb();
-
+extern void prompt_ok_cb(Widget w, Trace_t *trace, XmSelectionBoxCallbackStruct *cb);
 
 void upcase_string (char *tp)
 {
@@ -406,7 +405,7 @@ void    update_scrollbar (
 
 void 	add_event (
     int		type,
-    void	(*callback)())
+    EventCallback_t callback)
 {
     Trace_t	*trace;
 
@@ -418,7 +417,7 @@ void 	add_event (
 
 static void    remove_event (
     int		type,
-    void	(*callback)())
+    EventCallback_t callback)
 {
     Trace_t	*trace;
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
@@ -1134,7 +1133,7 @@ DTime_t	posx_to_time (
     if ( !trace->loaded || x < global->xstart || x > trace->width - XMARGIN )
 	return (-1);
     
-    return (((x) + global->time * global->res - global->xstart) / global->res);
+    return (DTime_t)(((x) + global->time * global->res - global->xstart) / global->res);
 }
 
 
@@ -1465,7 +1464,7 @@ DTime_t time_units_to_multiplier (
     /* find units for the given time represetation */
     TimeRep_t	timerep)
 {
-    return (timerep);
+    return ((DTime_t)(timerep));
     /*
     switch (timerep) {
     case TIMEREP_CYC:

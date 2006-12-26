@@ -542,7 +542,7 @@ static void draw_signal (
 		case STATE_Z:		dr_mask |= DR_Z; break;
 		default:		dr_mask |= DR_LOW | DR_HIGH; break;
 		}
-		color_value = MAX(color_value, nptr->siglw.stbits.color);
+		color_value = MAX(color_value, (int)nptr->siglw.stbits.color);
 		xright = MAX(xright, TIME_TO_XPOS (CPTR_TIME(nnptr)));
 		nptr = nnptr;
 	    }
@@ -574,8 +574,7 @@ static void draw_signal (
 		if (dr_mask & (DR_LOW | DR_HIGH | DR_HIGHHIGH)) {
 		    /* Note ylow > yhigh, as bigger coords are at bottom of screen */
 		    double ythis_pct = draw_analog_value (sig_ptr, cptr);
-		    int ythis;
-		    ythis = (ylow-yhigh)*(1.0-ythis_pct) + yhigh;
+		    int ythis = (int)((ylow-yhigh)*(1.0-ythis_pct) + yhigh);
 		    if (xsigrfleft)
 			ADD_SEG (xleft-xsigrfleft, ylast_analog, xleft+xsigrfleft, ythis);
 		    ADD_SEG (xleft+xsigrfleft, ythis,  xright-xsigrfright, ythis);
@@ -641,7 +640,7 @@ static void draw_signal (
 	      state_plot:
 		{
 		    /* calculate positional parameters */
-		    int charlen = MIN ((xright-xleft-2) / star_width, strlen(strg));
+		    uint_t charlen = MIN ((uint_t)((xright-xleft-2) / star_width), strlen(strg));
 		    char *plotstrg;
 		    while (1) {
 			plotstrg = strg + strlen(strg) - charlen;
@@ -753,7 +752,7 @@ static void draw_trace_signame (
 
     showname = sig_ptr->signame;
     if (!global->prefix_enable) {
-	prefix_chars = MIN(global->namepos_prefix, strlen(sig_ptr->signame));
+	prefix_chars = MIN(global->namepos_prefix, (int)strlen(sig_ptr->signame));
 	showname += prefix_chars;
     }
     basename = sig_basename (trace, sig_ptr);
@@ -1036,7 +1035,7 @@ static void draw_hscroll (
     if ( global->cursor_vis ) {
 	for (csr_ptr = global->cursor_head; csr_ptr; csr_ptr = csr_ptr->next) {
 	    /* draw the cursor */
-	    x1 = xmin + xscale * (csr_ptr->time - trace->start_time);
+	    x1 = xmin + (int)(xscale * (csr_ptr->time - trace->start_time));
 
 	    /* Don't plot if it would overwrite the slider */
 	    if ((x1 < slider_xmin) || (x1 > slider_xmax)) {
@@ -1119,7 +1118,7 @@ static void draw_vscroll (
 	color = sig_ptr->color;
 	if (color && ((signum < trace->numsigstart) ||
 		      (signum >= ( trace->numsigstart + trace->numsigvis)))) {
-	    y1 = ymin + yscale * signum;
+	    y1 = ymin + (int)(yscale * signum);
 
 	    /* If plotting it would overwrite the slider move it to one side or the other */
 	    if (y1 < slider_ymax && y1 > slider_ymin) {

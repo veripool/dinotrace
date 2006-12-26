@@ -797,7 +797,7 @@ void    debug_toggle_print_cb (
     Widget	w)
 {
     if (DTPRINT) DTPRINT = 0;
-    else DTPRINT = -1;
+    else DTPRINT = ~0;
     printf ("Printing now %d\n",DTPRINT);
 }
 

@@ -266,7 +266,7 @@ DCursor_t *cur_id_to_cursor (int id) {
     return (cur);
 }
 
-void cur_write (FILE *writefp, char *c)
+void cur_write (FILE *writefp, const char *c)
 {
     DCursor_t	*csr_ptr;
     char strg[MAXTIMELEN];

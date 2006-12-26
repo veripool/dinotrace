@@ -470,7 +470,7 @@ void ascii_read (
 	    }
 	    else {
 		/* Be careful of round off error making us overflow the time */
-		time_stamp = (atof (line_in) * 1000.0) / ((float)time_divisor);	/* ASCII traces are always in NS */
+		time_stamp = (long)((atof (line_in) * 1000.0) / ((float)time_divisor));	/* ASCII traces are always in NS */
 		if (time_stamp<0) {
 		    printf ("%%E, Time underflow!\n");
 		}

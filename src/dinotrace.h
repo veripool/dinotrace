@@ -310,6 +310,9 @@ typedef struct st_trace Trace_t;
 typedef struct st_dfile DFile_t;
 typedef struct st_signal Signal_t;
 
+typedef void (*EventCallback_t)(Widget w, Trace_t* trace, XButtonPressedEvent* ev);
+typedef void (*MenuCallback_t)(Widget w, void*, void*);
+
 /**********************************************************************/
 /* Widget structures */
 
@@ -341,7 +344,7 @@ typedef struct {
     uint_t	cur_add_pds;
     uint_t      cur_add_simview_pds;
     uint_t	val_highlight_pds;
-    uint_t	pdm, pdmsep, pde, pds;		/* Temp for loading structure */
+    int		pdm, pdmsep, pde, pds;		/* Temp for loading structure */
 } MenuWidgets_t;
 
 typedef struct {
@@ -373,10 +376,11 @@ typedef struct {
     OkApplyWidgets_t okapply;
 } CustomWidgets_t;
 
+typedef enum { RANGE_BEGIN=0, RANGE_END=1} RangeType_t;
 typedef struct {
     Trace_t *trace;		/* Link back, as callbacks won't know without it */
-    enum { BEGIN=0, END=1} type;
     DTime_t  dastime;
+    RangeType_t type;
     /* Begin stuff */
     Widget time_label;
     Widget time_pulldown;
@@ -641,12 +645,15 @@ typedef struct st_cursor {
                                          *   ids <  0 assigned by SimView. */
 } DCursor_t; /* Not 'Cursor', as that's defined in X11.h */
 
+typedef enum { PA_USER=0, PA_AUTO=1, PA_EDGE=2 } PeriodAuto_t;
+typedef enum { AA_USER=0, AA_ASS=1, AA_DEASS=2, AA_BOTH=3 } AlignAuto_t;
+
 typedef struct {
     DTime_t		period;		/* Grid period (time between ticks) */
     DTime_t		alignment;	/* Grid alignment (time grid starts at) */
     int			grid_num;	/* Number of this grid */
-    enum { PA_USER=0, PA_AUTO=1, PA_EDGE=2 } period_auto;	/* Status of automatic grid resolution */
-    enum { AA_USER=0, AA_ASS=1, AA_DEASS=2, AA_BOTH=3 } align_auto; /* Status of automatic grid alignment */
+    PeriodAuto_t	period_auto;	/* Status of automatic grid resolution */
+    AlignAuto_t		align_auto;	/* Status of automatic grid alignment */
     Boolean_t		visible;	/* True if grid is visible */
     Boolean_t		wide_line;	/* True to draw a double-width line */
     char 		signal[MAXSIGLEN];	/* Signal name of the clock */
@@ -706,9 +713,9 @@ struct st_signal {
     int			msb_index;	/* Bit subscript of first index in a signal (<20:10> == 20, <0:2>==0), -1=none */
     int			lsb_index;	/* Bit subscript of last index in a signal  (<20:10> == 10, <0:2>==2), -1=none */
     int			bits;		/* Number of bits in a bus, 1=single */
-    uint_t		file_code;	/* Code for signal in file (verilog) */
-    uint_t		file_pos;	/* Position of the bits in the file line */
-    uint_t		file_end_pos;	/* Ending position of the bits in the file line */
+    int			file_code;	/* Code for signal in file (verilog) */
+    int			file_pos;	/* Position of the bits in the file line */
+    int			file_end_pos;	/* Ending position of the bits in the file line */
     Boolean_t		file_copy;	/* Copyof made automatically by file read */
     union sig_file_type_u file_type;	/* File specific type of signal, two/fourstate, etc */
     uint_t		value_mask[4];	/* Value Mask with 1s in bits that are to be set */

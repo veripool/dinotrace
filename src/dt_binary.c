@@ -589,8 +589,8 @@ static void	fil_tempest_binary_add_cptr (
 
 static int bin_read (int fd, void *buf, size_t size)
 {
-    int got_tot = 0;
-    int remaining = size;
+    size_t got_tot = 0;
+    size_t remaining = size;
     char* bufc = (char*)buf;
     if (size <= 0) return 0;
     do {

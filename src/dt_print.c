@@ -726,16 +726,16 @@ void    print_range_sensitives_cb (
     switch (opt) {
     case 3:	/* Window */
 	active = FALSE;
-	range_ptr->dastime = (range_ptr->type == BEGIN) ? global->time 
+	range_ptr->dastime = (range_ptr->type == RANGE_BEGIN) ? global->time 
 	    :   (global->time + TIME_WIDTH (trace));
 	break;
     case 2:	/* Trace */ 
 	active = FALSE;
-	range_ptr->dastime = (range_ptr->type == BEGIN) ? trace->start_time : trace->end_time;
+	range_ptr->dastime = (range_ptr->type == RANGE_BEGIN) ? trace->start_time : trace->end_time;
 	break;
     case 1:	/* Cursor */
 	active = FALSE;
-	range_ptr->dastime = (range_ptr->type == BEGIN) ? cur_time_first(trace) : cur_time_last(trace);
+	range_ptr->dastime = (range_ptr->type == RANGE_BEGIN) ? cur_time_first(trace) : cur_time_last(trace);
 	break;
     default:	/* Manual */
 	active = TRUE;
@@ -759,7 +759,7 @@ static void    print_range_create (
     RangeWidgets_t	*range_ptr,
     Widget		above,		/* Upper widget for form attachment */
     char		*descrip,	/* Description of selection */
-    Boolean_t		type)		/* True if END, else beginning */
+    RangeType_t		type)		/* True if END, else beginning */
 {
     if (DTPRINT_ENTRY) printf ("In print_create_range - trace=%p\n",trace);
 
@@ -779,7 +779,7 @@ static void    print_range_create (
 	/* Begin pulldown */
 	range_ptr->time_pulldown = XmCreatePulldownMenu (trace->print.dialog,"time_pulldown",arglist,0);
 
-	if (range_ptr->type == BEGIN)
+	if (range_ptr->type == RANGE_BEGIN)
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Window Left Edge") );
 	else XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Window Right Edge") );
 	range_ptr->time_pulldownbutton[3] =
@@ -787,7 +787,7 @@ static void    print_range_create (
 	DAddCallback (range_ptr->time_pulldownbutton[3], XmNactivateCallback, (XtCallbackProc)print_range_sensitives_cb, range_ptr);
 	DManageChild (range_ptr->time_pulldownbutton[3], trace, MC_NOKEYS);
 
-	if (range_ptr->type == BEGIN)
+	if (range_ptr->type == RANGE_BEGIN)
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Trace Beginning") );
 	else XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Trace End") );
 	range_ptr->time_pulldownbutton[2] =
@@ -795,7 +795,7 @@ static void    print_range_create (
 	DAddCallback (range_ptr->time_pulldownbutton[2], XmNactivateCallback, (XtCallbackProc)print_range_sensitives_cb, range_ptr);
 	DManageChild (range_ptr->time_pulldownbutton[2], trace, MC_NOKEYS);
 
-	if (range_ptr->type == BEGIN)
+	if (range_ptr->type == RANGE_BEGIN)
 	    XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("First Cursor") );
 	else XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Last Cursor") );
 	range_ptr->time_pulldownbutton[1] =
@@ -958,10 +958,10 @@ void    print_dialog_cb (
 							   "all_signals",arglist,6);
 	DManageChild (trace->print.all_signals, trace, MC_NOKEYS);
 	print_range_create (trace, &(trace->print.begin_range),
-			 trace->print.all_signals, "Begin Printing at:", 0);
+			 trace->print.all_signals, "Begin Printing at:", RANGE_BEGIN);
 
 	print_range_create (trace, &(trace->print.end_range),
-			 trace->print.begin_range.time_text, "End Printing at:", 1);
+			 trace->print.begin_range.time_text, "End Printing at:", RANGE_END);
 
 	/* Ok/apply/cancel */
 	ok_apply_cancel (&trace->print.okapply, trace->print.dialog,

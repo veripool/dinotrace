@@ -120,7 +120,8 @@ void debug_event_cb (
     printf ("\n");
 }
 
-extern void    val_examine_popup_act ();
+extern void    val_examine_popup_act (Widget w, XButtonPressedEvent* ev, String params, Cardinal* num_params);
+
 /* Any actions must be called with (0) so the callbacks will pass */
 /* a null in the trace parameter and thus cause us to search for the right trace */
 static XtActionsRec actions[] = {
@@ -142,7 +143,7 @@ static XtActionsRec actions[] = {
     {"trace_reread_all",(XtActionProc)trace_reread_all_cb},
     {"val_annotate",	(XtActionProc)val_annotate_cb},
     {"val_annotate_do",	(XtActionProc)val_annotate_do_cb},
-    {"value_examine_popup", val_examine_popup_act},
+    {"value_examine_popup", (XtActionProc)val_examine_popup_act},
     {"vscroll_pagedec", (XtActionProc)vscroll_pagedec_cb},
     {"vscroll_pageinc", (XtActionProc)vscroll_pageinc_cb},
     {"vscroll_unitdec", (XtActionProc)vscroll_unitdec_cb},
@@ -592,7 +593,7 @@ static void dm_menu_entry (
     char key,		/* Or '\0' for none */
     char *accel,	/* Accelerator, or NULL */
     char *accel_string,	/* Accelerator string, or NULL */
-    void (*callback)()
+    MenuCallback_t callback
     )
     /*** create a pulldownmenu entry under the top bar ***/
 {
@@ -641,7 +642,7 @@ static void dm_menu_subentry (
     char key,		/* Or '\0' for none */
     char *accel,	/* Accelerator, or NULL */
     char *accel_string,	/* Accelerator string, or NULL */
-    void (*callback)()
+    MenuCallback_t callback
     )
     /*** create a pulldownmenu entry under a subtitle ***/
 {
@@ -663,7 +664,7 @@ static void dm_menu_subentry_colors (
     char *cur_accel_string,	/* Accelerator string, or NULL */
     char *next_accel,	/* Accelerator, or NULL */
     char *next_accel_string,	/* Accelerator string, or NULL */
-    void (*callback)()
+    MenuCallback_t callback
     )
     /*** create a pulldownmenu entry under a subtitle (uses special colors) ***/
 {
@@ -678,14 +679,14 @@ static void dm_menu_subentry_colors (
 	DAddCallback (trace->menu.pdsubbutton[trace->menu.pds], XmNactivateCallback, callback, trace);
 	DManageChild (trace->menu.pdsubbutton[trace->menu.pds], trace, MC_NOKEYS);
     }
-    dm_menu_subentry (trace, (cur_accel ? "Curr":"Current"), 'C', cur_accel, cur_accel_string, callback);
+    dm_menu_subentry (trace, (char*)(cur_accel ? "Curr":"Current"), 'C', cur_accel, cur_accel_string, callback);
     dm_menu_subentry (trace, "Next", 'N', next_accel, next_accel_string, callback);
 }
 
 
 static void dm_menu_subentry_radixs (
     Trace_t *trace,
-    void (*callback)()
+    MenuCallback_t callback
     )
 {
     int radixnum;
@@ -829,8 +830,8 @@ Trace_t *create_trace (
 	xcolor.pixel = trace->barcolornum;
 	XQueryColor (global->display, cmap, &xcolor);
 	if (xcolor.green < 58590) 
-	    xcolor.green += xcolor.green * 0.07;
-	else xcolor.green -= xcolor.green * 0.07;
+	    xcolor.green  += (unsigned short)(xcolor.green * 0.07);
+	else xcolor.green -= (unsigned short)(xcolor.green * 0.07);
 	if (DTPRINT_DISPLAY) printf (" = %x, %x, %x \n", xcolor.red, xcolor.green, xcolor.blue);
 	if (XAllocColor (global->display, cmap, &xcolor))
 	    trace->barcolornum = xcolor.pixel;
@@ -850,97 +851,97 @@ Trace_t *create_trace (
     DManageChild (trace->menu.menu, trace, MC_NOKEYS);
 
     dm_menu_title (trace, "Trace", 'T');
-    dm_menu_entry (trace, 	"Read...",	'R',	NULL, NULL,	trace_read_cb);
-    dm_menu_entry (trace, 	"ReRead",	'e',	NULL, NULL,	trace_reread_cb);
-    dm_menu_entry (trace, 	"ReRead All",	'A', "!Ctrl<Key>R:", "C-r", trace_reread_all_cb);
-    dm_menu_entry (trace, 	"Open...",	'O', "!Ctrl<Key>O:", "C-o", trace_open_cb);
-    dm_menu_entry (trace, 	"Close",	'C',	NULL, NULL,	trace_close_cb);
+    dm_menu_entry (trace, 	"Read...",	'R',	NULL, NULL,	(MenuCallback_t)trace_read_cb);
+    dm_menu_entry (trace, 	"ReRead",	'e',	NULL, NULL,	(MenuCallback_t)trace_reread_cb);
+    dm_menu_entry (trace, 	"ReRead All",	'A', "!Ctrl<Key>R:", "C-r", (MenuCallback_t)trace_reread_all_cb);
+    dm_menu_entry (trace, 	"Open...",	'O', "!Ctrl<Key>O:", "C-o", (MenuCallback_t)trace_open_cb);
+    dm_menu_entry (trace, 	"Close",	'C',	NULL, NULL,	(MenuCallback_t)trace_close_cb);
     trace->menu.menu_close = trace->menu.pdentrybutton[trace->menu.pdm];
-    dm_menu_entry (trace, 	"Clear",	'l',	NULL, NULL,	trace_clear_cb);
+    dm_menu_entry (trace, 	"Clear",	'l',	NULL, NULL,	(MenuCallback_t)trace_clear_cb);
     dm_menu_separator (trace);
-    dm_menu_entry (trace, 	"Print...",	'i',	NULL, NULL,	print_dialog_cb);
-    dm_menu_entry (trace, 	"Print",	'P',	NULL, NULL,	print_direct_cb);
+    dm_menu_entry (trace, 	"Print...",	'i',	NULL, NULL,	(MenuCallback_t)print_dialog_cb);
+    dm_menu_entry (trace, 	"Print",	'P',	NULL, NULL,	(MenuCallback_t)print_direct_cb);
     dm_menu_separator (trace);
-    dm_menu_entry (trace, 	"Exit", 	'x',	NULL, NULL,	trace_exit_cb);
+    dm_menu_entry (trace, 	"Exit", 	'x',	NULL, NULL,	(MenuCallback_t)trace_exit_cb);
 
     dm_menu_title (trace, "Customize", 'u');
-    dm_menu_entry (trace, 	"Change...",	'C',	NULL, NULL,	cus_dialog_cb);
-    dm_menu_entry (trace, 	"Grid...",	'G',	NULL, NULL,	grid_customize_cb);
-    dm_menu_entry (trace, 	"Read...",	'R',	NULL, NULL,	cus_read_cb);
-    dm_menu_entry (trace, 	"ReRead",	'e',	NULL, NULL,	cus_reread_cb);
-    dm_menu_entry (trace, 	"Save As...",	'S',	NULL, NULL,	cus_write_cb);
-    dm_menu_entry (trace, 	"Restore",	'R',	NULL, NULL,	cus_restore_cb);
+    dm_menu_entry (trace, 	"Change...",	'C',	NULL, NULL,	(MenuCallback_t)cus_dialog_cb);
+    dm_menu_entry (trace, 	"Grid...",	'G',	NULL, NULL,	(MenuCallback_t)grid_customize_cb);
+    dm_menu_entry (trace, 	"Read...",	'R',	NULL, NULL,	(MenuCallback_t)cus_read_cb);
+    dm_menu_entry (trace, 	"ReRead",	'e',	NULL, NULL,	(MenuCallback_t)cus_reread_cb);
+    dm_menu_entry (trace, 	"Save As...",	'S',	NULL, NULL,	(MenuCallback_t)cus_write_cb);
+    dm_menu_entry (trace, 	"Restore",	'R',	NULL, NULL,	(MenuCallback_t)cus_restore_cb);
 
     dm_menu_title (trace, "Cursor", 'C');
     dm_menu_subtitle (trace, 	"Add",		'A');
     trace->menu.cur_add_pds = trace->menu.pds+1;
-    dm_menu_subentry_colors (trace, "!<Key>C:", "c", "!Shift<Key>C:", "S-c",cur_add_cb);
+    dm_menu_subentry_colors (trace, "!<Key>C:", "c", "!Shift<Key>C:", "S-c", (MenuCallback_t)cur_add_cb);
     if (global->simview_info_ptr) {
 	dm_menu_subtitle (trace, "Open View",	'V');
 	trace->menu.cur_add_simview_pds = trace->menu.pds+1;
-	dm_menu_subentry_colors (trace, NULL, NULL, NULL, NULL, cur_add_simview_cb);    
+	dm_menu_subentry_colors (trace, NULL, NULL, NULL, NULL, (MenuCallback_t)cur_add_simview_cb);    
     }
     dm_menu_subtitle (trace,	 "Highlight",	'H');
     trace->menu.cur_highlight_pds = trace->menu.pds+1;
-    dm_menu_subentry_colors (trace, 		NULL, NULL, NULL, NULL,	cur_highlight_cb);
-    dm_menu_entry (trace, 	"Move",		'M',	NULL, NULL,	cur_mov_cb);
-    dm_menu_entry (trace, 	"Delete",	'D',	NULL, NULL,	cur_del_cb);
-    dm_menu_entry (trace, 	"Note",		'N',	NULL, NULL,	cur_note_cb);
-    dm_menu_entry (trace, 	"Step Forward",	'F',	"!Shift<Key>greater:", ">",	cur_step_fwd_cb);
-    dm_menu_entry (trace, 	"Step Backward",'B',	"!Shift<Key>less:", "<",	cur_step_back_cb);
-    dm_menu_entry (trace, 	"Clear", 	'C',	NULL, NULL,	cur_clr_cb);
-    dm_menu_entry (trace, 	"Cancel", 	'l',	"!<Key>Escape:", "esc",	cancel_all_events_cb);
+    dm_menu_subentry_colors (trace, 		NULL, NULL, NULL, NULL,	(MenuCallback_t)cur_highlight_cb);
+    dm_menu_entry (trace, 	"Move",		'M',	NULL, NULL,	(MenuCallback_t)cur_mov_cb);
+    dm_menu_entry (trace, 	"Delete",	'D',	NULL, NULL,	(MenuCallback_t)cur_del_cb);
+    dm_menu_entry (trace, 	"Note",		'N',	NULL, NULL,	(MenuCallback_t)cur_note_cb);
+    dm_menu_entry (trace, 	"Step Forward",	'F',	"!Shift<Key>greater:", ">",	(MenuCallback_t)cur_step_fwd_cb);
+    dm_menu_entry (trace, 	"Step Backward",'B',	"!Shift<Key>less:", "<",	(MenuCallback_t)cur_step_back_cb);
+    dm_menu_entry (trace, 	"Clear", 	'C',	NULL, NULL,	(MenuCallback_t)cur_clr_cb);
+    dm_menu_entry (trace, 	"Cancel", 	'l',	"!<Key>Escape:", "esc",	(MenuCallback_t)cancel_all_events_cb);
 
     dm_menu_title (trace, "Signal", 'S');
-    dm_menu_entry (trace, 	"Add...",	'A',	NULL, NULL,	sig_add_cb);
+    dm_menu_entry (trace, 	"Add...",	'A',	NULL, NULL,	(MenuCallback_t)sig_add_cb);
     dm_menu_subtitle (trace, 	"Highlight",	'H');
     trace->menu.sig_highlight_pds = trace->menu.pds+1;
-    dm_menu_subentry_colors (trace, "!<Key>s:", "s", "!Shift<Key>s:", "S-s",sig_highlight_cb);
-    dm_menu_entry (trace, 	"Move",		'M',	NULL, NULL,	sig_mov_cb);
-    dm_menu_entry (trace, 	"Copy",		'C',	NULL, NULL,	sig_copy_cb);
-    dm_menu_entry (trace, 	"Delete",	'D',	NULL, NULL,	sig_del_cb);
-    dm_menu_entry (trace, 	"Note",		'N',	NULL, NULL,	sig_note_cb);
+    dm_menu_subentry_colors (trace, "!<Key>s:", "s", "!Shift<Key>s:", "S-s",(MenuCallback_t)sig_highlight_cb);
+    dm_menu_entry (trace, 	"Move",		'M',	NULL, NULL,	(MenuCallback_t)sig_mov_cb);
+    dm_menu_entry (trace, 	"Copy",		'C',	NULL, NULL,	(MenuCallback_t)sig_copy_cb);
+    dm_menu_entry (trace, 	"Delete",	'D',	NULL, NULL,	(MenuCallback_t)sig_del_cb);
+    dm_menu_entry (trace, 	"Note",		'N',	NULL, NULL,	(MenuCallback_t)sig_note_cb);
     dm_menu_subtitle (trace, 	"Radix",	'R');
     trace->menu.sig_radix_pds = trace->menu.pds+1;
-    dm_menu_subentry_radixs (trace, sig_radix_cb);
+    dm_menu_subentry_radixs (trace, (MenuCallback_t)sig_radix_cb);
     dm_menu_subtitle (trace, 	"Waveform",	'W');
     trace->menu.sig_waveform_pds = trace->menu.pds+1;
-    dm_menu_subentry (trace, 		"Digital", 'D', NULL, NULL,	sig_waveform_cb);
-    dm_menu_subentry (trace, 		"Analog", 'A', NULL, NULL,	sig_waveform_cb);
-    dm_menu_subentry (trace, 		"Analog Signed", 'S', NULL, NULL,	sig_waveform_cb);
-    dm_menu_entry (trace, 	"Search...",	'S', "<Key>F:", "f/C-f", sig_search_cb);
-    dm_menu_entry (trace, 	"Select...",	'e',	NULL, NULL,	sig_select_cb);
-    dm_menu_entry (trace, 	"Clear Highlight",'i',	NULL, NULL,	sig_highlight_clear_cb);
-    dm_menu_entry (trace, 	"Keep Highlighted",'K',	NULL, NULL,	sig_highlight_keep_cb);
-    dm_menu_entry (trace, 	"Cancel", 	'l',	"!<Key>Escape:", "esc",	cancel_all_events_cb);
+    dm_menu_subentry (trace, 		"Digital", 'D', NULL, NULL,	(MenuCallback_t)sig_waveform_cb);
+    dm_menu_subentry (trace, 		"Analog", 'A', NULL, NULL,	(MenuCallback_t)sig_waveform_cb);
+    dm_menu_subentry (trace, 		"Analog Signed", 'S', NULL, NULL,	(MenuCallback_t)sig_waveform_cb);
+    dm_menu_entry (trace, 	"Search...",	'S', "<Key>F:", "f/C-f", (MenuCallback_t)sig_search_cb);
+    dm_menu_entry (trace, 	"Select...",	'e',	NULL, NULL,	(MenuCallback_t)sig_select_cb);
+    dm_menu_entry (trace, 	"Clear Highlight",'i',	NULL, NULL,	(MenuCallback_t)sig_highlight_clear_cb);
+    dm_menu_entry (trace, 	"Keep Highlighted",'K',	NULL, NULL,	(MenuCallback_t)sig_highlight_keep_cb);
+    dm_menu_entry (trace, 	"Cancel", 	'l',	"!<Key>Escape:", "esc",	(MenuCallback_t)cancel_all_events_cb);
 
     dm_menu_title (trace, "Value", 'V');
-    dm_menu_entry (trace,	"Annotate", 	'A',	"!<Key>A:", "a", val_annotate_do_cb);
-    dm_menu_entry (trace, 	"Annotate...",	'n', 	"!Shift<Key>A:", "S-a", val_annotate_cb);
+    dm_menu_entry (trace,	"Annotate", 	'A',	"!<Key>A:", "a", 	(MenuCallback_t)val_annotate_do_cb);
+    dm_menu_entry (trace, 	"Annotate...",	'n', 	"!Shift<Key>A:", "S-a", (MenuCallback_t)val_annotate_cb);
     dm_menu_subtitle (trace, 	"Highlight",	'H');
     trace->menu.val_highlight_pds = trace->menu.pds+1;
-    dm_menu_subentry_colors (trace, "!<Key>v:", "v", "!Shift<Key>v:", "S-v",val_highlight_cb);
-    dm_menu_entry (trace, 	"Examine",	'E',	NULL, NULL,	val_examine_cb);
+    dm_menu_subentry_colors (trace, "!<Key>v:", "v", "!Shift<Key>v:", "S-v",	(MenuCallback_t)val_highlight_cb);
+    dm_menu_entry (trace, 	"Examine",	'E',	NULL, NULL,		(MenuCallback_t)val_examine_cb);
     XtSetArg (arglist[0], XmNacceleratorText, XmStringCreateSimple ("MB2") );
     XtSetValues (trace->menu.pdentrybutton[trace->menu.pdm], arglist, 1);
-    dm_menu_entry (trace, 	"Search...",	'S',	NULL, NULL,	val_search_cb);
-    dm_menu_entry (trace, 	"Cancel", 	'l',	"!<Key>Escape:", "esc",	cancel_all_events_cb);
+    dm_menu_entry (trace, 	"Search...",	'S',	NULL, NULL,		(MenuCallback_t)val_search_cb);
+    dm_menu_entry (trace, 	"Cancel", 	'l',	"!<Key>Escape:", "esc",	(MenuCallback_t)cancel_all_events_cb);
 
     
     if (DTDEBUG) {
 	dm_menu_title (trace, "Debug", 'D');
-	dm_menu_entry	(trace, "Toggle Print",		'P', NULL, NULL,	debug_toggle_print_cb);
-	dm_menu_entry	(trace, "Integrity Check",	'I', NULL, NULL,	debug_integrity_check_cb);
-	dm_menu_entry	(trace, "Statistics",		'S', NULL, NULL,	debug_statistics_cb);
-	dm_menu_entry	(trace, "Print Signal Info (Screen Only)", 'I', NULL, NULL,	debug_print_screen_traces_cb);
-	dm_menu_entry	(trace, "Increase DebugTemp",	'+', NULL, NULL,	debug_increase_debugtemp_cb);
-	dm_menu_entry	(trace, "Decrease DebugTemp",	'-', NULL, NULL,	debug_decrease_debugtemp_cb);
+	dm_menu_entry	(trace, "Toggle Print",		'P', NULL, NULL,	(MenuCallback_t)debug_toggle_print_cb);
+	dm_menu_entry	(trace, "Integrity Check",	'I', NULL, NULL,	(MenuCallback_t)debug_integrity_check_cb);
+	dm_menu_entry	(trace, "Statistics",		'S', NULL, NULL,	(MenuCallback_t)debug_statistics_cb);
+	dm_menu_entry	(trace, "Print Signal Info (Screen Only)", 'I', NULL, NULL,	(MenuCallback_t)debug_print_screen_traces_cb);
+	dm_menu_entry	(trace, "Increase DebugTemp",	'+', NULL, NULL,	(MenuCallback_t)debug_increase_debugtemp_cb);
+	dm_menu_entry	(trace, "Decrease DebugTemp",	'-', NULL, NULL,	(MenuCallback_t)debug_decrease_debugtemp_cb);
     }
 
     dm_menu_title (trace, "Help", 'H');
-    dm_menu_entry (trace, 	"On Version",	'V',	NULL, NULL,	help_cb);
-    dm_menu_entry (trace, 	"On Trace",	'T',	NULL, NULL,	help_trace_cb);
-    dm_menu_entry (trace, 	"On Documentation",	'D',	NULL, NULL,	help_doc_cb);
+    dm_menu_entry (trace, 	"On Version",	'V',	NULL, NULL,	(MenuCallback_t)help_cb);
+    dm_menu_entry (trace, 	"On Trace",	'T',	NULL, NULL,	(MenuCallback_t)help_trace_cb);
+    dm_menu_entry (trace, 	"On Documentation",	'D',	NULL, NULL,	(MenuCallback_t)help_doc_cb);
     XtSetArg (arglist[0], XmNmenuHelpWidget, trace->menu.pdmenubutton[trace->menu.pde]);
     XtSetValues (trace->menu.menu, arglist, 1);
 
