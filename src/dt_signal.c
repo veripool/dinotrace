@@ -2288,6 +2288,8 @@ static void sig_modify_en_signal (
 	return;
     }
     
+    val_zero (&new_value);
+
     new_sig_ptr = sig_replicate (trace, base_sig_ptr);
     /* Forget this is a copy, and allocate new data storage space */
     new_sig_ptr->signame = strdup (new_sig_ptr->signame);
