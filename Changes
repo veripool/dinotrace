@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in [].
 
 ***	Builds now take place in "obj_dir" to keep them distinct from sources.
 
+****	Fix VCD files with 10 or 100 femtosecond resolution.
+
 ****	Fix dinotrace.el complaint about bad verilog-mode.el version.
 	[Joseph Holtgrefe]
 

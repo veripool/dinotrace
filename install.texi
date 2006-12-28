@@ -59,21 +59,22 @@ This version of Dinotrace has been built and tested on:
 
 @itemize @bullet
 @item sparc-sun-solaris2.5.1
-@item sparc-sun-sunos4.1.4
-@item alpha-dec-osf4.0
 @item i386-pc-linux
 @item i386-pc-cygwin32	(under Windows-2000 & Windows-XP)
+@item x86_64-suse-linux
 @end itemize
 
 Previous versions of Dinotrace were once built, and probably will
 still build on:
 
 @itemize @bullet
+@item alpha-dec-osf4.0
 @item alpha-dec-vms6.0
 (see the special section on VMS installation.)
+@item mips-dec-ultrix
+@item sparc-sun-sunos4.1.4
 @item vax-dec-vms6.0
 (see the special section on VMS installation.)
-@item mips-dec-ultrix
 @end itemize
 
 @node Unix Installation, VMS Installation, Supported Systems

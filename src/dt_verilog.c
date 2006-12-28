@@ -240,7 +240,7 @@ static void	verilog_read_timescale (
     case 'p':
 	break;
     case 'f':
-	time_scale = 0.001;
+	time_scale *= 0.001;
 	break;
     default:
 	sprintf (message,"Unknown time scale unit '%c' on line %d of %s\n",
