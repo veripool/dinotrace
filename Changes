@@ -3,7 +3,7 @@ Revision history for Dinotrace
 The contributors that suggested a given feature are shown in [].
 	
 
-* Dinotrace 9.3***
+* Dinotrace 9.3c 1/2/2007
 
 ***	Add signed decimal radix.  [by Uwe Bonnes]
 
@@ -1003,7 +1003,7 @@ $Id$
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-Copyright (C) 1998-2006 Wilson Snyder.
+Copyright (C) 1998-2007 Wilson Snyder.
 Copyright (C) 1992-1997 Digital Equipment Corportation.
 
    Permission is granted to anyone to make or distribute verbatim copies of

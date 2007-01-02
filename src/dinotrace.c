@@ -318,7 +318,7 @@ Configured %s for %s\n\
 Written by Wilson Snyder\n\
 <wsnyder@wsnyder.org>\n\
 \n\
-Copyright 1998-2006 by Wilson Snyder\n\
+Copyright 1998-2007 by Wilson Snyder\n\
 Copyright 1993-1997 by Digital Equipment Corporation.\n\
 This software is covered by the GNU Public License,\n\
 and is WITHOUT ANY WARRANTY.\n\
