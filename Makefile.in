@@ -175,7 +175,7 @@ install-info: info installdirs
 	done
 
 uninstall:
-	rm -fr $(datadir)
+	cd $(bindir)  && rm -f dinotrace
 	cd $(infodir) && rm -f dinotrace.info*
 
 # autoheader might not change config.h.in, so touch a stamp file.

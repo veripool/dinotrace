@@ -2,6 +2,9 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 	
+* Dinotrace 9.3d 2/27/2007
+
+****	Fix "make uninstall" deleting data area (Sorry!!!).  [Dinesh]
 
 * Dinotrace 9.3c 1/2/2007
 
