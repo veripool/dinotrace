@@ -156,11 +156,11 @@ dinotrace.dvi: dinotrace.texi
 	$(TEXI2DVI) $(srcdir)/dinotrace.texi
 
 installdirs:
-	$(SHELL) ${srcdir}/mkinstalldirs $(bindir) $(infodir)
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir) $(DESTDIR)$(infodir)
 
 install: all info installdirs install-info
 	for p in dinotrace; do \
-	  $(INSTALL_PROGRAM) $$p $(bindir)/$$p; \
+	  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$p; \
 	done
 	@echo ""
 	@echo "*** Lisp files not installed, you may want to"
@@ -171,12 +171,12 @@ install: all info installdirs install-info
 # Don't cd, to avoid breaking install-sh references.
 install-info: info installdirs
 	for i in *.info*; do \
-	  $(INSTALL_DATA) $$i $(infodir)/$$i; \
+	  $(INSTALL_DATA) $$i $(DESTDIR)$(infodir)/$$i; \
 	done
 
 uninstall:
-	cd $(bindir)  && rm -f dinotrace
-	cd $(infodir) && rm -f dinotrace.info*
+	cd $(DESTDIR)$(bindir)  && rm -f dinotrace
+	cd $(DESTDIR)$(infodir) && rm -f dinotrace.info*
 
 # autoheader might not change config.h.in, so touch a stamp file.
 ${srcdir}/config.h.in: stamp-h.in

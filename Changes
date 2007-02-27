@@ -2,9 +2,11 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 	
-* Dinotrace 9.3d 2/27/2007
+* Dinotrace 9.3e 2/27/2007
 
 ****	Fix "make uninstall" deleting data area (Sorry!!!).  [Dinesh]
+
+****	Add DESTDIR "make install" rule for RPMs.  [Werner Hoch]
 
 * Dinotrace 9.3c 1/2/2007
 
