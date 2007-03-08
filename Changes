@@ -2,7 +2,11 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 	
-* Dinotrace 9.3******
+* Dinotrace 9.3f 
+
+****	Fix signal radix being lost when trace is reread.  [Uwe Bonnes]
+
+* Dinotrace 9.3e 2/27/2007
 
 ****	Add DESTDIR "make install" rule for RPMs.  [Werner Hoch]
 

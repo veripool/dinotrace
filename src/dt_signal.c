@@ -2086,6 +2086,7 @@ static void sig_cross_sigmatch (
 		old_sig_ptr->new_trace_sig = new_sig_ptr;
 		new_sig_ptr->preserve_match = 1;  /* So duplicate sig names work ok */
 		/* Save color, etc */
+		new_sig_ptr->radix = old_sig_ptr->radix;
 		new_sig_ptr->color = old_sig_ptr->color;
 		new_sig_ptr->search = old_sig_ptr->search;
 		break;  /* On to next old signal */
