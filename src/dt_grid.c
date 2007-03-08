@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: grid drawing and requestors
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -133,7 +133,7 @@ static void	grid_calc_auto (
 	case PA_EDGE:
 	    break;
 	}
-	return;	
+	return;
     }
 
     /* Skip to end */
@@ -164,7 +164,7 @@ static void	grid_calc_auto (
 	    break;
 	}
     }
-    
+
     /* Set defaults based on changes */
     switch (grid_ptr->period_auto) {
     case PA_AUTO:
@@ -180,7 +180,7 @@ static void	grid_calc_auto (
     default: break;	/* User defined */
     }
     if (grid_ptr->period < 1) grid_ptr->period = 1;	/* Prevents round-down to 0 causing infinite loop */
-    
+
     /* Alignment */
     switch (grid_ptr->align_auto) {
     case AA_ASS:
@@ -198,7 +198,7 @@ static void	grid_calc_auto (
 	break;
     default: break;	/* User defined */
     }
-    
+
     if (DTPRINT_FILE) printf ("grid autoset signal %s align=%d %d\n", sig_ptr->signame,
 			      grid_ptr->align_auto, grid_ptr->period_auto);
     if (DTPRINT_FILE) printf ("grid rises=%d,%d, falls=%d,%d, period=%d, align=%d\n",
@@ -228,7 +228,7 @@ char *grid_examine_string (
 {
     static char	strg[2000];
     char	strg2[2000];
-    
+
     if (DTPRINT_ENTRY) printf ("val_examine_popup_grid_string\n");
 
     sprintf (strg, "Grid #%d at Time ", grid_ptr->grid_num);
@@ -264,21 +264,21 @@ static void    grid_align_choose (
     XEvent	event;
     XMotionEvent *em;
     XButtonEvent *eb;
-    
+
     if (DTPRINT_ENTRY) printf ("In grid_align_choose\n");
-    
+
     /* not sure why this has to be done but it must be done */
     XUngrabPointer (XtDisplay (trace->work),CurrentTime);
-    
+
     /* select the events the widget will respond to */
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonReleaseMask|PointerMotionMask|StructureNotifyMask|ExposureMask);
-    
+
     /* change the GC function to drag the cursor */
     xgcv.function = GXinvert;
     XChangeGC (global->display,trace->gc,GCFunction,&xgcv);
     XSync (global->display,0);
-    
+
     /* loop and service events until button is released */
     last_x = -1;	/* Skip first draw */
     y1 = 25;
@@ -299,12 +299,12 @@ static void    grid_align_choose (
 	    XDrawLine (global->display,trace->wind,trace->gc,x1,y1,x2,y2);
 	    XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
 	}
-	
+
 	/* if window was exposed, must redraw it */
 	if (event.type == Expose) win_expose_cb (0,trace);
 	/* if window was resized, must redraw it */
 	if (event.type == ConfigureNotify) win_resize_cb (0,trace);
-	
+
 	/* button released - calculate cursor position and leave the loop */
 	if (event.type == ButtonRelease || event.type == ButtonPress) {
 	    /* ButtonPress in case user is freaking out, some strange X behavior caused the ButtonRelease to be lost */
@@ -323,15 +323,15 @@ static void    grid_align_choose (
 	    XChangeGC (global->display,trace->gc,GCFunction,&xgcv);
 	}
     }
-    
+
     /* reset the events the widget will respond to */
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonPressMask|StructureNotifyMask|ExposureMask);
-    
+
     /* change the GC function back to its default */
     xgcv.function = GXcopy;
     XChangeGC (global->display,trace->gc,GCFunction,&xgcv);
-    
+
     /* make change */
     grid_ptr->alignment = time;
 }
@@ -484,9 +484,9 @@ void    grid_customize_cb (
     char	strg[30];
     int		i;
     Widget	form;
-    
+
     if (DTPRINT_ENTRY) printf ("In grid_customize_cb - trace=%p\n",trace);
-    
+
     if (!trace->gridscus.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Grid Customization") );
@@ -513,7 +513,7 @@ void    grid_customize_cb (
 	    XtSetArg (arglist[2], XmNleftAttachment, XmATTACH_FORM );
 	    trace->gridscus.grid[grid_num].label1 = XmCreateLabel (form,"label",arglist,3);
 	    DManageChild (trace->gridscus.grid[grid_num].label1, trace, MC_NOKEYS);
-	
+
 	    /* signal name */
 	    XtSetArg (arglist[0], XmNrows, 1);
 	    XtSetArg (arglist[1], XmNcolumns, 30);
@@ -525,7 +525,7 @@ void    grid_customize_cb (
 	    XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
 	    trace->gridscus.grid[grid_num].signal = XmCreateText (form,"textn",arglist,8);
 	    DManageChild (trace->gridscus.grid[grid_num].signal, trace, MC_NOKEYS);
-	    
+
 	    /* visible button */
 	    XtSetArg (arglist[0], XmNtopAttachment, XmATTACH_WIDGET );
 	    XtSetArg (arglist[1], XmNtopWidget, trace->gridscus.grid[grid_num].signal);
@@ -534,7 +534,7 @@ void    grid_customize_cb (
 	    XtSetArg (arglist[4], XmNshadowThickness, 1);
 	    trace->gridscus.grid[grid_num].visible = XmCreateToggleButton (form,"visn",arglist,5);
 	    DManageChild (trace->gridscus.grid[grid_num].visible, trace, MC_NOKEYS);
-	    
+
 	    /* double button */
 	    XtSetArg (arglist[0], XmNtopAttachment, XmATTACH_WIDGET );
 	    XtSetArg (arglist[1], XmNtopWidget, trace->gridscus.grid[grid_num].signal);
@@ -544,7 +544,7 @@ void    grid_customize_cb (
 	    XtSetArg (arglist[5], XmNshadowThickness, 1);
 	    trace->gridscus.grid[grid_num].wide_line = XmCreateToggleButton (form,"wideln",arglist,6);
 	    DManageChild (trace->gridscus.grid[grid_num].wide_line, trace, MC_NOKEYS);
-	    
+
 	    /*Color options */
 	    trace->gridscus.grid[grid_num].pulldown = XmCreatePulldownMenu (form,"pulldown",arglist,0);
 
@@ -565,7 +565,7 @@ void    grid_customize_cb (
 	    XtSetArg (arglist[4], XmNleftWidget, trace->gridscus.grid[grid_num].wide_line);
 	    trace->gridscus.grid[grid_num].options = XmCreateOptionMenu (form,"options",arglist,5);
 	    DManageChild (trace->gridscus.grid[grid_num].options, trace, MC_NOKEYS);
-	
+
 	    /* auto button */
 	    trace->gridscus.grid[grid_num].autoperiod_pulldown = XmCreatePulldownMenu (form,"autoperiod_pulldown",arglist,0);
 
@@ -663,7 +663,7 @@ void    grid_customize_cb (
 			 (XtCallbackProc)grid_customize_reset_cb, trace,
 			 (XtCallbackProc)unmanage_cb, (Trace_t*)trace->gridscus.dialog);
     }
-    
+
     /* Copy settings to local area to allow cancel to work */
     grid_customize_widget_update_cb (NULL, trace, NULL);
 
@@ -697,7 +697,7 @@ void    grid_customize_option_cb (
 	y = (((XmCascadeButtonWidget) button)->core.y);
 	width = (((XmCascadeButtonWidget) button)->core.width);
 	height = (((XmCascadeButtonWidget) button)->core.height);
-    
+
 	/* Fill the button with the color */
 	XSetForeground (global->display, trace->gc, trace->xcolornums[i]);
 	XFillRectangle (global->display, XtWindow (button), trace->gc,
@@ -730,7 +730,7 @@ void    grid_customize_ok_cb (
 	    grid_ptr->period = string_to_time (trace, XmTextGetString (trace->gridscus.grid[grid_num].period));
 	}
     }
-    
+
     XtUnmanageChild (trace->gridscus.dialog);
 
     grid_calc_autos (trace);

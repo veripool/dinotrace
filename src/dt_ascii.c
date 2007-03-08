@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: ascii trace file reading
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -90,7 +90,7 @@ void	ascii_string_add_cptr (
 
     if (sig_ptr->bits<2) {
 	/* This branch not used for verilog, only Decsim */
-	/* scalar signal */  
+	/* scalar signal */
 	switch ( *value_strg ) {
 	case '0': state = STATE_0; break;
 	case '1': state = STATE_1; break;
@@ -99,9 +99,9 @@ void	ascii_string_add_cptr (
 	case 'x':
 	case 'U':
 	case 'u': state = STATE_U; break;
-	case 'Z': 
+	case 'Z':
 	case 'z': state = STATE_Z; break;
-	default: 
+	default:
 	    state = STATE_U;
 	    printf ("%%E, Unknown state character '%c' at line %d\n", *value_strg, fil_line_num);
 	}
@@ -264,7 +264,7 @@ static void decsim_read_ascii_header (
 	}
 	col=strlen(SIGLINE(line));
 	if (SIGLINE(line)[0]!='!') col=0;
-	for ( ; col<sig_end_pos; col++) SIGLINE(line)[col]=' '; 
+	for ( ; col<sig_end_pos; col++) SIGLINE(line)[col]=' ';
     }
 
     /* Make a signal structure for each signal */
@@ -419,7 +419,7 @@ void ascii_read (
 	chango_format = TRUE;
     }
 
-    if (DTPRINT_FILE) printf ("Line:%s\nHeader has %ld lines, Signals run from char %ld to %ld. %s format\n", 
+    if (DTPRINT_FILE) printf ("Line:%s\nHeader has %ld lines, Signals run from char %ld to %ld. %s format\n",
 			      data_begin_ptr, header_lines, sig_start_pos, sig_end_pos,
 			      chango_format?"Chango":"DECSIM");
 

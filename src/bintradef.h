@@ -3,7 +3,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: DECSIM binary trace format reading
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -16,9 +16,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -48,7 +48,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -208,8 +208,8 @@ struct bintrarec {
 /*
 	Main Module Header Record Format
 
-	All the names listed in the table have the prefix tra$. 
-byte:		3	     2		  1		0 
+	All the names listed in the table have the prefix tra$.
+byte:		3	     2		  1		0
 	+-------------+-------------+-------------+-------------+
 	! b_minver    ! b_majver    ! b_type	  ! b_class	!
 	+-------------+-------------+-------------+-------------+
@@ -363,19 +363,19 @@ byte:		1		0
 /*
 	Data Comment Record Record Format
 
-	All the names listed in the table have the prefix tra$. 
-byte:		3	     2		  1		0 
-	+-------------+-------------+-------------+-------------+ 
-	! w_datcomlen or t_datcom   ! b_type	  ! b_class	! 
-	+-------------+-------------+-------------+-------------+ 
-	: t_datcomstr 						: 
-	:							: 
-	+-------------+-------------+-------------+-------------+ 
+	All the names listed in the table have the prefix tra$.
+byte:		3	     2		  1		0
+	+-------------+-------------+-------------+-------------+
+	! w_datcomlen or t_datcom   ! b_type	  ! b_class	!
+	+-------------+-------------+-------------+-------------+
+	: t_datcomstr 						:
+	:							:
+	+-------------+-------------+-------------+-------------+
 
-	tra$b_class	- the record class 
-	tra$b_type	- the record type 
-	tra$w_datcomlen	- the length of the comment 
-	tra$t_datcomstr	- the data comment 
+	tra$b_class	- the record class
+	tra$b_type	- the record type
+	tra$w_datcomlen	- the length of the comment
+	tra$t_datcomstr	- the data comment
 	tra$t_datcom	- teh data comment in varying string format
 */
 	struct  {

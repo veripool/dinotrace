@@ -1,8 +1,8 @@
 Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
-	
-* Dinotrace 9.3f 
+
+* Dinotrace 9.3f
 
 ****	Fix signal radix being lost when trace is reread.  [Uwe Bonnes]
 
@@ -268,7 +268,7 @@ The contributors that suggested a given feature are shown in [].
 
 ** Enhancements:
 
-**	Value Plus Dumps (aka VPD aka VCD+) are now supported by piping 
+**	Value Plus Dumps (aka VPD aka VCD+) are now supported by piping
 	through vpd2vcd.  Added supporting -vpd command line and
 	file_format vpd configuration options.
 
@@ -282,14 +282,14 @@ The contributors that suggested a given feature are shown in [].
 	pieces are saved.
 
 ** 	Values are now 4-state on a per-bit basis.  U's are still shown for
-	mixed tristate/U busses, but value examine will show the true value.	
+	mixed tristate/U busses, but value examine will show the true value.
 
 **	Added examination of grids, signal names, and cursors.  Added
 	signal_note and cursor_add notes for passing messages to be seen
 	with value examine.
 
 **	Rewrote dinotrace.el to use the new verilog-mode.el and support more
-	intelligent key bindings.	
+	intelligent key bindings.
 
 ***	Added many keyboard accelerators, cursor keys, etc.  Most are also
 	usable in dinotrace.el
@@ -310,14 +310,14 @@ The contributors that suggested a given feature are shown in [].
 	your .dino files.  The commands changed are value_highlight, signal_rename and
 	value_highlight, and all cursor_* commands.
 
-***	Added hierarchy_separator for aligning signal names, and annotation.	
+***	Added hierarchy_separator for aligning signal names, and annotation.
 
-***	Added trace selection to Value Annotate.	
+***	Added trace selection to Value Annotate.
 
 ****	Added -IGNORE_XZ to signal_delete_constant.
 
 ****	Print has moved to the trace menu, since most programs have it under the
-	first menu item.	
+	first menu item.
 
 ****	Most popups now use forms, for cleaner looks with larger fonts.
 
@@ -576,7 +576,7 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Fixed a bug where highlighting wouldn't happen when the same value
 	was in multiple colors in the value search requester.  [Mike Kagen]
-	
+
 
 * Dinotrace 7.0b  2/20/1995
 
@@ -952,7 +952,7 @@ The contributors that suggested a given feature are shown in [].
 	    full:	(Text box to LEFT of number box) Shrinks the time
 		so that the entire trace fits onto the screen.  [Mitch
 		Norcross]
-	
+
 ****	A bug where canceling the read requester would erase the trace has
 	been fixed.
 

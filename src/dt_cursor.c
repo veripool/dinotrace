@@ -165,7 +165,7 @@ DCursor_t *cur_add (
 	else {
 	    prev_csr_ptr->next = new_csr_ptr;
 	}
-	
+
 	new_csr_ptr->next = csr_ptr;
 	new_csr_ptr->prev = prev_csr_ptr;
 	if (csr_ptr) csr_ptr->prev = new_csr_ptr;
@@ -430,7 +430,7 @@ char *cur_examine_string (
     }
     return (strg);
 }
-	
+
 
 /****************************** MENU OPTIONS ******************************/
 
@@ -653,12 +653,12 @@ void    cur_move_ev (
 	    last_x = em->x;
 	    XSetForeground (global->display, trace->gc, trace->xcolornums[0]);
 	    }
-	
+
 	/* if window was exposed, must redraw it */
 	if (event.type == Expose) win_expose_cb (0,trace);
 	/* if window was resized, must redraw it */
 	if (event.type == ConfigureNotify) win_resize_cb (0,trace);
-	
+
 	/* button released - calculate cursor position and leave the loop */
 	if (event.type == ButtonRelease || event.type == ButtonPress) {
 	    /* ButtonPress in case user is freaking out, some strange X behavior caused the ButtonRelease to be lost */

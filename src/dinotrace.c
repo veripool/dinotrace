@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: main routine and documentation
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -104,7 +104,7 @@ int    main (
     Boolean_t	sync = FALSE;
     Boolean_t	opened_a_file = FALSE;
     Trace_t	*trace;
-    
+
     /* Create global structure */
     init_globals ();
 
@@ -193,7 +193,7 @@ int    main (
 	    shift;
 	}
     }
-    
+
     /* quick structure portability check */
 #ifndef lint	/* constant in conditional context */
     if ((sizeof (Value_t) != 10*sizeof (uint_t))
@@ -222,7 +222,7 @@ int    main (
     if (global->simview_info_ptr) {
 	simview_init (global->simview_info_ptr->application_name_with_args);
     }
-              
+
     /* Load config options (such as file_format) */
     /* Create a temporary trace structure for this, as config will want to write to the trace structure */
     trace = malloc_trace ();
@@ -234,9 +234,9 @@ int    main (
     global->trace_head = NULL;
 
     /* create the main dialog window */
-    trace = create_trace (global->start_geometry.width, global->start_geometry.height, 
+    trace = create_trace (global->start_geometry.width, global->start_geometry.height,
 			  global->start_geometry.x, global->start_geometry.y);
-    
+
     /* expiration check */
 #if EXPIRATION
     if ((DIST_DATE + (EXPIRATION)) < time (NULL)) {

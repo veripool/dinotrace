@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: Verilog dump file reading
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -77,12 +77,12 @@ static Boolean_t verilog_eof;
 
 /* Pointer to array of signals sorted by pos. (Special hash table) */
 /* *(signal_by_code[VERILOG_ID_TO_POS ("abc")]) gives signal ABC */
-static Signal_t	**signal_by_code;	
+static Signal_t	**signal_by_code;
 static int	signal_by_code_max;
 static int	verilog_max_bits = 128;
 
 /* List of signals that need updating */
-static Signal_t	**signal_update_array;	
+static Signal_t	**signal_update_array;
 static Signal_t	**signal_update_array_last_pptr;
 
 /* Convert a 4 letter <identifier_code> to an id number */
@@ -140,7 +140,7 @@ static char *verilog_gettok ()
     while (1) {
 	/*int chrs = (buf_ptr + buf_length - verilog_text);
 	  printf ("Buf %p %d  Txt %p %d rem %d\n", buf_ptr, buf_length, verilog_text, buf_valid, chrs);*/
-	    
+
 	/* Skip any additional spaces */
 	while (verilog_text < (buf_ptr + buf_valid) && VERILOG_ISSPACE(*verilog_text)) {
 	    if (*verilog_text == '\n') verilog_line_num++;
@@ -295,7 +295,7 @@ void sig_new_file (
 	    }
 	}
     }
-	
+
     /* Extract the bit subscripts from the name of the signal */
     signame_buspos = 0;	/* Presume nothing after the vector */
     if (sep && isdigit (*(bbeg))) {
@@ -346,7 +346,7 @@ void sig_new_file (
 	if (bus_sig_ptr) {
 	    if (DTPRINT_BUSSES) printf ("  '%s'%d:/#%d/p%d/c%d\t'%s'%d:/#%d/p%d/c%d\n",
 					bus_sig_ptr->signame, bus_sig_ptr->msb_index,
-					bus_sig_ptr->bits, bus_sig_ptr->file_pos, bus_sig_ptr->file_code, 
+					bus_sig_ptr->bits, bus_sig_ptr->file_pos, bus_sig_ptr->file_code,
 					signame, msb, bits, file_pos, file_code);
 	    /* Combine signals with same base name, if */
 	    /*  are a vector */
@@ -409,7 +409,7 @@ void sig_new_file (
 	    }
 	    if (bits_this>1) lsb = msb_this - bits_this + 1;
 	    else lsb = msb_this;
-	    
+
 	    /* Tempest stores LW0 in position 0, LW1 in position 32, .... so we need to adjust for that */
 	    /*      b31 .... b2 b1 b0   ||   b63 b62 .... b32 */
 	    if (trace->dfile.fileformat == FF_TEMPEST) {
@@ -431,13 +431,13 @@ void sig_new_file (
 	    new_sig_ptr->bits = bits_this;
 	    new_sig_ptr->msb_index = msb_this;
 	    new_sig_ptr->lsb_index = lsb;
-	    
+
 	    /* initialize all the pointers that aren't NULL */
 	    if (trace->lastsig) trace->lastsig->forward = new_sig_ptr;
 	    new_sig_ptr->backward = trace->lastsig;
 	    if (trace->firstsig==NULL) trace->firstsig = new_sig_ptr;
 	    trace->lastsig = new_sig_ptr;
-	    
+
 	    /* copy signal info */
 	    new_sig_ptr->signame = (char *)XtMalloc(16+strlen (signame));	/* allow extra space in case becomes vector */
 	    strcpy (new_sig_ptr->signame, signame);
@@ -480,7 +480,7 @@ static void	verilog_process_var (
     cmd = verilog_gettok();
     file_type.flags = 0;
     file_type.flag.real = (!strcmp(cmd,"real"));
-	
+
     /* Read <size> */
     cmd = verilog_gettok();
     bits = atoi (cmd);
@@ -504,7 +504,7 @@ static void	verilog_process_var (
 	if (isdigit(cmd[0])) {
 	    lsb = atoi (cmd);
 	    bits = msb - lsb + 1;
- 
+
 	    /* Read <identifier_code>  (uses chars 33-126 = '!' - '~') */
 	    cmd = verilog_gettok();
 	    strcpy (code, cmd);
@@ -518,7 +518,7 @@ static void	verilog_process_var (
     else { /* must have been identifier */
 	strcpy(code, cmd);
     }
-      
+
     /* Signal name begins with the present scope */
     basename[0] = '\0';
     str[0] = trace->dfile.hierarchy_separator;
@@ -527,7 +527,7 @@ static void	verilog_process_var (
 	strcat (basename, scopes[t]);
 	strcat (basename, str);
     }
-    
+
     /* Read <reference> */
     if (refer==NULL) refer = verilog_gettok();
     strcpy (signame, basename);
@@ -539,7 +539,7 @@ static void	verilog_process_var (
 	/* Add vector to signal */
 	strcat (signame, cmd);
     }
-    
+
     if (DTPRINT_FILE) printf ("var %s %d %s %s\n",
 			      (file_type.flag.real)?"real":"reg/wire", bits, code, signame);
 
@@ -554,11 +554,11 @@ static void	verilog_process_var (
 /*
 For a large trace, here's a table of frequency of signals of each number of bits.
 
-55147 1		 150  8 	 125  16	  28  24	 175  32	   1  44 
- 272  2		   3  9 	  72  17	   3  25	  17  34	   2  54 
- 272  3		  57  10	   2  18	   1  26	   2  35	   1  62 
- 316  4		  21  11	   3  19			   9  36	  75  64 
-  32  5		  85  12	 		  10  28			  36  72 
+55147 1		 150  8 	 125  16	  28  24	 175  32	   1  44
+ 272  2		   3  9 	  72  17	   3  25	  17  34	   2  54
+ 272  3		  57  10	   2  18	   1  26	   2  35	   1  62
+ 316  4		  21  11	   3  19			   9  36	  75  64
+  32  5		  85  12	 		  10  28			  36  72
   74  6		  42  13	   3  21	   1  29			   1  111
   38  7		  84  14	 135  22	  13  30			 121  128
 		   4  15	 		   5  31			   1  145
@@ -592,15 +592,15 @@ static void	verilog_process_definitions (
     int		pos_level, level;
     int		pos;
     char	*tp;
-    
+
     /* if (DTPRINT_FILE) sig_print_names (trace); */
-    
+
     /* Find the highest pos used & max number of bits */
     signal_by_code_max = 0;
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	signal_by_code_max = MAX (signal_by_code_max, sig_ptr->file_code + sig_ptr->bits - 1 + 1);
     }
-    
+
     /* Allocate space for one signal pointer for each of the possible codes */
     /* This will, of course, use a lot of memory for large traces.  It will be very fast though */
     signal_by_code = (Signal_t **)XtCalloc (sizeof (Signal_t *), (signal_by_code_max + 1));
@@ -608,13 +608,13 @@ static void	verilog_process_definitions (
     /* Also set aside space so every signal could change in a single cycle */
     signal_update_array = (Signal_t **)XtMalloc (sizeof (Signal_t *) * (signal_by_code_max + 1));
     signal_update_array_last_pptr = signal_update_array;
-    
+
     /* Assign signals to the pos array.  The array points to the "original" */
     /*	-> Note that a single position can have multiple bits (if sig_ptr->file_type is true) */
     /* The original then has a linked list to other copies, the sig_ptr->verilog_next field */
     /* The original is signal highest in hierarchy, OR first to occur if at the same level */
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
-	for (pos = sig_ptr->file_code; 
+	for (pos = sig_ptr->file_code;
 	     pos <= sig_ptr->file_code
 		 + ((sig_ptr->file_type.flag.perm_vector)?0:(sig_ptr->bits-1));
 	     pos++) {
@@ -675,7 +675,7 @@ static void	verilog_process_definitions (
 	    signal_by_code[pos] = NULL;			/* Zero in prep of make_busses */
 	}
     }
-    
+
     /* Make the busses */
     /* The pos creation is first because there may be vectors that map to single signals. */
     fil_make_busses (trace, TRUE);
@@ -685,7 +685,7 @@ static void	verilog_process_definitions (
     if (DTPRINT_FILE) printf ("Reassigning signals to pos array.\n");
     memset (signal_by_code, 0, sizeof (Signal_t *) * (signal_by_code_max + 1));
     for (pos_sig_ptr = trace->firstsig; pos_sig_ptr; pos_sig_ptr = pos_sig_ptr->forward) {
-	for (pos = pos_sig_ptr->file_code; 
+	for (pos = pos_sig_ptr->file_code;
 	     pos <= pos_sig_ptr->file_code
 		 + ((pos_sig_ptr->file_type.flag.perm_vector)?0:(pos_sig_ptr->bits-1));
 	     pos++) {
@@ -715,7 +715,7 @@ static inline void verilog_prep_busses (
     int bit,
     int state,
     int first_data)
-    /* About to do sub-bit changes on this signal, get last value */	
+    /* About to do sub-bit changes on this signal, get last value */
 {
     int b;
     if (sig_ptr->file_value.siglw.stbits.state == 0) {
@@ -800,7 +800,7 @@ static void	verilog_enter_busses (
 	sig_ptr = *sig_upd_pptr;
 	if (sig_ptr->file_value.siglw.stbits.state) {
 	    /*if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } */
-	    if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); } 
+	    if (DTPRINT_FILE) { printf ("Entered: "); print_cptr (&(sig_ptr->file_value)); }
 
 	    /* Make cptr have correct state */
 	    val_minimize (&(sig_ptr->file_value), sig_ptr);
@@ -833,7 +833,7 @@ static void	verilog_read_data (
     int		state = STATE_Z;
     char	*scratchline;
     char	*scratchline2;
-    double	dnum; 
+    double	dnum;
     double	time_mult;
     double	time_divisor;
 
@@ -846,7 +846,7 @@ static void	verilog_read_data (
     time = 0;
     scratchline = (char *)XtMalloc(100+verilog_max_bits);
     scratchline2 = (char *)XtMalloc(100+verilog_max_bits);
-    
+
     trace->end_time = 0;
 
     while (!verilog_eof) {
@@ -886,7 +886,7 @@ static void	verilog_read_data (
 		    fil_add_cptr (sig_ptr, &value, first_data);
 		}
 		else {	/* Unary signal made into a vector */
-		    register int bit = sig_ptr->bits - 1 - (poscode - sig_ptr->file_code); 
+		    register int bit = sig_ptr->bits - 1 - (poscode - sig_ptr->file_code);
 		    /* Mark this for update at next time stamp */
 		    verilog_prep_busses (sig_ptr, bit, state, first_data);
 		}
@@ -949,7 +949,7 @@ static void	verilog_read_data (
 			memmove (value_strg + offset, value_strg, strlen(value_strg)+1);
 			memset (value_strg, extend_char, offset);
 		    }
-		    
+
 		    for (; sig_ptr; sig_ptr=sig_ptr->verilog_next) {
 			if (!sig_ptr->copyof) {
 			    /* Store the file information */
@@ -1004,9 +1004,9 @@ static void	verilog_read_data (
 		value.time = time;
 		fil_add_cptr (sig_ptr, &value, first_data);
 	    }
-	    
+
 	    break;
-	    
+
 	    /* Things to ignore, uncommon */
 	case '\n':
 	case '$':	/* Command, $end, $dump, etc (ignore) */
@@ -1056,10 +1056,10 @@ static void	verilog_process_lines (
 	else if (!strcmp(cmd, "scope")) {
 	    /* Skip <scopetype> = module, task, function, begin, fork */
 	    verilog_gettok();
-	    
+
 	    /* Null terminate <identifier> */
 	    cmd = verilog_gettok();
-	    
+
 	    if (scope_level < MAXSCOPES) {
 		strcpy (scopes[scope_level], cmd);
 		if (DTPRINT_FILE) printf ("added scope, %d='%s'\n", scope_level, scopes[scope_level]);
@@ -1086,7 +1086,7 @@ static void	verilog_process_lines (
 	}
 	else {
 	    if (DTPRINT_FILE) printf ("%%E, Unknown command '%s' on verilog line %d\n", cmd, verilog_line_num);
-	    
+
 	    sprintf (message, "Unknown command '%s' on line %d of %s\n",
 		     cmd, verilog_line_num, current_file);
 	    dino_error_ack (trace,message);

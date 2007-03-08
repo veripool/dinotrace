@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: window scrolling, etc
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -433,7 +433,7 @@ void res_zoom_click_ev (
 	    time = global->click_time;
 	    global->click_time = tmp;
 	}
-       
+
 	/* Set new res & time */
 	global->time = global->click_time;
 	new_res (trace,
@@ -468,7 +468,7 @@ void    win_note (
 	XtSetArg (arglist[2], XmNverticalSpacing, 10);
 	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
 	trace->note.dialog = XmCreateFormDialog (trace->work,"note",arglist,4);
-	
+
 	/* Create label widget for notetext widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Note") );
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
@@ -477,7 +477,7 @@ void    win_note (
 	XtSetArg (arglist[4], XmNtopOffset, 5);
 	trace->note.notelabel = XmCreateLabel (trace->note.dialog,"",arglist,5);
 	DManageChild (trace->note.notelabel, trace, MC_NOKEYS);
-	
+
 	/* Create the print note text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
@@ -491,7 +491,7 @@ void    win_note (
 	trace->note.notetext = XmCreateText (trace->note.dialog,"notetext",arglist,9);
 	DAddCallback (trace->note.notetext, XmNactivateCallback, win_note_ok_cb, trace);
 	DManageChild (trace->note.notetext, trace, MC_NOKEYS);
-	
+
 	/* Ok/apply/cancel */
 	ok_apply_cancel (&trace->note.okapply, trace->note.dialog,
 			 dmanage_last,
@@ -500,7 +500,7 @@ void    win_note (
 			 NULL, NULL,
 			 (XtCallbackProc)win_note_cancel_cb, trace);
     }
-    
+
 
     /* right units */
     if (!text1) text1="";
@@ -551,7 +551,7 @@ void    win_note_cancel_cb (
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In win_note_cancel_cb - trace=%p\n",trace);
-    
+
     /* unmanage the popup on the screen */
     XtUnmanageChild (trace->note.dialog);
 }
@@ -563,9 +563,9 @@ void    win_goto_cb (
 {
     int		i;
     Trace_t *trace = widget_to_trace(w);
-    
+
     if (DTPRINT_ENTRY) printf ("In win_goto_cb - trace=%p\n",trace);
-    
+
     if (!trace->gotos.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Goto Time") );
@@ -573,7 +573,7 @@ void    win_goto_cb (
 	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
 	trace->gotos.dialog = XmCreateFormDialog (trace->work,"goto",arglist,4);
 	DAddCallback (trace->gotos.dialog, XmNmapCallback, win_goto_option_cb, trace);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Time"));
 	XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopOffset, 5);
@@ -581,24 +581,24 @@ void    win_goto_cb (
 	XtSetArg (arglist[4], XmNleftOffset, 5);
 	trace->gotos.label1 = XmCreateLabel (trace->gotos.dialog,"label1",arglist,5);
 	DManageChild (trace->gotos.label1, trace, MC_NOKEYS);
-	
+
 	/* create the goto text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 12);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[3], XmNtopOffset, 5);
-	XtSetArg (arglist[4], XmNleftAttachment, XmATTACH_WIDGET );	
+	XtSetArg (arglist[4], XmNleftAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[5], XmNleftWidget, trace->gotos.label1 );
 	XtSetArg (arglist[6], XmNresizeHeight, FALSE);
 	XtSetArg (arglist[7], XmNeditMode, XmSINGLE_LINE_EDIT);
 	trace->gotos.text = XmCreateText (trace->gotos.dialog,"textn",arglist,8);
 	DAddCallback (trace->gotos.text, XmNactivateCallback, win_goto_ok_cb, trace);
 	DManageChild (trace->gotos.text, trace, MC_NOKEYS);
-	    
+
  	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("ns"));
 	XtSetArg (arglist[1], XmNtopAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopOffset, 5);
-	XtSetArg (arglist[3], XmNleftAttachment, XmATTACH_WIDGET );	
+	XtSetArg (arglist[3], XmNleftAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[4], XmNleftWidget, trace->gotos.text );
  	trace->gotos.label2 = XmCreateLabel (trace->gotos.dialog,"label2",arglist,5);
 	DManageChild (trace->gotos.label2, trace, MC_NOKEYS);
@@ -625,12 +625,12 @@ void    win_goto_cb (
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Place Cursor:"));
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNleftOffset, 5);
-	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );	
+	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[4], XmNtopWidget, trace->gotos.text );
 	XtSetArg (arglist[5], XmNsubMenuId, trace->gotos.pulldown);
 	trace->gotos.options = XmCreateOptionMenu (trace->gotos.dialog,"options",arglist,6);
 	DManageChild (trace->gotos.options, trace, MC_NOKEYS);
-	
+
 
 	/* Create label widget for notetext widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cursor Note") );
@@ -641,7 +641,7 @@ void    win_goto_cb (
 	XtSetArg (arglist[5], XmNtopWidget, trace->gotos.options);
 	trace->gotos.notelabel = XmCreateLabel (trace->gotos.dialog,"",arglist,6);
 	DManageChild (trace->gotos.notelabel, trace, MC_NOKEYS);
-	
+
 	/* Create the print note text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
@@ -655,7 +655,7 @@ void    win_goto_cb (
 	trace->gotos.notetext = XmCreateText (trace->gotos.dialog,"notetext",arglist,9);
 	DAddCallback (trace->gotos.notetext, XmNactivateCallback, win_goto_ok_cb, trace);
 	DManageChild (trace->gotos.notetext, trace, MC_NOKEYS);
-	
+
 	/* Ok/apply/cancel */
 	ok_apply_cancel (&trace->gotos.okapply, trace->gotos.dialog,
 			 dmanage_last,
@@ -664,7 +664,7 @@ void    win_goto_cb (
 			 NULL, NULL,
 			 (XtCallbackProc)win_goto_cancel_cb, trace);
     }
-    
+
     /* right units */
     XtSetArg (arglist[0], XmNlabelString,
 	      XmStringCreateSimple (time_units_to_string (global->timerep, FALSE)));
@@ -676,7 +676,7 @@ void    win_goto_cb (
     XmTextSetString (trace->gotos.text, "");
 
     /* Must redraw color box on any exposures */
-    XtAddEventHandler (trace->gotos.dialog, ExposureMask, TRUE, 
+    XtAddEventHandler (trace->gotos.dialog, ExposureMask, TRUE,
 		       (XtEventHandler)win_goto_option_cb, trace);
 
     /* manage the dialog on the screen */
@@ -758,7 +758,7 @@ void    win_goto_ok_cb (
     if (time > 0) {
 	/* Center it on the screen */
 	global->time = time - ( TIME_WIDTH (trace) / 2);
-	
+
 	/* Limit time extent */
 	/* V6.3 bug - Don't subtract the window length */
 	if ( time > trace->end_time ) {
@@ -784,7 +784,7 @@ void    win_goto_cancel_cb (
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In win_goto_cancel_cb - trace=%p\n",trace);
-    
+
     /* unmanage the popup on the screen */
     XtRemoveEventHandler (trace->gotos.dialog, ExposureMask, TRUE,
 			  (XtEventHandler)win_goto_option_cb, trace);

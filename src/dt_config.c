@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: configuration file reading
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -63,9 +63,9 @@
 #	click_to_edge	ON | OFF
 #	cursor		ON | OFF
 #	refreshing	AUTO | MANUAL
-#	grid		<grid_number>	ON | OFF	
+#	grid		<grid_number>	ON | OFF
 #	grid_align	<grid_number>	<number> | ASSERTION | DEASSERTION
-#	grid_resolution	<grid_number>	<number> | AUTO | EDGE 	 
+#	grid_resolution	<grid_number>	<number> | AUTO | EDGE
 #	grid_type	<grid_number>	NORMAL | WIDE
 #	grid_signal	<grid_number>	<signal_pattern>
 #	grid_color	<grid_number>	<color>
@@ -73,7 +73,7 @@
 #	print_size	A | B | EPSPORT | EPSLAND
 #	rise_fall_time	<number>
 #	signal_height	<number>
-#	time_format	%0.6lf | %0.6lg | "" 
+#	time_format	%0.6lf | %0.6lg | ""
 #	time_precision	US | NS | PS | FS
 #	time_rep	<number> | US | NS | PS | FS | CYCLE
 # File Format:
@@ -98,8 +98,8 @@
 #	signal_radix	<signal_pattern> <HEX|BINARY|OCT|ASCII|DEC>
 #	signal_waveform	<signal_pattern> <DIGITAL|ANALOG|ANALOG_SIGNED>
 #	signal_rename	<signal_pattern> <new_signal_name>	[<color>]
-#	signal_highlight <signal_pattern> <color> 
-#	signal_note	<signal_pattern> <note> 
+#	signal_highlight <signal_pattern> <color>
+#	signal_note	<signal_pattern> <note>
 #	cursor_add	<time> <color>	[-USER]
 #	value_highlight <value>	<color>	[<signal_pattern>] [-CURSOR] [-VALUE]
 # Display changes:
@@ -208,7 +208,7 @@ static int config_read_string (
 	line++; outlen++;
     }
 
-    if (quote) { 
+    if (quote) {
 	if (*line == '"') {
 	    line++; outlen++;
 	} else {
@@ -258,7 +258,7 @@ static int config_read_value (
 	line++; outlen++;
     }
 
-    if (quote) { 
+    if (quote) {
 	if (*line == '"') {
 	    *out++ = *line;
 	    line++; outlen++;
@@ -416,8 +416,8 @@ static void	signalstate_write (
     int i;
 
     fprintf (writefp, "\n#### Global Signal States ####\n");
-    
-    for (sstate_ptr = global->signalstate_head; 
+
+    for (sstate_ptr = global->signalstate_head;
 	 sstate_ptr; sstate_ptr = sstate_ptr->next) {
 	fprintf (writefp, "%ssignal_states %s {\n",c,sstate_ptr->signame);
 	for (i=0; i<MAXSTATENAMES; i++) {
@@ -469,9 +469,9 @@ void	config_parse_geometry (
     }
 
     if (DTPRINT_CONFIG) printf ("geometry %s = %dx%d+%d+%d   %c%c%c%c\n", line,
-				geometry->width, geometry->height, 
+				geometry->width, geometry->height,
 				geometry->x, geometry->y,
-				geometry->widthp?'%':'-', geometry->heightp?'%':'-', 
+				geometry->widthp?'%':'-', geometry->heightp?'%':'-',
 				geometry->xp?'%':'-', geometry->yp?'%':'-');
 }
 
@@ -481,7 +481,7 @@ static void	config_geometry_string (
 {
     sprintf (strg, "%d%sx%d%s+%d%s+%d%s",
 	     geometry->width,	geometry->widthp?"%":"",
-	     geometry->height,	geometry->heightp?"%":"", 
+	     geometry->height,	geometry->heightp?"%":"",
 	     geometry->x,	geometry->xp?"%":"",
 	     geometry->y,	geometry->xp?"%":"");
 }
@@ -632,12 +632,12 @@ static void	config_process_line_internal (
     Grid_t	*grid_ptr;
     char pattern[MAXSIGLEN];
     char *cmt;
-    
+
     static SignalState_t newsigst;
     static Boolean_t processing_sig_state = FALSE;
 
   re_process_line:
-    
+
     /* Strip spaces and comments */
     while (*line && isspace(*line)) line++;
     cmt = line;
@@ -810,7 +810,7 @@ static void	config_process_line_internal (
 	      case '<':	trace->dfile.vectorend_separator = '>'; break;
 	      default:  trace->dfile.vectorend_separator = trace->dfile.vector_separator; break;	/* a wild guess SIG$20:1$? */
 	    }
-	    if (DTPRINT_CONFIG) printf ("vector_separator = '%c'  End='%c'\n", 
+	    if (DTPRINT_CONFIG) printf ("vector_separator = '%c'  End='%c'\n",
 					trace->dfile.vector_separator, trace->dfile.vectorend_separator);
 	}
 	else if (format_only) {
@@ -1136,7 +1136,7 @@ static void	config_process_line_internal (
 	    char strg[MAXSIGLEN],flag[MAXSIGLEN];
 	    char note[MAXSIGLEN]="";
 	    CursorType_t type = CONFIG;
-	    
+
 	    line += config_read_string (trace, line, strg);
 	    ctime = string_to_time (trace, strg);
 	    line += config_read_color (trace, line, &color, TRUE);
@@ -1160,7 +1160,7 @@ static void	config_process_line_internal (
 	    DTime_t ctime;
 	    char strg[MAXSIGLEN];
 	    DTime_t end_time = global->time + (DTime_t)(( trace->width - XMARGIN - global->xstart ) / global->res);
-	    
+
 	    line += config_read_string (trace, line, strg);
 	    ctime = string_to_time (trace, strg);
 
@@ -1173,7 +1173,7 @@ static void	config_process_line_internal (
 	else if (!strcmp(cmd, "RESOLUTION")) {
 	    DTime_t restime;
 	    char strg[MAXSIGLEN];
-	    
+
 	    line += config_read_string (trace, line, strg);
 	    restime = string_to_time (trace, strg);
 
@@ -1223,7 +1223,7 @@ static void	config_process_line_internal (
 	}
     }
 }
-    
+
 /* Normal call */
 #define config_process_line(trace, line, fmt)	config_process_line_internal(trace, line, fmt, FALSE)
 
@@ -1252,16 +1252,16 @@ void config_read_file (
     struct stat		newstat;	/* New status on the reread file*/
     int	read_fd;
     int		prev_cursor;
-    
+
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Reading config file %s\n", filename);
 
     if (filename[strlen(filename)-1] == '/') {
 	/* Ignore it, It's a directory */
 	return;
     }
-    
+
     config_report_errors = !format_only;
-    
+
 #ifndef VMS
     /* Check if regular file (not directory) */
     read_fd = open (filename, O_RDONLY, 0);
@@ -1288,7 +1288,7 @@ void config_read_file (
 	}
 	return;
     }
-    
+
     prev_cursor = last_set_cursor ();
     set_cursor (DC_BUSY);
 
@@ -1338,7 +1338,7 @@ void config_read_socket (
 void config_update_filenames (Trace_t *trace)
 {
     if (DTPRINT_ENTRY) printf ("In config_update_filenames\n");
-	
+
     global->config_filename[3][0] = '\0';
     global->config_filename[4][0] = '\0';
 
@@ -1423,9 +1423,9 @@ void config_write_file (
     char	strg[MAXSIGLEN];
     const char	*c;	/* Comment or null */
     Trace_t	*trace_top = trace;
-    
+
     if (DTPRINT_CONFIG || DTPRINT_ENTRY) printf("Writing config file %s\n", filename);
-    
+
     /* Open File For Writing */
     if (!(writefp=fopen(filename,"w"))) {
 	if (DTPRINT) printf("%%E, Can't Write File %s\n", filename);
@@ -1464,20 +1464,20 @@ void config_write_file (
 	  case PRINTSIZE_EPSLAND:	fprintf (writefp, "EPSLAND\n");	break;
 	  case PRINTSIZE_EPSPORT:	fprintf (writefp, "EPSPORT\n");	break;
 	}
-	
+
 	config_geometry_string (&global->start_geometry, strg);
 	fprintf (writefp, "%sstart_geometry\t%s\n",c, strg);
 	config_geometry_string (&global->open_geometry, strg);
 	fprintf (writefp, "%sopen_geometry\t%s\n",c,  strg);
 	config_geometry_string (&global->shrink_geometry, strg);
 	fprintf (writefp, "%sshrink_geometry\t%s\n",c, strg);
-	
+
 	if (global->time_format[0])
 	  fprintf (writefp, "%stime_format\t%s\n",c, global->time_format);
-	
+
 	signalstate_write (writefp, c);
     }
-    
+
     if (global->cuswr_item[CUSWRITEM_VALSEARCH]) {
 	fprintf (writefp, "\n#### Value Searches ####\n");
 	for (i=1; i<=MAX_SRCH; i++) {
@@ -1486,18 +1486,18 @@ void config_write_file (
 	    if (vs_ptr->color || vs_ptr->cursor) {
 		val_to_string (vs_ptr->radix, strg, &vs_ptr->value, 0, FALSE, TRUE);
 		fprintf (writefp, "%svalue_highlight %s %d \"%s\" %s %s\n",c,
-			 strg, i, vs_ptr->signal, 
+			 strg, i, vs_ptr->signal,
 			 vs_ptr->color ? "-VALUE":"",
 			 vs_ptr->cursor ? "-CURSOR":"");
 	    }
 	}
     }
-    
+
     if (global->cuswr_item[CUSWRITEM_CURSORS]) {
 	fprintf (writefp, "\n#### Cursors ####\n");
 	cur_write (writefp, c);
     }
-    
+
     if (global->cuswr_item[CUSWRITEM_FORMAT]) {
 	fprintf (writefp, "\n#### Trace Format ####\n");
 	for (trace = global->trace_head; trace; trace = trace->next_trace) {
@@ -1515,7 +1515,7 @@ void config_write_file (
 	    }
 	}
     }
-    
+
     if (global->cuswr_item[CUSWRITEM_GRIDS]) {
 	fprintf (writefp, "\n#### Grids ####\n");
 	for (trace = global->trace_head; trace; trace = trace->next_trace) {
@@ -1527,7 +1527,7 @@ void config_write_file (
 		fprintf (writefp, "###set_trace\t%s\n", trace->dfile.filename);
 		for (grid_num=0; grid_num<MAXGRIDS; grid_num++) {
 		    grid_ptr = &(trace->grid[grid_num]);
-		    
+
 		    fprintf (writefp, "%sgrid\t\t%d\t%s\n",c, grid_num, grid_ptr->visible?"ON":"OFF");
 		    fprintf (writefp, "%sgrid_type\t%d\t%s\n",c, grid_num, grid_ptr->wide_line?"WIDE":"NORMAL");
 		    fprintf (writefp, "%sgrid_signal\t%d\t\"%s\"\n",c, grid_num, grid_ptr->signal);
@@ -1547,7 +1547,7 @@ void config_write_file (
 	    }
 	}
     }
-	
+
     if (global->cuswr_item[CUSWRITEM_SIGHIGHLIGHT]) {
 	fprintf (writefp, "\n#### Signal Highlighting, Commenting, etc ####\n");
 	for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
@@ -1568,7 +1568,7 @@ void config_write_file (
 	    }
 	}
     }
-	    
+
     if (global->cuswr_item[CUSWRITEM_SIGORDER]) {
 	fprintf (writefp, "\n#### Signal Ordering ####\n");
 	for (trace = global->trace_head; trace; trace = trace->next_trace) {
@@ -1584,13 +1584,13 @@ void config_write_file (
 	    }
 	}
     }
-	
+
     fprintf (writefp, "\n\n##### Customization Write by %s\n", DTVERSION);
     fprintf (writefp, "##### Created %s\n", date_string(0));
 
     fclose (writefp);
 }
-	    
+
 /**********************************************************************
 *	config_restore_defaults
 **********************************************************************/
@@ -1611,7 +1611,7 @@ void config_global_defaults(void)
     signalstate_free ();
     draw_needupd_val_states ();
     draw_needupd_sig_start ();
-    
+
     global->sighgt = 15;
     global->pageinc = PAGEINC_FULL;
     global->save_ordering = TRUE;

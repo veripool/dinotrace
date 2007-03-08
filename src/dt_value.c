@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: value-at-a-time decoding
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -127,7 +127,7 @@ static char	val_str_digit_ascii (
     uint_t val = 0;
     uint_t bit;
     int bitnum;
-    
+
     for (bitnum=lsb+7; bitnum>=lsb; bitnum--) {
 	bit = val_bit (value_ptr, bitnum);
 	if (bit>1) return ('X');
@@ -220,7 +220,7 @@ static void    val_str_lw (
 		if ((lw|enlw) & (1L<<bit)) break;
 	    }
 	}
-    } 
+    }
 
     switch (radix_ptr->type) {
     case RADIX_HEX_UN:
@@ -281,7 +281,7 @@ void    val_to_string (
 {
     char sep = compressed ? ' ' : '_';
     if (radix_ptr==NULL) {strcpy (strg,"nullradix_ptr"); return;}
-    
+
     if (radix_ptr->type == RADIX_ASCII) {
 	val_str_ascii (strg, value_ptr, compressed);
 	return;
@@ -300,7 +300,7 @@ void    val_to_string (
     case STATE_Z:
 	*strg++ = 'z';
 	break;
-	
+
     case STATE_B32:
     case STATE_F32:
     case STATE_B128:
@@ -394,7 +394,7 @@ void	val_minimize (
 	    && (value_ptr->number[0] == sig_ptr->value_mask[0])
 	    && (value_ptr->number[1] == sig_ptr->value_mask[1])
 	    && (value_ptr->number[2] == sig_ptr->value_mask[2])
-	    && (value_ptr->number[3] == sig_ptr->value_mask[3])	    
+	    && (value_ptr->number[3] == sig_ptr->value_mask[3])
 	    ) {
 	    value_ptr->siglw.stbits.state = STATE_Z;
 	} else if (!num123 && !num567) {
@@ -635,7 +635,7 @@ void	val_update_search ()
 		    /* Single bit signal, don't search for values > 1 for speed */
 		    continue;
 		}
-	    
+
 		cursorize=0;
 		for (i=0; i<MAX_SRCH; i++) {
 		    matches[i] = 0;
@@ -670,7 +670,7 @@ void	val_update_search ()
 			}
 			break;
 		    } /* switch */
-		    
+
 		    if (color_to_assign != (int)cptr->siglw.stbits.color) {
 			/* Don't write unless changes to save cache flushing */
 			cptr->siglw.stbits.color = color_to_assign;
@@ -689,7 +689,7 @@ void	val_update_search ()
 			}
 			cursorize = 0;
 		    }
-		    
+
 		} /* for cptr */
 	    } /* if enabled */
 	} /* for sig */
@@ -752,7 +752,7 @@ static Radix_t *val_radix_add (
     int radixnum;
     Radix_t *radix_ptr;
     Radix_t *found_radix_ptr;
-    
+
     found_radix_ptr = val_radix_find (name); /* Null if not found */
     radix_ptr = found_radix_ptr;
 
@@ -778,7 +778,7 @@ static Radix_t *val_radix_add (
     radix_ptr->name = strdup (name);
     radix_ptr->type = type;
     radix_ptr->prefix = strdup(prefix);
-    
+
     return (radix_ptr);
 }
 
@@ -826,9 +826,9 @@ void    val_examine_cb (
     Widget	w)
 {
     Trace_t *trace = widget_to_trace(w);
-    
+
     if (DTPRINT_ENTRY) printf ("In val_examine_cb - trace=%p\n",trace);
-    
+
     /* process all subsequent button presses as cursor moves */
     remove_all_events (trace);
     set_cursor (DC_VAL_EXAM);
@@ -840,11 +840,11 @@ void    val_highlight_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In val_highlight_cb - trace=%p\n",trace);
-    
+
     /* Grab color number from the menu button pointer */
     global->highlight_color = submenu_to_color (trace, w, 0, trace->menu.val_highlight_pds);
 
-    /* process all subsequent button presses as signal deletions */ 
+    /* process all subsequent button presses as signal deletions */
     remove_all_events (trace);
     set_cursor (DC_VAL_HIGHLIGHT);
     add_event (ButtonPressMask, val_highlight_ev);
@@ -865,16 +865,16 @@ char *val_examine_string (
     int		rows, cols, bit, row, col;
     int		lesser_index, greater_index;
     char	*format;
-    
+
     if (DTPRINT_ENTRY) printf ("\ttime = %d, signal = %s\n", time, sig_ptr->signame);
 
     /* Get information */
     cptr = value_at_time (sig_ptr, time);
-    
+
     lesser_index = MIN(sig_ptr->msb_index,sig_ptr->lsb_index);
     greater_index = MAX(sig_ptr->msb_index,sig_ptr->lsb_index);
     strcpy (strg, sig_ptr->signame);
-	
+
     if (CPTR_TIME(cptr) == EOT) {
 	strcat (strg, "\nValue at EOT:\n");
     }
@@ -887,7 +887,7 @@ char *val_examine_string (
 	strcat (strg, strg2);
 	strcat (strg, ":\n");
     }
-    
+
     strcat (strg, "= ");
     val_to_string (sig_ptr->radix, strg2, cptr, sig_ptr->bits, FALSE, FALSE);
     strcat (strg, strg2);
@@ -916,13 +916,13 @@ char *val_examine_string (
 	strcat (strg, strg2);
 	strcat (strg, "\n");
     }
-	
+
     if (sig_ptr->bits>1
 	&& (cptr->siglw.stbits.state == STATE_B32
 	    || cptr->siglw.stbits.state == STATE_0)) {
 	uint_t num0 = 0;
 	if (cptr->siglw.stbits.state != STATE_0) num0 = cptr->number[0];
-	if ((sig_ptr->decode != NULL) 
+	if ((sig_ptr->decode != NULL)
 	    && (num0 < sig_ptr->decode->numstates)
 	    && (sig_ptr->decode->statename[num0][0] != '\0') ) {
 	    /* Show decode */
@@ -930,7 +930,7 @@ char *val_examine_string (
 	    strcat (strg, strg2);
 	}
     }
-	
+
     switch (cptr->siglw.stbits.state) {
     case STATE_B32:
     case STATE_F32:
@@ -940,11 +940,11 @@ char *val_examine_string (
 	rows = (int)(ceil (sqrt ((double)(sig_ptr->bits))));
 	cols = (int)(ceil ((double)(rows) / 4.0) * 4);
 	rows = (int)(ceil ((double)(sig_ptr->bits)/ (double)cols));
-	
+
 	format = "[%01d]=%c ";
 	if (greater_index >= 10)  format = "[%02d]=%c ";
 	if (greater_index >= 100) format = "[%03d]=%c ";
-	
+
 	bit = 0;
 	for (row=rows - 1; row >= 0; row--) {
 	    for (col = cols - 1; col >= 0; col--) {
@@ -963,7 +963,7 @@ char *val_examine_string (
 	}
 	break;
     }
-	
+
     if (sig_ptr->bits > 2) {
 	int par = 0;
 	Boolean_t unknown = FALSE;
@@ -977,7 +977,7 @@ char *val_examine_string (
 	    else  strcat (strg, "Even Parity\n");
 	}
     }
-	
+
     if (sig_ptr->bits == 1) {
 	int	posedges = 0;
 	int	negedges = 0;
@@ -1002,7 +1002,7 @@ char *val_examine_string (
 
     return (strg);
 }
-	
+
 static void    val_examine_popdown (
     Trace_t	*trace)
 {
@@ -1031,13 +1031,13 @@ static void    val_examine_popup (
     char	*strg = "No information here";
     XmString	xs;
     int		x,y;	/* Must allow signed */
-    
+
     time = posx_to_time (trace, ev->x);
     sig_ptr = posy_to_signal (trace, ev->y);
     if (DTPRINT_ENTRY) printf ("In val_examine_popup %d %d time %d\n", __LINE__, ev->x, time);
-    
+
     val_examine_popdown (trace);
-      
+
     /* Get the text to display */
     /* Brace yourself for something that should be object oriented... */
     if (sig_ptr) {
@@ -1057,8 +1057,8 @@ static void    val_examine_popup (
 	    if (csr_ptr) strg = cur_examine_string (trace, csr_ptr);
 	}
     }
-	    
-	
+
+
     /* First, a override for the shell */
     /* It's probably tempting to use XmCreatePopupMenu. */
     /* Don't.  It was that way, but the keyboard grab proved problematic */
@@ -1067,11 +1067,11 @@ static void    val_examine_popup (
     XtSetArg (arglist[1], XmNshadowThickness, 2);
 #if 1  /* If you get a error on the next line, try changing the 1 to a 0 */
     trace->examine.popup = (Widget)XmCreateGrabShell (trace->main, "examinepopup", arglist, 2);
-#else    
+#else
     trace->examine.popup = XtCreatePopupShell
 	("examinepopup", overrideShellWidgetClass, trace->main, arglist, 1);
 #endif
-    
+
     /* Row column for a nice border */
     /* For Lesstif we used to have MENU_POPUP, but that has mouse side effects */
     XtSetArg (arglist[0], XmNrowColumnType, XmWORK_AREA);
@@ -1114,7 +1114,7 @@ static void    val_examine_popup (
     (xmRowColumnClassRec.core_class.expose) (trace->examine.rowcol, (XEvent*) ev, NULL);
     (xmLabelClassRec.core_class.expose) (trace->examine.label, (XEvent*) ev, NULL);
 }
-	
+
 void    val_examine_ev (
     Widget		w,
     Trace_t		*trace,
@@ -1125,10 +1125,10 @@ void    val_examine_ev (
     int		update_pending = FALSE;
     extern char *events[];
     if (events) {}  /* Prevent unused warning */
-    
+
     if (DTPRINT_ENTRY) printf ("In val_examine_ev, button=%d state=%d\n", ev->button, ev->state);
     if (ev->type != ButtonPress) return;	/* Used for both button 1 & 2. */
-    
+
     /* not sure why this has to be done but it must be done */
     XSync (global->display, FALSE);
     XUngrabPointer (XtDisplay (trace->work),CurrentTime);
@@ -1145,7 +1145,7 @@ void    val_examine_ev (
 	/* wait for next event */
 	XNextEvent (global->display, &event);
 	/* if (DTPRINT) { printf ("[ExEvent %s] ", events[ev->type]);fflush(stdout); } */
-	
+
 	/* Mark an update as needed */
 	if (event.type == MotionNotify) {
 	    update_pending = TRUE;
@@ -1155,7 +1155,7 @@ void    val_examine_ev (
 	if (event.type == Expose) win_expose_cb (0,trace);
 	/* if window was resized, must redraw it */
 	if (event.type == ConfigureNotify) win_resize_cb (0,trace);
-	
+
 	/* button released - calculate cursor position and leave the loop */
 	if (event.type == ButtonRelease || event.type == ButtonPress) {
 	    /* ButtonPress in case user is freaking out, some strange X behavior caused the ButtonRelease to be lost */
@@ -1174,12 +1174,12 @@ void    val_examine_ev (
 	    draw_perform();
 	}
     }
-    
+
     /* reset the events the widget will respond to */
     XSync (global->display, FALSE);
     XSelectInput (XtDisplay (trace->work),XtWindow (trace->work),
 		 ButtonPressMask|StructureNotifyMask|ExposureMask);
-      
+
     /* unmanage popup */
     val_examine_popdown (trace);
     draw_needed (trace);
@@ -1193,7 +1193,7 @@ void    val_examine_popup_act (
 {
     Trace_t	*trace;		/* Display information */
     int		prev_cursor;
-    
+
     if (ev->type != ButtonPress) return;
 
     if (DTPRINT_ENTRY) printf ("In val_examine_popup_ev, button=%d state=%d\n", ev->button, ev->state);
@@ -1241,9 +1241,9 @@ void    val_search_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     int		i;
-    
+
     if (DTPRINT_ENTRY) printf ("In val_search_cb - trace=%p\n",trace);
-    
+
     if (!trace->value.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Value Search Requester") );
@@ -1256,21 +1256,21 @@ void    val_search_cb (
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
 	trace->value.label1 = XmCreateLabel (trace->value.dialog,"label1",arglist,3);
 	DManageChild (trace->value.label1, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Place"));
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[2], XmNleftWidget, trace->value.label1);
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_FORM );
 	trace->value.label2 = XmCreateLabel (trace->value.dialog,"label2",arglist,4);
 	DManageChild (trace->value.label2, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Value"));
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopWidget, trace->value.label1);
 	trace->value.label4 = XmCreateLabel (trace->value.dialog,"label4",arglist,4);
 	DManageChild (trace->value.label4, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cursor"));
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[2], XmNleftWidget, trace->value.label4);
@@ -1278,7 +1278,7 @@ void    val_search_cb (
 	XtSetArg (arglist[4], XmNtopWidget, trace->value.label2);
 	trace->value.label5 = XmCreateLabel (trace->value.dialog,"label5",arglist,5);
 	DManageChild (trace->value.label5, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (
 	    "Search value, Hex default, 'd=decimal, 'b=binary"));
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
@@ -1287,14 +1287,14 @@ void    val_search_cb (
 	XtSetArg (arglist[4], XmNtopWidget, trace->value.label1);
 	trace->value.label3 = XmCreateLabel (trace->value.dialog,"label3",arglist,5);
 	DManageChild (trace->value.label3, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Signal Wildcard"));
 	XtSetArg (arglist[1], XmNrightAttachment, XmATTACH_FORM);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopWidget, trace->value.label1);
 	trace->value.label6 = XmCreateLabel (trace->value.dialog,"label6",arglist,4);
 	DManageChild (trace->value.label6, trace, MC_NOKEYS);
-	
+
 	for (i=0; i<MAX_SRCH; i++) {
 	    /* enable button */
 	    XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM);
@@ -1328,7 +1328,7 @@ void    val_search_cb (
 	    trace->value.text[i] = XmCreateText (trace->value.dialog,"textn",arglist,9);
 	    DAddCallback (trace->value.text[i], XmNactivateCallback, val_search_ok_cb, trace);
 	    DManageChild (trace->value.text[i], trace, MC_NOKEYS);
-	    
+
 	    /* create the signal text widget */
 	    XtSetArg (arglist[0], XmNrows, 1);
 	    XtSetArg (arglist[1], XmNcolumns, 30);
@@ -1353,7 +1353,7 @@ void    val_search_cb (
 			 NULL,NULL,
 			 (XtCallbackProc)unmanage_cb, (Trace_t*)trace->value.dialog);
     }
-    
+
     /* Copy settings to local area to allow cancel to work */
     val_search_widget_update (trace);
 
@@ -1377,10 +1377,10 @@ void    val_search_ok_cb (
 
 	/* Update with current search enables */
 	vs_ptr->color = (XmToggleButtonGetState (trace->value.enable[i])) ? i+1 : 0;
-	
+
 	/* Update with current cursor enables */
 	vs_ptr->cursor = (XmToggleButtonGetState (trace->value.cursor[i])) ? i+1 : 0;
-	
+
 	/* Update with current search values */
 	val_to_string (vs_ptr->radix, origstrg, &vs_ptr->value, 0, FALSE, TRUE);
 	strg = XmTextGetString (trace->value.text[i]);
@@ -1401,7 +1401,7 @@ void    val_search_ok_cb (
 		    vs_ptr->radix->name, strg, strg2);
 	}
     }
-    
+
     XtUnmanageChild (trace->value.dialog);
 
     draw_needupd_val_search ();
@@ -1427,16 +1427,16 @@ void    val_highlight_ev (
     DTime_t	time;
     Signal_t	*sig_ptr;
     Value_t	*cptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In val_highlight_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
-    
+
     time = posx_to_time (trace, ev->x);
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr && time<=0) return;
     cptr = value_at_time (sig_ptr, time);
     if (!cptr) return;
-    
+
     /* Change the color */
     if (global->highlight_color > 0) {
 	ValSearch_t *vs_ptr = &global->val_srch[global->highlight_color - 1];
@@ -1472,21 +1472,21 @@ void    val_annotate_cb (
     int i;
 
     if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%p\n",trace);
-    
+
     if (!trace->annotate.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Annotate Menu"));
 	XtSetArg (arglist[2], XmNverticalSpacing, 7);
 	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
 	trace->annotate.dialog = XmCreateFormDialog (trace->work, "annotate",arglist,4);
-	
+
 	/* create label widget for text widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("File Name") );
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
 	trace->annotate.label1 = XmCreateLabel (trace->annotate.dialog,"l1",arglist,3);
 	DManageChild (trace->annotate.label1, trace, MC_NOKEYS);
-	
+
 	/* create the file name text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 30);
@@ -1499,7 +1499,7 @@ void    val_annotate_cb (
 	trace->annotate.text = XmCreateText (trace->annotate.dialog,"filename",arglist,8);
 	DManageChild (trace->annotate.text, trace, MC_NOKEYS);
 	DAddCallback (trace->annotate.text, XmNactivateCallback, val_annotate_ok_cb, trace);
-	
+
 	/* Cursor enables */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Include which user (solid) cursor colors:") );
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
@@ -1507,7 +1507,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[3], XmNtopWidget, dmanage_last );
 	trace->annotate.label2 = XmCreateLabel (trace->annotate.dialog,"l2",arglist,4);
 	DManageChild (trace->annotate.label2, trace, MC_NOKEYS);
-	
+
 	last = trace->annotate.dialog;
 	for (i=0; i<=MAX_SRCH; i++) {
 	    /* enable button */
@@ -1528,7 +1528,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[3], XmNtopWidget, trace->annotate.cursors[0] );
 	trace->annotate.label4 = XmCreateLabel (trace->annotate.dialog,"l4",arglist,4);
 	DManageChild (trace->annotate.label4, trace, MC_NOKEYS);
-	
+
 	for (i=0; i<=MAX_SRCH; i++) {
 	    /* enable button */
 	    XtSetArg (arglist[0], XmNx, 15+30*i);
@@ -1547,7 +1547,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[3], XmNtopWidget, trace->annotate.cursors_dotted[0] );
 	trace->annotate.label3 = XmCreateLabel (trace->annotate.dialog,"",arglist,4);
 	DManageChild (trace->annotate.label3, trace, MC_NOKEYS);
-	
+
 	for (i=1; i<=MAX_SRCH; i++) {
 	    /* enable button */
 	    XtSetArg (arglist[0], XmNx, 15+30*i);
@@ -1566,7 +1566,7 @@ void    val_annotate_cb (
 	XtSetArg (arglist[3], XmNtopWidget, trace->annotate.signals[1]);
 	trace->annotate.trace_label = XmCreateLabel (trace->annotate.dialog,"",arglist,4);
 	DManageChild (trace->annotate.trace_label, trace, MC_NOKEYS);
-	
+
 	/* Begin pulldown */
 	trace->annotate.trace_pulldown = XmCreatePulldownMenu (trace->annotate.dialog,"trace_pulldown",arglist,0);
 
@@ -1600,11 +1600,11 @@ void    val_annotate_cb (
 			 NULL,NULL,
 			 (XtCallbackProc)unmanage_cb, (Trace_t*)trace->annotate.dialog);
     }
-    
+
     /* reset file name */
     XtSetArg (arglist[0], XmNvalue, global->anno_filename);
     XtSetValues (trace->annotate.text,arglist,1);
-    
+
     /* Menu */
     XtSetArg (arglist[0], XmNmenuHistory,
 	      trace->annotate.trace_button[global->anno_traces]);
@@ -1646,7 +1646,7 @@ void    val_annotate_ok_cb (
     for (i=1; i<=MAX_SRCH; i++) {
 	global->anno_ena_signal[i] = XmToggleButtonGetState (trace->annotate.signals[i]);
     }
-	
+
     /* Update with current search values */
     strg = XmTextGetString (trace->annotate.text);
     strcpy (global->anno_filename, strg);
@@ -1703,7 +1703,7 @@ void    val_annotate_do_cb (
     DCursor_t 	*csr_ptr;		/* Current cursor being printed */
     char	strg[1000];
     int		csr_num, csr_num_incl;
-    
+
     if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%p  file=%s\n",trace,global->anno_filename);
 
     draw_update ();
@@ -1720,7 +1720,7 @@ void    val_annotate_do_cb (
 	dino_error_ack (trace,message);
 	return;
     }
-	
+
     fprintf (dump_fp, "(setq dinotrace-program-version \"%s\")\n\n", DTVERSION);
 
     /* Socket info */
@@ -1837,7 +1837,7 @@ void    val_annotate_do_cb (
 		    }
 
 		    val_to_string (sig_ptr->radix, strg, cptr, sig_ptr->bits, FALSE, FALSE);
-		    
+
 		    /* First value must have `, last must have ', commas in middle */
 		    fprintf (dump_fp, "\"");
 		    if (csr_num==1) fprintf (dump_fp, "`");
@@ -1851,7 +1851,7 @@ void    val_annotate_do_cb (
 	}
     }
     fprintf (dump_fp, "\t))\n");
-    
+
     fclose (dump_fp);
 }
 

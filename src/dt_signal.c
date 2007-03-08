@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: signal handling, sarching, etc
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -121,7 +121,7 @@ void sig_free (
 	    if (sig_ptr->backward)
 		((Signal_t *)(sig_ptr->backward))->forward = sig_ptr->forward;
 	    sig_ptr = sig_ptr->forward;
-	
+
 	    /* free the signal structure */
 	    if (del_sig_ptr->copyof == NULL) {
 		DFree (del_sig_ptr->bptr);
@@ -145,15 +145,15 @@ static void sig_remove_from_queue (
     /* Removes the signal from the current and any other ques that it is in */
 {
     Signal_t	*next_sig_ptr, *prev_sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_remove_from_queue - trace=%p sig %p\n",trace,sig_ptr);
-    
+
     /* redirect the forward pointer */
     prev_sig_ptr = sig_ptr->backward;
     if (prev_sig_ptr) {
 	prev_sig_ptr->forward = sig_ptr->forward;
     }
-    
+
     /* if not the last signal redirect the backward pointer */
     next_sig_ptr = sig_ptr->forward;
     if ( next_sig_ptr != NULL ) {
@@ -183,10 +183,10 @@ static void    sig_add_to_queue (
     Signal_t	*loc_sig_ptr)	/* Pointer to signal ahead of one to add, NULL=1st, ADD_LAST=last */
 {
     Signal_t	*next_sig_ptr, *prev_sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_add_to_queue - trace=%p   loc=%p%s\n",trace,
 			       loc_sig_ptr, loc_sig_ptr==ADD_LAST?"=last":"");
-    
+
     if (sig_ptr==loc_sig_ptr) {
 	loc_sig_ptr = loc_sig_ptr->forward;
     }
@@ -239,9 +239,9 @@ Signal_t *sig_replicate (
     /* Makes a duplicate copy of the signal */
 {
     Signal_t	*new_sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_replicate - trace=%p\n",trace);
-    
+
     /* Create new structure */
     new_sig_ptr = XtNew (Signal_t);
 
@@ -261,7 +261,7 @@ Signal_t *sig_replicate (
 
 /* Returns basename of signal */
 char *sig_basename (
-    const Trace_t *trace,	    
+    const Trace_t *trace,
     const Signal_t	*sig_ptr)
 {
     char *basename;
@@ -313,7 +313,7 @@ Signal_t *sig_wildmat_signame (
     const char	*signame)
 {
     Signal_t	*sig_ptr;
-    
+
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	if (wildmat (sig_ptr->signame, signame)) {
 	    return (sig_ptr);
@@ -332,7 +332,7 @@ void	sig_wildmat_clear (void)
 	global->select_head = global->select_head->forward;
 	DFree (siglst_ptr);
     }
-    
+
 }
 
 void	sig_wildmat_add (Trace_t *trace, Signal_t *sig_ptr)
@@ -354,7 +354,7 @@ void	sig_wildmat_select (
 {
     Signal_t		*sig_ptr;
     Boolean_t		trace_list;
-    
+
     trace_list = (trace == NULL);
 
     sig_wildmat_clear();
@@ -377,7 +377,7 @@ void	sig_wildmat_select_color (
     int			color)
 {
     Signal_t		*sig_ptr;
-    
+
     sig_wildmat_clear();
 
     for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -399,7 +399,7 @@ void	sig_move (
 	sig_ptr->deleted = FALSE;
 	sig_add_to_queue (new_trace, sig_ptr, after_sig_ptr);
     }
-    
+
 #if 0
     printf ("Adding %s\n", sig_ptr->signame);
 
@@ -571,7 +571,7 @@ void    sig_print_names (
 	}
 	back_sig_ptr = sig_ptr;
     }
-    
+
     /* Don't do a integrity check here, as sometimes all links aren't ready! */
     /* signalstates_dump (trace); */
 }
@@ -584,9 +584,9 @@ void    sig_highlight_selected (
 {
     Signal_t	*sig_ptr;
     SignalList_t	*siglst_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_highlight_selected\n");
-    
+
     for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
 	sig_ptr = siglst_ptr->signal;
 	/* Change the color */
@@ -606,9 +606,9 @@ void    sig_radix_selected (
 {
     Signal_t	*sig_ptr;
     SignalList_t	*siglst_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_radix_selected\n");
-    
+
     for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
 	sig_ptr = siglst_ptr->signal;
 	/* Change the color */
@@ -623,9 +623,9 @@ void    sig_waveform_selected (
 {
     Signal_t	*sig_ptr;
     SignalList_t	*siglst_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_waveform_selected\n");
-    
+
     for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
 	sig_ptr = siglst_ptr->signal;
 	sig_ptr->waveform = waveform;
@@ -642,12 +642,12 @@ void    sig_move_selected (
     Trace_t	*old_trace;
     Signal_t	*sig_ptr, *after_sig_ptr;
     SignalList_t	*siglst_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_move_selected aft='%s'\n", after_pattern);
 
     after_sig_ptr = sig_wildmat_signame (new_trace, after_pattern);
     if (! after_sig_ptr) after_sig_ptr = ADD_LAST;
-    
+
     for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
 	sig_ptr = siglst_ptr->signal;
 	old_trace = siglst_ptr->trace;
@@ -666,7 +666,7 @@ void    sig_rename_selected (
 {
     Signal_t	*sig_ptr;
     SignalList_t	*siglst_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_rename_selected new='%s'\n", new_name);
 
     siglst_ptr = global->select_head;
@@ -688,12 +688,12 @@ void    sig_copy_selected (
     Trace_t	*old_trace;
     Signal_t	*sig_ptr, *after_sig_ptr;
     SignalList_t	*siglst_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_copy_pattern - aft='%s'\n", after_pattern);
 
     after_sig_ptr = sig_wildmat_signame (new_trace, after_pattern);
     if (! after_sig_ptr) after_sig_ptr = ADD_LAST;
-    
+
     for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
 	sig_ptr = siglst_ptr->signal;
 	old_trace = siglst_ptr->trace;
@@ -712,7 +712,7 @@ void    sig_delete_selected (
     Trace_t	*trace;
     Signal_t	*sig_ptr;
     SignalList_t	*siglst_ptr;
-    
+
 
     if (DTPRINT_ENTRY) printf ("In sig_delete_selected %d %d\n", constant_flag, ignorexz);
 
@@ -744,7 +744,7 @@ void    sig_note_selected (
 {
     Signal_t	*sig_ptr;
     SignalList_t	*siglst_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_note_selected\n");
 
     for (siglst_ptr = global->select_head; siglst_ptr; siglst_ptr = siglst_ptr->forward) {
@@ -763,9 +763,9 @@ void    sig_goto_pattern (
     uint_t	numprt;
     int		inc;
     Boolean_t	on_screen, found;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_goto_pattern - trace=%p pat='%s'\n",trace, pattern);
-    
+
     for (trace = global->trace_head; trace; trace = trace->next_trace) {
 	/* Is this signal already on the screen? */
 	on_screen = FALSE;
@@ -812,7 +812,7 @@ char *sig_examine_string (
 {
     static char	strg[2000];
     char	strg2[2000];
-    
+
     if (DTPRINT_ENTRY) printf ("val_examine_popup_sig_string\n");
 
     strcpy (strg, sig_ptr->signame);
@@ -823,7 +823,7 @@ char *sig_examine_string (
         strcat (strg, sig_ptr->note);
         strcat (strg, "\n");
     }
-	
+
     /* Debugging information */
     if (DTDEBUG) {
 	if (sig_ptr->copyof) {
@@ -846,7 +846,7 @@ char *sig_examine_string (
     }
     return (strg);
 }
-	
+
 /****************************** MENU OPTIONS ******************************/
 
 void    sig_add_cb (
@@ -855,9 +855,9 @@ void    sig_add_cb (
     Trace_t *trace = widget_to_trace(w);
     Signal_t	*sig_ptr;
     Widget	list_wid;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_add_cb - trace=%p\n",trace);
-    
+
     if (!trace->signal.add) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNwidth, 200);
@@ -878,7 +878,7 @@ void    sig_add_cb (
     else {
 	XtUnmanageChild (trace->signal.add);
     }
-    
+
     /* loop thru signals on deleted queue and add to list */
     list_wid = XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_LIST);
     XmListDeleteAllItems (list_wid);
@@ -900,22 +900,22 @@ void    sig_add_sel_cb (
     XmSelectionBoxCallbackStruct *cb)
 {
     Signal_t	*sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_add_sel_cb - trace=%p\n",trace);
-    
+
     if ( global->deleted_trace_head->firstsig == NULL ) return;
 
     /* save the deleted signal selected number */
     for (sig_ptr = global->deleted_trace_head->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
 	if (XmStringCompare (cb->value, sig_ptr->xsigname)) break;
     }
-    
+
     /* remove any previous events */
     remove_all_events (trace);
-    
+
     if (sig_ptr && XmStringCompare (cb->value, sig_ptr->xsigname)) {
 	global->selected_sig = sig_ptr;
-	/* process all subsequent button presses as signal adds */ 
+	/* process all subsequent button presses as signal adds */
 	set_cursor (DC_SIG_ADD);
 	add_event (ButtonPressMask, sig_add_ev);
 
@@ -933,10 +933,10 @@ void    sig_cancel_cb (
     Widget	list_wid;
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_cancel_cb - trace=%p\n",trace);
-    
+
     /* remove any previous events */
     remove_all_events (trace);
-    
+
     /* unmanage the popup on the screen */
     XtUnmanageChild (trace->signal.add);
 
@@ -950,11 +950,11 @@ void    sig_mov_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_mov_cb - trace=%p\n",trace);
-    
+
     /* guarantee next button press selects a signal to be moved */
     global->selected_sig = NULL;
-    
-    /* process all subsequent button presses as signal moves */ 
+
+    /* process all subsequent button presses as signal moves */
     remove_all_events (trace);
     add_event (ButtonPressMask, sig_move_ev);
     set_cursor (DC_SIG_MOVE_1);
@@ -965,11 +965,11 @@ void    sig_copy_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_copy_cb - trace=%p\n",trace);
-    
+
     /* guarantee next button press selects a signal to be moved */
     global->selected_sig = NULL;
-    
-    /* process all subsequent button presses as signal moves */ 
+
+    /* process all subsequent button presses as signal moves */
     remove_all_events (trace);
     add_event (ButtonPressMask, sig_copy_ev);
     set_cursor (DC_SIG_COPY_1);
@@ -980,8 +980,8 @@ void    sig_del_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_del_cb - trace=%p\n",trace);
-    
-    /* process all subsequent button presses as signal deletions */ 
+
+    /* process all subsequent button presses as signal deletions */
     remove_all_events (trace);
     set_cursor (DC_SIG_DELETE);
     add_event (ButtonPressMask, sig_delete_ev);
@@ -993,11 +993,11 @@ void    sig_radix_cb (
     Trace_t *trace = widget_to_trace(w);
     int radixnum = submenu_to_color (trace, w, 0, trace->menu.sig_radix_pds);
     if (DTPRINT_ENTRY) printf ("In sig_radix_cb - trace=%p radixnum=%d\n",trace, radixnum);
-    
+
     /* Grab color number from the menu button pointer */
     global->selected_radix = global->radixs[radixnum];
 
-    /* process all subsequent button presses as signal deletions */ 
+    /* process all subsequent button presses as signal deletions */
     remove_all_events (trace);
     set_cursor (DC_SIG_RADIX);
     add_event (ButtonPressMask, sig_radix_ev);
@@ -1012,7 +1012,7 @@ void    sig_waveform_cb (
     if (DTPRINT_ENTRY) printf ("In sig_waveform_digital_cb - trace=%p sub=%d\n",trace, subnum);
     global->selected_waveform = (Waveform_t)subnum;
 
-    /* process all subsequent button presses as signal deletions */ 
+    /* process all subsequent button presses as signal deletions */
     remove_all_events (trace);
     set_cursor (DC_SIG_RADIX);
     add_event (ButtonPressMask, sig_waveform_ev);
@@ -1024,11 +1024,11 @@ static void    sig_highlight_internal (
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_highlight_cb - trace=%p\n",trace);
-    
+
     /* Grab color number from the menu button pointer */
     global->highlight_color = submenu_to_color (trace, w, overrideColor, trace->menu.sig_highlight_pds);
 
-    /* process all subsequent button presses as signal deletions */ 
+    /* process all subsequent button presses as signal deletions */
     remove_all_events (trace);
     set_cursor (DC_SIG_HIGHLIGHT);
     add_event (ButtonPressMask, sig_highlight_ev);
@@ -1067,7 +1067,7 @@ void    sig_highlight_keep_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_highlight_keep_cb - trace=%p\n",trace);
-    
+
     sig_wildmat_select_color (trace, 0);
     sig_delete_selected (TRUE, TRUE);
 }
@@ -1077,8 +1077,8 @@ void    sig_note_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_note_cb %p\n",trace);
-    
-    /* process all subsequent button presses as signal deletions */ 
+
+    /* process all subsequent button presses as signal deletions */
     remove_all_events (trace);
     set_cursor (DC_SIG_NOTE);
     add_event (ButtonPressMask, sig_note_ev);
@@ -1090,9 +1090,9 @@ void    sig_search_cb (
     Trace_t *trace = widget_to_trace(w);
     int		i;
     Widget above;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_search_cb - trace=%p\n",trace);
-    
+
     if (!trace->signal.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Signal Search Requester") );
@@ -1106,14 +1106,14 @@ void    sig_search_cb (
 	XtSetArg (arglist[3], XmNtopOffset, 10);
 	trace->signal.label1 = XmCreateLabel (trace->signal.dialog,"label1",arglist,4);
 	DManageChild (trace->signal.label1, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Sig"));
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
 	XtSetArg (arglist[3], XmNtopWidget, dmanage_last);
 	trace->signal.label4 = XmCreateLabel (trace->signal.dialog,"label4",arglist,4);
 	DManageChild (trace->signal.label4, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString,
 		 XmStringCreateSimple ("Search value, *? are wildcards" ));
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_WIDGET );
@@ -1123,7 +1123,7 @@ void    sig_search_cb (
 	XtSetArg (arglist[5], XmNverticalSpacing, 0);
 	trace->signal.label3 = XmCreateLabel (trace->signal.dialog,"label3",arglist,6);
 	DManageChild (trace->signal.label3, trace, MC_NOKEYS);
-	
+
 	above = trace->signal.label3;
 
 	for (i=0; i<MAX_SRCH; i++) {
@@ -1161,7 +1161,7 @@ void    sig_search_cb (
 			 NULL, NULL,
 			 (XtCallbackProc)unmanage_cb, (Trace_t*)trace->signal.dialog);
     }
-    
+
     /* Copy settings to local area to allow cancel to work */
     for (i=0; i<MAX_SRCH; i++) {
 	/* Update with current search enables */
@@ -1191,12 +1191,12 @@ void    sig_search_ok_cb (
 	if (XmToggleButtonGetState (trace->signal.enable[i]))
 	    global->sig_srch[i].color = i+1;
 	else global->sig_srch[i].color = 0;
-	
+
 	/* Update with current search values */
 	strg = XmTextGetString (trace->signal.text[i]);
 	strcpy (global->sig_srch[i].string, strg);
     }
-    
+
     XtUnmanageChild (trace->signal.dialog);
 
     draw_needupd_sig_search ();
@@ -1223,21 +1223,21 @@ void    sig_add_ev (
     XButtonPressedEvent	*ev)
 {
     Signal_t		*sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_add_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
-    
+
     /* return if there is no file */
     if (!trace->loaded || global->selected_sig==NULL)
 	return;
-    
+
     /* make sure button has been clicked in in valid location of screen */
     sig_ptr = posy_to_signal (trace, ev->y);
     /* Null signal is OK */
 
     /* get previous signal */
     if (sig_ptr) sig_ptr = sig_ptr->backward;
-    
+
     /* remove signal from list box */
     XmListDeleteItem (XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_LIST),
 		      global->selected_sig->xsigname );
@@ -1245,16 +1245,16 @@ void    sig_add_ev (
 	XtSetArg (arglist[0], XmNsensitive, FALSE);
 	XtSetValues (XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_OK_BUTTON), arglist, 1);
     }
-    
+
     sig_move (global->deleted_trace_head, global->selected_sig, trace, sig_ptr);
-    
+
     /* remove any previous events */
     remove_all_events (trace);
-    
+
     /* pop window back to top of stack */
     XtUnmanageChild ( trace->signal.add );
     DManageChild ( trace->signal.add , trace, MC_NOKEYS);
-    
+
     draw_needupd_sig_start ();
     draw_all_needed ();
 }
@@ -1265,22 +1265,22 @@ void    sig_move_ev (
     XButtonPressedEvent	*ev)
 {
     Signal_t	*sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_move_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
-    
+
     /* return if there is no file */
     if ( !trace->loaded )
 	return;
-    
+
     /* return if there is less than 2 signals to move */
     if ( trace->numsig < 2 )
 	return;
-    
+
     /* make sure button has been clicked in in valid location of screen */
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr) return;
-   
+
     if ( global->selected_sig == NULL ) {
 	/* next call will perform the move */
 	global->selected_sig = sig_ptr;
@@ -1290,17 +1290,17 @@ void    sig_move_ev (
     else {
 	/* get previous signal */
 	if (sig_ptr) sig_ptr = sig_ptr->backward;
-    
+
 	/* if not the same signal perform the move */
 	if ( sig_ptr != global->selected_sig ) {
 	    sig_move (global->selected_trace, global->selected_sig, trace, sig_ptr);
 	}
-	
+
 	/* guarantee that next button press will select signal */
 	global->selected_sig = NULL;
 	set_cursor (DC_SIG_MOVE_1);
     }
-    
+
     draw_needupd_sig_start ();
     draw_all_needed ();
 }
@@ -1311,14 +1311,14 @@ void    sig_copy_ev (
     XButtonPressedEvent	*ev)
 {
     Signal_t	*sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_copy_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
-    
+
     /* make sure button has been clicked in in valid location of screen */
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr) return;
-   
+
     if ( global->selected_sig == NULL ) {
 	/* next call will perform the copy */
 	global->selected_sig = sig_ptr;
@@ -1328,17 +1328,17 @@ void    sig_copy_ev (
     else {
 	/* get previous signal */
 	if (sig_ptr) sig_ptr = sig_ptr->backward;
-    
+
 	/* if not the same signal perform the move */
 	if ( sig_ptr != global->selected_sig ) {
 	    sig_copy (global->selected_trace, global->selected_sig, trace, sig_ptr);
 	}
-	
+
 	/* guarantee that next button press will select signal */
 	global->selected_sig = NULL;
 	set_cursor (DC_SIG_COPY_1);
     }
-    
+
     draw_needupd_sig_start ();
     draw_all_needed ();
 }
@@ -1349,31 +1349,31 @@ void    sig_delete_ev (
     XButtonPressedEvent	*ev)
 {
     Signal_t	*sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_delete_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
-    
+
     /* return if there is no file */
     if ( !trace->loaded )
 	return;
-    
+
     /* return if there are no signals to delete */
     if ( trace->numsig == 0 )
 	return;
-    
+
     /* find the signal */
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr) return;
-    
+
     /* remove the signal from the queue */
     sig_delete (trace, sig_ptr, TRUE, ADD_LAST);
-    
+
     /* add signame to list box */
     if ( trace->signal.add != NULL ) {
 	XmListAddItem (XmSelectionBoxGetChild (trace->signal.add, XmDIALOG_LIST),
 		       sig_ptr->xsigname, 0 );
     }
-    
+
     draw_needupd_sig_start ();
     draw_all_needed ();
 }
@@ -1385,13 +1385,13 @@ void    sig_highlight_ev (
     XButtonPressedEvent	*ev)
 {
     Signal_t	*sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_highlight_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
-    
+
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr) return;
-    
+
     /* Change the color */
     sig_ptr->color = global->highlight_color;
     sig_ptr->search = 0;
@@ -1410,13 +1410,13 @@ void    sig_radix_ev (
     XButtonPressedEvent	*ev)
 {
     Signal_t	*sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_radix_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
-    
+
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr) return;
-    
+
     /* Change the radix */
     sig_ptr->radix = global->selected_radix;
 
@@ -1429,13 +1429,13 @@ void    sig_waveform_ev (
     XButtonPressedEvent	*ev)
 {
     Signal_t	*sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_waveform_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
-    
+
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr) return;
-    
+
     /* Change the radix */
     sig_ptr->waveform = global->selected_waveform;
 
@@ -1448,13 +1448,13 @@ void    sig_note_ev (
     XButtonPressedEvent	*ev)
 {
     Signal_t	*sig_ptr;
-    
+
     if (DTPRINT_ENTRY) printf ("In sig_note_ev - trace=%p\n",trace);
     if (ev->type != ButtonPress || ev->button!=1) return;
-    
+
     sig_ptr = posy_to_signal (trace, ev->y);
     if (!sig_ptr) return;
-    
+
     /* Get the note */
     global->selected_sig = sig_ptr;
     win_note(trace, "Note for ",sig_ptr->signame, sig_ptr->note, FALSE);
@@ -1467,16 +1467,16 @@ void    sig_select_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In sig_select_cb - trace=%p\n",trace);
-    
+
     /* return if there is no file */
     if (!trace->loaded) return;
-    
+
     if (!trace->select.dialog) {
 	trace->select.del_strings=NULL;
 	trace->select.add_strings=NULL;
 	trace->select.del_signals=NULL;
 	trace->select.add_signals=NULL;
-    
+
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Select Signal Requester") );
 	XtSetArg (arglist[2], XmNheight, 400);
@@ -1484,7 +1484,7 @@ void    sig_select_cb (
 	XtSetArg (arglist[4], XmNhorizontalSpacing, 10);
 	XtSetArg (arglist[5], XmNresizable, FALSE);
 	trace->select.dialog = XmCreateFormDialog (trace->work,"select",arglist,6);
-	
+
 	/*** BUTTONS ***/
 
 	/* Create OK button */
@@ -1670,7 +1670,7 @@ void    sig_select_cb (
 	DAddCallback (trace->select.delete_sigs, XmNextendedSelectionCallback, sig_sel_del_list_cb, trace);
 	DManageChild (trace->select.delete_sigs, trace, MC_NOKEYS);
     }
-    
+
     /* manage the popup on the screen */
     DManageChild (trace->select.dialog, trace, MC_NOKEYS);
 
@@ -1964,7 +1964,7 @@ void    sig_sel_sort_base_cb (
 /****************************** PRESERVATION  ****************************************/
 
 /* Preserving signal ordering and other information across trace reading
-   sig_cross_preserve	
+   sig_cross_preserve
         Make new trace structure with old data
    	Clear out transition data (to save memory space)
 
@@ -1975,8 +1975,8 @@ void    sig_sel_sort_base_cb (
 	Erase old signal information
 */
 
-#define new_trace_sig	verilog_next	/* Use existing unused field (not current trace) */ 
-#define new_forward_sig	verilog_next	/* Use existing unused field (in  current trace) */ 
+#define new_trace_sig	verilog_next	/* Use existing unused field (not current trace) */
+#define new_forward_sig	verilog_next	/* Use existing unused field (in  current trace) */
 
 void sig_cross_preserve (
     /* This is pre-cleanup when preserving signal information for a new trace to be read */
@@ -1997,7 +1997,7 @@ void sig_cross_preserve (
 
     global->preserved_trace = XtNew (Trace_t);
     memcpy (global->preserved_trace, trace, sizeof (Trace_t));
-    
+
     /* Other signals, AND deleted signals */
     for (trace_ptr = global->deleted_trace_head; trace_ptr; trace_ptr = trace_ptr->next_trace) {
 	for (sig_ptr = trace_ptr->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {
@@ -2112,7 +2112,7 @@ void sig_cross_restore (
     Signal_t	*new_dispsig;
 
     if (DTPRINT_ENTRY) printf ("In sig_cross_restore - trace=%p\n",trace);
-    
+
     if (global->save_ordering && global->preserved_trace) {
 	/* Preserve colors, etc */
 
@@ -2186,7 +2186,7 @@ void sig_cross_restore (
 	if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
 	while (old_sig_ptr) {
 	    if (DTPRINT_PRESERVE && old_sig_ptr) printf ("Preserve: %s\n", old_sig_ptr->signame);
-		
+
 	    if (old_sig_ptr->trace != global->preserved_trace) {	/* NOT sig from old trace */
 		/* Copy or moved from a third independant trace file into this view,
 		   cheat by just relinking into new structure */
@@ -2208,7 +2208,7 @@ void sig_cross_restore (
 		    *back_sig_pptr = new_sig_ptr;
 		    back_sig_pptr = &(new_sig_ptr->new_forward_sig);
 		}
-		
+
 		/* Don't need old_sig any more */
 		/* Next OLD */
 		if (DTPRINT_PRESERVE) printf ("Preserve: %d\n", __LINE__);
@@ -2281,7 +2281,7 @@ static void sig_modify_en_signal (
     int		has_ones;
     int		has_zeros;
     Boolean_t	first_last_data=TRUE;
-    
+
     /*DTPRINT = (!strncmp(base_sig_ptr->signame, "k->MEMDATA", 10));*/
 
     if (DTPRINT_FILE) printf ("sig_modify_en_signal %s + %s -> %s\n", en_sig_ptr->signame,
@@ -2292,7 +2292,7 @@ static void sig_modify_en_signal (
 		base_sig_ptr->signame, base_sig_ptr->signame);
 	return;
     }
-    
+
     val_zero (&new_value);
 
     new_sig_ptr = sig_replicate (trace, base_sig_ptr);
@@ -2311,13 +2311,13 @@ static void sig_modify_en_signal (
     val_copy (&en_value, en_cptr);
 
     has_ones = has_zeros = 0;
-    while ((CPTR_TIME(base_cptr) != EOT) 
+    while ((CPTR_TIME(base_cptr) != EOT)
 	   && (CPTR_TIME(en_cptr) != EOT)) {
 	/*if (DTPRINT_FILE) {
 	    printf ("BASE "); print_cptr (base_cptr);
 	    printf ("EN "); print_cptr (en_cptr);
 	    }*/
-	 
+
 	if (CPTR_TIME(base_cptr) == CPTR_TIME(en_cptr)) {
 	    val_copy (&en_value, en_cptr);
 	    val_copy (&base_value, base_cptr);
@@ -2495,21 +2495,21 @@ void sig_modify_enables (
 	    /* Chop _en from the middle of the name (sig__en<xx> -> sig<xx>)*/
 	    if (tp[2]=='e' || tp[2]=='E') {
 		is_cosmos = FALSE;
-		strcpy_overlap (nonenablename + (tp - sig_ptr->signame), 
+		strcpy_overlap (nonenablename + (tp - sig_ptr->signame),
 				nonenablename + (tp - sig_ptr->signame) + 4);
 	    }
 	    else if (tp[2]=='c' || tp[2]=='C') {
 		is_cosmos = TRUE;
-		strcpy_overlap (nonenablename + (tp - sig_ptr->signame), 
+		strcpy_overlap (nonenablename + (tp - sig_ptr->signame),
 				nonenablename + (tp - sig_ptr->signame) + 5);
 	    }
 	    else {
 		/* (sig__inen<xx> -> sig__in<xx>)*/
 		is_cosmos = FALSE;
-		strcpy_overlap (nonenablename + (tp - sig_ptr->signame) + 4, 
+		strcpy_overlap (nonenablename + (tp - sig_ptr->signame) + 4,
 				nonenablename + (tp - sig_ptr->signame) + 6);
 	    }
-	    
+
 	    en_sig_ptr = sig_ptr;
 
 	    /* Start search right before this signal, in case there are duplicate signames */

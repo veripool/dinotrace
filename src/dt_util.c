@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: misc utilities
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -217,14 +217,14 @@ XmString string_create_with_cr (
     }
     return (xsout);
 }
-    
+
 
 char *date_string (
     time_t	time_num)	/* Time to parse, or 0 for current time */
 {
     static char	date_str[50];
     struct tm *timestr;
-    
+
     if (!time_num) {
 	time_num = time (NULL);
     }
@@ -287,7 +287,7 @@ void fgets_dynamic (
     }
 
     fgets ((*line_pptr), (*length_ptr), readfp);
-    
+
     /* Did fgets overflow the string? */
     while (*((*line_pptr) + *length_ptr - 2)!='\n'
 	   && strlen(*line_pptr)==(*length_ptr - 1)) {
@@ -321,7 +321,7 @@ void file_directory (
     char	*strg)
 {
     char 	*pchar;
-    
+
 #ifdef VMS
     if ((pchar=strrchr (strg,']')) != NULL )
 	* (pchar+1) = '\0';
@@ -350,7 +350,7 @@ void    unmanage_cb (
     XmAnyCallbackStruct *cb)
 {
     if (DTPRINT_ENTRY) printf ("In unmanage_cb\n");
-    
+
     /* unmanage the widget */
     XtUnmanageChild (tag);
 }
@@ -360,10 +360,10 @@ void    cancel_all_events_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In cancel_all_events - trace=%p\n",trace);
-    
+
     /* remove all events */
     remove_all_events (trace);
-    
+
     /* unmanage any widgets left around */
     if ( trace->signal.add != NULL )
 	XtUnmanageChild (trace->signal.add);
@@ -431,18 +431,18 @@ void    remove_all_events (
     Trace_t	*trace)
 {
     if (DTPRINT_ENTRY) printf ("In remove_all_events - trace=%p\n",trace);
-    
-    /* remove all possible events due to res options */ 
+
+    /* remove all possible events due to res options */
     remove_event (ButtonPressMask, res_zoom_click_ev);
-	
-    /* remove all possible events due to cursor options */ 
+
+    /* remove all possible events due to cursor options */
     remove_event (ButtonPressMask, cur_add_ev);
     remove_event (ButtonPressMask, cur_move_ev);
     remove_event (ButtonPressMask, cur_delete_ev);
     remove_event (ButtonPressMask, cur_note_ev);
     remove_event (ButtonPressMask, cur_highlight_ev);
-    
-    /* remove all possible events due to signal options */ 
+
+    /* remove all possible events due to signal options */
     remove_event (ButtonPressMask, sig_add_ev);
     remove_event (ButtonPressMask, sig_move_ev);
     remove_event (ButtonPressMask, sig_copy_ev);
@@ -451,11 +451,11 @@ void    remove_all_events (
     remove_event (ButtonPressMask, sig_highlight_ev);
     remove_event (ButtonPressMask, sig_radix_ev);
     remove_event (ButtonPressMask, sig_waveform_ev);
-    
-    /* remove all possible events due to value options */ 
+
+    /* remove all possible events due to value options */
     remove_event (ButtonPressMask, val_examine_ev);
     remove_event (ButtonPressMask, val_highlight_ev);
-    
+
     global->selected_sig = NULL;
 
     /* Set the cursor back to normal */
@@ -511,7 +511,7 @@ Trace_t	*widget_to_trace (
     Widget	w)
 {
     Trace_t	*trace;		/* Display information */
-    
+
     XtSetArg (arglist[0], XmNuserData, &trace);
     XtGetValues (w, arglist, 1);
 
@@ -523,7 +523,7 @@ Trace_t	*widget_to_trace (
 static void new_time_sigs (
     Signal_t	*sig_first_ptr)
 {
-    Signal_t	*sig_ptr;	
+    Signal_t	*sig_ptr;
 
     for (sig_ptr = sig_first_ptr; sig_ptr; sig_ptr = sig_ptr->forward) {
 	Value_t	*cptr = sig_ptr->cptr;
@@ -559,7 +559,7 @@ void new_time (
         if (DTPRINT_ENTRY) printf ("At end of trace...\n");
         global->time = trace->end_time - TIME_WIDTH (trace);
     }
-    
+
     if ( global->time < trace->start_time ) {
         if (DTPRINT_ENTRY) printf ("At beginning of trace...\n");
         global->time = trace->start_time;
@@ -583,7 +583,7 @@ void get_geometry (
     uint_t	pixmap_width,pixmap_height;
     Dimension m_time_height = global->time_font->ascent;
     Window	root;
-    
+
     float old_res_per_pixel = global->res / (trace->width - global->xstart - XMARGIN);
 
     XGetGeometry ( global->display, trace->pixmap, &root,
@@ -591,7 +591,7 @@ void get_geometry (
 
     XGetGeometry ( global->display, XtWindow (trace->work), &root,
 		   &x, &y, &width, &height, &dret, &depth);
-    
+
     if (pixmap_width != width || pixmap_height != height) {
 	/* Reallocate a new pixmap of the right size */
 	XFreePixmap (global->display, trace->pixmap);
@@ -609,7 +609,7 @@ void get_geometry (
     trace->ystart = trace->ygridtime + Y_TEXT_SPACE + MAX(Y_GRID_TOP,Y_CURSOR_TOP);
 
     /* if there are cursors showing, leave room */
-    trace->ycursortimeabs = trace->height - Y_TOP_BOTTOM; 
+    trace->ycursortimeabs = trace->height - Y_TOP_BOTTOM;
     if ( (global->cursor_head != NULL) &&
 	 global->cursor_vis) {
 	trace->ycursortimerel = trace->ycursortimeabs - Y_TEXT_SPACE - m_time_height;
@@ -618,21 +618,21 @@ void get_geometry (
 	trace->ycursortimerel = trace->ycursortimeabs;
 	trace->yend = trace->ycursortimeabs - Y_GRID_BOTTOM;
     }
-    
+
     /* calulate the number of signals possibly visible on the screen */
     trace->numsigvis = (trace->yend - trace->ystart) / global->sighgt;
-    
+
     /*update_scrollb (w, value, inc, min, max, size) */
     update_scrollbar (trace->hscroll, global->time,
 		      grid_primary_period (trace),
-		      trace->start_time, trace->end_time, 
+		      trace->start_time, trace->end_time,
 		      (int)TIME_WIDTH(trace) );
 
     draw_namescroll (trace);
 
     update_scrollbar (trace->vscroll, trace->numsigstart, 1,
-		      0, trace->numsig, MIN (trace->numsigvis, trace->numsig - trace->numsigstart)); 
-    
+		      0, trace->numsig, MIN (trace->numsigvis, trace->numsig - trace->numsigstart));
+
     if (DTPRINT_ENTRY) printf ("In get_geometry: x=%d y=%d width=%d height=%d\n",
 			x,y,width,height);
 }
@@ -642,9 +642,9 @@ void get_data_popup (
     char	*string,
     int		type)
 {
-    if (DTPRINT_ENTRY) 
+    if (DTPRINT_ENTRY)
 	printf ("In get_data trace=%p string=%s type=%d\n",trace,string,type);
-    
+
     if (trace->prompt_popup == NULL) {
 	/* only need to create the widget once - now just manage/unmanage */
 	/* create the dialog box popup window */
@@ -658,11 +658,11 @@ void get_data_popup (
 
 	XtUnmanageChild ( XmSelectionBoxGetChild (trace->prompt_popup, XmDIALOG_HELP_BUTTON));
     }
-    
+
     XtSetArg (arglist[0], XmNdialogTitle, XmStringCreateSimple (string) );
     XtSetArg (arglist[1], XmNtextString, XmStringCreateSimple ("") );
     XtSetValues (trace->prompt_popup,arglist,2);
-    
+
     /* manage the popup window */
     trace->prompt_type = type;
     DManageChild (trace->prompt_popup, trace, MC_NOKEYS);
@@ -675,16 +675,16 @@ void    prompt_ok_cb (
 {
     char	*valstr;
     DTime_t	restime;
-    
+
     if (DTPRINT_ENTRY) printf ("In prompt_ok_cb type=%d\n",trace->prompt_type);
-    
+
     /* Get value */
     valstr = extract_first_xms_segment (cb->value);
     restime = string_to_time (trace, valstr);
 
     /* unmanage the popup window */
     XtUnmanageChild (trace->prompt_popup);
-    
+
     if (restime <= 0) {
 	sprintf (message,"Value %d out of range", restime);
 	dino_error_ack (trace,message);
@@ -697,7 +697,7 @@ void    prompt_ok_cb (
 	/* change the resolution string on display */
 	new_res (trace, RES_SCALE / (float)restime);
 	break;
-	
+
     default:
 	printf ("Error - bad type %d\n",trace->prompt_type);
     }
@@ -711,9 +711,9 @@ void dino_message_ack (
 {
     Arg		msg_arglist[10];	/* Local copy so don't munge global args */
     XmString	xsout;
-    
+
     if (DTPRINT) printf ("In dino_message_ack msg=%s\n",msg);
-    
+
     /* May be called before the window was opened, if so ignore the message */
     if (!trace->work) return;
 
@@ -739,12 +739,12 @@ void dino_message_ack (
 
     /* create string w/ separators */
     xsout = string_create_with_cr (msg);
-    
+
     /* change the label value and location */
     XtSetArg (msg_arglist[0], XmNmessageString, xsout);
     XtSetArg (msg_arglist[1], XmNdialogTitle, XmStringCreateSimple ("Dinotrace Message") );
     XtSetValues (trace->message,msg_arglist,2);
-    
+
     /* manage the widget */
     DManageChild (trace->message, trace, MC_NOKEYS);
 }
@@ -754,11 +754,11 @@ void	ok_apply_cancel (
     Widget form,		/* Form to add widgets under */
     Widget above,		/* Widget above this one */
     XtCallbackProc ok_cb,	/* Callbacks to activate on each button */
-    Trace_t *ok_trace,		 
+    Trace_t *ok_trace,
     XtCallbackProc apply_cb,
-    Trace_t *apply_trace,		 
+    Trace_t *apply_trace,
     XtCallbackProc defaults_cb,
-    Trace_t *defaults_trace,		 
+    Trace_t *defaults_trace,
     XtCallbackProc cancel_cb,
     Trace_t *cancel_trace		/* Often widget to unmanage */
     )
@@ -772,7 +772,7 @@ void	ok_apply_cancel (
     XtSetArg (arglist[3], XmNrightAttachment, XmATTACH_FORM );
     wid_ptr->sep = XmCreateSeparator (form, "sep",arglist,4);
     DManageChild (wid_ptr->sep, trace, MC_NOKEYS);
-	
+
     if (ok_cb) {
         /* Create OK button */
         XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" OK ") );
@@ -786,7 +786,7 @@ void	ok_apply_cancel (
 	DAddCallback (wid_ptr->ok, XmNactivateCallback, ok_cb, ok_trace);
 	DManageChild (wid_ptr->ok, trace, MC_NOKEYS);
     }
-	
+
     if (apply_cb) {
         /* create apply button */
         XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Apply") );
@@ -800,7 +800,7 @@ void	ok_apply_cancel (
 	DAddCallback (wid_ptr->apply, XmNactivateCallback, apply_cb, apply_trace);
 	DManageChild (wid_ptr->apply, trace, MC_NOKEYS);
     }
-	
+
     if (defaults_cb) {
         /* create defaults button */
         XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Defaults") );
@@ -814,7 +814,7 @@ void	ok_apply_cancel (
 	DAddCallback (wid_ptr->defaults, XmNactivateCallback, defaults_cb, defaults_trace);
 	DManageChild (wid_ptr->defaults, trace, MC_NOKEYS);
     }
-	
+
     if (cancel_cb) {
         /* create cancel button */
         XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cancel") );
@@ -857,7 +857,7 @@ void    print_sig_info_internal (
     const char *states[8] = {"F128", "B128", "F32 ", "B32",
 			     "Z  ", "U  ", "1  ", "0  "};
     printf ("Signal %s, cptr %p  bptr %p\n",sig_ptr->signame, sig_ptr->cptr, sig_ptr->bptr);
-    
+
     for ( ; cptr->siglw.stbits.size > 0; cptr = CPTR_NEXT(cptr) ) {
 	printf ("%p: %08x T:%08d  %s  %08x %08x %08x %08x    ", cptr,
 		cptr->siglw.number, cptr->time, states[cptr->siglw.stbits.state],
@@ -881,7 +881,7 @@ void    debug_print_screen_traces_cb (
     Trace_t *trace = widget_to_trace(w);
     uint_t	i,num;
     Signal_t	*sig_ptr;
-    
+
     printf ("There are up to %d signals currently visible.\n",trace->numsigvis);
     printf ("Which signal do you wish to view [0-%d]: ",trace->numsigvis-1);
     scanf ("%d",&num);
@@ -889,12 +889,12 @@ void    debug_print_screen_traces_cb (
 	printf ("Illegal Value.\n");
 	return;
     }
-    
+
     sig_ptr = (Signal_t *)trace->dispsig;
     for (i=0; i<num; i++) {
-	sig_ptr = (Signal_t *)sig_ptr->forward;	
+	sig_ptr = (Signal_t *)sig_ptr->forward;
     }
-    
+
     print_sig_info_internal (sig_ptr, sig_ptr->cptr, global->time + TIME_WIDTH (trace));
 }
 
@@ -1009,7 +1009,7 @@ void    debug_integrity_check_cb (
 {
     Trace_t *trace;
     for (trace = global->deleted_trace_head; trace; trace = trace->next_trace) {
-	debug_signal_integrity (trace, trace->firstsig, trace->dfile.filename, 
+	debug_signal_integrity (trace, trace->firstsig, trace->dfile.filename,
 				(trace==global->deleted_trace_head));
     }
 }
@@ -1035,7 +1035,7 @@ void    debug_statistics_cb (
     Widget		w)
 {
     Trace_t *trace;
-    Signal_t	*sig_ptr;	
+    Signal_t	*sig_ptr;
     Value_t	*cptr;
 
     int i=0;
@@ -1046,7 +1046,7 @@ void    debug_statistics_cb (
     int cp_alloc=0;
     int allhigh=0;
     int states[8];
-    
+
     for (i=0; i<8; i++) states[i]=0;
     for (i=0; i<32; i++) bysize[i]=0;
 
@@ -1088,7 +1088,7 @@ void change_title (
     Trace_t	*trace)
 {
     char title[300],icontitle[300],*pchar;
-    
+
     /*
      ** Change the name on title bar to filename
      */
@@ -1097,7 +1097,7 @@ void change_title (
 	strcat (title," - ");
 	strcat (title,trace->dfile.filename);
     }
-    
+
     /* For icon title drop extension and directory */
     strcpy (icontitle, DTVERSION);
     if (trace->loaded) {
@@ -1120,7 +1120,7 @@ void change_title (
 	    strcat (icontitle, pchar);
 #endif
     }
-    
+
     XtSetArg (arglist[0], XmNtitle, title);
     XtSetArg (arglist[1], XmNiconName, icontitle);
     XtSetValues (trace->toplevel,arglist,2);
@@ -1137,7 +1137,7 @@ DTime_t	posx_to_time (
     /* check if button has been clicked on trace portion of screen */
     if ( !trace->loaded || x < global->xstart || x > trace->width - XMARGIN )
 	return (-1);
-    
+
     return (DTime_t)(((x) + global->time * global->res - global->xstart) / global->res);
 }
 
@@ -1187,19 +1187,19 @@ DTime_t	posx_to_time_edge (
 
     /*
     if (DTPRINT) {
-	printf ("Time %d, signal %s changes %d - %d, pixels %f,%f\n", xtime, sig_ptr->signame, 
+	printf ("Time %d, signal %s changes %d - %d, pixels %f,%f\n", xtime, sig_ptr->signame,
 		left_time, right_time,
 		(float)(ABS (left_time - xtime) * global->res),
 		(float)(ABS (right_time - xtime) * global->res)
 		);
 		}
     */
-    
+
     /* See if edge is "close" on screen */
     if ((right_time != EOT) && ( (xtime - left_time) > (right_time - xtime) ))
 	left_time = right_time;
     if ( (abs (left_time - xtime) * global->res) > CLICKCLOSE )	return (xtime);
-    
+
     /* close enough */
     return (left_time);
 }
@@ -1219,12 +1219,12 @@ Signal_t	*posy_to_signal (
     /* return if there is no file */
     if ( !trace->loaded )
 	return (NULL);
-    
+
     /* make sure button has been clicked in in valid location of screen */
     max_y = MIN (trace->numsig,trace->numsigvis);
     if ( y < trace->ystart || y > trace->ystart + max_y * global->sighgt )
 	return (NULL);
-    
+
     /* figure out which signal has been selected */
     num = (int)((y - trace->ystart) / global->sighgt);
 
@@ -1252,16 +1252,16 @@ DCursor_t *posx_to_cursor (
     if (!global->cursor_head) {
 	return (NULL);
     }
-    
+
     xtime = posx_to_time (trace, x);
     if (xtime<0) return (NULL);
-    
+
     /* find the closest cursor */
     csr_ptr = global->cursor_head;
     while ( (xtime > csr_ptr->time) && csr_ptr->next ) {
 	csr_ptr = csr_ptr->next;
     }
-    
+
     /* i is between cursors[i-1] and cursors[i] - determine which is closest */
     if ( csr_ptr->prev && ( (csr_ptr->time - xtime) > (xtime - csr_ptr->prev->time) ) ) {
 	csr_ptr = csr_ptr->prev;
@@ -1324,7 +1324,7 @@ DCursor_t *time_to_cursor (
     while ( csr_ptr && (xtime > csr_ptr->time) ) {
 	csr_ptr = csr_ptr->next;
     }
-    
+
     if (csr_ptr && (xtime == csr_ptr->time))
 	return (csr_ptr);
     else return (NULL);

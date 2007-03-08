@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: trace file reading
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -121,7 +121,7 @@ void trace_read_cb (
 	DAddCallback (trace->fileselect.dialog, XmNokCallback, fil_ok_cb, trace);
 	DAddCallback (trace->fileselect.dialog, XmNcancelCallback, (XtCallbackProc)unmanage_cb, trace->fileselect.dialog);
 	XtUnmanageChild ( XmFileSelectionBoxGetChild (trace->fileselect.dialog, XmDIALOG_HELP_BUTTON));
-	
+
 	trace->fileselect.work_area = XmCreateWorkArea (trace->fileselect.dialog, "wa", arglist, 0);
 
 	/* Create FILE FORMAT */
@@ -147,22 +147,22 @@ void trace_read_cb (
 	XtSetArg (arglist[1], XmNshadowThickness, 1);
 	trace->fileselect.save_ordering = XmCreateToggleButton (trace->fileselect.work_area,"save_ordering",arglist,2);
 	DManageChild (trace->fileselect.save_ordering, trace, MC_NOKEYS);
-	
+
 	DManageChild (trace->fileselect.work_area, trace, MC_NOKEYS);
-	
+
 	XSync (global->display,0);
     }
-    
+
     /* Ordering */
     XtSetArg (arglist[0], XmNset, global->save_ordering ? 1:0);
     XtSetValues (trace->fileselect.save_ordering,arglist,1);
-    
+
     /* File format */
     if (filetypes[file_format].selection) {
 	XtSetArg (arglist[0], XmNmenuHistory, trace->fileselect.format_item[file_format]);
 	XtSetValues (trace->fileselect.format_option, arglist, 1);
     }
-    
+
     /* Set directory */
     XtSetArg (arglist[0], XmNdirectory, XmStringCreateSimple (global->directory) );
     XtSetValues (trace->fileselect.dialog,arglist,1);
@@ -197,9 +197,9 @@ void trace_reread (
 	/* Drop ;xxx */
 	if ((semi = strchr (trace->dfile.filename,';')))
 	    *semi = '\0';
-	
+
 	if (DTPRINT_ENTRY) printf ("In trace_reread_cb - rereading file=%s\n",trace->dfile.filename);
-	
+
 	/* check the date first */
 	read_fd = open (trace->dfile.filename, O_RDONLY, 0);
 	if (read_fd>=1) {
@@ -230,7 +230,7 @@ void fil_read (
     read_fp = NULL;	/* MIPS: no automatic aggregate initialization */
 
     if (DTPRINT_ENTRY) printf ("In fil_read trace=%p filename=%s\n",trace,trace->dfile.filename);
-    
+
     /* Update directory name */
     strcpy (global->directory, trace->dfile.filename);
     file_directory (global->directory);
@@ -246,7 +246,7 @@ void fil_read (
 
     /* get applicable config files */
     config_read_defaults (trace, TRUE);
-    
+
     /* Compute the file format */
     if (trace->dfile.fileformat == FF_AUTO) {
 	trace->dfile.fileformat =	file_format;
@@ -298,7 +298,7 @@ void fil_read (
 	if (!strcmp (pchar, ".Z")) sprintf (pipecmd, "uncompress -c %s", trace->dfile.filename);
 	if (!strcmp (pchar, ".gz")) sprintf (pipecmd, "gunzip -c %s", trace->dfile.filename);
     }
-	
+
     if (trace->dfile.fileformat == FF_VERILOG_VPD) {
 	if (pipecmd[0]) {
 	    /* Because vpd2vcd fseeks, it won't take a pipe as input, and we... */
@@ -315,17 +315,17 @@ void fil_read (
 
 	/* Decsim must be ASCII because of record format */
 	if (trace->dfile.fileformat == FF_DECSIM_BIN) trace->dfile.fileformat = FF_DECSIM_ASCII;
-	
+
 	/* Close compressed file and open uncompressed file */
 	close (read_fd);
-	
+
 	read_fp = popen (pipecmd, "r");
 	read_fd = fileno (read_fp);
 	if (!read_fp) {
 	    /* Similar above! */
 	    sprintf (message,"Can't create pipe with command '%s'", pipecmd);
 	    dino_error_ack (trace, message);
-	    
+
 	    /* Clear cursor and return */
 	    sig_cross_restore (trace);
 	    change_title (trace);
@@ -374,7 +374,7 @@ void fil_read (
 
     /* Change the name on title bar to filename */
     change_title (trace);
-    
+
     /*
      ** Clear the window and draw the screen with the new file
      */
@@ -430,9 +430,9 @@ void fil_ok_cb (
     XmFileSelectionBoxCallbackStruct *cb)
 {
     char	*tmp;
-    
+
     if (DTPRINT_ENTRY) printf ("In fil_ok_cb trace=%p\n",trace);
-    
+
     /*
      ** Unmanage the file select widget here and wait for sync so
      ** the window goes away before the read process begins in case
@@ -440,16 +440,16 @@ void fil_ok_cb (
      */
     XtUnmanageChild (trace->fileselect.dialog);
     XSync (global->display,0);
-    
+
     tmp = extract_first_xms_segment (cb->value);
     if (DTPRINT_FILE) printf ("filename=%s\n",tmp);
-    
+
     global->save_ordering = XmToggleButtonGetState (trace->fileselect.save_ordering);
-    
+
     strcpy (trace->dfile.filename, tmp);
-    
+
     DFree (tmp);
-    
+
     if (DTPRINT_FILE) printf ("In fil_ok_cb Filename=%s\n",trace->dfile.filename);
     fil_read (trace);
 }
@@ -471,7 +471,7 @@ void help_trace_cb (
     static char msg2[1000];
 
     if (DTPRINT_ENTRY) printf ("in help_trace_cb\n");
-    
+
     if (!trace->loaded) {
 	sprintf (msg, "No trace is loaded.\n");
     }
@@ -580,7 +580,7 @@ void	fil_add_cptr (
 		 (sig_ptr->blocks*sizeof(uint_t)) + (sizeof(Value_t)*2 + 2));
 	    sig_ptr->cptr = (Value_t *)((uint_t*)sig_ptr->bptr + diff);
 	}
-       
+
 	/* Update size of previous */
 	/* Note that if at the beginning of a trace, the loaded value may */
 	/* be from uninitialized data, in that case we don't care about the size */
@@ -681,7 +681,7 @@ void fil_make_busses (
 	/* Compute the ending position of this data (DECSIM_Binary) */
 	sig_ptr->file_end_pos = sig_ptr->file_pos
 	    + ((sig_ptr->file_type.flag.four_state) ? 2:1) * (sig_ptr->bits-1);
-	
+
 	/* allocate the data storage memory */
 	if (!sig_ptr->copyof) {
 	    sig_ptr->blocks = BLK_SIZE;

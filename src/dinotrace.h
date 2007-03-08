@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: structure definitions
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -166,8 +166,8 @@
 #define STATE_U		2	/* MUST=2! All bits U */	/* SIGLW TIME */
 #define STATE_Z		3	/* MUST=3! All bits Z */	/* SIGLW TIME */
 #define STATE_B32	4	/* 2-32 bits */			/* SIGLW TIME V */
-#define STATE_F32	5	/* four-state 2-32 bits */	/* SIGLW TIME V T*/	
-#define STATE_B128	6	/* 33-128 bit vector */		/* SIGLW TIME V V V V*/	
+#define STATE_F32	5	/* four-state 2-32 bits */	/* SIGLW TIME V T*/
+#define STATE_B128	6	/* 33-128 bit vector */		/* SIGLW TIME V V V V*/
 #define STATE_F128	7	/* four-state 33-128 bits */	/* SIGLW TIME V T V T V T V T */
 /* Size in LWs for each state.  Note st may be invalid, which must return a small non-zero value */
 #define STATE_SIZE(st) (((st)<=STATE_Z)?2:(((st)<=STATE_B32)?3:\
@@ -546,7 +546,7 @@ typedef struct {
 /* Structures */
 
 typedef struct {
-    Position	x, y, height, width;	
+    Position	x, y, height, width;
     Boolean_t	xp, yp, heightp, widthp;	/* Above element is a percentage */
 } Geometry_t;
 

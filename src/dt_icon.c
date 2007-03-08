@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: create Dinotrace icon
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -64,7 +64,7 @@
  * for her painstaking effort in the creation of the infamous 'Dino'
  * bitmap icons.
  */
-    
+
 #define dino_icon_width 16
 #define dino_icon_height 16
 #define dino_icon_x_hot -1
@@ -134,16 +134,16 @@ static Pixmap    icon_make (
     GC			pgc;
     XGCValues		gcv;
     Drawable		pid;
-    
+
     /* create the pixmap */
     pid = XCreatePixmap (display, root, width, height,
                         (unsigned int) DefaultDepth (display, 0));
-    
+
     /* create a gc */
     gcv.foreground = BlackPixel (display, 0);
     gcv.background = WhitePixel (display, 0);
     pgc = XCreateGC (display, pid, GCForeground | GCBackground, &gcv);
-    
+
     /* create the ximage structure */
     ximage.height = height;
     ximage.width = width;
@@ -151,18 +151,18 @@ static Pixmap    icon_make (
     ximage.format = XYBitmap;
     ximage.data = (char *)data;
     ximage.byte_order = MSBFirst;
-    ximage.bitmap_unit = 16; 
+    ximage.bitmap_unit = 16;
     ximage.bitmap_bit_order = MSBFirst;
     ximage.bitmap_pad = 16;
     ximage.bytes_per_line = (width+15)/16 * 2;
     ximage.depth = 1;
     ximage.bits_per_pixel = 1;
-    
+
     XPutImage (display, pid, pgc, &ximage, 0, 0, 0, 0, width, height);
 
     /* free gc */
     XFreeGC (display, pgc);
-    
+
     return (pid);
 }
 
@@ -170,9 +170,9 @@ void icon_dinos ()
 {
     /*** create small dino pixmap from data ***/
     global->dpm = icon_make (global->display, DefaultRootWindow (global->display),
-			     dino_icon_bits,dino_icon_width,dino_icon_height);    
-    
+			     dino_icon_bits,dino_icon_width,dino_icon_height);
+
     /*** create big dino pixmap from data ***/
     global->bdpm = icon_make (global->display, DefaultRootWindow (global->display),
-			      bigdino_icon_bits,bigdino_icon_width,bigdino_icon_height);    
+			      bigdino_icon_bits,bigdino_icon_width,bigdino_icon_height);
 }

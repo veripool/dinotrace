@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: CCLI tempest trace reading
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the bas version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -129,14 +129,14 @@ static void	read_4state_to_value (
     int bitval_and, bitval_or;
 
     /* Preset the state to be based upon first bit (to speed things up) */
-    bitval = EXTRACT_4STATE (buf, sig_ptr->file_pos); 
+    bitval = EXTRACT_4STATE (buf, sig_ptr->file_pos);
     if (bitval & 2) bitval ^= 1;	/* decsim 2=Z which is STATE_Z=3 */
     bitval_and = bitval_or = bitval;
 
     /* Extract the values, HIGH 32 BITS */
     bit_pos = sig_ptr->file_pos;
     for (bitcnt=96; bitcnt < (MIN (128, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
-	bitval = EXTRACT_4STATE (buf, bit_pos); 
+	bitval = EXTRACT_4STATE (buf, bit_pos);
 	if (bitval & 2) bitval ^= 1;	/* decsim 2=Z which is STATE_Z=3 */
 	bitval_and &= bitval; bitval_or |= bitval;
 	value_ptr->number[3] = (value_ptr->number[3]<<1) | (bitval&1);
@@ -146,7 +146,7 @@ static void	read_4state_to_value (
     /* Extract the values, UPPER MID 32 BITS */
     bit_pos = sig_ptr->file_pos;
     for (bitcnt=64; bitcnt < (MIN (96, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
-	bitval = EXTRACT_4STATE (buf, bit_pos); 
+	bitval = EXTRACT_4STATE (buf, bit_pos);
 	if (bitval & 2) bitval ^= 1;	/* decsim 2=Z which is STATE_Z=3 */
 	bitval_and &= bitval; bitval_or |= bitval;
 	value_ptr->number[2] = (value_ptr->number[2]<<1) | (bitval&1);
@@ -155,7 +155,7 @@ static void	read_4state_to_value (
 
     /* Extract the values LOWER MID 32 BITS */
     for (bitcnt=32; bitcnt < (MIN (64, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
-	bitval = EXTRACT_4STATE (buf, bit_pos); 
+	bitval = EXTRACT_4STATE (buf, bit_pos);
 	if (bitval & 2) bitval ^= 1;	/* decsim 2=Z which is STATE_Z=3 */
 	bitval_and &= bitval; bitval_or |= bitval;
 	value_ptr->number[1] = (value_ptr->number[1]<<1) | (bitval&1);
@@ -164,7 +164,7 @@ static void	read_4state_to_value (
 
     /* Extract the values LOW 32 BITS */
     for (bitcnt=0; bitcnt < (MIN (32, sig_ptr->bits)); bitcnt++, bit_pos+=2) {
-	bitval = EXTRACT_4STATE (buf, bit_pos); 
+	bitval = EXTRACT_4STATE (buf, bit_pos);
 	if (bitval & 2) bitval ^= 1;	/* decsim 2=Z which is STATE_Z=3 */
 	bitval_and &= bitval; bitval_or |= bitval;
 	value_ptr->number[0] = (value_ptr->number[0]<<1) | (bitval&1);
@@ -198,7 +198,7 @@ static void	read_2state_to_value (
     int bitval_and;
 
     /* Preset the state to be based upon first bit (to speed things up) */
-    bitval = EXTRACT_2STATE (buf, sig_ptr->file_pos); 
+    bitval = EXTRACT_2STATE (buf, sig_ptr->file_pos);
     bitval_and = bitval;
 
     /* Extract the values, HIGH 32 BITS */
@@ -271,7 +271,7 @@ static void	fil_decsim_binary_add_cptr (
 
 	    state = EXTRACT_4STATE (buf, sig_ptr->file_pos);
 	    if (state & 2) state ^= 1;	/* decsim 2=Z which is STATE_Z=3 */
-	}	
+	}
     }
     else {
 	/* Multibit signal */
@@ -279,7 +279,7 @@ static void	fil_decsim_binary_add_cptr (
 	    read_2state_to_value (sig_ptr, buf, &value);
 	else read_4state_to_value (sig_ptr, buf, &value);
     }
-	    
+
     value.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
 }
@@ -399,7 +399,7 @@ void decsim_read_binary (
 		sig_ptr->signame = (char *)XtMalloc(16+len);	/* allow extra space in case becomes vector */
 		strncpy (sig_ptr->signame, buf->TRA$T_NODNAMSTR, (size_t) len);
 		sig_ptr->signame[len] = '\0';
-		
+
 		last_sig_ptr = sig_ptr;
 		break;
 
@@ -521,14 +521,14 @@ static void	fil_tempest_binary_add_cptr (
 	/* Single bit signal */
 	if (sig_ptr->file_type.flag.four_state == 0) {
 	    data_index = (sig_ptr->file_pos >> 5);
-	    data_mask = 1 << ((sig_ptr->file_pos) & 0x1F);	
+	    data_mask = 1 << ((sig_ptr->file_pos) & 0x1F);
 
 	    state = (buf[data_index] & data_mask)?STATE_1:STATE_0;
 	}
 
 	else { /* Single bit four state (not really supported) */
 	    data_index = (sig_ptr->file_pos >> 5);
-	    data_mask = 1 << ((sig_ptr->file_pos) & 0x1F);	
+	    data_mask = 1 << ((sig_ptr->file_pos) & 0x1F);
 
 	    value_index = (buf[data_index] & data_mask);	/* Used as temp */
 	    if (!(data_mask = data_mask << 1)) {
@@ -537,7 +537,7 @@ static void	fil_tempest_binary_add_cptr (
 	    }
 	    /* Note STATE_ encodings map directly to the 4 state values */
 	    state = (value_index << 1) + (buf[data_index] & data_mask);
-	}	
+	}
     }
     else {
 	/* Multibit signal */
@@ -578,7 +578,7 @@ static void	fil_tempest_binary_add_cptr (
 	    state = STATE_U;
 	}
     }
-	    
+
     value.siglw.stbits.state = state;
     value.time = time;
     fil_add_cptr (sig_ptr, &value, nocheck);
@@ -685,16 +685,16 @@ void tempest_read (
  	    sprintf (message, "Signal name too long (=%d): Trace may be corrupt.\n", sigChars);
  	    dino_error_ack(trace, message);
  	    return;
-	} 
+	}
 
 	status = bin_read (read_fd, chardata, sigChars);
 	chardata[sigChars] = '\0';
-	
+
 	if (DTPRINT_FILE) {
 	    printf ("sigFlags=%x sigOffset=%d sigWidth=%d sigChars=%d sigName=%s\n",
 		   sigFlags,sigOffset,sigWidth,sigChars,chardata);
 	}
-	
+
 	/* These could be simplified as they map 1:1, but safer not to */
 	file_type.flags = 0;
 	file_type.flag.pin_input  = ((sigFlags & 1) != 0);
@@ -702,12 +702,12 @@ void tempest_read (
 	file_type.flag.pin_psudo  = ((sigFlags & 4) != 0);
 	file_type.flag.pin_timestamp = ((sigFlags & 8) != 0);
 	file_type.flag.four_state = ((sigFlags & 16) != 0);
-	    
-	sig_new_file (trace, chardata, 
-		      sigOffset, 0, 
-		      sigWidth, -1/*msb*/, -1/*lsb*/, 
+
+	sig_new_file (trace, chardata,
+		      sigOffset, 0,
+		      sigWidth, -1/*msb*/, -1/*lsb*/,
 		      file_type);
-	    
+
 	/* Detect phase signal -- not completely reliable */
 	/* This prevents a bug when a trace starts on phase b */
 	if (sigOffset < 64
@@ -716,7 +716,7 @@ void tempest_read (
 	    if (DTPRINT_FILE) printf ("Have Phase indication\n");
 	    have_phase = TRUE;
 	}
-    
+
 	/* Checks */
 	if (file_type.flag.four_state != 0) {
 	    sprintf (message,"Four state tempest not supported.\nSignal %s will be wrong.",chardata);
@@ -739,7 +739,7 @@ void tempest_read (
      * Pass 0-(numRows-1) reads the data, pass numRows processes last line */
     first_data = TRUE;
 
-    /* Don't use numRows as it is written when CCLI exits, and may be incorrect 
+    /* Don't use numRows as it is written when CCLI exits, and may be incorrect
        if CCLI was CTL-Ced */
 
     while (1) {
@@ -782,14 +782,14 @@ void tempest_read (
 	    if (phase) time += MAX(1,global->tempest_time_mult/2);
 	    if (DTPRINT_FILE) printf ("Initial phase detected: %d  Adjust 1|%d\n", phase, global->tempest_time_mult/2);
 	}
-	
+
 #if 0
 	if (DTPRINT_FILE) {
-	    printf ("read: time=%d  status %d data=%08x [time %d] %08x\n", time, 
+	    printf ("read: time=%d  status %d data=%08x [time %d] %08x\n", time,
 		    status, data[0], data[0], data[1]);
 	}
 #endif
-	
+
 	/*
 	 ** If this is the first row, save the starting and initial
 	 ** time, else eventually the end time will be saved.
@@ -797,7 +797,7 @@ void tempest_read (
 	if (first_data)
 	    trace->start_time = time;
 	else trace->end_time = time;
-	    
+
 	/* Fortunately, Tempest and Decsim have identical binary packed formats. */
 	/* Perhaps it's because both were written by Digital's SEG CAD. */
 	for (sig_ptr = trace->firstsig; sig_ptr; sig_ptr = sig_ptr->forward) {

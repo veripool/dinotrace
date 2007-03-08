@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: customization requestor
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the bas version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -95,36 +95,36 @@ void cus_dialog_cb (
     XmAnyCallbackStruct *cb)
 {
     char		title[MAXFNAMELEN + 15];
-    
+
     if (DTPRINT_ENTRY) printf ("In custom - trace=%p\n",trace);
-    
+
     if (!trace->custom.dialog) {
 	if (trace->dfile.filename[0] == '\0')
 	    sprintf (title,"Customize Window");
 	else
 	    sprintf (title,"Customize %s",trace->dfile.filename);
-	
+
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple (title) );
 	XtSetArg (arglist[2], XmNverticalSpacing, 7);
 	XtSetArg (arglist[3], XmNhorizontalSpacing, 10);
 	trace->custom.dialog = XmCreateFormDialog (trace->work,"customize",arglist,4);
-	
+
 	/* Create radio box for page increment */
 	trace->custom.page_menu = XmCreatePulldownMenu (trace->custom.dialog,"page",arglist,0);
 
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple (" 1  Page"));
 	trace->custom.page_item[0] = XmCreatePushButton (trace->custom.page_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.page_item[0], trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("1/2 Page"));
 	trace->custom.page_item[1] = XmCreatePushButton (trace->custom.page_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.page_item[1], trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("1/4 Page"));
 	trace->custom.page_item[2] = XmCreatePushButton (trace->custom.page_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.page_item[2], trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Page Increment") );
 	XtSetArg (arglist[1], XmNsubMenuId, trace->custom.page_menu);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_FORM );
@@ -138,23 +138,23 @@ void cus_dialog_cb (
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Femtoseconds"));
 	trace->custom.time_item[0] = XmCreatePushButton (trace->custom.time_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.time_item[0], trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Picoseconds"));
 	trace->custom.time_item[1] = XmCreatePushButton (trace->custom.time_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.time_item[1], trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Nanoseconds"));
 	trace->custom.time_item[2] = XmCreatePushButton (trace->custom.time_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.time_item[2], trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Microseconds"));
 	trace->custom.time_item[3] = XmCreatePushButton (trace->custom.time_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.time_item[3], trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Grid #0 Cycles") );
 	trace->custom.time_item[4] = XmCreatePushButton (trace->custom.time_menu,"rpage",arglist,1);
 	DManageChild (trace->custom.time_item[4], trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Time represented in") );
 	XtSetArg (arglist[1], XmNsubMenuId, trace->custom.time_menu);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
@@ -170,7 +170,7 @@ void cus_dialog_cb (
 	XtSetArg (arglist[3], XmNtopWidget, trace->custom.time_option );
 	trace->custom.sighgt_label = XmCreateLabel (trace->custom.dialog,"sighgtlabel",arglist,4);
 	DManageChild (trace->custom.sighgt_label, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNshowValue, 1);
 	XtSetArg (arglist[1], XmNx, 180);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_WIDGET );
@@ -183,7 +183,7 @@ void cus_dialog_cb (
 	XtSetArg (arglist[9], XmNprocessingDirection, XmMAX_ON_RIGHT);
 	trace->custom.s1 = XmCreateScale (trace->custom.dialog,"sighgt",arglist,10);
 	DManageChild (trace->custom.s1, trace, MC_NOKEYS);
-	
+
 	/* Create click_to_edge button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Click To Edges"));
 	XtSetArg (arglist[1], XmNx, 10);
@@ -193,7 +193,7 @@ void cus_dialog_cb (
 	trace->custom.click_to_edge = XmCreateToggleButton (trace->custom.dialog,
 							"click_to_edge",arglist,5);
 	DManageChild (trace->custom.click_to_edge, trace, MC_NOKEYS);
-	
+
 	/* Create RF button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Rise/Fall Time"));
 	XtSetArg (arglist[1], XmNx, 10);
@@ -202,7 +202,7 @@ void cus_dialog_cb (
 	XtSetArg (arglist[4], XmNtopWidget, dmanage_last );
 	trace->custom.rfwid = XmCreateToggleButton (trace->custom.dialog,"rfwid",arglist,5);
 	DManageChild (trace->custom.rfwid, trace, MC_NOKEYS);
-	
+
 	/* Create cursor state on/off button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Cursors On/Off"));
 	XtSetArg (arglist[1], XmNx, 10);
@@ -212,7 +212,7 @@ void cus_dialog_cb (
 	trace->custom.cursor_state = XmCreateToggleButton (trace->custom.dialog,
 							   "cursor_state",arglist,5);
 	DManageChild (trace->custom.cursor_state, trace, MC_NOKEYS);
-	
+
 	/* Create prefix button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Draw common signal prefix"));
 	XtSetArg (arglist[1], XmNx, 10);
@@ -221,7 +221,7 @@ void cus_dialog_cb (
 	XtSetArg (arglist[4], XmNtopWidget, dmanage_last );
 	trace->custom.prefixes = XmCreateToggleButton (trace->custom.dialog,"refreshing",arglist,5);
 	DManageChild (trace->custom.prefixes, trace, MC_NOKEYS);
-	
+
 	/* Create refresh button */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Manual Refreshing"));
 	XtSetArg (arglist[1], XmNx, 10);
@@ -230,7 +230,7 @@ void cus_dialog_cb (
 	XtSetArg (arglist[4], XmNtopWidget, dmanage_last );
 	trace->custom.refreshing = XmCreateToggleButton (trace->custom.dialog,"refreshing",arglist,5);
 	DManageChild (trace->custom.refreshing, trace, MC_NOKEYS);
-	
+
 	/* Ok/apply/cancel */
 	ok_apply_cancel (&trace->custom.okapply, trace->custom.dialog,
 			 dmanage_last,
@@ -274,7 +274,7 @@ void cus_dialog_cb (
     XmToggleButtonSetState (trace->custom.click_to_edge, global->click_to_edge, TRUE);
     XmToggleButtonSetState (trace->custom.refreshing, global->redraw_manually, TRUE);
     XmToggleButtonSetState (trace->custom.refreshing, global->prefix_enable, TRUE);
-    
+
     /* Do it */
     DManageChild (trace->custom.dialog, trace, MC_NOKEYS);
 }
@@ -286,9 +286,9 @@ void cus_reread_cb (
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("in cus_reread_cb trace=%p\n",trace);
-    
+
     config_read_defaults (trace, FALSE);
-    
+
     /* Reformat and refresh */
     draw_all_needed ();
 }
@@ -299,11 +299,11 @@ void	cus_restore_cb (
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("in cus_restore_cb trace=%p\n",trace);
-    
+
     /* do the default thing */
     config_trace_defaults (trace);
     config_global_defaults ();
-    
+
     /* redraw the display */
     draw_all_needed ();
 }
@@ -317,7 +317,7 @@ void	cus_ok_cb (
     Widget	clicked;
 
     if (DTPRINT_ENTRY) printf ("In cus_ok_cb - trace=%p\n",trace);
-    
+
     XmScaleGetValue (trace->custom.s1, &hgt);
     global->sighgt = hgt;
     global->cursor_vis = XmToggleButtonGetState (trace->custom.cursor_state);
@@ -349,10 +349,10 @@ void	cus_ok_cb (
     else if (clicked == trace->custom.page_item[1])
 	global->pageinc = PAGEINC_HALF;
     else global->pageinc = PAGEINC_FULL;
-    
+
     /* hide the customize window */
     XtUnmanageChild (trace->custom.dialog);
-    
+
     /* res units may have changed, fix it & redraw the display */
     new_res (trace, global->res);
 
@@ -366,10 +366,10 @@ void	cus_apply_cb (
     XmAnyCallbackStruct	*cb)
 {
     if (DTPRINT_ENTRY) printf ("In cus_apply_cb - trace=%p\n",trace);
-    
+
     /* Pretend an OK */
     cus_ok_cb (w,trace,cb);
-    
+
     /* manage the customize window */
     DManageChild (trace->custom.dialog, trace, MC_NOKEYS);
 }
@@ -383,9 +383,9 @@ void cus_read_cb (
 {
     int		cfg_num;
     Widget	last;
-    
+
     if (DTPRINT_ENTRY) printf ("In cus_read_cb trace=%p\n",trace);
-    
+
     if (!trace->cusread.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Read Dinotrace File") );
@@ -405,7 +405,7 @@ void cus_read_cb (
 	XtSetArg (arglist[3], XmNtopAttachment, XmATTACH_FORM );
 	trace->cusread.config_label = XmCreateLabel (trace->cusread.form,"label",arglist,5);
 	DManageChild (trace->cusread.config_label, trace, MC_NOKEYS);
-	
+
 	last = trace->cusread.config_label;
 
 	for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
@@ -416,7 +416,7 @@ void cus_read_cb (
 	    XtSetArg (arglist[3], XmNleftOffset, 15);
 	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));  /* Else openmotif makes small button*/
 	    trace->cusread.config_enable[cfg_num] = XmCreateToggleButton (trace->cusread.form,"",arglist,5);
-	    
+
 	    /* file name */
 	    XtSetArg (arglist[0], XmNrows, 1);
 	    XtSetArg (arglist[1], XmNcolumns, 30);
@@ -437,7 +437,7 @@ void cus_read_cb (
 	}
 
 	DManageChild (trace->cusread.form, trace, MC_NOKEYS);
-	
+
 	XSync (global->display,0);
 
 	/* Set directory */
@@ -445,7 +445,7 @@ void cus_read_cb (
 	XtSetValues (trace->cusread.dialog,arglist,1);
 	fil_select_set_pattern (trace, trace->cusread.dialog, "*.dino");
     }
-    
+
     config_update_filenames (trace);
     for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
 	XmToggleButtonSetState (trace->cusread.config_enable[cfg_num], (global->config_enable[cfg_num]), TRUE);
@@ -465,12 +465,12 @@ void cus_read_ok_cb (
     char	*tmp;
     char	filename[MAXFNAMELEN];
     int		cfg_num;
-    
+
     if (DTPRINT_ENTRY) printf ("In cus_read_ok_cb trace=%p\n",trace);
-    
+
     XtUnmanageChild (trace->cusread.dialog);
     XSync (global->display,0);
-    
+
     for (cfg_num=0; cfg_num<MAXCFGFILES; cfg_num++) {
 	global->config_enable[cfg_num] = XmToggleButtonGetState (trace->cusread.config_enable[cfg_num]);
 	strcpy (global->config_filename[cfg_num], XmTextGetString (trace->cusread.config_filename[cfg_num]));
@@ -496,9 +496,9 @@ void cus_write_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     int		item_num;
-    
+
     if (DTPRINT_ENTRY) printf ("In cus_write_cb trace=%p\n",trace);
-    
+
     if (!trace->cuswr.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Write Dinotrace File") );
@@ -580,7 +580,7 @@ void cus_write_cb (
 	}
 
 	DManageChild (trace->cuswr.form, trace, MC_NOKEYS);
-	
+
 	XSync (global->display,0);
 
 	/* Set directory */
@@ -588,7 +588,7 @@ void cus_write_cb (
 	XtSetValues (trace->cuswr.dialog,arglist,1);
 	fil_select_set_pattern (trace, trace->cuswr.dialog, "*.dino");
     }
-    
+
     XtSetArg (arglist[0], XmNmenuHistory, trace->cuswr.trace_button[global->cuswr_traces]);
     XtSetValues (trace->cuswr.trace_option, arglist, 1);
 
@@ -610,11 +610,11 @@ void cus_write_ok_cb (
     char	*tmp;
     int item_num, i;
     Widget	clicked;
-    
+
     if (DTPRINT_ENTRY) printf ("In cus_write_ok_cb trace=%p\n",trace);
-    
+
     XtUnmanageChild (trace->cuswr.dialog);
-    
+
     tmp = extract_first_xms_segment (cb->value);
     DFree (global->cuswr_filename);
     global->cuswr_filename = strdup (tmp);

@@ -2,7 +2,7 @@
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: postscript output routines
  *
- * This file is part of Dinotrace.  
+ * This file is part of Dinotrace.
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
@@ -15,9 +15,9 @@
  * gratefuly have agreed to share it, and thus the base version has been
  * released to the public with the following provisions:
  *
- * 
+ *
  * This software is provided 'AS IS'.
- * 
+ *
  * DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THE INFORMATION
  * (INCLUDING ANY SOFTWARE) PROVIDED, INCLUDING ALL IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR ANY PARTICULAR PURPOSE, AND
@@ -47,7 +47,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Dinotrace; see the file COPYING.  If not, write to
  * the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -104,7 +104,7 @@ void    print_reset (
 {
     char 		*pchar;
     if (DTPRINT_ENTRY) printf ("In print_reset - trace=%p",trace);
-    
+
     /* Init print name */
 #ifdef VMS
     strcpy (trace->printname, "sys$login:dinotrace.ps");
@@ -122,7 +122,7 @@ static void print_draw_grid (
     DTime_t	printtime,	/* Time to start on */
     Grid_t	*grid_ptr,		/* Grid information */
     Boolean_t	draw_numbers)		/* Whether to print the times or not */
-{ 
+{
     char 	strg[MAXTIMELEN];	/* String value to print out */
     int		end_time;
     DTime_t	xtime;
@@ -205,7 +205,7 @@ static void print_draw_grids (
     Trace_t	*trace,
     FILE	*psfile,
     DTime_t	printtime)
-{           
+{
     int		grid_num;
     Grid_t	*grid_ptr;
     Grid_t	*grid_smallest_ptr;
@@ -248,12 +248,12 @@ static void print_draw_val (
     char strg[MAXVALUELEN];
     int unstroked=0;		/* Number commands not stroked */
     int numprt;
-    
+
     if (DTPRINT_ENTRY) printf ("In print_draw - filename=%s, printtime=%d sig=%s\n",trace->dfile.filename, printtime, sig_ptr->signame);
-    
+
     xend = trace->width - XMARGIN;
     xsigrf = MAX(1,global->sigrf);
-    
+
     /* Loop and draw each signal individually */
     for (numprt=0; sig_ptr && sig_ptr!=sig_end_ptr;
 	 sig_ptr = sig_ptr->forward, numprt++) {
@@ -269,7 +269,7 @@ static void print_draw_val (
 
 	/* Compute starting points for signal */
 	xright = global->xstart;
-	
+
 	/* find data start */
 	cptr = sig_ptr->bptr;
 	if (printtime >= CPTR_TIME(cptr) ) {
@@ -283,7 +283,7 @@ static void print_draw_val (
 	/* output starting positional information */
 	fprintf (psfile,"%d %d %d %d START_SIG\n",
 		 ymdpt, yhigh, ylow, xright);
-	
+
 	/* Loop as long as the time and end of trace are in current screen */
 	for (; (CPTR_TIME(cptr) != EOT && xright < xend);
 	     cptr = nptr) {
@@ -296,7 +296,7 @@ static void print_draw_val (
 
 	    /* find the next transition */
 	    nptr = CPTR_NEXT(cptr);
-	    
+
 	    /* if next transition is the end, don't draw */
 	    if (CPTR_TIME(nptr) == EOT) break;
 
@@ -358,7 +358,7 @@ static void print_draw_val (
 		}
 		xright = MIN (xright, xend);
 	    }
-	    
+
 	    /* Draw the transition lines */
 	    if (dr_mask) {
 		char cmd;
@@ -366,7 +366,7 @@ static void print_draw_val (
 		    && !(dr_mask & (DR_U|DR_Z))) {
 		    double ythis_pct = draw_analog_value (sig_ptr, cptr);
 		    cmd='A';
-		    fprintf (psfile,"%d %f S%c",xright, ythis_pct, cmd);			
+		    fprintf (psfile,"%d %f S%c",xright, ythis_pct, cmd);
 		}
 		/* Digital */
 		else if (dr_mask & DR_U) {
@@ -435,19 +435,19 @@ static void print_draw_sig (
     Signal_t	*sig_end_ptr)	/* Last signal to print */
 {
     int		numprt=0;
-    
+
     if (DTPRINT_ENTRY) printf ("In print_drawsig - filename=%s\n",trace->dfile.filename);
-    
+
     /* don't draw anything if there is no file is loaded */
     if (!trace->loaded) return;
-    
+
     /* loop thru all the visible signals */
     for (; sig_ptr && sig_ptr!=sig_end_ptr; sig_ptr = sig_ptr->forward) {
 	int yhigh, ylow, ymdpt;
 
 	/* calculate the location to start drawing the signal name */
 	/* printf ("xstart=%d, %s\n",global->xstart, sig_ptr->signame); */
-	
+
 	/* calculate the y location to draw the signal name and draw it */
 	yhigh = trace->ystart + numprt * global->sighgt;
 	ylow = yhigh + global->sighgt - Y_SIG_SPACE;
@@ -473,7 +473,7 @@ static void print_draw_cursors (
     Position	x1;
     Position	ytop,ybot,ydelta;
     Dimension m_time_height = global->time_font->ascent;
-    
+
     if (!global->cursor_vis) return;
 
     /* initial the y values for drawing */
@@ -499,7 +499,7 @@ static void print_draw_cursors (
 	    fprintf (psfile,"%d (%s) CSR%c\n", x1, strg,
 		     ((csr_ptr->type==USER)?'U':'A')
 		     );
-		
+
 	    /* if there is a previous visible cursor, draw delta line */
 	    if ( csr_ptr->prev && (csr_ptr->prev->time > printtime) ) {
 		Position x2;
@@ -528,10 +528,10 @@ void    print_internal (Trace_t *trace)
     char	pagenum[20];
     char	sstrg[MAXTIMELEN];
     char	estrg[MAXTIMELEN];
-    
+
     if (DTPRINT_ENTRY) printf ("In print_internal - trace=%p\n",trace);
     if (!trace->loaded) return;
-    
+
     if (trace->printname) {
 	/* Open the file */
 	if (DTPRINT_ENTRY) printf ("Filename=%s\n", trace->printname);
@@ -547,16 +547,16 @@ void    print_internal (Trace_t *trace)
 	dino_error_ack (trace,message);
 	return;
     }
-    
+
     draw_update ();
 
     set_cursor (DC_BUSY);
     XSync (global->display,0);
-    
+
     /* calculate time per page */
     time_per_page = TIME_WIDTH (trace);
     sigs_per_page = trace->numsigvis;
-    
+
     /* Reset stuff if doing all times */
     /* calculate number of pages needed to draw the entire trace */
     horiz_pages = (global->print_end_time - global->print_begin_time)/time_per_page;
@@ -571,11 +571,11 @@ void    print_internal (Trace_t *trace)
 	if ( (trace->numsig) % sigs_per_page )
 	    vert_pages++;
     }
-    
+
     /* encapsulated? */
     encapsulated = (global->print_size==PRINTSIZE_EPSPORT)
 	|| (global->print_size==PRINTSIZE_EPSLAND);
-    
+
     /* File header information */
     fprintf (psfile, "%%!PS-Adobe-1.0\n");
     fprintf (psfile, "%%%%Title: %s\n", trace->printname);
@@ -592,10 +592,10 @@ void    print_internal (Trace_t *trace)
     fprintf (psfile, "%%%%EndComments\n");
     fprintf (psfile, "\n");
     if (encapsulated) fprintf (psfile,"save\n");
-    
+
     /* include the postscript macro information */
     fputs (dt_post, psfile);
-    
+
     /* Grab units */
     timeunits = time_units_to_string (global->timerep, FALSE);
 
@@ -605,7 +605,7 @@ void    print_internal (Trace_t *trace)
 	     (int) ( ( (global->print_size==PRINTSIZE_B) ? 11.0 :  8.5) * 72.0),
 	     (int) ( ( (global->print_size==PRINTSIZE_B) ? 16.8 : 10.8) * 72.0)
 	     );
-	
+
     /* Signal to start on */
     if (vert_pages > 1) {
 	sig_ptr = trace->firstsig;
@@ -623,7 +623,7 @@ void    print_internal (Trace_t *trace)
 
     /* print out each page */
     for (horiz_page=0; horiz_page<horiz_pages; horiz_page++) {
-	
+
 	/* Time at left edge of printout */
 	printtime = time_per_page * horiz_page + global->print_begin_time;
 
@@ -657,7 +657,7 @@ void    print_internal (Trace_t *trace)
 		if (horiz_pages == 1) 	sprintf (pagenum, "Page %d", vert_page+1);
 		else			sprintf (pagenum, "Page %d-%d", horiz_page+1, vert_page+1);
 	    }
-	    
+
 	    /* decode times */
 	    time_to_string (trace, sstrg, printtime, FALSE);
 	    time_to_string (trace, estrg, printtime + time_per_page, FALSE);
@@ -679,13 +679,13 @@ void    print_internal (Trace_t *trace)
 		      ( (global->print_size==PRINTSIZE_EPSLAND)
 		       ? "EPSLHDR" : "PAGEHDR"))	/* which macro to use */
 		     );
-	    
+
 	    /* draw the signal names and the traces */
 	    print_draw_sig (trace, psfile, sig_ptr, sig_end_ptr);
 	    print_draw_val (trace, psfile, sig_ptr, sig_end_ptr, printtime);
 	    print_draw_grids (trace, psfile, printtime);
 	    print_draw_cursors (trace, psfile, printtime);
-	    
+
 	    /* print the page */
 	    if (encapsulated)
 		fprintf (psfile,"stroke\nrestore\n");
@@ -693,7 +693,7 @@ void    print_internal (Trace_t *trace)
 
 	} /* vert page */
     } /* horiz page */
-    
+
     if (!encapsulated) {
 	fprintf (psfile,"\n%%Trailer\n");
 	fprintf (psfile,"%%EOF\n");
@@ -722,14 +722,14 @@ void    print_range_sensitives_cb (
     trace = range_ptr->trace;	/* Snarf from range, as the callback doesn't have it */
 
     opt = option_to_number(range_ptr->time_option, range_ptr->time_pulldownbutton, 3);
-    
+
     switch (opt) {
     case 3:	/* Window */
 	active = FALSE;
-	range_ptr->dastime = (range_ptr->type == RANGE_BEGIN) ? global->time 
+	range_ptr->dastime = (range_ptr->type == RANGE_BEGIN) ? global->time
 	    :   (global->time + TIME_WIDTH (trace));
 	break;
-    case 2:	/* Trace */ 
+    case 2:	/* Trace */
 	active = FALSE;
 	range_ptr->dastime = (range_ptr->type == RANGE_BEGIN) ? trace->start_time : trace->end_time;
 	break;
@@ -775,7 +775,7 @@ static void    print_range_create (
 	XtSetArg (arglist[4], XmNtopWidget, above);
 	range_ptr->time_label = XmCreateLabel (trace->print.dialog,"",arglist,5);
 	DManageChild (range_ptr->time_label, trace, MC_NOKEYS);
-	
+
 	/* Begin pulldown */
 	range_ptr->time_pulldown = XmCreatePulldownMenu (trace->print.dialog,"time_pulldown",arglist,0);
 
@@ -856,7 +856,7 @@ void    print_dialog_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     if (DTPRINT_ENTRY) printf ("In print_screen - trace=%p\n",trace);
-    
+
     if (!trace->print.dialog) {
 	XtSetArg (arglist[0], XmNdefaultPosition, TRUE);
 	XtSetArg (arglist[1], XmNdialogTitle, XmStringCreateSimple ("Print Screen Menu"));
@@ -873,7 +873,7 @@ void    print_dialog_cb (
 	XtSetArg (arglist[3], XmNtopOffset, 5);
 	trace->print.label = XmCreateLabel (trace->print.dialog,"",arglist,4);
 	DManageChild (trace->print.label, trace, MC_NOKEYS);
-	
+
 	/* create the file name text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 30);
@@ -887,7 +887,7 @@ void    print_dialog_cb (
 	trace->print.text = XmCreateText (trace->print.dialog,"",arglist,9);
 	DManageChild (trace->print.text, trace, MC_NOKEYS);
 	DAddCallback (trace->print.text, XmNactivateCallback, print_req_cb, trace);
-	
+
 	/* create label widget for notetext widget */
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("Note") );
 	XtSetArg (arglist[1], XmNleftAttachment, XmATTACH_FORM );
@@ -896,7 +896,7 @@ void    print_dialog_cb (
 	XtSetArg (arglist[4], XmNtopWidget, dmanage_last);
 	trace->print.label = XmCreateLabel (trace->print.dialog,"",arglist,5);
 	DManageChild (trace->print.label, trace, MC_NOKEYS);
-	
+
 	/* create the print note text widget */
 	XtSetArg (arglist[0], XmNrows, 1);
 	XtSetArg (arglist[1], XmNcolumns, 30);
@@ -922,7 +922,7 @@ void    print_dialog_cb (
 
 	/* Create radio box for page size */
 	trace->print.size_menu = XmCreatePulldownMenu (trace->print.dialog,"size",arglist,0);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("A-Sized"));
 	trace->print.sizea = XmCreatePushButtonGadget (trace->print.size_menu,"sizea",arglist,1);
 	DManageChild (trace->print.sizea, trace, MC_NOKEYS);
@@ -930,15 +930,15 @@ void    print_dialog_cb (
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("B-Sized"));
 	trace->print.sizeb = XmCreatePushButtonGadget (trace->print.size_menu,"sizeb",arglist,1);
 	DManageChild (trace->print.sizeb, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("EPS Portrait"));
 	trace->print.sizeep = XmCreatePushButtonGadget (trace->print.size_menu,"sizeep",arglist,1);
 	DManageChild (trace->print.sizeep, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNlabelString, XmStringCreateSimple ("EPS Landscape"));
 	trace->print.sizeel = XmCreatePushButtonGadget (trace->print.size_menu,"sizeel",arglist,1);
 	DManageChild (trace->print.sizeel, trace, MC_NOKEYS);
-	
+
 	XtSetArg (arglist[0], XmNleftAttachment, XmATTACH_FORM );
 	XtSetArg (arglist[1], XmNsubMenuId, trace->print.size_menu);
 	XtSetArg (arglist[2], XmNtopAttachment, XmATTACH_OPPOSITE_WIDGET );
@@ -997,11 +997,11 @@ void    print_dialog_cb (
     /* reset file name */
     XtSetArg (arglist[0], XmNvalue, trace->printname);
     XtSetValues (trace->print.text,arglist,1);
-    
+
     /* reset file note */
     XtSetArg (arglist[0], XmNvalue, global->printnote);
     XtSetValues (trace->print.notetext,arglist,1);
-    
+
     /* if a file has been read in, make printscreen buttons active */
     XtSetArg (arglist[0],XmNsensitive, (trace->loaded)?TRUE:FALSE);
     XtSetValues (trace->print.okapply.ok,arglist,1);
@@ -1035,9 +1035,9 @@ void    print_req_cb (
 {
     Trace_t *trace = widget_to_trace(w);
     Widget	clicked;
-    
+
     if (DTPRINT_ENTRY) printf ("In print_req_cb - trace=%p\n",trace);
-    
+
     XtSetArg (arglist[0], XmNmenuHistory, &clicked);
     XtGetValues (trace->print.size_option, arglist, 1);
     if (clicked == trace->print.sizeep)
@@ -1062,8 +1062,8 @@ void    print_req_cb (
 
     /* hide the print screen window */
     XtUnmanageChild (trace->print.dialog);
-    
+
     print_internal (trace);
 }
-    
+
 
