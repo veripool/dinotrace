@@ -110,18 +110,27 @@ all: dinotrace_exe info
 
 obj_dir:
 	-mkdir -p $@
+obj_dbg:
+	-mkdir -p $@
 bin:
 	-mkdir -p bin
 
 .PHONY:dinotrace_exe
+.PHONY:dinotrace_dbg
 .PHONY:dinotrace
 dinotrace_exe dinotrace: obj_dir bin
-	@echo making dinotrace in src
+	@echo making dinotrace in obj_dir
 	cd obj_dir && $(MAKE) -f $(abs_srcdir)/src/Makefile dinotrace
 	(cp obj_dir/dinotrace ./dinotrace >/dev/null 2>&1\
 	 || cp obj_dir/dinotrace.exe ./dinotrace.exe >/dev/null 2>&1)
 	(cp obj_dir/dinotrace bin/dinotrace-$(HOST) >/dev/null 2>&1\
 	 || cp obj_dir/dinotrace.exe bin/dinotrace-$(HOST).exe >/dev/null 2>&1)
+
+dinotrace_dbg: obj_dbg
+	@echo making dinotrace in obj_dbg
+	cd obj_dbg && $(MAKE) DT_DEBUG=1 -f $(abs_srcdir)/src/Makefile dinotrace
+	(cp obj_dbg/dinotrace ./dinotrace_dbg >/dev/null 2>&1\
+	 || cp obj_dbg/dinotrace.exe ./dinotrace_dbg.exe >/dev/null 2>&1)
 
 info: $(INFOS)
 

@@ -9,6 +9,7 @@ INSTALL
 FAQ
 Makefile
 dinotrace
+dinotrace_dbg
 bin
 autom4te.cache
-obj_dir
+obj_*

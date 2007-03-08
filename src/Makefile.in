@@ -44,7 +44,14 @@ CC = @CC@
 LINK = @CC@
 
 CFLAGS = -I. @CFLAGS@ @X_CFLAGS@
-#CFLAGS = -I. -O2 -DDEBUG -g -Wall -Wno-implicit-int -Wno-char-subscripts -I/usr/openwin/include
+OPT = @OPT@
+CFLAGS_DBG = -O1 -DDEBUG
+ifeq ($(DT_DEBUG),)
+ CFLAGS += $(OPT)
+else
+ CFLAGS += $(CFLAGS_DBG)
+endif
+
 CPPFLAGS = @CPPFLAGS@
 DEFS = @DEFS@
 LDFLAGS = @LDFLAGS@
