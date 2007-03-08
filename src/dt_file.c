@@ -535,7 +535,7 @@ void help_doc_cb (
 #ifdef VMS
 #pragma inline (fil_add_cptr)
 #endif
-/* WARNING, INLINED CODE IN CALLBACKS.H */
+/* WARNING, INLINED CODE IN FUNCTIONS.H */
 void	fil_add_cptr (
     Signal_t	*sig_ptr,
     Value_t	*value_ptr,
@@ -731,8 +731,9 @@ static void fil_mark_cptr_end (
 		    printf ("%%W, No data for signal %s\n\tAdditional messages suppressed\n", sig_ptr->signame);
 		    msg = TRUE;
 		}
-		sig_free (trace, sig_ptr, FALSE, FALSE); sig_ptr=NULL;
-		continue;
+		/* Don't delete, may have copies pointing to it */
+		/* sig_free (trace, sig_ptr, FALSE, FALSE); sig_ptr=NULL; */
+		/* continue; */
 	    }
 
 	    /* Mark end of time */

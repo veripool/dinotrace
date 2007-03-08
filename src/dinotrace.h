@@ -61,9 +61,9 @@
 #include "config.h"
 
 #ifndef NDEBUG
-#ifndef DEBUG
-#define NDEBUG	/* Nullify assert() calls */
-#endif
+# ifndef DEBUG
+#  define NDEBUG	/* Nullify assert() calls */
+# endif
 #endif
 
 #include <stdio.h>

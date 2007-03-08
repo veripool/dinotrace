@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Fix signal radix being lost when trace is reread.  [Uwe Bonnes]
 
+****	Fix core dump when verilog trace has single timestamp.  [Uwe Bonnes]
+
 * Dinotrace 9.3e 2/27/2007
 
 ****	Add DESTDIR "make install" rule for RPMs.  [Werner Hoch]

@@ -851,7 +851,7 @@ static void	verilog_read_data (
 
     while (!verilog_eof) {
 	line = verilog_gettok();
-	if (verilog_eof) return;
+	if (verilog_eof) break;
 
 	switch (*line++) {
 	    /* Single bits are most common */
@@ -877,7 +877,7 @@ static void	verilog_read_data (
 	    poscode = VERILOG_ID_TO_POS(code);
 	    sig_ptr = VERILOG_POS_TO_SIG(poscode);
 	    if (sig_ptr) {
-		/* printf ("\tsignal '%s'=%d %s  state %d\n", code, pos, sig_ptr->signame, state); */
+		/* printf ("\tsignal '%s'=%d %s  state %d\n", code, poscode, sig_ptr->signame, state);*/
 		if (sig_ptr->bits < 2) {
 		    /* Not a vector.  This is easy */
 		    val_zero (&value);

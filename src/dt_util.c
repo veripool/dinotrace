@@ -971,8 +971,13 @@ void    debug_signal_integrity (
 	    last_time = CPTR_TIME(cptr);
 	}
 	if (last_time != sig_ptr->trace->end_time) {
-	    printf ("%%E, %s, Doesn't end at right time, signal %s time %d\n",
-		    list_name, sig_ptr->signame, CPTR_TIME(cptr));
+	    if (last_time==-1) {
+		printf ("%%E, %s, Has no data, just EOT, signal %s\n",
+			list_name, sig_ptr->signame);
+	    } else {
+		printf ("%%E, %s, Doesn't end at right time, signal %s time %d\n",
+			list_name, sig_ptr->signame, CPTR_TIME(cptr));
+	    }
 	    dumpsig = TRUE;
 	}
 	if (dumpsig) {
