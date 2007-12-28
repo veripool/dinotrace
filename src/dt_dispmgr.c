@@ -709,7 +709,7 @@ static void dm_menu_subentry_radixs (
 
 
 /* Try to allocate the given font.  If it doesn't exist, use a default font, rather
-*  then printing a error.  Roughly equivelent to:
+*  than printing a error.  Roughly equivelent to:
 *  return (XLoadQueryFont (global->display, global->signal_font_name))
 *  but that crashes if a font isn't found.
 */

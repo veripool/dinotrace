@@ -233,7 +233,7 @@ The contributors that suggested a given feature are shown in [].
 **	Signal Keep Highlight allows for deleting unhighlighted signals.
 
 **	Customize Grid and grid_period allow placement of a grid on exactly
-	each assertion, deassertion or both edges of a signal, rather then on
+	each assertion, deassertion or both edges of a signal, rather than on
 	a fixed time interval.
 
 * Dinotrace 9.0d  11/30/1998
@@ -294,8 +294,8 @@ The contributors that suggested a given feature are shown in [].
 ***	Added many keyboard accelerators, cursor keys, etc.  Most are also
 	usable in dinotrace.el
 
-***	Signal names won't use up more then 1/3 of the width of the
-	display.  A scroll bar was added to see names longer then this.
+***	Signal names won't use up more than 1/3 of the width of the
+	display.  A scroll bar was added to see names longer than this.
 
 ***	High boolean, or busses with all bits set now use a bolder line to aid
 	in discriminating them from low signals.  Basic redrawing algorithm
@@ -369,7 +369,7 @@ The contributors that suggested a given feature are shown in [].
 * Dinotrace 8.1e  7/24/1996
 
 ****	Fixed a bug where reading a directory as a config file would
-	crash, rather then warn.  [Steve Lang]
+	crash, rather than warn.  [Steve Lang]
 
 ****	Fixed a bug where annotation would add many leading zeros.
 	[Rachel Berman]
@@ -477,7 +477,7 @@ The contributors that suggested a given feature are shown in [].
 	section.)  [Steve Lang]
 
 ***	When real numbers are found in Verilog traces a warning is printed
-	rather then a indecipherable error message.  [Reinhard Schumann]
+	rather than a indecipherable error message.  [Reinhard Schumann]
 
 ***	Values in the trace window now use lower case letters when printing
 	hex.  This mainly makes it easier to discriminate "E" and "F".
@@ -651,7 +651,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug where Alpha OSF systems would pop-up windows that were
 	too small to contain all of the widgets.
 
-****	Fixed a bug which caused page increments of other then one to
+****	Fixed a bug which caused page increments of other than one to
 	not work.  [Larry Herman]
 
 ****	Fixed a bug where some X-servers would crash when large traces were
@@ -724,7 +724,7 @@ The contributors that suggested a given feature are shown in [].
 ***	Added picoseconds and microseconds to the time representation
 	customize window, and the time_rep configure command.  Added the
 	time_precision and time_format configure commands.  These may be
-	used to view traces with better then 1 ns precision.  Made Verilog
+	used to view traces with better than 1 ns precision.  Made Verilog
 	format detect the time resolution of the trace automatically.
 	[Paul Dormitzer]
 
@@ -752,13 +752,13 @@ The contributors that suggested a given feature are shown in [].
 ***	Eliminated glitches in displaying Tempest format traces.  [Ronen
 	Boneh] 	Added "file_format" command to configuration files, and
 	button to configuration menu.  I suggest putting the line
-	"file_format tempest" in the DINODISK:dinotrace.dino rather then
+	"file_format tempest" in the DINODISK:dinotrace.dino rather than
 	having to always use the dinotrace -tempest command line switch.
 	Tempest files with tristates are not supported; I do not know of a
 	program which generates tempest tristates.
 
 ***	Added a "vector_seperator" configuration command which will allow
-	signals that use symbols other then "<#>" to separate the names of
+	signals that use symbols other than "<#>" to separate the names of
 	signals from their bit subscripts.  [Paul Dormitzer] The
 	vectorization routine now always displays the correct subscripts,
 	surrounded by angle brackets, even if a tempest trace file did not
@@ -862,7 +862,7 @@ The contributors that suggested a given feature are shown in [].
 	[Mike Goulet]
 
 ***	Changed signal highlight so that the color is chosen from a menu,
-	rather then being toggled when a signal is clicked on.  Added a
+	rather than being toggled when a signal is clicked on.  Added a
 	similar function, cursor highlight.  [Lauren Carlson]
 
 ***	Hard coded the color selection values to be the specific colors:

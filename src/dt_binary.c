@@ -547,7 +547,7 @@ static void	fil_tempest_binary_add_cptr (
 
 	    /* We want to take the data and move it so that the LSB of the data to be extracted is
 	       now in value[0].  This is effectively a shift right of "bit" bits.  The fun comes in
-	       because we want more then one LW of accuracy.  (Give me a 128 bit architecture!)
+	       because we want more than one LW of accuracy.  (Give me a 128 bit architecture!)
 	       This method runs fast because it can execute in parallel and has no branches. */
 
 	    value.number[0] = (((buf[0] >> bit) & sig_ptr->pos_mask)

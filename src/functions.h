@@ -123,7 +123,7 @@
 #define	TIME_WIDTH(_trace_) \
 	((DTime_t)( ((_trace_)->width - XMARGIN - global->xstart) / global->res ))
 
-/* Point to next (prev) cptr.  Sizeof(value) is larger then we increment, */
+/* Point to next (prev) cptr.  Sizeof(value) is larger than we increment, */
 /* so force types to get pointer += 4 bytes */
 #define CPTR_NEXT(cptr) ((Value_t*) (((uint_t*)(cptr)) \
 					+ ((cptr)->siglw.stbits.size)))

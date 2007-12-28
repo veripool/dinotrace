@@ -273,7 +273,7 @@ back.
 @c --------------------
 @section Why do I get the wrong value for a annotated signal?
 
-Because you know more then Emacs.  (At least for the time being.)  Emacs
+Because you know more than Emacs.  (At least for the time being.)  Emacs
 simply does a search and replace for the signal name, totally ignoring
 the bus bits, module name, and hierarchy.
 

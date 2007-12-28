@@ -561,7 +561,7 @@ entire screen.
 
 Clicking the @widget{Full} button shrinks the resolution so that the
 entire trace fits onto the screen.  It is often quicker to press
-@widget{Full} then zoom to the desired location rather then scrolling.
+@widget{Full} then zoom to the desired location rather than scrolling.
 
 @end table
 
@@ -634,7 +634,7 @@ to not shrink the original window when opening.
 @cindex Trace Close
 @cindex Closing, Traces
 
-Selecting @dmenu{Trace Close} closes the current window if more then one
+Selecting @dmenu{Trace Close} closes the current window if more than one
 is open.  If this is the only one remaining open, use @dmenu{Trace Exit}
 instead.
 
@@ -2027,7 +2027,7 @@ color.
 @cindex Color, Bars
 
 @resource{barcolor} specifies the color to be used for the background of
-alternate signals.  Defaults to 7% greener then the background color.
+alternate signals.  Defaults to 7% greener than the background color.
 Those that remember green bar tractor-feed paper should feel comfortable
 with this default.
 
@@ -2133,7 +2133,7 @@ a} will likewise add annotations of where cursors exist.
 
 Emacs chooses what to highlight based upon only the base part of the
 signal name; all hierarchy and bus descriptors are stripped.  If multiple
-signals exist with the same basename, all signals other then those with
+signals exist with the same basename, all signals other than those with
 the desired hierarchy should be deleted so they won't participate in the
 annotation.
 
@@ -2640,7 +2640,7 @@ traced must be provided at compile time.
 @cindex BX02
 
 Tempest XOR format is very close to tempest normal format.  The first
-difference is that the format characters are BX02 rather then BT02.
+difference is that the format characters are BX02 rather than BT02.
 
 The second difference is that the binary data for each time record is a
 XOR of the previous row's binary data.  (Starting with all zeros before

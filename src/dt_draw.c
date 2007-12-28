@@ -517,7 +517,7 @@ static void draw_signal (
 
 	/* Compress invisible transitions into a glitch */
 	if ((xright - xleft) <= (xsigrf*2)) {
-	    int xleft_ok_next = MIN(xend, xleft + xsigrf*2);	/* May pass xend.. looks better then truncating */
+	    int xleft_ok_next = MIN(xend, xleft + xsigrf*2);	/* May pass xend.. looks better than truncating */
 	    const Value_t *nnptr;
 	    xright = xleft + xsigrf*2;
 	    /*printf (" glitch %d\n", xleft_ok_next);*/
@@ -864,7 +864,7 @@ void	draw_update_sigstart ()
     if (!global->prefix_enable) {
 	widest_hier = MAX(0,widest_hier - global->namepos_prefix);
     }
-    /* Don't waste more then 1/3 the screen area on signame */
+    /* Don't waste more than 1/3 the screen area on signame */
     xstart_sig = XMARGIN + MIN (m_sig_width * (widest_hier+widest_base), (smallest_width/3)) + XSTART_MARGIN;
     global->xstart = xstart_sig;
 

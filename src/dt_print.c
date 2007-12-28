@@ -328,7 +328,7 @@ static void print_draw_val (
 
 	    /* Compress invisible transitions into a glitch */
 	    if ((xright - xleft) <= (xsigrf*2)) {
-		int xleft_ok_next = MIN(xend, xleft + xsigrf*2);	/* May pass xend.. looks better then truncating */
+		int xleft_ok_next = MIN(xend, xleft + xsigrf*2);	/* May pass xend.. looks better than truncating */
 		const Value_t *nnptr;
 		xright = xleft + xsigrf*2;
 		/*printf (" glitch %d\n", xleft_ok_next);*/
