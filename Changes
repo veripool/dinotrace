@@ -2,7 +2,7 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 
-* Dinotrace 9.3f
+* Dinotrace 9.3f 2/19/2008
 
 ****	Fix signal radix being lost when trace is reread.  [Uwe Bonnes]
 
