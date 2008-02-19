@@ -78,7 +78,7 @@ Code created before 1998 was Copyrighted by Digital Equipment
 Corporation.  Their Copyright also disclaims any warranties, and
 disallows reproduction for sale.  Observing the GNU Copyleft should also
 cover this Copyright for any software distributed not for a fee.  (The
-water is murky if embeding Dinotrace.)
+water is murky if embedding Dinotrace.)
 
 @c --------------------
 @section Where should I report bugs and other problems with Dinotrace?
@@ -93,7 +93,7 @@ challenge.
 
 The primary tool you will want are GNU Emacs, with
 @file{verilog-mode.el}, @file{dinotrace.el}, and @file{sim-log.el}
-installed.  This will let you back annotate the values of signals onto
+installed.  This will let you back-annotate the values of signals onto
 your source code.
 
 You may also want Verilator, a public domain simulator, and other tools
@@ -128,7 +128,7 @@ for a day's worth of downloading.
 @c --------------------
 @section How do I install a piece of Texinfo documentation?
 
-A info file for Dinotrace comes with the package, @file{dinotrace.info}.
+An info file for Dinotrace comes with the package, @file{dinotrace.info}.
 Copy this file to a directory in your info path, usually
 @file{/usr/local/info}.  Then edit the master directory, usually
 @file{/usr/local/info/dir} to include the line:
@@ -228,7 +228,7 @@ end
 @section Why do I see X's for a bus that isn't all X's?
 
 If a signal value has even a single bit that is X or Z, but isn't
-entirely X or Z, then it will be displayed as a X.  You can see the real
+entirely X or Z, then it will be displayed as X.  You can see the real
 value by using @dmenu{Value Examine} or @kbd{@key{MB2}}.
 
 @c --------------------
@@ -258,7 +258,7 @@ front of the base signal name.  Furthermore, signals with over 1024 bits
 are dropped, since they would take too much space on the screen.
 
 A bug is not impossible either, though usually Dinotrace manages to eek
-out a warning message when it is about to loose a signal.
+out a warning message when it is about to lose a signal.
 
 @c --------------------
 @section Why doesn't a signal I can see in Dinotrace appear in the annotation?
@@ -271,7 +271,7 @@ Change the option to include deleted signals, or add the needed signals
 back.
 
 @c --------------------
-@section Why do I get the wrong value for a annotated signal?
+@section Why do I get the wrong value for an annotated signal?
 
 Because you know more than Emacs.  (At least for the time being.)  Emacs
 simply does a search and replace for the signal name, totally ignoring
@@ -299,8 +299,8 @@ Nope, sorry.  VCD+ is a proprietary format, and the reading code must be
 licensed for a fee before being used.  This is obviously not possible with
 the distribution philosophy of Dinotrace.
 
-You can however convert VCD+ files on the fly using vpd2vcd.  See the
-documentation for details.
+You can however convert VCD+ files on the fly using @prog{vpd2vcd}.
+See the documentation for details.
 
 @c --------------------
 @section I'd like Dinotrace to...

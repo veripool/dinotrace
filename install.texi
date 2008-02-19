@@ -279,6 +279,10 @@ Install Cygwin32, a shareware package that provides the BASH shell and
 Unix utilities.  It is available at
 @uref{http://sourceware.cygnus.com/cygwin/}.
 
+You'll need the gcc-g++, lesstif, and make packages.  Generally these
+aren't installed by default, use the cygwin setup executable to get
+them.
+
 @enumerate
 @item
 After downloading, click on the executable and install.
