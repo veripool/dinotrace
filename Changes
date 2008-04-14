@@ -2,21 +2,21 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 
-* Dinotrace 9.3f 2/19/2008
+* Dinotrace 9.3f 2008/19/2
 
 ****	Fix signal radix being lost when trace is reread.  [Uwe Bonnes]
 
 ****	Fix core dump when verilog trace has single timestamp.  [Uwe Bonnes]
 
-* Dinotrace 9.3e 2/27/2007
+* Dinotrace 9.3e 2007/27/2
 
 ****	Add DESTDIR "make install" rule for RPMs.  [Werner Hoch]
 
-* Dinotrace 9.3d 2/27/2007
+* Dinotrace 9.3d 2007/27/2
 
 ****	Fix "make uninstall" deleting data area (Sorry!!!).  [Dinesh]
 
-* Dinotrace 9.3c 1/2/2007
+* Dinotrace 9.3c 2007/2/1
 
 ***	Add signed decimal radix.  [by Uwe Bonnes]
 
@@ -29,17 +29,17 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Fix core dump when no fonts are available.  [Dmitri Belimov]
 
-* Dinotrace 9.3b 3/13/2006
+* Dinotrace 9.3b 2006/13/3
 
 ***	Fix line number incrementing in Verilog errors. [Uwe Bonnes]
 
-* Dinotrace 9.3a 6/13/2005
+* Dinotrace 9.3a 2005/13/6
 
 ***	Fix too small buttons under openmotif.
 
 ***	Fix missing keyboard accelerators under openmotif.
 
-* Dinotrace 9.2b 5/03/2005
+* Dinotrace 9.2b 2005/03/5
 
 ***	The default extension for Verilog dumps is now .vcd instead of .dmp.
 
@@ -47,7 +47,7 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Fix segfault when doing signal adds.  [Guy Hutchinson]
 
-* Dinotrace 9.2a 12/20/2004
+* Dinotrace 9.2a 2004/20/12
 
 **      NEWS file is now renamed Changes.
 
@@ -62,23 +62,23 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Fix segfault when using grid timerep without grid. [Scott Venier]
 
-* Dinotrace 9.1n 10/22/2004
+* Dinotrace 9.1n 2004/22/10
 
 ****	Fix slow file reading with >128 bit __en signals. [Ta-Chung Chang]
 
 ****	Fix signed analog display.  [Uwe Bonnes]
 
-* Dinotrace 9.1m 04/21/2004
+* Dinotrace 9.1m 2004/21/04
 
 ***	Fix duplicate and embeded __en cosmos signals. [Krishna Rangan]
 
 ****	Fix buffer overrun bugs.  [Samuel Ho]
 
-* Dinotrace 9.1k 06/06/2003
+* Dinotrace 9.1k 2003/06/06
 
 ****	Fix crash with busses that are replicated with different widths.
 
-* Dinotrace 9.1j 03/22/2003
+* Dinotrace 9.1j 2003/22/03
 
 ****	When window is resized, keep same percentage of trace visible.
 
@@ -90,13 +90,13 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Fix coredump on read and GCC 3.2.  [Jason Mancini]
 
-* Dinotrace 9.1i  03/07/2003
+* Dinotrace 9.1i  2003/07/03
 
 ***	Display values with appropriate leading 0s. [Dan McMahill]
 
 ***	Fix 0 extension of verilog values.  [Dominik Strasser, Bill Welch]
 
-* Dinotrace 9.1h  08/30/2002
+* Dinotrace 9.1h  2002/30/08
 
 ***	Save_duplicates is now on by default.
 
@@ -106,13 +106,13 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Fixed coredump reading wide ascii traces.  [Vitaly Oratovsky]
 
-* Dinotrace 9.1g  01/24/2002
+* Dinotrace 9.1g  2002/24/01
 
 ***	Reread all traces on receiving a USR1 signal.  [Uwe Bonnes]
 
 ****	Allow value searches on one-bit signals.  [Vitaly Oratovsky]
 
-* Dinotrace 9.1f  01/08/2002
+* Dinotrace 9.1f  2002/08/01
 
 ***	Let right button terminate Zoom click.  [Uwe Bonnes]
 
@@ -121,7 +121,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Hacked around bug causing window manager crash when
 	using Examine inside Zoom.  [Uwe Bonnes]
 
-* Dinotrace 9.1e  11/16/2001
+* Dinotrace 9.1e  2001/16/11
 
 ***	Allow 1-bit wide signals to have statenames.  [Dominik Strasser]
 
@@ -129,34 +129,34 @@ The contributors that suggested a given feature are shown in [].
 
 ***	Show count of posedges and negedges in value examine.
 
-* Dinotrace 9.1d  5/24/2001
+* Dinotrace 9.1d  2001/24/5
 
 ***	Fixed missing 0's in display of >64 bit numbers. [Amitvikram Rajkhowa]
 
 ***	Fixed stripping of characters after bus prefix.  [Steve Hoover]
 
-* Dinotrace 9.1c  2/13/2001
+* Dinotrace 9.1c  2001/13/2
 
 ***	Fixed Verilog reading ignoring the hierarchy separator. [Dominik Strasser]
 
-* Dinotrace 9.1b  2/13/2001
+* Dinotrace 9.1b  2001/13/2
 
 ****	Documentation updates.
 
-* Dinotrace 9.1a  1/22/2001
+* Dinotrace 9.1a  2001/22/1
 
 **	Added analog waveform format.  [Dave Colson]
 	Includes new Signal Waveform menu and signal_waveform command.
 
-* Dinotrace 9.0m  11/21/2000
+* Dinotrace 9.0m  2000/21/11
 
 ****	Fixed a bug reading compressed tempest on Digital UNIX. [Steve Hoover]
 
-* Dinotrace 9.0l  8/30/2000
+* Dinotrace 9.0l  2000/30/8
 
 **	Added support for femtosecond Verilog timescales. [Derek Bosch]
 
-* Dinotrace 9.0k  7/17/2000
+* Dinotrace 9.0k  2000/17/7
 
 ****	Fixed bug with $comment after $enddefinitions. [Harunobu Miyashita]
 
@@ -167,7 +167,7 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Fixed Verilog reading with large time intervals. [Matthias Wenzel]
 
-* Dinotrace 9.0i  5/1/2000
+* Dinotrace 9.0i  2000/1/5
 
 **	Major speed improvement in reading Tempest traces.
 	All trace formats now have less processing when building busses from
@@ -181,7 +181,7 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Builds on NetBSD.  [Dan McMahill]
 
-* Dinotrace 9.0g  1/17/2000
+* Dinotrace 9.0g  2000/17/1
 
 **	Configuration file commands that require times now take times
 	with respect to the time_rep value.  Thus if the times are displayed
@@ -209,7 +209,7 @@ The contributors that suggested a given feature are shown in [].
 
 ****    Fixed Verilog reading for TOPS traces. [Dieter Werth]
 
-* Dinotrace 9.0f  9/29/1999
+* Dinotrace 9.0f  1999/29/9
 
 ****	Allowed ' character in signals.  [Dominik Strasser]
 
@@ -217,7 +217,7 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Fixed a bug which errored on "$timescale 10 ns"  (Space before units.)
 
-* Dinotrace 9.0e  9/29/1999
+* Dinotrace 9.0e  1999/29/9
 
 ****	Fixed a bug which would resize the screen incorrectly.
 
@@ -236,7 +236,7 @@ The contributors that suggested a given feature are shown in [].
 	each assertion, deassertion or both edges of a signal, rather than on
 	a fixed time interval.
 
-* Dinotrace 9.0d  11/30/1998
+* Dinotrace 9.0d  1998/30/11
 
 ** Enhancements:
 
@@ -258,13 +258,13 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Fixed bug which would make Customize Grid ignore resolution setting.
 
-* Dinotrace 9.0c  9/30/1998
+* Dinotrace 9.0c  1998/30/9
 
 ** Enhancements:
 
 ****	Configures and builds on Windows NT.
 
-* Dinotrace 9.0b  8/3/1998
+* Dinotrace 9.0b  1998/3/8
 
 ** Enhancements:
 
@@ -274,7 +274,7 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Configures and builds on Linux.  [Celia Clause]
 
-* Dinotrace 9.0a  4/13/1998
+* Dinotrace 9.0a  1998/13/4
 
 ** Enhancements:
 
@@ -341,12 +341,12 @@ The contributors that suggested a given feature are shown in [].
 	reading routines, so latent bugs may cause values to be
 	mis-displayed.
 
-* Dinotrace 8.3b  9/12/1997
+* Dinotrace 8.3b  1997/12/9
 
 ***	Allowed colors in signal_add, signal_move, signal_rename, signal_copy.
 	[Duane Galbi]
 
-* Dinotrace 8.3a  1/29/1997
+* Dinotrace 8.3a  1997/29/1
 
 ***	Allowed value searches to specify a signal name to search in.
 	[Lisa Noack]
@@ -357,16 +357,16 @@ The contributors that suggested a given feature are shown in [].
 
 ***	Added the full documentation to Help menu option.
 
-* Dinotrace 8.2b  11/07/1996
+* Dinotrace 8.2b  1996/07/11
 
 ****	Fixed a bug which would cause a common bus to be made containing
 	two unrelated signals.  [Serge Bogdanov]
 
-* Dinotrace 8.2  10/10/1996
+* Dinotrace 8.2  1996/10/10
 
 ***	Added support for 3-state COSMOS traces.  [Serge Bogdanov]
 
-* Dinotrace 8.1e  7/24/1996
+* Dinotrace 8.1e  1996/24/7
 
 ****	Fixed a bug where reading a directory as a config file would
 	crash, rather than warn.  [Steve Lang]
@@ -374,18 +374,18 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug where annotation would add many leading zeros.
 	[Rachel Berman]
 
-* Dinotrace 8.1c  5/20/1996
+* Dinotrace 8.1c  1996/20/5
 
 ****	Fixed a bug where signal_add would add signals from any trace,
 	not just from deleted signals.  (Use signal_copy to add signals
 	from any trace including deleted signals.)  [Michael Quadri]
 
-* Dinotrace 8.1b  4/30/1996
+* Dinotrace 8.1b  1996/30/4
 
 ****	Fixed a bug where deleting signals would make the top signals in
 	a trace disappear.  [Steve Lang]
 
-* Dinotrace 8.1a  3/27/1996
+* Dinotrace 8.1a  1996/27/3
 
 ***	Added a customize read option, and allowed selection of which
 	.dino files are read automatically with traces.  [Mike Kagen]
@@ -405,12 +405,12 @@ The contributors that suggested a given feature are shown in [].
 
 	Fixed a bug which leaked about 1MB every file read.  [Mike Kagen]
 
-* Dinotrace 8.0e  3/8/1996
+* Dinotrace 8.0e  1996/8/3
 
 ****	Fixed a bug where refresh in a configuration file would crash
 	Dinotrace.  [Sol Katzman]
 
-* Dinotrace 8.0d  3/6/1996
+* Dinotrace 8.0d  1996/6/3
 
 ***	Increased the number of states on a signal to 512.  [Mike Kagen,
 	Yifat Ben-Shachar]
@@ -418,7 +418,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug which would mis-print busses over 32 bits wide.  [Steve
 	Glaser]
 
-* Dinotrace 8.0c  3/4/1996
+* Dinotrace 8.0c  1996/4/3
 
 **	Massively improved grid support, especially for multi-clock
 	designs.  The grid item is no longer on the main menu, all
@@ -471,7 +471,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug which crashed Dinotrace when scrolling with a
 	grid on odd signal boundaries.  [Sol Katzman]
 
-* Dinotrace 7.4a  2/01/1996
+* Dinotrace 7.4a  1996/01/2
 
 **	Added time, value, and signal font selection (see resource
 	section.)  [Steve Lang]
@@ -482,7 +482,7 @@ The contributors that suggested a given feature are shown in [].
 ***	Values in the trace window now use lower case letters when printing
 	hex.  This mainly makes it easier to discriminate "E" and "F".
 
-* Dinotrace 7.3b  12/04/1995
+* Dinotrace 7.3b  1995/04/12
 
 ***	Added support for Merlin binary traces (tempest format).  [Dan Katz]
 
@@ -491,7 +491,7 @@ The contributors that suggested a given feature are shown in [].
 	read in which had the signal changing, the new signal would be
 	deleted.  Now it will detect this case and not delete the signal.
 
-* Dinotrace 7.3a  12/04/1995
+* Dinotrace 7.3a  1995/04/12
 
 **	Dinotrace will attempt to preserve signal colors, ordering, and
 	deletions when re-reading a trace.  This is controllable with the
@@ -502,14 +502,14 @@ The contributors that suggested a given feature are shown in [].
 	related refresh, and refreshing commands.  Added refresh button
 	near End button.  [Reinhard Schumann]
 
-* Dinotrace 7.2b  10/29/1995
+* Dinotrace 7.2b  1995/29/10
 
 ***	Added the signal_add command.  [Reinhard Schumann]
 
 ***	Decsim traces now allow '?' as unknows to support the Nextest
 	trace format.  [Josh Belkin]
 
-* Dinotrace 7.2a  10/4/1995
+* Dinotrace 7.2a  1995/4/10
 
 ***	Value Annotation now has separate enables for automatic cursors,
 	which default to off.
@@ -520,7 +520,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug where Verilog DMPs with over 1024 bit busses would
 	core dump.  [Dean Sovie]
 
-* Dinotrace 7.1c  6/28/1995
+* Dinotrace 7.1c  1995/28/6
 
 **	Files ending in .Z or .gz will now be uncompressed or ungnuzip'ed
 	respectively.  This results in large disk space savings.
@@ -541,7 +541,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug where characters after the bus name would be truncated.
 	[Paul Wasson]
 
-* Dinotrace 7.1a  5/24/1995
+* Dinotrace 7.1a  1995/24/5
 
 **	Added a socket interface for Emacs (Ultrix/OSF only).  This allows
 	Emacs to feed configuration commands, such as cursor placements, to
@@ -572,20 +572,20 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug where signals of over 96 bits in Verilog DMP files
 	would show up as blank.  [Ben Marshall]
 
-* Dinotrace 7.0c  2/20/1995
+* Dinotrace 7.0c  1995/20/2
 
 ****	Fixed a bug where highlighting wouldn't happen when the same value
 	was in multiple colors in the value search requester.  [Mike Kagen]
 
 
-* Dinotrace 7.0b  2/20/1995
+* Dinotrace 7.0b  1995/20/2
 
 ***	Added -noconfig command line option.
 
 ****	Fixed a performance bug when reading Verilog Dump files.  [Tracey
 	Jones]
 
-* Dinotrace 7.0a  2/20/1995
+* Dinotrace 7.0a  1995/20/2
 
 **	Added the annotation feature and Emacs library.  Any behavioral
 	code debuggers should look at this feature!!
@@ -620,7 +620,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug which would not refresh the trace when the window was
 	resized.
 
-* Dinotrace 6.7  10/05/1994
+* Dinotrace 6.7  1994/05/10
 
 ***	This release is the first to include an Alpha-VMS executable.
 	*** PLEASE NOTE THAT THIS CHANGES THE FILENAMES OF THE KIT AND
@@ -657,7 +657,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug where some X-servers would crash when large traces were
 	displayed on the screen.  [Charlie Lind]
 
-* Dinotrace 6.6  5/23/1994
+* Dinotrace 6.6  1994/23/5
 
 ***	This release is the first to include an Alpha-OSF executable.
 
@@ -684,7 +684,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug where clicking on OK in File Open without selecting a
 	file would hang.  [Larry Gust]
 
-* Dinotrace 6.5  1/10/1994
+* Dinotrace 6.5  1994/10/1
 
 **	Added Trace->Reread All which will reread the trace in every
 	window.  To support this Trace->Reread will now only read a trace
@@ -735,7 +735,7 @@ The contributors that suggested a given feature are shown in [].
 	wrong assertion until the first time it changed in the trace.
 	[John Murphy]
 
-* Dinotrace 6.4  11/18/1993
+* Dinotrace 6.4  1993/18/11
 
 ***	The major change in this release is in reading files.  Verilog
 	format is supported, and Tempest format now works correctly.
@@ -779,7 +779,7 @@ The contributors that suggested a given feature are shown in [].
 	Fixed a bug where Trace->Open, Trace->Read, Trace->ReRead would
 	crash Dinotrace.  [Jai Singh]
 
-* Dinotrace 6.3  8/11/1993
+* Dinotrace 6.3  1993/11/8
 
 **	A new top level value menu was created to effect and search on the
 	value of signals.  Signal Search has been moved to Value Search.  A
@@ -804,7 +804,7 @@ The contributors that suggested a given feature are shown in [].
 	ns would cause the screen to fill with garbage. (All times
 	in binary and ASCII traces must still be under 2,000,000,000 ns.)
 
-* Dinotrace 6.2  5/14/1993
+* Dinotrace 6.2  1993/14/5
 
 **	The time scroll bar (horizontal) now shows the position of cursors
 	that are not on the screen.  This makes it easy to quickly scroll
@@ -848,7 +848,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Added Verilog information and VTRACE to Documentation.  [Written
 	by Gregg Bouchard]
 
-* Dinotrace 6.1  4/12/1993
+* Dinotrace 6.1  1993/12/4
 
 **	Added keyboard accelerators.  The keyboard may be used to select
 	menu options when the mouse is over the menu by pressing the
@@ -872,7 +872,7 @@ The contributors that suggested a given feature are shown in [].
 ***	Allowed lower case "z" or "U" in decsim ascii traces to support
 	Verilog.  [Gregg Bouchard]
 
-* Dinotrace 6.0  4/6/1993
+* Dinotrace 6.0  1993/6/4
 
 	This is a major release with many new features, so read up!
 
@@ -924,13 +924,13 @@ The contributors that suggested a given feature are shown in [].
 	end part way across the screen.  (Not perfect, but beats crashing.)
 	[Mike Goulet]
 
-* Dinotrace 5.2b  3/11/1993
+* Dinotrace 5.2b  1993/11/3
 
 ***	Re-release to fix bug where move signal would crash Dinotrace when
 	using binary traces.  Changed "Dinotrace V5.0" to "5.2" in
 	postscript printing.
 
-* Dinotrace 5.2  2/17/1993
+* Dinotrace 5.2  1993/17/2
 
 **	The main new feature is Binary Traces.  Dinotrace now can read
 	either binary or ascii traces, and it automatically determines
@@ -972,7 +972,7 @@ The contributors that suggested a given feature are shown in [].
 ****	Fixed a bug which would prevent printouts from working when printing
 	times over 10,000.  [Jai Singh]
 
-* Dinotrace 5.0  1/11/1993
+* Dinotrace 5.0  1993/11/1
 
 ***	You may now specify a filename on the command line that will be
 	read when Dinotrace starts up.
