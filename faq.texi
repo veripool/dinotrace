@@ -51,7 +51,8 @@
 
 This is a list of frequently asked questions (FAQ) for Dinotrace users.
 A hypertext version is available on the web at
-@uref{http://www.veripool.com/dinotrace/faq.html}.
+@uref{http://www.veripool.org/dinotrace
+/faq.html}.
 
 Please send updates and corrections to the FAQ to
 @code{wsnyder@@wsnyder.org}.
@@ -64,7 +65,8 @@ Please send updates and corrections to the FAQ to
 
 The latest version is Dinotrace @value{VERSION}.  It can be down-loaded
 from the veripool, at
-@uref{http://www.veripool.com/dinotrace}.
+@uref{http://www.veripool.org/dinotrace
+}.
 
 @c --------------------
 @section Can I copy Dinotrace?
@@ -116,7 +118,8 @@ cygwin, and a bunch of subpackages that are a part of cygwin.
 @section How do I get a printed copy of the Dinotrace manual?
 
 A html file is available at
-@uref{http://www.veripool.com/dinotrace/index.html}.
+@uref{http://www.veripool.org/dinotrace
+/index.html}.
 Your web browser should be able to print this.
 
 The more ambitious can build the manual themselves.  The texinfo source

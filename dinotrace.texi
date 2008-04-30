@@ -126,7 +126,8 @@ This file documents the Dinotrace package for signal waveform tracing.
 This is edition @value{ID}, for Dinotrace version @value{VERSION}.
 
 For the latest version, please see
-@uref{http://www.veripool.com/dinotrace}
+@uref{http://www.veripool.org/dinotrace
+}
 
 Please feel free to send comments and suggestions to
 @email{wsnyder@@wsnyder.org}.  If you install this

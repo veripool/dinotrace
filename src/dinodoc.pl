@@ -7,7 +7,7 @@
 #
 # Author: Wilson Snyder <wsnyder@wsnyder.org>
 #
-# Code available from: http://www.veripool.com/dinotrace
+# Code available from: http://www.veripool.org/dinotrace
 #
 #*****************************************************************************
 #
