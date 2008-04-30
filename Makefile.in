@@ -259,8 +259,7 @@ dist: $(DISTDEP) maintainer-copy
 
 maintainer-dist: dist tag
 	echo "****** Did you rebuild all versions in .../bin ?"
-	cp *.gz ~/backpack
-	cp *.gz ~/src/kits
+	svnorcvs release *.gz
 
 maintainer-diff:
 	distname=`sed -e '/DTVERSION/!d' \
