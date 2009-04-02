@@ -1,4 +1,3 @@
-/* $Id$ */
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: Dinotrace functions and callback externs
  *

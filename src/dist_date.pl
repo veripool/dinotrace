@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# $Id$
 #*****************************************************************************
 # DESCRIPTION: Dinotrace make: create header file with compilation date in it
 #

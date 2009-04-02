@@ -2,7 +2,6 @@
 @c %**start of header
 @setfilename dinotrace
 @settitle Dinotrace @value{VERSION}
-@c $Id$
 @c Put everything in one index
 @syncodeindex fn cp
 @syncodeindex vr cp

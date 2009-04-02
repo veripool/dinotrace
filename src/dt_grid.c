@@ -1,4 +1,3 @@
-#ident "$Id$"
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: grid drawing and requestors
  *

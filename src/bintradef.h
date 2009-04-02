@@ -1,5 +1,4 @@
 #ifdef VMS
-/* $Id$ */
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: DECSIM binary trace format reading
  *

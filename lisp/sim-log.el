@@ -1,9 +1,8 @@
 ;; sim-log.el --- major mode for viewing simulation log files
-;;
-;; $Id: sim-log.el 62260 2008-10-03 14:48:21Z wsnyder $
 
 ;; Author          : Wilson Snyder <wsnyder@wsnyder.org>
 ;; Keywords        : languages
+;; version: 9.4a         
 
 ;;; Commentary:
 ;;

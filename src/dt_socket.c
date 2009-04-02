@@ -1,4 +1,3 @@
-#ident "$Id$"
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: socket interface to command engine
  *

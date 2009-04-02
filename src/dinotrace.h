@@ -1,4 +1,3 @@
-/* $Id$ */
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: structure definitions
  *

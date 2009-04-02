@@ -1,10 +1,10 @@
 ;; installer.el --- Install .el files into site-lisp directory
-;; $Id: installer.el,v 1.5 2001/02/13 14:15:34 wsnyder Exp $
 ;;
 ;; Simple routines to put lisp files where they make sense
 ;; then to byte compile them
 ;;
 ;; Author          : Wilson Snyder <wsnyder@wsnyder.org>
+;; version: 9.4a         
 
 ;;; Commentary:
 ;;

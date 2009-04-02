@@ -1,4 +1,3 @@
-/* $Id$ */
 /******************************************************************************
  * DESCRIPTION: Dinotrace source: postscript header
  *
@@ -55,8 +54,8 @@
  *
  *****************************************************************************/
 
-char dt_post[] = "% $Id$\n\
-% Contact wsnyder@wsnyder.org with any problems with this document\n\
+char dt_post[] = "% version: 9.4a \n\
+% Contact wsnyder@wsnyder.org with problems with the header of this document\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\
 /STROKE {currentpoint stroke MT} def	% define STROKE saving point\n\

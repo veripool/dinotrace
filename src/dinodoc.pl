@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# $Id$
 #*****************************************************************************
 # DESCRIPTION: Dinotrace make: convert documentation text file to header file
 #

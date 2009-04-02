@@ -1015,8 +1015,6 @@ The contributors that suggested a given feature are shown in [].
 	filters ( toolkit problem??? )
 
 -----------------------------------------------------------------------------
-$Id$
------------------------------------------------------------------------------
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 

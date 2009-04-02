@@ -1,9 +1,8 @@
 ;; dinotrace.el --- minor mode for displaying waveform signal values
-;;
-;; $Id: dinotrace.el 29145 2006-12-26 16:33:54Z wsnyder $
 
 ;; Author          : Wilson Snyder <wsnyder@wsnyder.org>
 ;; Keywords        : languages
+;; version: 9.4a         
 
 ;;; Commentary:
 ;;

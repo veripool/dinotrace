@@ -3,7 +3,6 @@
 @setfilename faq.info
 @settitle Frequently asked questions about Dinotrace
 @setchapternewpage off
-@c $Id$
 @finalout
 @c %**end of header
 
