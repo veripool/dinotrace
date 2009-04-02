@@ -442,7 +442,7 @@ void	config_parse_geometry (
 
     /* Copy line into a temp, remove the percentage symbols, and parse it */
     strcpy (noper_line, line);
-    while ((tp=strchr (noper_line, '%'))) strcpy (tp, tp+1);
+    while ((tp=strchr (noper_line, '%'))) strcpy_overlap (tp, tp+1);
 
     flags = XParseGeometry (noper_line, &x, &y, &wid, &hei);
     if (flags & WidthValue)	geometry->width = wid;

@@ -733,6 +733,7 @@ void    grid_customize_ok_cb (
     XtUnmanageChild (trace->gridscus.dialog);
 
     grid_calc_autos (trace);
+    draw_needed (trace);
 }
 
 void    grid_customize_apply_cb (
