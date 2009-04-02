@@ -883,7 +883,7 @@ void	draw_update_sigstart ()
 void draw_perform ()
 {
     Trace_t		*trace;
-    int bgdcolor;
+    Pixel	bgdcolor;
 
     if (DTPRINT_ENTRY) printf ("In draw_perform %d %d\n", global->redraw_needed, global->trace_head->redraw_needed);
 
