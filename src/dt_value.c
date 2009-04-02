@@ -1123,8 +1123,6 @@ void    val_examine_ev (
     XEvent	event;
     XButtonPressedEvent *em;
     int		update_pending = FALSE;
-    extern char *events[];
-    if (events) {}  /* Prevent unused warning */
 
     if (DTPRINT_ENTRY) printf ("In val_examine_ev, button=%d state=%d\n", ev->button, ev->state);
     if (ev->type != ButtonPress) return;	/* Used for both button 1 & 2. */

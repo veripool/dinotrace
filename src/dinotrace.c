@@ -315,18 +315,18 @@ char	*help_message ()
 	     "%s\n\nDistributed %s\n\
 Configured %s for %s\n\
 \n\
+Please see the help menu or %sdinotrace.txt for documentation.\n\
+\n\
+Downloads and documentation at:\n\
+http://www.veripool.org/dinotrace\n\
+\n\
 Written by Wilson Snyder\n\
 <wsnyder@wsnyder.org>\n\
 \n\
-Copyright 1998-2008 by Wilson Snyder\n\
+Copyright 1998-2009 by Wilson Snyder\n\
 Copyright 1993-1997 by Digital Equipment Corporation.\n\
 This software is covered by the GNU Public License,\n\
 and is WITHOUT ANY WARRANTY.\n\
-\n\
-Please see the help menu or %sdinotrace.txt for documentation.\n\
-\n\
-A complete Dinotrace kit is available on:\n\
-http://www.veripool.org/dinotrace
 \n\
 \n\
 For configuration information, Dinotrace reads in order:\n\
