@@ -2,6 +2,10 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 
+* Dinotrace 9.4a ***
+
+**	Dinotrace is now distributed under GPL v3 (previously GPL 2).
+
 * Dinotrace 9.3f 2008/19/2
 
 ****	Fix signal radix being lost when trace is reread.  [Uwe Bonnes]
