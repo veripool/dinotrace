@@ -100,7 +100,7 @@ by the author.
 
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1998-2008 Wilson Snyder
+Copyright @copyright{} 1998-2009 Wilson Snyder
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
