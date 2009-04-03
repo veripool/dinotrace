@@ -150,10 +150,7 @@ FAQ: faq.texi
 	--no-headers --no-validate
 
 %.html: %.texi
-	perl -pe 's/\@(dmenu|resource|switch|config)/\@code/g; \
-		  s/\@widget/\@emph/g;	  s/\@prog/\@strong/g; \
-		  $$_="" if (/^\@macro/ .. /^\@end macro/); \
-		  ' $*.texi >$*.tmp
+	perl html_texi_clean $*.texi >$*.tmp
 	texi2html -monolithic $*.tmp
 	mv $*.tmp.html $*.html
 	rm $*.tmp

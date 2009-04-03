@@ -1,0 +1,5 @@
+#!/usr/bin/perl -p
+s/\@(dmenu|resource|switch|config)/\@code/g;
+s/\@widget/\@emph/g;
+s/\@prog/\@strong/g;
+$_="" if (/^\@macro/ .. /^\@end macro/);
