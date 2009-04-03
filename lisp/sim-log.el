@@ -54,7 +54,7 @@
 (require 'font-lock)
 (provide 'sim-log)
 
-(defconst sim-log-version "$$Revision: 62260 $$"
+(defconst sim-log-version "9.4a"
   "Version of this sim-log mode.")
 
 ;;
@@ -118,7 +118,7 @@
 	(list (concat "^.*" sim-log-warning-regexp ".*$")
 	      0 font-lock-comment-face) ; Orangish
 	(list sim-log-time-regexp
-	      0 font-lock-reference-face t) ; Blueish override
+	      0 font-lock-constant-face t) ; Blueish override
 	))
 
 

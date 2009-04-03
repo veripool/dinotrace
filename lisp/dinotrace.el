@@ -102,14 +102,7 @@
 
 (require 'verilog-mode)
 
-(or (string-match "^[0-9]+$" verilog-mode-version)  ; Subversion
-    (string-match "Revision: [456789]" verilog-mode-version)
-    (string-match "Revision: 3\.[2-9][0-9]" verilog-mode-version)
-    (string-match "Revision: 3\.1[3-9]" verilog-mode-version)
-    (string-match "Revision: 3\.12\.1" verilog-mode-version)
-    (error "Need verilog-mode Revision 3.13 or newer.  You have %s" verilog-mode-version))
-
-(defconst dinotrace-mode-version "$$Revision: 29145 $$"
+(defconst dinotrace-mode-version "9.4a"
   "Version of this dinotrace-mode.")
 
 (eval-when-compile
@@ -242,8 +235,7 @@ that buffer type.")
   (substitute-key-definition `toggle-read-only 'dinotrace-toggle-read-only
 			     dinotrace-mode-map global-map)
   (substitute-key-definition `hilit-recenter 'recenter ;; Slow and useless
-			     dinotrace-mode-map global-map)
-  )
+			     dinotrace-mode-map global-map))
 
 ;;
 ;; Menus
@@ -693,10 +685,10 @@ similar place."
       (set (make-local-variable 'fontification-functions) nil) ;; else emacs21 will font-lock what we insert
       (dinotrace-save-mod-excursion
        ;;
-       (set (make-variable-buffer-local 'dinotrace-buffer-read-only)  SAVE-read-only)  ;; set in save-mod-excursion
-       (set (make-variable-buffer-local 'dinotrace-buffer-string) (buffer-string))
-       (set (make-variable-buffer-local 'dinotrace-buffer-annotate-time) dinotrace-annotate-time)
-       (make-variable-buffer-local 'dinotrace-buffer-hierarchy-regexp)
+       (set (make-local-variable 'dinotrace-buffer-read-only)  SAVE-read-only)  ;; set in save-mod-excursion
+       (set (make-local-variable 'dinotrace-buffer-string) (buffer-string))
+       (set (make-local-variable 'dinotrace-buffer-annotate-time) dinotrace-annotate-time)
+       (make-local-variable 'dinotrace-buffer-hierarchy-regexp)
        (setq SAVE-read-only t)
        ;;
        (let ((case-fold-search nil)
@@ -753,7 +745,7 @@ similar place."
 	  (dinotrace-insert-faced tim-str (dinotrace-cursor-face cursor-num))
 	  (setq cursor-num (1+ cursor-num))))
       (dinotrace-insert-faced "'\n" dinotrace-header-face)))
-  (set (make-variable-buffer-local 'dinotrace-buffer-header-lines)
+  (set (make-local-variable 'dinotrace-buffer-header-lines)
        (count-lines 1 (point))))
 
 (defsubst dinotrace-annotate-buffer-signal (sig)
@@ -881,7 +873,7 @@ Point must be at proper start position (or point-min)"
   (let ((ctimen (string-to-number ctime))
 	max-point)
     (while (and (re-search-forward sim-log-time-regexp nil t)
-		(> ctimen (string-to-int (match-string 1)))))
+		(> ctimen (string-to-number (match-string 1)))))
     ;; Skip blanks
     (forward-line 0)
     (setq max-point (point))
@@ -1017,7 +1009,7 @@ Returns T if the file has changed."
 
 (defun dinotrace-face-create (color italic)
   (let ((face (intern (concat "dinotrace-" color (if italic "-italic" "")))))
-    (cond ((internal-find-face face))
+    (cond ((facep face))
 	  ((make-face face)
 	   (set-face-foreground face color)
 	   (set-face-italic-p face italic)
@@ -1279,7 +1271,7 @@ If prefix-arg, then also put cursors where that value occurs."
 	       (condition-case nil
 		   (open-network-stream
 		    "dinotrace" nil (match-string 1 dinotrace-socket-name)
-		    (string-to-int (match-string 2 dinotrace-socket-name)))
+		    (string-to-number (match-string 2 dinotrace-socket-name)))
 		 (file-error nil)))
 	 (cond ((not dinotrace-socket)
 		(error "Can't open socket.  Press a in Dinotrace, then C-x C-a a in Emacs"))
