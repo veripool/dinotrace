@@ -7,7 +7,7 @@
 ;;; Commentary:
 ;;
 ;; Distributed from the web
-;;	http://www.veripool.com
+;;	http://www.veripool.org
 ;;
 ;; To use this package, simply put it in a file called "sim-log.el" in
 ;; a Lisp directory known to Emacs (see `load-path'), byte-compile it
