@@ -4,7 +4,7 @@
 ;; then to byte compile them
 ;;
 ;; Author          : Wilson Snyder <wsnyder@wsnyder.org>
-;; version: 9.4a         
+;; version: 9.4a
 
 ;;; Commentary:
 ;;
@@ -43,7 +43,7 @@
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with installer; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
@@ -51,7 +51,7 @@
 ;;
 
 ;;; History:
-;; 
+;;
 
 
 ;;; Code:
@@ -62,7 +62,7 @@
 	(best (car load-path)))
     (while path
       (if (and (not best)
-	       (string-match "site-lisp" (car path))) 
+	       (string-match "site-lisp" (car path)))
 	  (setq best (car path)))
       (setq path (cdr path)))
     (expand-file-name filename best)))
@@ -127,7 +127,7 @@
       (byte-compile-file filename))
     (find-file filename)
     (installer-comment-process)))
-  
+
 (provide 'installer)
 
 ;;; installer.el ends here

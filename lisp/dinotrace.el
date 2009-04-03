@@ -2,7 +2,7 @@
 
 ;; Author          : Wilson Snyder <wsnyder@wsnyder.org>
 ;; Keywords        : languages
-;; version: 9.4a         
+;; version: 9.4a
 
 ;;; Commentary:
 ;;
@@ -89,14 +89,14 @@
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with Dinotrace; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ;; Boston, MA 02111-1307, USA.
 
 ;;; History:
-;; 
+;;
 
 ;;; Code:
 
@@ -182,13 +182,13 @@ before raising error.")
 		      verilog-read-signals
 		      dinotrace-nop
 		      dinotrace-annotate-verilog-signal
-		      dinotrace-annotate-verilog-value) 
+		      dinotrace-annotate-verilog-value)
 
      ( sim-log-mode   dinotrace-annotate-sim-log-buffer
 		      nil
 		      dinotrace-annotate-sim-log-cursor
 		      dinotrace-annotate-verilog-signal
-		      dinotrace-annotate-verilog-value) 
+		      dinotrace-annotate-verilog-value)
 
      ( c-mode  	      dinotrace-annotate-verilog-buffer
 		      dinotrace-c-read-signals
@@ -357,7 +357,7 @@ Created in the annotation file by dinotrace.")
 Created in the annotation file by dinotrace.")
 
 ;;
-;; Array element Macros 
+;; Array element Macros
 ;;
 
 (defsubst dinotrace-buffer-annotate-func ()
@@ -468,7 +468,7 @@ exit dinotrace-mode.
 To unannotate the buffer, use:
    \\[dinotrace-unannotate-buffer]	dinotrace-unannotate-buffer
    \\[dinotrace-unannotate-all]	dinotrace-unannotate-all
- or, toggle read-only with \\[dinotrace-toggle-read-only] 
+ or, toggle read-only with \\[dinotrace-toggle-read-only]
 
 These bindings are added to the buffer's keymap when you enter this mode:
 Mostly, the last letters in these commands match the Dinotrace program keys.
@@ -575,7 +575,7 @@ If dinotrace annotated, then remove annotation also."
 ;; Alias for verilog-mode 3.10 back compatibility
 (defun dinotrace-unannotate-all-buffers ()
   (dinotrace-unannotate-all))
-  
+
 (defun dinotrace-unannotate-buffer (&optional buffer)
   "Remove `value' comments for current buffer.
 This is just a revert-buffer which keeps the window and point in a
@@ -643,7 +643,7 @@ similar place."
 ;;
 ;; Annotation
 ;;
-      
+
 (defun dinotrace-reannotate-all-windows ()
   "Check annotations in all buffers, update those that need it."
   (interactive)
@@ -676,7 +676,7 @@ similar place."
 	  (setq minor-mode-map-alist
 		(cons (cons 'dinotrace-mode dinotrace-mode-map)
 		      minor-mode-map-alist))))
-    
+
     (when (and (assoc major-mode dinotrace-languages)
 	       (not dinotrace-mode)
 	       (or (cond ((not (buffer-modified-p)) t)
@@ -711,7 +711,7 @@ similar place."
 	 (force-mode-line-update)
 	 (message "Done.")
 	 )))))
-	  
+
 (defun dinotrace-set-text-properties (start end face &optional object)
   "Call set-text-properties."
   (set-text-properties start end
@@ -914,7 +914,7 @@ like \"notafoo12\"."
 ;;
 ;; Quick Annotation - Do all buffers when user hits cursor or signal keys
 ;;
-      
+
 (defun dinotrace-nop (&rest foo))
 
 ;; Quickly add cursor time to all log buffers
@@ -928,7 +928,7 @@ like \"notafoo12\"."
 			     (funcall (dinotrace-buffer-quick-cursor-func)
 				      ctime face))))))
 	    (buffer-list))))
-  
+
 ;; Quickly highlight a signal
 (defun dinotrace-quickannotate-signal (signal color)
   (let ((face (dinotrace-sigcolor-face color))
@@ -974,20 +974,20 @@ Returns T if the file has changed."
   (cond ((not (file-readable-p filename))
 	 (message "Annotation file no longer exists!")
 	 nil)
-	((equal dinotrace-annotate-time 
+	((equal dinotrace-annotate-time
 		(nth 5 (file-attributes filename)))
 	 nil)
 	(t
 	 (message "Reading annotation file %s" filename)
 	 (load-file filename)
-	 (setq dinotrace-annotate-time 
+	 (setq dinotrace-annotate-time
 	       (nth 5 (file-attributes filename)))
 	 ;;
 	 ;; Make a face for each cursor
 	 (let ((cursor-num 0))
 	   (while (< cursor-num (length dinotrace-cursors))
 	     (dinotrace-cursor-set-face
-	      cursor-num 
+	      cursor-num
 	      (or (and (not (equal "" (dinotrace-cursor-color-name cursor-num)))
 		       (dinotrace-face-create
 			(dinotrace-cursor-color-name cursor-num)
@@ -999,7 +999,7 @@ Returns T if the file has changed."
 	 (let ((color-num 0))
 	   (while (< color-num (length dinotrace-signal-colors))
 	     (dinotrace-sigcolor-set-face
-	      color-num 
+	      color-num
 	      (or (and (not (equal "" (dinotrace-sigcolor-color-name color-num)))
 		       (dinotrace-face-create
 			(dinotrace-sigcolor-color-name color-num)
@@ -1014,7 +1014,7 @@ Returns T if the file has changed."
 	      (car sigs) (dinotrace-make-propertied (car sigs)))
 	     (setq sigs (cdr sigs))))
 	 t)))
-      
+
 (defun dinotrace-face-create (color italic)
   (let ((face (intern (concat "dinotrace-" color (if italic "-italic" "")))))
     (cond ((internal-find-face face))
@@ -1065,7 +1065,7 @@ dinotrace-read-timout time."
 ;;
 ;; Command sending utilities
 ;;
-      
+
 (defun dinotrace-find-time-default (point)
   "Find a time near the cursor.  Works in sim-log-mode."
   (save-excursion
@@ -1120,7 +1120,7 @@ dinotrace-read-timout time."
 ;;
 ;; Socket Interactive functions
 ;;
-      
+
 (defun dinotrace-goto-time (point)
   "Goto the time described after POINT.
 For example if point is before [1162], it will goto 1162."
@@ -1269,7 +1269,7 @@ If prefix-arg, then also put cursors where that value occurs."
 ;;
 ;; Socket Low Level
 ;;
-      
+
 (defun dinotrace-send-command (&rest commands)
   "Send a given configuration COMMAND to the dinotrace session."
   (cond ((not dinotrace-socket-name)
@@ -1277,7 +1277,7 @@ If prefix-arg, then also put cursors where that value occurs."
 	((string-match "^\\(.*\\) \\([0-9]+\\)$" dinotrace-socket-name)
 	 (setq dinotrace-socket
 	       (condition-case nil
-		   (open-network-stream 
+		   (open-network-stream
 		    "dinotrace" nil (match-string 1 dinotrace-socket-name)
 		    (string-to-int (match-string 2 dinotrace-socket-name)))
 		 (file-error nil)))
@@ -1291,7 +1291,7 @@ If prefix-arg, then also put cursors where that value occurs."
 	(t (error "Can't parse socket name"))
 	))
 ;;(dinotrace-send-command "refresh\n")
-	 
+
 ;;
 ;; Utilities
 ;;
@@ -1312,7 +1312,7 @@ If prefix-arg, then also put cursors where that value occurs."
 
 ;;
 ;; Install ourselves
-;; 
+;;
 
 (unless (assq 'dinotrace-mode minor-mode-alist)
   (setq minor-mode-alist
