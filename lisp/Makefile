@@ -6,10 +6,10 @@ all:
 install: dinotrace sim-log
 
 dinotrace:
-	emacs -batch -load dinotrace.el -f dinotrace-install
+	@echo "Please copy dinotrace.el to your site-lisp directory, and byte-compile"
 
 sim-log:
-	emacs -batch -load sim-log.el -f sim-log-install
+	@echo "Please copy sim-log.el to your site-lisp directory, and byte-compile"
 
 clean mostlyclean distclean maintainer-clean::
 	-rm *.elc

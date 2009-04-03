@@ -6,7 +6,7 @@ The contributors that suggested a given feature are shown in [].
 
 **	Dinotrace is now distributed under GPL v3 (previously GPL 2).
 
-****	Fix Emacs 22 warnings on enclosed lisp files.  [Chitlesh Goorah]
+****	Fix Emacs 22 warnings on dinotrace.el/sim-log.el.  [Chitlesh Goorah]
 
 ****	Fix core dump on start on Fedora, fedora478749. [Manuel Wolfshant]
 

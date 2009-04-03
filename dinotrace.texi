@@ -2098,7 +2098,7 @@ rest of Dinotrace.  If you encounter problems, you should return to this
 section.
 
 You'll probably also need @file{verilog-mode.el} from
-@uref{http://www.surefirev.com/verilog-mode.html}.  Make sure that file,
+@uref{http://www.veripool.org/verilog-mode}.  Make sure that file,
 and the distribution's files @file{lisp/dinotrace.el} and
 @file{lisp/sim-mode.el} are installed in your Emacs @code{site-lisp}
 directory. (In Emacs @kbd{C-h v load-path @key{RET}} should list the

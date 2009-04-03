@@ -50,7 +50,7 @@ Perl is available from @uref{http://www.perl.org}
 This kit includes a optional interface for GNU Emacs.  For this package,
 get at least GNU Emacs 19.35, and preferably GNU Emacs 21.1 from
 @uref{ftp://prep.ai.mit.edu}.  You will also want the most recent verilog-mode
-from @uref{http://www.surefirev.com}.
+from @uref{http://www.veripool.org}.
 @end enumerate
 
 @node Supported Systems, Unix Installation, Obtaining Distribution

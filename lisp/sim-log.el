@@ -151,19 +151,6 @@ Special commands:\\{sim-log-mode-map}"
   ;;
   (run-hooks 'sim-log-mode-hook))
 
-
-;;
-;; Installing, other utilities
-;;
-
-(defun sim-log-install ()
-  "Install sim-log.  Only required for initial installation from distribution."
-  (if (file-exists-p "installer.el")
-      (load (expand-file-name "installer.el"))
-    (require `installer))
-  (installer-add-file "sim-log.el"))
-
-
 (provide 'sim-log)
 
 ;;; sim-log.el ends here

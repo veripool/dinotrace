@@ -7,10 +7,10 @@
 ;;; Commentary:
 ;;
 ;; Distributed from the web
-;;	http://www.veripool.com
+;;	http://www.veripool.org
 ;;
 ;; This also requires verilog-mode.el from
-;; 	http://www.surefirev.com/
+;; 	http://www.veripool.org
 ;;
 ;; To use this package, simply put it in a file called "dinotrace.el" in
 ;; a Lisp directory known to Emacs (see `load-path').
@@ -163,7 +163,8 @@ before raising error.")
   "Face name to use for cursors, etc that are in default foreground color.")
 (defface dinotrace-foreground-face
   '((t (:bold t :underline t)))
-  "Default face to use for cursors, etc that are in default foreground color.")
+  "Default face to use for cursors, etc that are in default foreground color."
+  :group 'dinotrace-mode)
 
 (defconst dinotrace-languages
   ;;     mode         annnotate
