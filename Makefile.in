@@ -102,6 +102,7 @@ DISTBIN = $(wildcard bin/dinotrace-*)
 DISTFILES = $(INFOS) COPYING Changes TODO configure *.in *.ac \
 	config.sub \
 	install-sh mkinstalldirs *.texi *.com \
+	html_texi_clean \
 	src/*.in src/*.h src/*.c src/*.pl src/*.com lisp/* traces/* \
 	$(DISTBIN)
 
