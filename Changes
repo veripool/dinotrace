@@ -2,6 +2,10 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 
+* Dinotrace 9.***
+
+****	Fix core dump when no hostname in /etc/hosts.  [Chitlesh Goorah]
+
 * Dinotrace 9.4a 2009/04/03
 
 **	Dinotrace is now distributed under GPL v3 (previously GPL 2).

@@ -241,6 +241,15 @@ void socket_create ()
     /* Grab port number of this machine */
     gethostname (host_name, MAXHOSTNAMELEN);
     he_server_ptr = gethostbyname (host_name);
+    if (!he_server_ptr) {
+        fprintf (stderr, "Dinotrace: could not gethostbyname %s.\n", host_name);
+        perror ("gethostbyname");
+        exit (1L);
+    }
+    if (!he_server_ptr->h_addr) {
+        fprintf (stderr, "Dinotrace: NULL address for gethostbyname %s.\nPerhaps your hostname is missing from /etc/hosts?\n", host_name);
+        exit (1L);
+    }
 
     /* Assign to any port, network visible on this machine */
     memset ((char *) &sa_server, 0, sizeof(sa_server));

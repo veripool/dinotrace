@@ -316,7 +316,7 @@ Configured %s for %s\n\
 \n\
 Please see the help menu or %sdinotrace.txt for documentation.\n\
 \n\
-Downloads and documentation at:\n\
+Downloads, documentation and bug reporting at:\n\
 http://www.veripool.org/dinotrace\n\
 \n\
 Written by Wilson Snyder\n\
