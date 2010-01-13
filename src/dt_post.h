@@ -54,7 +54,7 @@
  *
  *****************************************************************************/
 
-char dt_post[] = "% version: 9.4a \n\
+char dt_post[] = "% version: 9.4b \n\
 % Contact wsnyder@wsnyder.org with problems with the header of this document\n\
 /MT {moveto} def		% define MT\n\
 /LT {lineto} def		% define LT\n\

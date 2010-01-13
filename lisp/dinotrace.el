@@ -2,7 +2,7 @@
 
 ;; Author          : Wilson Snyder <wsnyder@wsnyder.org>
 ;; Keywords        : languages
-;; version: 9.4a
+;; version: 9.4b
 
 ;;; Commentary:
 ;;
@@ -102,7 +102,7 @@
 
 (require 'verilog-mode)
 
-(defconst dinotrace-mode-version "9.4a"
+(defconst dinotrace-mode-version "9.4b"
   "Version of this dinotrace-mode.")
 
 (eval-when-compile
