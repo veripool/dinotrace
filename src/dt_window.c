@@ -406,7 +406,7 @@ void res_zoom_click_ev (
     Trace_t	*trace,
     XButtonPressedEvent	*ev)
 {
-    DTime_t		time,tmp;
+    DTime_t		time;
 
     if (DTPRINT_ENTRY) printf ("In res_zoom_click1_ev - trace=%p x=%d y=%d b=%d\n",trace,ev->x,ev->y,ev->button);
     if (ev->type != ButtonPress || (ev->button!=1 && ev->button!=3)) return;
@@ -428,6 +428,7 @@ void res_zoom_click_ev (
     if (time != global->click_time) {
 	/* Swap so time is the max */
 	if (time < global->click_time) {
+	    DTime_t tmp;
 	    tmp = time;
 	    time = global->click_time;
 	    global->click_time = tmp;

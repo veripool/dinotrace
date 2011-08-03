@@ -676,7 +676,6 @@ static void draw_trace (
     XSegment segs[MAXCNT+100];		/* Array of line segments to plot */
     XSegment segsd[MAXCNT+100];		/* Array of line segments to plot */
     const Signal_t *sig_ptr;		/* Current signal being printed */
-    int star_width;			/* Width of '*' character */
     int colornum_last = -1;
 
     if (DTPRINT_ENTRY) printf ("In draw_trace, xstart=%d\n", global->xstart);
@@ -703,9 +702,6 @@ static void draw_trace (
 
     /* Draw grid "under" the signal lines */
     draw_grids (trace);
-
-    /* Overall coordinates */
-    star_width = XTextWidth (global->value_font,"*",1);
 
     /* Preset dash pattern for STATE_Z's */
     XSetDashes (global->display, trace->gc, 0, "\001\001", 2);

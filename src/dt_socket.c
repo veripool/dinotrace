@@ -240,6 +240,7 @@ void socket_create ()
 
     /* Grab port number of this machine */
     gethostname (host_name, MAXHOSTNAMELEN);
+    /* cppcheck-suppress obsoleteFunctionsgethostbyname */
     he_server_ptr = gethostbyname (host_name);
     if (!he_server_ptr) {
         fprintf (stderr, "Dinotrace: could not gethostbyname %s.\n", host_name);

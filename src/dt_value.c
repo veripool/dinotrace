@@ -1845,6 +1845,7 @@ void    val_annotate_do_cb (
 		}
 	    }
 	    fprintf (dump_fp, ") nil])\n");
+	    free(basename);
 	}
     }
     fprintf (dump_fp, "\t))\n");

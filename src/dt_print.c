@@ -466,7 +466,6 @@ static void print_draw_cursors (
     DTime_t	printtime)	/* Time to start on */
 {
     int		end_time;
-    int		last_drawn_xright;
     char 	strg[MAXTIMELEN];		/* String value to print out */
     DCursor_t 	*csr_ptr;			/* Current cursor being printed */
     Position	x1;
@@ -479,7 +478,6 @@ static void print_draw_cursors (
     ytop = trace->ystart - Y_CURSOR_TOP;
     ybot = trace->ycursortimeabs - m_time_height - Y_TEXT_SPACE;
     ydelta = trace->ycursortimerel - m_time_height/2;
-    last_drawn_xright = -1;
     end_time = printtime + TIME_WIDTH (trace);
 
     /* Start cursor, for now == start grid */

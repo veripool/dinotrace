@@ -2277,8 +2277,6 @@ static void sig_modify_en_signal (
     Signal_t	*new_sig_ptr;
     Value_t	*base_cptr, *en_cptr;
     Value_t	new_value, base_value, en_value;
-    int		has_ones;
-    int		has_zeros;
     Boolean_t	first_last_data=TRUE;
 
     /*DTPRINT = (!strncmp(base_sig_ptr->signame, "k->MEMDATA", 10));*/
@@ -2309,7 +2307,6 @@ static void sig_modify_en_signal (
     val_copy (&base_value, base_cptr);
     val_copy (&en_value, en_cptr);
 
-    has_ones = has_zeros = 0;
     while ((CPTR_TIME(base_cptr) != EOT)
 	   && (CPTR_TIME(en_cptr) != EOT)) {
 	/*if (DTPRINT_FILE) {

@@ -623,6 +623,7 @@ static uint_t bin_read_little_uint_t32 (int read_fd)
     uint_t	naturaldata;
 
     status = bin_read (read_fd, &littledata, 4);
+    if (status) {} // UNUSED
     /* Actually it's ANTILITTLE, but it's a symetric function */
     naturaldata = LITTLEENDIANIZE32 (littledata);
     return (naturaldata);
@@ -751,6 +752,7 @@ void tempest_read (
 	    /* Correct endianization */
 	    for (j = 0; j <= (numBitsRowPad/(sizeof(uint_t)*8)); j++) {
 		uint_t littledata = data_xor[j];
+		/* cppcheck-suppress selfAssignment */
 		littledata = LITTLEENDIANIZE32 (littledata);
 		data[j] ^= littledata;
 	    }

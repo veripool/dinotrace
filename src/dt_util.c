@@ -883,7 +883,7 @@ void    debug_print_screen_traces_cb (
 
     printf ("There are up to %d signals currently visible.\n",trace->numsigvis);
     printf ("Which signal do you wish to view [0-%d]: ",trace->numsigvis-1);
-    scanf ("%d",&num);
+    scanf ("%10d",&num);
     if ( num > trace->numsigvis-1 ) {
 	printf ("Illegal Value.\n");
 	return;

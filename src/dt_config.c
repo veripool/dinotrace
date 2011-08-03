@@ -566,7 +566,7 @@ int	config_read_grid (
 {
     int 	outlen;
     int		grid_num;
-    char	message [MAXTIMELEN];
+    char	message [100];
 
     outlen = config_read_int (line, &grid_num);
 

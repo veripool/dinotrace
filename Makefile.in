@@ -95,6 +95,9 @@ SUBDIRS = src lisp
 
 INFOS = dinotrace.info INSTALL FAQ dinotrace.txt
 
+CPPCHECK = cppcheck
+CPPCHECK_FLAGS = --enable=all --suppress=variableScope --inline-suppr
+
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = $(INFOS) Makefile src/dinodoc.pl src/dist_date.pl
 # Files to distribute.
@@ -131,6 +134,9 @@ dinotrace_dbg: obj_dbg
 	cd obj_dbg && $(MAKE) DT_DEBUG=1 -f $(abs_srcdir)/src/Makefile dinotrace
 	(cp obj_dbg/dinotrace ./dinotrace_dbg >/dev/null 2>&1\
 	 || cp obj_dbg/dinotrace.exe ./dinotrace_dbg.exe >/dev/null 2>&1)
+
+cppcheck: obj_dbg
+	cd obj_dbg && $(CPPCHECK) $(CPPCHECK_FLAGS) -DDEBUG -I$(srcdir) ..
 
 info: $(INFOS)
 
