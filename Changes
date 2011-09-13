@@ -2,7 +2,7 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 
-* Dinotrace 9.4***
+* Dinotrace 9.4c 2011/09/12
 
 ****	Fix message trashing stack and make cppcheck clean.  [David Binderman]
 
@@ -1030,7 +1030,7 @@ The contributors that suggested a given feature are shown in [].
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-Copyright (C) 1998-2010 Wilson Snyder.
+Copyright (C) 1998-2011 Wilson Snyder.
 Copyright (C) 1992-1997 Digital Equipment Corportation.
 
    Permission is granted to anyone to make or distribute verbatim copies of

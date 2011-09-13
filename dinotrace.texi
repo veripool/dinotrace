@@ -19,8 +19,8 @@
 @c prefix arg).  This updates the node pointers, which texinfmt.el needs.
 @c Also update the master menu, created with texinfo-master-menu
 
-@set VERSION 9.4b
-@set UPDATED January 2010
+@set VERSION 9.4c
+@set UPDATED September 2011
 @set ID @value{VERSION}
 
 @c DESCRIPTION: TexInfo: DOCUMENT source run through texinfo to produce documentation file
@@ -63,7 +63,7 @@
 @ifinfo
 This file documents the Dinotrace package for viewing signal waveforms.
 
-Copyright 1998-2010 by Wilson Snyder. @email{wsnyder@@wsnyder.org}
+Copyright 1998-2011 by Wilson Snyder. @email{wsnyder@@wsnyder.org}
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -99,7 +99,7 @@ by the author.
 
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 1998-2010 Wilson Snyder
+Copyright @copyright{} 1998-2011 Wilson Snyder
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice

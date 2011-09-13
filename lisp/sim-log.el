@@ -2,7 +2,7 @@
 
 ;; Author          : Wilson Snyder <wsnyder@wsnyder.org>
 ;; Keywords        : languages
-;; version: 9.4b
+;; version: 9.4c
 
 ;;; Commentary:
 ;;
@@ -54,7 +54,7 @@
 (require 'font-lock)
 (provide 'sim-log)
 
-(defconst sim-log-version "9.4b"
+(defconst sim-log-version "9.4c"
   "Version of this sim-log mode.")
 
 ;;
