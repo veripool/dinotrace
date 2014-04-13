@@ -835,6 +835,7 @@ static void	verilog_read_data (
     double	dnum;
     double	time_mult;
     double	time_divisor;
+    NumberUnion_t numu;
 
     if (DTPRINT_ENTRY) printf ("In verilog_read_data (max_bits = %d)\n", verilog_max_bits);
 
@@ -998,7 +999,9 @@ static void	verilog_read_data (
 		if (dnum==0) value.siglw.stbits.state = STATE_0;
 		else {
 		    value.siglw.stbits.state = STATE_B128;
-		    *((double*)(&value.number[0])) = dnum;
+		    numu.v_double = dnum;
+		    value.number[0] = numu.v_uint[0];
+		    value.number[1] = numu.v_uint[1];
 		}
 		value.time = time;
 		fil_add_cptr (sig_ptr, &value, first_data);

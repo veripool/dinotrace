@@ -311,6 +311,7 @@ void ascii_read (
     Boolean_t	got_start=FALSE, hit_start=FALSE, in_comment=FALSE;
     long	base_chars_left=0;
 
+    char	*got;
     char	*t;
     Boolean_t	chango_format=FALSE;
     long	time_stamp_last;
@@ -453,7 +454,8 @@ void ascii_read (
 	else {
 	    if (feof (readfp)) break;
 	    line_in = header_start;
-	    fgets (line_in, header_length, readfp);
+	    got = fgets (line_in, header_length, readfp);
+	    if (got) {}
 	    fil_line_num++;
 	}
 

@@ -161,10 +161,11 @@ static void config_get_line (
     int len,
     FILE *readfp)
 {
-    char *tp;
+    char *tp, *got;
 
     /* Read line & kill EOL at end */
-    fgets (line, len, readfp);
+    got = fgets (line, len, readfp);
+    if (got) {}
     if (*line && *(tp=(line+strlen(line)-1))=='\n') *tp='\0';
     config_line_num++;
 }

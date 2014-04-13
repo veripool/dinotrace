@@ -126,7 +126,7 @@ static void print_draw_grid (
     int		end_time;
     DTime_t	xtime;
     Position	x2;			/* Coordinate of current time */
-    Position	ytop,ymid,ybot;
+    Position	ytop,ybot;
 
     if (grid_ptr->period < 1) return;
 
@@ -137,7 +137,6 @@ static void print_draw_grid (
 
     /* Other coordinates */
     ytop = trace->ystart - Y_GRID_TOP;
-    ymid = trace->ystart - Y_DASH_TOP;
     ybot = trace->yend + Y_GRID_BOTTOM;
 
     /* Start grid */

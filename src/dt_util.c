@@ -281,11 +281,14 @@ void fgets_dynamic (
     uint_t *length_ptr,	/* & Length of the buffer */
     FILE *readfp)
 {
+    char *got;
+
     if (*length_ptr == 0) {
 	fgets_dynamic_extend (line_pptr, length_ptr, FGETS_SIZE_INC);
     }
 
-    fgets ((*line_pptr), (*length_ptr), readfp);
+    got = fgets ((*line_pptr), (*length_ptr), readfp);
+    if (got) {}
 
     /* Did fgets overflow the string? */
     while (*((*line_pptr) + *length_ptr - 2)!='\n'
@@ -293,8 +296,9 @@ void fgets_dynamic (
 	/* Alloc more */
 	fgets_dynamic_extend (line_pptr, length_ptr, *length_ptr + FGETS_SIZE_INC);
 	/* Read remainder */
-	fgets (((*line_pptr) + *length_ptr - 2) + 1 - FGETS_SIZE_INC,
-	       FGETS_SIZE_INC+1, readfp);
+	got = fgets (((*line_pptr) + *length_ptr - 2) + 1 - FGETS_SIZE_INC,
+		     FGETS_SIZE_INC+1, readfp);
+	if (got) {}
     }
 }
 
@@ -880,11 +884,12 @@ void    debug_print_screen_traces_cb (
     Trace_t *trace = widget_to_trace(w);
     uint_t	i,num;
     Signal_t	*sig_ptr;
+    int         got;
 
     printf ("There are up to %d signals currently visible.\n",trace->numsigvis);
     printf ("Which signal do you wish to view [0-%d]: ",trace->numsigvis-1);
-    scanf ("%10d",&num);
-    if ( num > trace->numsigvis-1 ) {
+    got = scanf ("%10d",&num);
+    if ( got == 0 || num > trace->numsigvis-1 ) {
 	printf ("Illegal Value.\n");
 	return;
     }

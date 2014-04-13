@@ -278,6 +278,7 @@ void    val_to_string (
     /* Try to convert a signal state also */
     /* This isn't fast, so don't use when reading files!!! */
 {
+    NumberUnion_t numu;
     char sep = compressed ? ' ' : '_';
     if (radix_ptr==NULL) {strcpy (strg,"nullradix_ptr"); return;}
 
@@ -311,7 +312,9 @@ void    val_to_string (
 	}
 	if (radix_ptr->type == RADIX_REAL
 	    && value_ptr->siglw.stbits.state == STATE_B128) {
-	    sprintf (strg, "%g", *(double*)(&value_ptr->number[0]));
+	    numu.v_uint[0] = value_ptr->number[0];
+	    numu.v_uint[1] = value_ptr->number[1];
+	    sprintf (strg, "%g", numu.v_double);
 	} else {
 	    uint_t enlw;
 	    if (value_ptr->siglw.stbits.state == STATE_B128
@@ -421,6 +424,7 @@ void    string_to_value (
     char radix_id;
     uint_t *nptr = &(value_ptr->number[0]);
     Boolean_t negate = FALSE;
+    NumberUnion_t numu;
 
     val_zero (value_ptr);
 
@@ -469,7 +473,9 @@ void    string_to_value (
 	if (dnum == 0) 	value_ptr->siglw.stbits.state = STATE_0;
 	else {
 	    value_ptr->siglw.stbits.state = STATE_B128;
-	    *((double*)&value_ptr->number[0]) = dnum;
+	    numu.v_double = dnum;
+	    value_ptr->number[0] = numu.v_uint[0];
+	    value_ptr->number[1] = numu.v_uint[1];
 	}
 	return;
     }
@@ -1465,7 +1471,6 @@ void    val_annotate_cb (
     Widget	w)
 {
     Trace_t *trace = widget_to_trace(w);
-    Widget last;
     int i;
 
     if (DTPRINT_ENTRY) printf ("In val_annotate_cb - trace=%p\n",trace);
@@ -1505,7 +1510,6 @@ void    val_annotate_cb (
 	trace->annotate.label2 = XmCreateLabel (trace->annotate.dialog,"l2",arglist,4);
 	DManageChild (trace->annotate.label2, trace, MC_NOKEYS);
 
-	last = trace->annotate.dialog;
 	for (i=0; i<=MAX_SRCH; i++) {
 	    /* enable button */
 	    XtSetArg (arglist[0], XmNx, 15+30*i);
@@ -1515,7 +1519,6 @@ void    val_annotate_cb (
 	    XtSetArg (arglist[4], XmNlabelString, XmStringCreateSimple (" "));
 	    trace->annotate.cursors[i] = XmCreateToggleButton (trace->annotate.dialog,"togglenc",arglist,5);
 	    DManageChild (trace->annotate.cursors[i], trace, MC_NOKEYS);
-	    last = trace->annotate.cursors[i];
 	}
 
 	/* Cursor enables */

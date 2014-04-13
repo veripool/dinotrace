@@ -607,6 +607,12 @@ typedef struct {
     				/* If 4-state, additional 4, where 10=z, 11=u */
 } Value_t;
 
+/* Convert a uint to double */
+typedef union {
+    uint_t	v_uint[2];	/* Value */
+    double	v_double;	/* Value */
+} NumberUnion_t;
+
 /* Value searching structure */
 typedef struct {
     ColorNum_t	color;		/* Color number (index into trace->xcolornum) 0=OFF*/
