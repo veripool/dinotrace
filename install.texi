@@ -10,7 +10,7 @@
 @node Dinotrace Installation, Obtaining Distribution
 @section Dinotrace Installation
 
-version: 9.4c
+version: 9.4d
 
 This file describes how to install Dinotrace on your local system.
 After obtaining and installing on your particular system, see the
