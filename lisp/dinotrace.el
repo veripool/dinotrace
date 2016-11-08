@@ -930,8 +930,7 @@ like \"notafoo12\"."
     (unless sig
       (setq sig (list signal (vector
 			      signal color nil nil nil))
-	    dinotrace-signal-values)
-      (setq dinotrace-signal-values (cons sig dinotrace-signal-values)))
+	    dinotrace-signal-values (cons sig dinotrace-signal-values)))
     (dinotrace-signal-set-color sig color)
     (dinotrace-make-propertied sig)
     ;;
