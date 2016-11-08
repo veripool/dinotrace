@@ -2,6 +2,10 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 
+* Dinotrace 9.4d devel
+
+****	Fix clang compiler warnings.
+
 * Dinotrace 9.4d 2014/09/12
 
 ****	Fix compiler warnings.

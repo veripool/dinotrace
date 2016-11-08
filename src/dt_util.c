@@ -1059,7 +1059,7 @@ void    debug_statistics_cb (
 	    sigs++;
 	    if (!sig_ptr->copyof) {
 		sigs_ncopy++;
-		for (i=0; (1<<i)<sig_ptr->bits; i++); bysize[i]++;
+		for (i=0; (1<<i)<sig_ptr->bits; i++) bysize[i]++;
 		cp_alloc += sig_ptr->blocks;
 		for (cptr = sig_ptr->bptr; CPTR_TIME(cptr) != EOT; cptr = CPTR_NEXT(cptr)) {
 		    cp_used++;

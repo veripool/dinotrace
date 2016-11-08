@@ -1343,14 +1343,14 @@ void config_update_filenames (Trace_t *trace)
     global->config_filename[4][0] = '\0';
 
     /* Same directory as trace, dinotrace.dino */
-    if (trace->dfile.filename != '\0') {
+    if (trace->dfile.filename[0] != '\0') {
 	strcpy (global->config_filename[3], trace->dfile.filename);
 	file_directory (global->config_filename[3]);
 	strcat (global->config_filename[3], "dinotrace.dino");
     }
 
     /* Same file as trace, but .dino extension */
-    if (trace->dfile.filename != '\0') {
+    if (trace->dfile.filename[0] != '\0') {
 	char *slash;
 	char *pchar;
 	strcpy (global->config_filename[4], trace->dfile.filename);

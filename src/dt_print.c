@@ -528,7 +528,7 @@ void    print_internal (Trace_t *trace)
     if (DTPRINT_ENTRY) printf ("In print_internal - trace=%p\n",trace);
     if (!trace->loaded) return;
 
-    if (trace->printname) {
+    if (trace->printname[0]) {
 	/* Open the file */
 	if (DTPRINT_ENTRY) printf ("Filename=%s\n", trace->printname);
 	psfile = fopen (trace->printname,"w");
