@@ -925,7 +925,7 @@ typedef struct {
     DTime_t		click_time;	/* time clicked on for res_zoom_click */
     Grid_t		*click_grid;	/* grid being set by grid_align */
 
-    Radix_t		*radixs[RADIX_MAX];	/* Radix storage (standard types only) */
+    Radix_t		*radixs[RADIX_MENU_MAX];	/* Radix storage (standard types only) */
 
     Boolean_t		config_enable[MAXCFGFILES];/* Read in this config file */
     char		config_filename[MAXCFGFILES][MAXFNAMELEN];	/* Config files */

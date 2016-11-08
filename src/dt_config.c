@@ -1260,6 +1260,8 @@ void config_read_file (
 	return;
     }
 
+    read_fd = -1;
+
     config_report_errors = !format_only;
 
 #ifndef VMS
