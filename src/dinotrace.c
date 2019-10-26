@@ -5,7 +5,7 @@
  *
  * Author: Wilson Snyder <wsnyder@wsnyder.org>
  *
- * Code available from: http://www.veripool.org/dinotrace
+ * Code available from: https://www.veripool.org/dinotrace
  *
  ******************************************************************************
  *
@@ -317,7 +317,7 @@ Configured %s for %s\n\
 Please see the help menu or %sdinotrace.txt for documentation.\n\
 \n\
 Downloads, documentation and bug reporting at:\n\
-http://www.veripool.org/dinotrace\n\
+https://www.veripool.org/dinotrace\n\
 \n\
 Written by Wilson Snyder\n\
 <wsnyder@wsnyder.org>\n\

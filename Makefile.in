@@ -5,7 +5,7 @@
 #
 # Author: Wilson Snyder <wsnyder@wsnyder.org>
 #
-# Code available from: http://www.veripool.org/dinotrace
+# Code available from: https://www.veripool.org/dinotrace
 #
 #*****************************************************************************
 #
@@ -67,6 +67,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 MAKEINFO = makeinfo
 TEXI2DVI = texi2dvi
+ASCIIDOCTOR = asciidoctor
 PERL = @PERL@
 
 #### Don't edit: You're much better using configure switches to set these
@@ -93,7 +94,7 @@ SHELL = /bin/sh
 
 SUBDIRS = src lisp
 
-INFOS = dinotrace.info INSTALL FAQ dinotrace.txt
+INFOS = dinotrace.info dinotrace.txt dinotrace.pdf
 
 CPPCHECK = cppcheck
 CPPCHECK_FLAGS = --enable=all --suppress=variableScope --inline-suppr
@@ -102,14 +103,21 @@ CPPCHECK_FLAGS = --enable=all --suppress=variableScope --inline-suppr
 DISTDEP = $(INFOS) Makefile src/dinodoc.pl src/dist_date.pl
 # Files to distribute.
 DISTBIN = $(wildcard bin/dinotrace-*)
-DISTFILES = $(INFOS) COPYING Changes TODO configure *.in *.ac \
+DISTFILES = $(INFOS) COPYING Changes configure *.in *.ac \
 	config.sub \
 	install-sh mkinstalldirs *.texi *.com \
-	html_texi_clean \
+	*.adoc \
+	docs/*.adoc \
+	docs/*.png \
+	docs/TODO.txt \
+	docs/html_texi_clean \
 	src/*.in src/*.h src/*.c src/*.pl src/*.com lisp/* traces/* \
 	$(DISTBIN)
 
 all: dinotrace_exe info
+
+test: dinotrace_exe
+	./dinotrace traces/ascii.tra
 
 obj_dir:
 	-mkdir -p $@
@@ -148,18 +156,21 @@ dinotrace.txt: dinotrace.texi
 	$(MAKEINFO) -I$(srcdir) $(srcdir)/dinotrace.texi --output=$@ \
 	--no-headers --no-validate
 
-INSTALL: install.texi
-	$(MAKEINFO) -I$(srcdir) $(srcdir)/install.texi --output=$@ \
-	--no-headers --no-validate
+README.html: README.adoc
+	$(ASCIIDOCTOR) $<
 
-FAQ: faq.texi
-	$(MAKEINFO) -I$(srcdir) $(srcdir)/faq.texi --output=$@ \
-	--no-headers --no-validate
+docs/FAQ.html: docs/FAQ.adoc
+	$(ASCIIDOCTOR) $<
 
 %.html: %.texi
-	perl html_texi_clean $*.texi >$*.tmp
+	perl docs/html_texi_clean $*.texi >$*.tmp
 	texi2html -monolithic $*.tmp
 	mv $*.tmp.html $*.html
+	rm $*.tmp
+
+%.pdf: %.texi
+	perl docs/html_texi_clean $*.texi >$*.tmp
+	texi2pdf $*.tmp
 	rm $*.tmp
 
 dvi: dinotrace.dvi
@@ -210,7 +221,7 @@ configure: configure.ac
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
 	@echo "rebuilding the deleted files requires makeinfo."
-	rm -f *.info* $(INFOS) faq.html dinotrace.html configure bin/*
+	rm -f *.info* $(INFOS) FAQ.html FAQ.pdf dinotrace.html dinotrace.pdf configure bin/*
 
 clean mostlyclean distclean maintainer-clean maintainer-copy::
 	for dir in $(SUBDIRS); do \

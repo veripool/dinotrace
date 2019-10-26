@@ -125,7 +125,7 @@ This file documents the Dinotrace package for signal waveform tracing.
 This is edition @value{ID}, for Dinotrace version @value{VERSION}.
 
 For the latest version, please see
-@uref{http://www.veripool.org/dinotrace
+@uref{https://www.veripool.org/dinotrace
 }
 
 Please feel free to send comments and suggestions to
@@ -163,7 +163,7 @@ simulation traces.  It is optimized for rapid design debugging using
 X-Windows Mosaic.  A special interface allows signal information to be
 annotated into source code using Emacs.
 
-Please see the file @file{INSTALL} in the distribution directory for
+Please see the file @file{README.adoc} in the distribution directory for
 installation instructions.
 
 @menu
@@ -2098,7 +2098,7 @@ rest of Dinotrace.  If you encounter problems, you should return to this
 section.
 
 You'll probably also need @file{verilog-mode.el} from
-@uref{http://www.veripool.org/verilog-mode}.  Make sure that file,
+@uref{https://www.veripool.org/verilog-mode}.  Make sure that file,
 and the distribution's files @file{lisp/dinotrace.el} and
 @file{lisp/sim-mode.el} are installed in your Emacs @code{site-lisp}
 directory. (In Emacs @kbd{C-h v load-path @key{RET}} should list the

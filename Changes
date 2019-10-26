@@ -2,6 +2,10 @@ Revision history for Dinotrace
 
 The contributors that suggested a given feature are shown in [].
 
+* Dinotrace 9.4f devel
+
+****	Minor cleanups for github repository.
+
 * Dinotrace 9.4e 2016/11/24
 
 ****	Fix clang compiler warnings.
@@ -1033,7 +1037,7 @@ The contributors that suggested a given feature are shown in [].
 
 ****	Known bug: will crash in File->Select when filtering with long
 	filters ( toolkit problem??? )
-
+
 -----------------------------------------------------------------------------
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].

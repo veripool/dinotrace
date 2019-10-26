@@ -7,10 +7,10 @@
 ;;; Commentary:
 ;;
 ;; Distributed from the web
-;;	http://www.veripool.org
+;;	https://www.veripool.org/dinotrace
 ;;
 ;; This also requires verilog-mode.el from
-;; 	http://www.veripool.org
+;; 	https://www.veripool.org/verilog-mode
 ;;
 ;; To use this package, simply put it in a file called "dinotrace.el" in
 ;; a Lisp directory known to Emacs (see `load-path').
