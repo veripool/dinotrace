@@ -261,7 +261,8 @@ dist: $(DISTDEP) maintainer-copy
 	distname=`sed -e '/DTVERSION/!d' \
 	-e 's/[^0-9]*\([0-9.a-z]*\).*/dinotrace-\1/' -e q src/config.h.in`; \
 	rm -fr $$distname; \
-	mkdir $$distname $$distname/src $$distname/lisp $$distname/traces $$distname/bin; \
+	mkdir $$distname $$distname/src $$distname/lisp $$distname/traces ; \
+        mkdir $$distname/bin $$distname/docs ; \
 	for file in $(DISTFILES); do \
 	  ln $$file $$distname/$$file \
 	  || { echo copying $$file instead; cp -p $$file $$distname/$$file;}; \
@@ -272,7 +273,6 @@ dist: $(DISTDEP) maintainer-copy
 	rm -fr $$distname; \
 
 maintainer-dist: dist tag
-	echo "****** Did you rebuild all versions in .../bin ?"
 	svnorcvs release *.gz
 
 maintainer-diff:
