@@ -67,7 +67,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 MAKEINFO = makeinfo
 TEXI2DVI = texi2dvi
-ASCIIDOCTOR = asciidoctor
+RST2HTML = rst2html
 PERL = @PERL@
 
 #### Don't edit: You're much better using configure switches to set these
@@ -106,8 +106,8 @@ DISTBIN = $(wildcard bin/dinotrace-*)
 DISTFILES = $(INFOS) COPYING Changes configure *.in *.ac \
 	config.sub \
 	install-sh mkinstalldirs *.texi *.com \
-	*.adoc \
-	docs/*.adoc \
+	*.rst \
+	docs/*.rst \
 	docs/*.png \
 	docs/TODO.txt \
 	docs/html_texi_clean \
@@ -156,11 +156,11 @@ dinotrace.txt: dinotrace.texi
 	$(MAKEINFO) -I$(srcdir) $(srcdir)/dinotrace.texi --output=$@ \
 	--no-headers --no-validate
 
-README.html: README.adoc
-	$(ASCIIDOCTOR) $<
+README.html: README.rst
+	$(RST2HTML) $< $@
 
-docs/FAQ.html: docs/FAQ.adoc
-	$(ASCIIDOCTOR) $<
+docs/FAQ.html: docs/FAQ.rst
+	$(RST2HTML) $< $@
 
 %.html: %.texi
 	perl docs/html_texi_clean $*.texi >$*.tmp

@@ -163,8 +163,8 @@ simulation traces.  It is optimized for rapid design debugging using
 X-Windows Mosaic.  A special interface allows signal information to be
 annotated into source code using Emacs.
 
-Please see the file @file{README.adoc} in the distribution directory for
-installation instructions.
+Please see the file @file{README.rst} in the distribution directory
+for installation instructions.
 
 @menu
 * Copying::                     
