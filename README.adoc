@@ -132,7 +132,7 @@ Also see the link:docs/FAQ.adoc[Dinotrace FAQ].
 
 == LICENSE
 
-This package is Copyright 1992-2019 by Digital Equipment Corporation, and
+This package is Copyright 1992-2021 by Digital Equipment Corporation, and
 Wilson Snyder <wsnyder@wsnyder.org>.
 
 Dinotrace is free software; you can redistribute it and/or modify it under
