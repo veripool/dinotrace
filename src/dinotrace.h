@@ -296,7 +296,7 @@ extern struct st_filetypes {
     char		*mask;		/* File Open mask */
 } filetypes[FF_NUMFORMATS];
 
-extern char		message[1000];	/* generic string for messages */
+extern char		message[8000];	/* generic string for messages */
 
 extern XGCValues	xgcv;
 

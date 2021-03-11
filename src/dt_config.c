@@ -592,7 +592,7 @@ static int config_process_state (
     char 	*line,
     SignalState_t *sstate_ptr)
 {
-    char newstate[MAXVALUELEN];
+    char newstate[MAXVALUELEN*2];
     int	statenum = sstate_ptr->numstates;
     int outlen=0;
 

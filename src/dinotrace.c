@@ -68,10 +68,11 @@ Boolean_t	DTDEBUG=FALSE;		/* Debugging mode */
 uint_t		DTPRINT=0;		/* Information printing mode */
 int		DebugTemp=0;		/* Temp value for trying things */
 uint_t		file_format=FF_VERILOG;	/* Type of trace to support */
-char		message[1000];		/* generic string for messages */
+char		message[8000];		/* generic string for messages */
 XGCValues	xgcv;
 Arg		arglist[20];
 Global_t	*global;
+
 /* filetypes must be in the same order that the FF_* defines are */
 struct st_filetypes filetypes[FF_NUMFORMATS] = {
     { 0, "Auto",		"?",	"*.*"		},

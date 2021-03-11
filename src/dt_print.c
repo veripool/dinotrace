@@ -521,7 +521,7 @@ void    print_internal (Trace_t *trace)
     Signal_t	*sig_ptr, *sig_end_ptr=NULL;
     uint_t	numprt;
     DTime_t	printtime;	/* Time current page starts on */
-    char	pagenum[20];
+    char	pagenum[60];
     char	sstrg[MAXTIMELEN];
     char	estrg[MAXTIMELEN];
 
