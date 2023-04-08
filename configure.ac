@@ -2,8 +2,9 @@ dnl DESCRIPTION: Process this file with autoconf to produce a configure script.
 dnl Note:  /usr/local/share/autoconf/ was editied to have X11R6.3 and .4
 dnl to support the cygwin default installation directory
 AC_REVISION($Revision$)dnl
-AC_INIT(src/dinotrace.c)
-AC_CONFIG_HEADER(src/config.h)
+AC_INIT
+AC_CONFIG_SRCDIR([src/dinotrace.c])
+AC_CONFIG_HEADERS([src/config.h])
 
 AC_MSG_RESULT([])
 AC_MSG_RESULT([You may want to look in bin/ for a precompiled executable])
@@ -37,7 +38,6 @@ AC_SUBST(X_LIBS)
 
 dnl Checks for header files.
 AC_PATH_X
-AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(fcntl.h unistd.h sys/file.h sys/time.h sys/un.h math.h)
 
@@ -54,7 +54,6 @@ dnl Warning below, don't know how to fix
 AC_C_BIGENDIAN
 
 dnl Checks for library functions.
-AC_TYPE_SIGNAL
 AC_CHECK_FUNCS(gethostname strdup strcasecmp)
 
 dnl Checks for system services
@@ -64,7 +63,8 @@ pkgdatadir=${datadir}/dinotrace
 AC_DEFINE_UNQUOTED(DINODISK_DEFAULT,"$pkgdatadir")
 AC_SUBST(pkgdatadir)
 
-AC_OUTPUT(Makefile src/Makefile)
+AC_CONFIG_FILES([Makefile src/Makefile])
+AC_OUTPUT
 
 AC_MSG_RESULT([])
 AC_MSG_RESULT([You may want to look in bin/ for a precompiled executable])
